@@ -1,101 +1,93 @@
 import pandas as pd
 import numpy as np
 
-class FinancialSystemSimulator:
+class GeneralFinancialSimulator:
     """
-    최소 납입액 및 동적 수익 계산 규칙이 모두 적용된 금융 시스템을 시뮬레이션합니다.
+    모든 주요 변수가 파라미터로 제어되는 범용 금융 시스템 시뮬레이터입니다.
+    CSV 파일 의존성이 없습니다.
     """
 
-    def __init__(self, schedule_filepath, sim_params):
+    def __init__(self, params):
         """
         시뮬레이터를 초기화합니다.
 
         Args:
-            schedule_filepath (str): 납입금 원본 스케줄이 담긴 CSV 파일 경로.
-            sim_params (dict): 시뮬레이션에 필요한 모든 변수를 담은 딕셔너리.
+            params (dict): 시뮬레이션에 필요한 모든 변수를 담은 마스터 딕셔너리.
         """
-        # ... (이전과 동일한 파일 로딩 부분) ...
-        try:
-            schedule_df = pd.read_csv(schedule_filepath)
-            header_row_index = schedule_df[schedule_df.iloc[:, 0] == '회차'].index[0]
-            schedule_df = pd.read_csv(schedule_filepath, header=header_row_index, index_col='회차')
-            payment_col = next((col for col in schedule_df.columns if '납입' in col), None)
-            self.P_schedule = schedule_df[payment_col].apply(pd.to_numeric, errors='coerce').to_dict()
-        except Exception as e:
-            print(f"오류: 파일 처리 중 문제가 발생했습니다. ({e})")
-            raise
-
-        # 시뮬레이션 변수 설정
-        self.params = sim_params
+        # 1. 파라미터 유효성 검사 및 설정
+        required_keys = [
+            'max_investor_count', 'p_schedule', 'min_payment_new', 
+            'min_payment_re', 'revenue_base_divisor', 'sales_commission', 
+            'settlement_bonus', 'max_bonus', 'round_bonus_rates', 
+            'sales_achievement_rates'
+        ]
+        for key in required_keys:
+            if key not in params:
+                raise ValueError(f"필수 파라미터 '{key}'가 제공되지 않았습니다.")
         
-        # Investor 관련 설정
-        self.max_rounds_per_investor = 15
+        self.params = params
+        self.M = params['max_investor_count'] # 총 Investor 수 (졸업 기준)
+
+        # 2. 시뮬레이션 상태 변수 초기화
         self.investors = []
         self.current_round = 0
         self.history = []
 
-        # 최소 납입액 규칙 (이전과 동일)
-        self.min_payment_new_entrant = {
-            1: 0, 2: 220000, 3: 330000, 4: 330000, 5: 330000, 6: 330000, 7: 330000, 8: 330000,
-            9: 1100000, 10: 1100000, 11: 2200000, 12: 2200000, 13: 3300000, 14: 5500000, 15: 11000000
-        }
-        self.min_payment_re_entrant = 11000000
-    
     def _add_new_investor(self, investor_type):
         """지정된 유형의 새로운 Investor를 시스템에 추가합니다."""
         self.investors.append({
             'internal_round': 1, 
             'type': investor_type,
-            'base_return_r3': None  # 3회차 기준 수익을 저장할 필드
+            'base_return_r3': None
         })
 
     def _calculate_revenue(self, investor, actual_payment):
         """개별 Investor의 수익금을 동적으로 계산합니다."""
         k = investor['internal_round']
-        base_calc_value = actual_payment / 1.1
+        p = self.params
+        
+        base_calc_value = actual_payment / p['revenue_base_divisor']
 
         if k <= 2:
-            return base_calc_value * self.params['sales_commission']
+            return base_calc_value * p['sales_commission']
         
         elif k == 3:
-            revenue_k3 = (base_calc_value * self.params['sales_commission']) + self.params['settlement_bonus']
-            investor['base_return_r3'] = revenue_k3  # 3회차 수익 저장
+            revenue_k3 = (base_calc_value * p['sales_commission']) + p['settlement_bonus']
+            investor['base_return_r3'] = revenue_k3
             return revenue_k3
         
         elif k >= 4:
-            if investor['base_return_r3'] is None:
-                # 이론적으로 발생하면 안되는 경우에 대한 방어 코드
-                print(f"경고: {k}회차 Investor의 3회차 기준 수익이 기록되지 않았습니다.")
-                return 0
+            if investor['base_return_r3'] is None: return 0
 
             bonus_amount = min(
-                base_calc_value * self.params['round_bonus_rates'].get(k, 0),
-                self.params['max_bonus']
+                base_calc_value * p['round_bonus_rates'].get(k, 0),
+                p['max_bonus']
             )
-            
-            additional_revenue = bonus_amount * self.params['sales_achievement_rates'].get(k, 0)
-            
+            additional_revenue = bonus_amount * p['sales_achievement_rates'].get(k, 0)
             return investor['base_return_r3'] + additional_revenue
             
         return 0
 
-    def run_simulation(self, total_rounds):
-        print("동적 수익 계산 모델이 적용된 시뮬레이션을 시작합니다...")
-        for t in range(1, total_rounds + 1):
+    def run(self, total_simulation_rounds):
+        """지정된 총 회차만큼 시뮬레이션을 실행합니다."""
+        print("범용 파라미터 기반 시뮬레이션을 시작합니다...")
+        for t in range(1, total_simulation_rounds + 1):
             self.current_round = t
             total_payment_this_round = 0
             total_return_this_round = 0
             graduated_count = 0
             next_round_investors = []
 
-            if t <= self.max_rounds_per_investor:
+            # 성장기(t <= M): '신규' Investor 추가
+            if t <= self.M:
                 self._add_new_investor(investor_type='신규')
 
             for inv in self.investors:
                 k = inv['internal_round']
-                # 실제 납입액 계산 (이전 모델과 동일)
-                scheduled_payment = self.P_schedule.get(k, 0)
-                min_payment = self.min_payment_new_entrant.get(k, 0) if inv['type'] == '신규' else self.min_payment_re_entrant
+                
+                # 실제 납입액 계산
+                scheduled_payment = self.params['p_schedule'].get(k, 0)
+                min_payment = self.params['min_payment_new'].get(k, 0) if inv['type'] == '신규' else self.params['min_payment_re']
                 actual_payment = max(scheduled_payment, min_payment)
                 
                 # 동적 수익 계산
@@ -104,7 +96,8 @@ class FinancialSystemSimulator:
                 total_payment_this_round += actual_payment
                 total_return_this_round += revenue
                 
-                if k < self.max_rounds_per_investor:
+                # 상태 업데이트 및 졸업 처리 (M 기준)
+                if k < self.M:
                     inv['internal_round'] += 1
                     next_round_investors.append(inv)
                 else:
@@ -112,7 +105,8 @@ class FinancialSystemSimulator:
             
             self.investors = next_round_investors
             
-            if t > self.max_rounds_per_investor:
+            # 안정기(t > M): 졸업한 수만큼 '재입학' Investor 추가
+            if t > self.M:
                 for _ in range(graduated_count):
                     self._add_new_investor(investor_type='재입학')
 
@@ -126,30 +120,43 @@ class FinancialSystemSimulator:
         print("시뮬레이션이 종료되었습니다.")
         return pd.DataFrame(self.history)
 
-# --- 시뮬레이션 실행 ---
-# 사용자가 제공한 변수들의 예시 값을 설정합니다.
-# 이 값들은 시뮬레이션 결과에 직접적인 영향을 미칩니다.
-simulation_parameters = {
-    'sales_commission': 0.8,  # 판매수당 80%
-    'settlement_bonus': 500000,  # 정착보너스 50만원
-    'max_bonus': 30000000,  # 최대 보너스 3000만원
-    # 회차별 보너스율 (예시)
-    'round_bonus_rates': {k: 0.5 for k in range(4, 16)}, # 4~15회차 모두 50%
-    # 회차별 매출 달성률 (예시)
-    'sales_achievement_rates': {k: 1.0 for k in range(4, 16)} # 4~15회차 모두 100%
+# --- 시뮬레이션 실행 (사용자 설정 영역) ---
+
+# 1. 시뮬레이션을 위한 모든 파라미터를 직접 정의합니다.
+# 예시: 총 Investor 수를 10명으로 운영하는 시나리오
+master_parameters = {
+    # 시스템 구조 파라미터
+    'max_investor_count': 10,  # 총 Investor 수를 10명으로 설정 (졸업은 10회차)
+
+    # 납입 관련 파라미터
+    'p_schedule': {i: i * 500000 for i in range(1, 11)},  # 예: 1회차 50만, 2회차 100만...
+    'min_payment_new': {
+        1: 0, 2: 200000, 3: 300000, 4: 300000, 5: 300000,
+        6: 1000000, 7: 1000000, 8: 2000000, 9: 3000000, 10: 5000000
+    },
+    'min_payment_re': 6000000, # 재입학자 최소 납입액 600만원
+
+    # 수익 관련 파라미터
+    'revenue_base_divisor': 1.1,
+    'sales_commission': 0.85,  # 판매수당 85%
+    'settlement_bonus': 400000,   # 정착보너스 40만원
+    'max_bonus': 25000000, # 최대 보너스 2500만원
+    'round_bonus_rates': {i: 0.6 for i in range(4, 11)}, # 4~10회차 보너스율 60%
+    'sales_achievement_rates': {i: 0.95 for i in range(4, 11)} # 4~10회차 달성률 95%
 }
 
-file_path = './A플랜 시뮬레이션 - 간단버전 - 백업용 - 30회차.csv'
-
 try:
-    simulator_v3 = FinancialSystemSimulator(
-        schedule_filepath=file_path,
-        sim_params=simulation_parameters
-    )
-    results_df_v3 = simulator_v3.run_simulation(total_rounds=30)
+    # 2. 시뮬레이터 객체 생성 시 파라미터 딕셔너리를 전달
+    simulator = GeneralFinancialSimulator(params=master_parameters)
+    
+    # 3. 시뮬레이션 실행 (총 20회차 진행)
+    results_df = simulator.run(total_simulation_rounds=20)
 
-    print("\n--- 시뮬레이션 결과 요약 (동적 수익 계산 적용) ---")
-    print(results_df_v3.to_string())
+    # 4. 결과 출력
+    print("\n--- 범용 시뮬레이션 결과 요약 ---")
+    print(results_df.to_string())
 
+except ValueError as e:
+    print(f"\n시뮬레이션 설정 오류: {e}")
 except Exception as e:
-    print(f"\n시뮬레이션 실행에 실패했습니다. 원인: {e}")
+    print(f"\n알 수 없는 오류 발생: {e}")
