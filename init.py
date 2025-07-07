@@ -75,12 +75,15 @@ class GeneralFinancialSimulator:
             self.current_round = t
             total_payment_this_round = 0
             total_return_this_round = 0
-            graduated_count = 0
             next_round_investors = []
 
             # 성장기(t <= M): '신규' Investor 추가
             if t <= self.M:
                 self._add_new_investor(investor_type='신규')
+                
+            # 안정기(t > M): 졸업한 수만큼 '재입학' Investor 추가
+            if t > self.M:
+                self._add_new_investor(investor_type='재입학')
 
             for inv in self.investors:
                 k = inv['internal_round']
@@ -92,7 +95,8 @@ class GeneralFinancialSimulator:
                 
                 # 동적 수익 계산
                 revenue = self._calculate_revenue(inv, actual_payment)
-                
+                revenue = round(revenue)
+
                 total_payment_this_round += actual_payment
                 total_return_this_round += revenue
                 
@@ -100,16 +104,9 @@ class GeneralFinancialSimulator:
                 if k < self.M:
                     inv['internal_round'] += 1
                     next_round_investors.append(inv)
-                else:
-                    graduated_count += 1
             
             self.investors = next_round_investors
             
-            # 안정기(t > M): 졸업한 수만큼 '재입학' Investor 추가
-            if t > self.M:
-                for _ in range(graduated_count):
-                    self._add_new_investor(investor_type='재입학')
-
             net_profit_this_round = total_return_this_round - total_payment_this_round
             
             result = {'전체 회차': t, '총 Investor 수': len(self.investors), '총 납입금': total_payment_this_round, '총 수익금': total_return_this_round, '당기 순수익': net_profit_this_round}
