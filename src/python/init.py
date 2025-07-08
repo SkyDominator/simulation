@@ -75,12 +75,15 @@ class GeneralFinancialSimulator:
             self.current_round = t
             total_payment_this_round = 0
             total_return_this_round = 0
-            graduated_count = 0
             next_round_investors = []
 
             # 성장기(t <= M): '신규' Investor 추가
             if t <= self.M:
                 self._add_new_investor(investor_type='신규')
+                
+            # 안정기(t > M): 졸업한 수만큼 '재입학' Investor 추가
+            if t > self.M:
+                self._add_new_investor(investor_type='재입학')
 
             for inv in self.investors:
                 k = inv['internal_round']
@@ -92,7 +95,8 @@ class GeneralFinancialSimulator:
                 
                 # 동적 수익 계산
                 revenue = self._calculate_revenue(inv, actual_payment)
-                
+                revenue = round(revenue)
+
                 total_payment_this_round += actual_payment
                 total_return_this_round += revenue
                 
@@ -100,16 +104,9 @@ class GeneralFinancialSimulator:
                 if k < self.M:
                     inv['internal_round'] += 1
                     next_round_investors.append(inv)
-                else:
-                    graduated_count += 1
             
             self.investors = next_round_investors
             
-            # 안정기(t > M): 졸업한 수만큼 '재입학' Investor 추가
-            if t > self.M:
-                for _ in range(graduated_count):
-                    self._add_new_investor(investor_type='재입학')
-
             net_profit_this_round = total_return_this_round - total_payment_this_round
             
             result = {'전체 회차': t, '총 Investor 수': len(self.investors), '총 납입금': total_payment_this_round, '총 수익금': total_return_this_round, '당기 순수익': net_profit_this_round}
@@ -126,31 +123,33 @@ class GeneralFinancialSimulator:
 # 예시: 총 Investor 수를 10명으로 운영하는 시나리오
 master_parameters = {
     # 시스템 구조 파라미터
-    'max_investor_count': 10,  # 총 Investor 수를 10명으로 설정 (졸업은 10회차)
+    'max_investor_count': 15,  # 총 Investor 수를 15명으로 설정 (졸업은 15회차)
+    # T가 증가할 수록 investor 수가 증가하는 구조.
+    # max_investor_count에 따라 졸업 회차(investor를 졸업시키고 삭제하는 회차가 결정됨.
 
     # 납입 관련 파라미터
-    'p_schedule': {i: i * 500000 for i in range(1, 11)},  # 예: 1회차 50만, 2회차 100만...
-    'min_payment_new': {
-        1: 0, 2: 200000, 3: 300000, 4: 300000, 5: 300000,
-        6: 1000000, 7: 1000000, 8: 2000000, 9: 3000000, 10: 5000000
-    },
-    'min_payment_re': 6000000, # 재입학자 최소 납입액 600만원
+    # 각 회차별 납입금액 스케줄 (회차: 납입금액)
+    'p_schedule': {1: 1100000, 2: 2420000, 3:330000, 4: 330000, 5: 330000, 6: 330000, 7: 330000, 8: 330000, 9: 1100000, 10: 1100000, 11: 2200000, 12: 2200000, 13:3300000, 14:5500000, 15: 11000000},
+    
+    'min_payment_new': {1: 220000, 2: 330000, 3:330000, 4: 330000, 5: 330000, 6: 330000, 7: 330000, 8: 330000, 9: 1100000, 10: 1100000, 11: 2200000, 12: 2200000, 13:3300000, 14:5500000, 15: 11000000},
+
+    'min_payment_re': 11000000, # 재입학자 최소 납입액 1100만원
 
     # 수익 관련 파라미터
     'revenue_base_divisor': 1.1,
-    'sales_commission': 0.85,  # 판매수당 85%
-    'settlement_bonus': 400000,   # 정착보너스 40만원
-    'max_bonus': 25000000, # 최대 보너스 2500만원
-    'round_bonus_rates': {i: 0.6 for i in range(4, 11)}, # 4~10회차 보너스율 60%
-    'sales_achievement_rates': {i: 0.95 for i in range(4, 11)} # 4~10회차 달성률 95%
+    'sales_commission': 0.32,  # 판매수당 32%
+    'settlement_bonus': 100000,   # 정착보너스 10만원
+    'max_bonus': 30000000, # 최대 보너스 3000만원
+    'round_bonus_rates': {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12:10, 13:20, 14:50, 15:100},
+    'sales_achievement_rates': {i: 1 for i in range(4, 11)} # 4~10회차 달성률 100%
 }
 
 try:
     # 2. 시뮬레이터 객체 생성 시 파라미터 딕셔너리를 전달
     simulator = GeneralFinancialSimulator(params=master_parameters)
-    
-    # 3. 시뮬레이션 실행 (총 20회차 진행)
-    results_df = simulator.run(total_simulation_rounds=20)
+
+    # 3. 시뮬레이션 실행 (총 30회차 진행)
+    results_df = simulator.run(total_simulation_rounds=30)
 
     # 4. 결과 출력
     print("\n--- 범용 시뮬레이션 결과 요약 ---")
