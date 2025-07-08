@@ -76,6 +76,7 @@ class GeneralFinancialSimulator:
             total_payment_this_round = 0
             total_return_this_round = 0
             next_round_investors = []
+            graduation_count = 0
 
             # 성장기(t <= M): '신규' Investor 추가
             if t <= self.M:
@@ -104,8 +105,9 @@ class GeneralFinancialSimulator:
                 if k < self.M:
                     inv['internal_round'] += 1
                     next_round_investors.append(inv)
-            
-            self.investors = next_round_investors
+                else:
+                    inv['type'] = '졸업'  # 졸업 처리
+                    graduation_count += 1
             
             net_profit_this_round = total_return_this_round - total_payment_this_round
             
@@ -113,6 +115,8 @@ class GeneralFinancialSimulator:
             self.history.append(result)
             
             print(f"회차 {t:2d}: [투자자 수: {len(self.investors):2d}] [총납입: {total_payment_this_round:10,.0f}] [총수익: {total_return_this_round:10,.0f}] [순수익: {net_profit_this_round:10,.0f}]")
+            
+            self.investors = next_round_investors
                   
         print("시뮬레이션이 종료되었습니다.")
         return pd.DataFrame(self.history)
