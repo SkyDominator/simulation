@@ -1,4 +1,15 @@
 
+/** 헬퍼 함수들 **/
+/**
+ * isValidString 함수는 주어진 값이 유효한 문자열인지 확인합니다.
+ * 유효한 문자열의 조건은 다음과 같습니다:
+ * 1. 값이 문자열 타입이어야 합니다.
+ * 2. 앞뒤 공백을 제거했을 때, 길이가 0이 아니어야 합니다.
+ * 3. 공백을 제거한 값이 숫자로만 구성되어 있지 않아야 합니다.
+ *
+ * @param {any} value - 검사할 값
+ * @returns {boolean} - 유효한 문자열이면 true, 그렇지 않으면 false
+ */
 
 function isValidString(value) {
   // 조건 1: 값이 실제로 문자열 타입인지 확인합니다.
@@ -27,6 +38,13 @@ function isValidString(value) {
   // 위 모든 검사를 통과하면 유효한 문자열입니다.
   return true;
 }
+
+/**
+ * getPlan 함수는 현재 시트의 이름에 따라 매출액 및 추천 여부의
+ * 시작 및 종료 열과 행 번호를 반환합니다.
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - 현재 시트 객체
+ * @return {Object} - 매출액 및 추천 여부의 시작 및 종료 열과 행 번호를 포함하는 객체
+ * */
 
 function getPlan(sheet){
   if (sheet.getName() === "A"){
@@ -71,6 +89,7 @@ function getPlan(sheet){
   };
 }
 
+/** 이벤트 처리 함수 **/
 
 function onEdit(e) {
   
