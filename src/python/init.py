@@ -31,39 +31,41 @@ class GeneralFinancialSimulator:
 
         # 2. 시뮬레이션 상태 변수 초기화
         self.investors = []
-        self.current_round = 0
+        self.current_company_round = 0
         self.history = []
 
-    def _add_new_investor(self, t, investor_type=None):
+    def _add_new_investor(self, investor_type=None):
         """지정된 유형의 새로운 Investor를 시스템에 추가합니다."""
         self.investors.append({
-            'round': t,
-            'internal_round': 1, 
+            'start_company_round': self.current_company_round,
+            'internal_round': 1,
             'type': investor_type,
-            'base_return_r3': None
+            'base_return_r3': None,
+            'payment_history': [],  # 납입금 기록을 위한 배열
+            'revenue_history': []   # 수익금 기록을 위한 배열
         })
 
     def _calculate_revenue(self, investor, actual_payment):
         """개별 Investor의 수익금을 동적으로 계산합니다."""
-        k = investor['internal_round']
+        internal_round = investor['internal_round']
         p = self.params
         
         base_calc_value = actual_payment / p['revenue_base_divisor']
 
-        if k <= 2:
+        if internal_round <= 2:
             return base_calc_value * p['sales_commission']
         
-        elif k == 3:
+        elif internal_round == 3:
             revenue_k3 = (base_calc_value * p['sales_commission']) + p['settlement_bonus']
             investor['base_return_r3'] = revenue_k3
             return revenue_k3
         
-        elif k >= 4:
+        elif internal_round >= 4:
             bonus_amount = min(
-                base_calc_value * p['round_bonus_rates'].get(k, 0),
+                base_calc_value * p['round_bonus_rates'].get(internal_round, 0),
                 p['max_bonus']
             )
-            additional_revenue = bonus_amount * p['sales_achievement_rates'].get(k, 0)
+            additional_revenue = bonus_amount * p['sales_achievement_rates'].get(self.current_company_round, 0)
             return investor['base_return_r3'] + additional_revenue
             
         return 0
@@ -72,7 +74,7 @@ class GeneralFinancialSimulator:
         """지정된 총 회차만큼 시뮬레이션을 실행합니다."""
         print("범용 파라미터 기반 시뮬레이션을 시작합니다...")
         for t in range(1, total_simulation_rounds + 1):
-            self.current_round = t
+            self.current_company_round = t
             total_payment_this_round = 0
             total_return_this_round = 0
             next_round_investors = []
@@ -80,30 +82,34 @@ class GeneralFinancialSimulator:
 
             # 성장기(t <= M): '신규' Investor 추가
             if t <= self.M:
-                self._add_new_investor(t, investor_type='신규')
+                self._add_new_investor(investor_type='신규')
                 
             # 안정기(t > M): 졸업한 수만큼 '재입학' Investor 추가
             if t > self.M:
-                self._add_new_investor(t, investor_type='재입학')
+                self._add_new_investor(investor_type='재입학')
 
             for inv in self.investors:
-                k = inv['internal_round']
-                r = inv['round']
-                
+                internal_round = inv['internal_round']
+                start_company_round = inv['start_company_round']
+
                 # 실제 납입액 계산
-                scheduled_payment = self.params['p_schedule'].get(r, 0)
-                min_payment = self.params['min_payment_new'].get(r, 0) if inv['type'] == '신규' else self.params['min_payment_re']
+                scheduled_payment = self.params['p_schedule'].get(start_company_round, 0)
+                min_payment = self.params['min_payment_new'].get(start_company_round, 0) if inv['type'] == '신규' else self.params['min_payment_re']
                 actual_payment = max(scheduled_payment, min_payment)
                 
                 # 동적 수익 계산
                 revenue = self._calculate_revenue(inv, actual_payment)
                 revenue = round(revenue)
 
+                # 개별 투자자의 납입금과 수익금 기록 저장
+                inv['payment_history'].append({'round': t, 'amount': actual_payment})
+                inv['revenue_history'].append({'round': t, 'amount': revenue})
+
                 total_payment_this_round += actual_payment
                 total_return_this_round += revenue
                 
                 # 상태 업데이트 및 졸업 처리 (M 기준)
-                if k < self.M:
+                if internal_round < self.M:
                     inv['internal_round'] += 1
                     next_round_investors.append(inv)
                 else:
