@@ -74,8 +74,9 @@ class GeneralFinancialSimulator:
         """지정된 총 회차만큼 시뮬레이션을 실행합니다."""
         print("범용 파라미터 기반 시뮬레이션을 시작합니다...")
         
-        # 이전 라운드의 세후 수익을 추적하기 위한 변수 추가
+        # 이전 라운드의 세후 수익과 누적 순수익을 추적하기 위한 변수 추가
         prev_round_return_after_tax = 0
+        cumulative_net_profit = 0
         
         for t in range(1, total_simulation_rounds + 1):
             self.current_company_round = t
@@ -130,22 +131,26 @@ class GeneralFinancialSimulator:
             else:
                 net_profit_after_tax = prev_round_return_after_tax - total_payment_this_round
             
+            # 누적 순수익 계산
+            cumulative_net_profit += net_profit_after_tax
+            
             # 다음 라운드를 위해 현재 세후 수익 저장
             prev_round_return_after_tax = total_return_after_tax
             
+            # 최종 보고서에는 세후 결과만 포함
             result = {
                 '전체 회차': t, 
                 '총 Investor 수': len(self.investors), 
-                '총 납입금': total_payment_this_round, 
-                '총 수익금': total_return_this_round,
+                '총 납입금': total_payment_this_round,
                 '총 수익금(세후)': total_return_after_tax, 
-                '순수익(세후)': net_profit_after_tax
+                '순수익(세후)': net_profit_after_tax,
+                '누적 순수익(세후)': cumulative_net_profit
             }
             self.history.append(result)
             
             print(f"회차 {t:2d}: [투자자 수: {len(self.investors):2d}] [총납입: {total_payment_this_round:10,.0f}] " + 
-                  f"[총수익: {total_return_this_round:10,.0f}] [총수익(세후): {total_return_after_tax:10,.0f}] " + 
-                  f"[순수익(세후): {net_profit_after_tax:10,.0f}]")
+                  f"[총수익(세후): {total_return_after_tax:10,.0f}] [순수익(세후): {net_profit_after_tax:10,.0f}] " +
+                  f"[누적순수익(세후): {cumulative_net_profit:10,.0f}]")
             
             self.investors = next_round_investors
                   
