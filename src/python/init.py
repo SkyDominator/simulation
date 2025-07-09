@@ -17,7 +17,7 @@ class GeneralFinancialSimulator:
         """
         # 1. 파라미터 유효성 검사 및 설정
         required_keys = [
-            'max_investor_count', 'p_schedule', 'min_payment_new', 
+            'max_investor_count', 'scheduled_payment', 'min_payment_new', 
             'min_payment_re', 'revenue_base_divisor', 'sales_commission', 
             'settlement_bonus', 'max_bonus', 'round_bonus_rates', 
             'sales_achievement_rates'
@@ -93,7 +93,7 @@ class GeneralFinancialSimulator:
                 start_company_round = inv['start_company_round']
 
                 # 실제 납입액 계산
-                scheduled_payment = self.params['p_schedule'].get(start_company_round, 0)
+                scheduled_payment = self.params['scheduled_payment'].get(start_company_round, 0)
                 min_payment = self.params['min_payment_new'].get(start_company_round, 0) if inv['type'] == '신규' else self.params['min_payment_re']
                 actual_payment = max(scheduled_payment, min_payment)
                 
@@ -140,9 +140,9 @@ master_parameters = {
 
     # 납입 관련 파라미터
     # 각 회차별 납입금액 스케줄 (회차: 납입금액)
-    'p_schedule': {1: 1100000, 2: 2420000, 3:330000, 4: 330000, 5: 330000, 6: 330000, 7: 330000, 8: 330000, 9: 1100000, 10: 1100000, 11: 2200000, 12: 2200000, 13:3300000, 14:5500000, 15: 11000000},
+    'scheduled_payment': {1: 1100000, 2: 2420000, 3:330000, 4: 330000, 5: 330000, 6: 330000, 7: 330000, 8: 330000, 9: 1100000, 10: 1100000, 11: 2200000, 12: 2200000, 13:3300000, 14:5500000, 15: 11000000, 16: 11000000, 17: 11000000, 18: 11000000, 19: 11000000, 20: 11000000, 21: 11000000, 22: 11000000, 23: 11000000, 24: 11000000, 25: 11000000, 26: 11000000, 27: 11000000, 28: 11000000, 29: 11000000, 30: 11000000},
     
-    'min_payment_new': {1: 0, 2: 220000, 3:330000, 4: 330000, 5: 330000, 6: 330000, 7: 330000, 8: 330000, 9: 1100000, 10: 1100000, 11: 2200000, 12: 2200000, 13:3300000, 14:5500000, 15: 11000000},
+    'min_payment_new': {1: 0, 2: 220000, 3:330000, 4: 330000, 5: 330000, 6: 330000, 7: 330000, 8: 330000, 9: 1100000, 10: 1100000, 11: 2200000, 12: 2200000, 13:3300000, 14:5500000, 15: 11000000, 16: 11000000, 17: 11000000, 18: 11000000, 19: 11000000, 20: 11000000, 21: 11000000, 22: 11000000, 23: 11000000, 24: 11000000, 25: 11000000, 26: 11000000, 27: 11000000, 28: 11000000, 29: 11000000, 30: 11000000},
 
     'min_payment_re': 11000000, # 재입학자 최소 납입액 1100만원
 
@@ -152,7 +152,7 @@ master_parameters = {
     'settlement_bonus': 100000,   # 정착보너스 10만원
     'max_bonus': 30000000, # 최대 보너스 3000만원
     'round_bonus_rates': {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12:10, 13:20, 14:50, 15:100},
-    'sales_achievement_rates': {i: 1 for i in range(4, 11)} # 4~10회차 달성률 100%
+    'sales_achievement_rates': {i: 1 for i in range(4, 31)} # 4~30회차 달성률 100%
 }
 
 try:
