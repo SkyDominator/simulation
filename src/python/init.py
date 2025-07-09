@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import traceback
 
 class GeneralFinancialSimulator:
     """
@@ -33,9 +34,10 @@ class GeneralFinancialSimulator:
         self.current_round = 0
         self.history = []
 
-    def _add_new_investor(self, investor_type):
+    def _add_new_investor(self, t, investor_type=None):
         """지정된 유형의 새로운 Investor를 시스템에 추가합니다."""
         self.investors.append({
+            'round': t,
             'internal_round': 1, 
             'type': investor_type,
             'base_return_r3': None
@@ -57,8 +59,6 @@ class GeneralFinancialSimulator:
             return revenue_k3
         
         elif k >= 4:
-            if investor['base_return_r3'] is None: return 0
-
             bonus_amount = min(
                 base_calc_value * p['round_bonus_rates'].get(k, 0),
                 p['max_bonus']
@@ -80,18 +80,19 @@ class GeneralFinancialSimulator:
 
             # 성장기(t <= M): '신규' Investor 추가
             if t <= self.M:
-                self._add_new_investor(investor_type='신규')
+                self._add_new_investor(t, investor_type='신규')
                 
             # 안정기(t > M): 졸업한 수만큼 '재입학' Investor 추가
             if t > self.M:
-                self._add_new_investor(investor_type='재입학')
+                self._add_new_investor(t, investor_type='재입학')
 
             for inv in self.investors:
                 k = inv['internal_round']
+                r = inv['round']
                 
                 # 실제 납입액 계산
-                scheduled_payment = self.params['p_schedule'].get(k, 0)
-                min_payment = self.params['min_payment_new'].get(k, 0) if inv['type'] == '신규' else self.params['min_payment_re']
+                scheduled_payment = self.params['p_schedule'].get(r, 0)
+                min_payment = self.params['min_payment_new'].get(r, 0) if inv['type'] == '신규' else self.params['min_payment_re']
                 actual_payment = max(scheduled_payment, min_payment)
                 
                 # 동적 수익 계산
@@ -135,7 +136,7 @@ master_parameters = {
     # 각 회차별 납입금액 스케줄 (회차: 납입금액)
     'p_schedule': {1: 1100000, 2: 2420000, 3:330000, 4: 330000, 5: 330000, 6: 330000, 7: 330000, 8: 330000, 9: 1100000, 10: 1100000, 11: 2200000, 12: 2200000, 13:3300000, 14:5500000, 15: 11000000},
     
-    'min_payment_new': {1: 220000, 2: 330000, 3:330000, 4: 330000, 5: 330000, 6: 330000, 7: 330000, 8: 330000, 9: 1100000, 10: 1100000, 11: 2200000, 12: 2200000, 13:3300000, 14:5500000, 15: 11000000},
+    'min_payment_new': {1: 0, 2: 220000, 3:330000, 4: 330000, 5: 330000, 6: 330000, 7: 330000, 8: 330000, 9: 1100000, 10: 1100000, 11: 2200000, 12: 2200000, 13:3300000, 14:5500000, 15: 11000000},
 
     'min_payment_re': 11000000, # 재입학자 최소 납입액 1100만원
 
@@ -162,4 +163,7 @@ try:
 except ValueError as e:
     print(f"\n시뮬레이션 설정 오류: {e}")
 except Exception as e:
+    # add line number and file name to the error message
+    tb_str = traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
     print(f"\n알 수 없는 오류 발생: {e}")
+    print("".join(tb_str))
