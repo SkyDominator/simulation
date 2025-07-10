@@ -1,5 +1,5 @@
 ---
-mode: ask
+mode: edit
 description: Refactor the code to improve its structure and readability without changing its functionality.
 ---
 
@@ -21,3 +21,4 @@ description: Refactor the code to improve its structure and readability without 
 4. Use logging module for logging errors, warnings, and info.
 5. Use Windows System Environment Variables for loading API key
 6. Use `__init__.py` to define the package structure and import necessary modules.
+7. Separate constants, configurations, and utility functions into their own modules.
