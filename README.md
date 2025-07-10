@@ -37,6 +37,18 @@ The code has been refactored following SOLID principles and best practices:
 2. When an investor graduates, they are replaced by re-entry investors
 3. Each investor makes payments and receives revenue based on plan parameters
 4. The simulation tracks payments, revenue, and net profit for each round
+5. When the first investor (start_company_round = 1) reaches their 15th internal round, the settlement bonus is set to 0 for all subsequent calculations for all investors
+
+## Business Rules
+
+The simulation applies several business rules that affect the calculation of payments and revenues:
+
+1. **Settlement Bonus Rule**: When the first investor (who started at company round 1) reaches their 15th internal round, the settlement bonus is set to 0 for all investors in all subsequent calculations. This represents a change in the financial structure after reaching a certain maturity in the program.
+
+2. **Revenue Calculation**: Revenue is calculated differently based on the internal round of each investor:
+   - Rounds 1-2: Based on sales commission
+   - Round 3: Sales commission + settlement bonus (which may be zeroed out by rule 1)
+   - Rounds 4+: Based on previous returns plus performance bonuses
 
 ## Adding New Plans
 

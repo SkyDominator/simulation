@@ -44,6 +44,8 @@ class FinancialSimulationService:
         self.investors: List[Investor] = []
         self.current_company_round: int = 0
         self.results = SimulationResults(plan_id=plan_id)
+        self.settlement_bonus_active: bool = True  # Flag to track if settlement bonus is still active
+        self.original_settlement_bonus: float = self.params['settlement_bonus']  # Store the original bonus value
         
         logger.info(f"Financial simulation initialized with plan '{plan_id}'")
 
@@ -61,6 +63,24 @@ class FinancialSimulationService:
         self.investors.append(investor)
         logger.debug(f"Added new {investor_type} investor at company round {self.current_company_round}")
 
+    def _check_settlement_bonus_condition(self, investor: Investor) -> None:
+        """
+        Check if settlement bonus should be deactivated based on investor status.
+        
+        This method checks if the first investor (start_company_round == 1) has reached
+        their 15th internal round, and if so, deactivates the settlement bonus.
+        
+        Args:
+            investor (Investor): The investor to check
+        """
+        if (self.settlement_bonus_active and 
+                investor.start_company_round == 1 and 
+                investor.internal_round == 15):
+            # First investor has reached 15th internal round, deactivate settlement bonus
+            self.settlement_bonus_active = False
+            self.params['settlement_bonus'] = 0
+            logger.info("Settlement bonus deactivated: First investor reached 15th internal round")
+    
     def _calculate_revenue(self, investor: Investor, actual_payment: float) -> float:
         """
         Calculate the revenue for an investor based on their payment and internal round.
@@ -72,6 +92,9 @@ class FinancialSimulationService:
         Returns:
             float: The calculated revenue
         """
+        # Check if we need to deactivate settlement bonus
+        self._check_settlement_bonus_condition(investor)
+        
         internal_round = investor.internal_round
         p = self.params
         
@@ -243,6 +266,9 @@ class FinancialSimulationService:
         self.current_company_round = 0
         self.investors = []
         self.results = SimulationResults(plan_id=self.plan_id)
+        # Reset settlement bonus state for new simulation
+        self.settlement_bonus_active = True
+        self.params['settlement_bonus'] = self.original_settlement_bonus
         
         try:
             for _ in range(total_rounds):
