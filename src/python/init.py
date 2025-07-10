@@ -5,15 +5,10 @@ This module serves as the entry point for running the financial simulation.
 It demonstrates how to use the refactored modular codebase.
 """
 
-import sys
-import os
 import logging
-import pandas as pd
 from typing import List, Dict, Any, Optional
 import traceback
 
-from config import get_plan_parameters, validate_plan_parameters
-from models.investor import Investor
 from models.results import SimulationResults
 from services.simulator import FinancialSimulationService
 from utils.reporting import (
