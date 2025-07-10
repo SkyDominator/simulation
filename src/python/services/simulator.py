@@ -235,12 +235,13 @@ class FinancialSimulationService:
         
         # Save results and update investors for next round
         self.results.add_round_result(round_result)
-        self.investors = next_round_investors
         
         logger.info(f"Round {t} completed: {len(self.investors)} investors, " +
                    f"payment: {total_payment_this_round:.0f}, " +
                    f"revenue (after tax): {total_revenue_after_tax:.0f}, " +
                    f"net profit: {net_profit_after_tax:.0f}")
+
+        self.investors = next_round_investors
         
         return round_result
         
