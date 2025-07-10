@@ -3,7 +3,7 @@ mode: agent
 description: Refactor the code to improve its structure and readability without changing its functionality.
 ---
 
-# Refactoring principles
+Refactor the provided Python code to improve its structure and readability while maintaining the same functionality. Follow the refactoring guidelines below.
 
 ## Development Environment
 
