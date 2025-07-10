@@ -1,5 +1,5 @@
 ---
-mode: edit
+mode: ask
 description: Refactor the code to improve its structure and readability without changing its functionality.
 ---
 
