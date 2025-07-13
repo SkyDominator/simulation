@@ -1,0 +1,11 @@
+# Byte-compiled / optimized / DLL files
+src/python/
+# src/python/*/__pycache__/*
+# src/python/*/*.py[cod]
+# src/python/*/*.pyo
+# src/python/*/*.pyd
+# src/python/*/*.so
+
+
+# Distribution / packaging
+.venv/
