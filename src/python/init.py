@@ -12,6 +12,7 @@ import traceback
 
 from models.results import SimulationResults, MultiPlanSimulationResults
 from services.simulator import FinancialSimulationService
+from config import get_plan_parameters
 from utils.reporting import (
     print_round_summary,
     print_simulation_summary, 
@@ -41,6 +42,16 @@ def run_simulation(plan_id: str, total_rounds: int) -> SimulationResults:
         Exception: For any other errors during simulation
     """
     try:
+        # Get plan parameters to check max_rounds
+        plan_params = get_plan_parameters(plan_id)
+        max_rounds = plan_params.get('max_rounds', total_rounds)
+        
+        # Check if requested rounds exceed plan's maximum
+        if total_rounds > max_rounds:
+            logger.warning(f"Plan {plan_id} has a maximum limit of {max_rounds} rounds. "
+                          f"Requested {total_rounds} rounds will be capped to {max_rounds}.")
+            total_rounds = max_rounds
+        
         # Create the simulation service with the specified plan
         simulator = FinancialSimulationService(plan_id=plan_id)
         
@@ -80,7 +91,21 @@ def run_multi_plan_simulation(plan_ids: List[str], total_rounds: int) -> MultiPl
     for plan_id in plan_ids:
         try:
             logger.info(f"Running simulation for Plan {plan_id}...")
-            results = run_simulation(plan_id, total_rounds)
+            
+            # Get plan parameters to check max_rounds
+            plan_params = get_plan_parameters(plan_id)
+            max_rounds = plan_params.get('max_rounds', total_rounds)
+            
+            # Check if requested rounds exceed plan's maximum
+            if total_rounds > max_rounds:
+                logger.warning(f"Plan {plan_id} has a maximum limit of {max_rounds} rounds. "
+                               f"Requested {total_rounds} rounds will be capped to {max_rounds}.")
+                plan_rounds = max_rounds
+            else:
+                plan_rounds = total_rounds
+            
+            # Run simulation with appropriate number of rounds
+            results = run_simulation(plan_id, plan_rounds)
             multi_results.add_plan_result(plan_id, results)
             logger.info(f"Successfully completed simulation for Plan {plan_id}")
         except Exception as e:
@@ -167,12 +192,23 @@ def main() -> None:
         if not selected_plans:
             print("No valid plans selected. Using default plan A.")
             selected_plans = ['A']
+            
+        # Display maximum rounds information for selected plans
+        print("\nMaximum simulation rounds for selected plans:")
+        for plan_id in selected_plans:
+            try:
+                max_rounds = get_plan_parameters(plan_id).get('max_rounds')
+                print(f"  - Plan {plan_id}: {max_rounds} rounds maximum")
+            except ValueError:
+                print(f"  - Plan {plan_id}: Invalid plan")
+                continue
         
         # Get number of rounds
         try:
             total_rounds = int(input("Enter number of rounds to simulate (default: 30): ") or "30")
             if total_rounds <= 0:
                 raise ValueError("Number of rounds must be positive")
+                
         except ValueError:
             print("Invalid input. Using default of 30 rounds.")
             total_rounds = 30

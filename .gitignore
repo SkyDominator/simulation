@@ -1,6 +1,5 @@
 # Byte-compiled / optimized / DLL files
-
-src/python/*/__pycache__/
+__pycache__/
 
 
 # Distribution / packaging
