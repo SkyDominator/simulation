@@ -85,6 +85,10 @@ def print_simulation_summary(results: SimulationResults) -> None:
     print(f"Final net profit: {format_number(summary['final_net_profit'])}")
     print(f"Average net profit per round: {format_number(summary['average_net_profit_per_round'])}")
     
+    if summary['turning_point_round']:
+        print(f"First round where profit starts increasing: {summary['turning_point_round']}")
+        print(f"Maximum negative profit (deepest dip): {format_number(summary['max_negative_profit'])}")
+        
     if summary['positive_net_profit_round']:
         print(f"First round with positive cumulative profit: {summary['positive_net_profit_round']}")
         print(f"Total investment before profitability: {format_number(summary['investment_before_profit'])}")
@@ -144,6 +148,16 @@ def print_multi_plan_summary(multi_results: MultiPlanSimulationResults, show_ind
         lowest_investment_summary = comprehensive['plan_summaries'][comprehensive['lowest_investment_plan']]
         print(f"Lowest investment before profit: Plan {comprehensive['lowest_investment_plan']} " +
               f"({format_number(lowest_investment_summary['investment_before_profit'])})")
+              
+    if comprehensive['earliest_turning_point_plan']:
+        earliest_turning_summary = comprehensive['plan_summaries'][comprehensive['earliest_turning_point_plan']]
+        print(f"Earliest profit turning point: Plan {comprehensive['earliest_turning_point_plan']} " +
+              f"(Round {earliest_turning_summary['turning_point_round']})")
+              
+    if comprehensive['least_negative_dip_plan']:
+        least_negative_summary = comprehensive['plan_summaries'][comprehensive['least_negative_dip_plan']]
+        print(f"Smallest negative profit dip: Plan {comprehensive['least_negative_dip_plan']} " +
+              f"({format_number(least_negative_summary['max_negative_profit'])})")
     
     # Print comparative table
     print("\n--- Plan Comparison Table ---")
@@ -152,7 +166,9 @@ def print_multi_plan_summary(multi_results: MultiPlanSimulationResults, show_ind
         'Final Net Profit': lambda x: format_number(x),
         'Total Payments': lambda x: format_number(x), 
         'Total Revenue': lambda x: format_number(x),
-        'Avg Profit per Round': lambda x: format_number(x)
+        'Avg Profit per Round': lambda x: format_number(x),
+        'Investment Before Profit': lambda x: format_number(x),
+        'Max Negative Profit': lambda x: format_number(x)
     }))
 
 
@@ -353,7 +369,9 @@ def export_to_excel(results: SimulationResults, file_path: str) -> None:
                 {'Metric': 'Total Revenue (After Tax)', 'Value': summary['total_revenue_after_tax']},
                 {'Metric': 'Average Net Profit Per Round', 'Value': summary['average_net_profit_per_round']},
                 {'Metric': 'First Positive Round', 'Value': summary.get('positive_net_profit_round', 'Never')},
-                {'Metric': 'Investment Before Profitability', 'Value': summary.get('investment_before_profit', 0)}
+                {'Metric': 'Investment Before Profitability', 'Value': summary.get('investment_before_profit', 0)},
+                {'Metric': 'First Round Profit Turns Positive Direction', 'Value': summary.get('turning_point_round', 'Never')},
+                {'Metric': 'Maximum Negative Profit', 'Value': summary.get('max_negative_profit', 0)}
             ]
             
             summary_df = pd.DataFrame(summary_data)
@@ -402,7 +420,9 @@ def export_multi_plan_to_excel(multi_results: MultiPlanSimulationResults, file_p
                 {'Metric': 'Best Final Profit Plan', 'Value': comprehensive['best_final_profit_plan']},
                 {'Metric': 'Best Average Profit Plan', 'Value': comprehensive['best_avg_profit_plan']},
                 {'Metric': 'Fastest To Positive Plan', 'Value': comprehensive['fastest_positive_plan']},
-                {'Metric': 'Lowest Investment Plan', 'Value': comprehensive['lowest_investment_plan']}
+                {'Metric': 'Lowest Investment Plan', 'Value': comprehensive['lowest_investment_plan']},
+                {'Metric': 'Earliest Turning Point Plan', 'Value': comprehensive['earliest_turning_point_plan']},
+                {'Metric': 'Least Negative Dip Plan', 'Value': comprehensive['least_negative_dip_plan']}
             ]
             
             summary_df = pd.DataFrame(summary_data)
@@ -415,6 +435,8 @@ def export_multi_plan_to_excel(multi_results: MultiPlanSimulationResults, file_p
                     'Plan': plan_id,
                     'Investment Before Profitability': plan_summary.get('investment_before_profit', 0),
                     'First Positive Round': plan_summary.get('positive_net_profit_round', 'Never'),
+                    'Turning Point Round': plan_summary.get('turning_point_round', 'Never'),
+                    'Max Negative Profit': plan_summary.get('max_negative_profit', 0),
                     'Final Net Profit': plan_summary.get('final_net_profit', 0)
                 })
             

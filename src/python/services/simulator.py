@@ -77,14 +77,14 @@ class FinancialSimulationService:
                 investor.start_company_round == 1 and 
                 investor.internal_round == 15):
             # First investor has reached 15th internal round, deactivate settlement bonus
+
+            # The following is the current codes:
+            # self.settlement_bonus_active = False
+            # self.params['settlement_bonus'] = 0
             
-            # The following is the currect codes:
-            self.settlement_bonus_active = False
-            self.params['settlement_bonus'] = 0
-            
-            # Always true for test purposes:
-            # self.settlement_bonus_active = True
-            # self.params['settlement_bonus'] = self.original_settlement_bonus
+            # TEST ONLY: Always true for test purposes:
+            self.settlement_bonus_active = True
+            self.params['settlement_bonus'] = self.original_settlement_bonus
             
             logger.info("Settlement bonus deactivated: First investor reached 15th internal round")
     

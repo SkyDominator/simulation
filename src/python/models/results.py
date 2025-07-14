@@ -100,6 +100,31 @@ class SimulationResults:
                 # in the round just before the first positive round
                 investment_before_profit = -self.history[pre_positive_idx].cumulative_net_profit
         
+        # Find the round where cumulative net profit starts turning in positive direction
+        # (gets less negative or more positive)
+        turning_point_round = None
+        max_negative_profit = 0
+        
+        if len(self.history) > 1:
+            # Initialize with the first round
+            prev_cumulative = self.history[0].cumulative_net_profit
+            max_negative_profit = min(0, prev_cumulative)
+            
+            # Iterate starting from the second round
+            for i, result in enumerate(self.history[1:], 1):
+                current_cumulative = result.cumulative_net_profit
+                
+                # Update max negative value if we find a deeper negative value
+                if current_cumulative < max_negative_profit:
+                    max_negative_profit = current_cumulative
+                
+                # If the cumulative profit is increasing (going in positive direction)
+                # and we haven't found a turning point yet
+                if current_cumulative > prev_cumulative and turning_point_round is None:
+                    turning_point_round = result.company_round
+                
+                prev_cumulative = current_cumulative
+        
         return {
             "plan_id": self.plan_id,
             "total_rounds": len(self.history),
@@ -109,7 +134,9 @@ class SimulationResults:
             "total_revenue_after_tax": sum(r.total_revenue_after_tax for r in self.history),
             "average_net_profit_per_round": df['순수익(세후)'].mean(),
             "positive_net_profit_round": positive_round,
-            "investment_before_profit": investment_before_profit
+            "investment_before_profit": investment_before_profit,
+            "turning_point_round": turning_point_round,  # First round where profit starts moving in positive direction
+            "max_negative_profit": max_negative_profit  # Maximum negative value of the cumulative net profit
         }
 
 
@@ -180,6 +207,14 @@ class MultiPlanSimulationResults:
         lowest_investment_plan = min((s for s in summaries.values() if s.get('investment_before_profit', 0) > 0), 
                                     key=lambda x: x.get('investment_before_profit', float('inf')), default=None)
         
+        # Find plan with earliest turning point (when profit starts moving in positive direction)
+        earliest_turning_point_plan = min((s for s in summaries.values() if s.get('turning_point_round')),
+                                        key=lambda x: x.get('turning_point_round', float('inf')), default=None)
+        
+        # Find plan with smallest max negative profit (least negative dip)
+        least_negative_dip_plan = max((s for s in summaries.values()),
+                                    key=lambda x: x.get('max_negative_profit', float('-inf')), default=None)
+        
         return {
             "total_plans_simulated": len(self.plan_results),
             "total_rounds_per_plan": self.total_rounds,
@@ -188,6 +223,8 @@ class MultiPlanSimulationResults:
             "best_avg_profit_plan": best_avg_profit.get('plan_id') if best_avg_profit else None,
             "fastest_positive_plan": fastest_positive.get('plan_id') if fastest_positive else None,
             "lowest_investment_plan": lowest_investment_plan.get('plan_id') if lowest_investment_plan else None,
+            "earliest_turning_point_plan": earliest_turning_point_plan.get('plan_id') if earliest_turning_point_plan else None,
+            "least_negative_dip_plan": least_negative_dip_plan.get('plan_id') if least_negative_dip_plan else None,
             "total_payments_all_plans": total_payments_all_plans,
             "total_revenue_all_plans": total_revenue_all_plans,
             "overall_net_profit": total_revenue_all_plans - total_payments_all_plans,
@@ -212,7 +249,9 @@ class MultiPlanSimulationResults:
                 'Max Investors': summary.get('max_investor_count', 0),
                 'Avg Profit per Round': summary.get('average_net_profit_per_round', 0),
                 'First Positive Round': summary.get('positive_net_profit_round', 'Never'),
-                'Investment Before Profit': summary.get('investment_before_profit', 0)
+                'Investment Before Profit': summary.get('investment_before_profit', 0),
+                'Turning Point Round': summary.get('turning_point_round', 'Never'),  # Round when profit starts moving up
+                'Max Negative Profit': summary.get('max_negative_profit', 0)  # Deepest dip in the investment hole
             })
         
         df = pd.DataFrame(comparison_data)
