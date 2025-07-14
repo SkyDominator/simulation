@@ -85,6 +85,21 @@ class SimulationResults:
             
         df = self.to_dataframe()
         
+        # Find the first positive round
+        positive_round_result = next((r for r in self.history if r.cumulative_net_profit > 0), None)
+        positive_round = positive_round_result.company_round if positive_round_result else None
+        
+        # Calculate the accumulated negative net profit just before first positive round
+        # This is the "investment hole" that needs to be overcome
+        investment_before_profit = 0
+        if positive_round:
+            # Get the round just before the first positive round
+            pre_positive_idx = next((i for i, r in enumerate(self.history) if r.company_round == positive_round), 0) - 1
+            if pre_positive_idx >= 0:
+                # The accumulated negative net profit is the negative value of the cumulative profit
+                # in the round just before the first positive round
+                investment_before_profit = -self.history[pre_positive_idx].cumulative_net_profit
+        
         return {
             "plan_id": self.plan_id,
             "total_rounds": len(self.history),
@@ -93,7 +108,8 @@ class SimulationResults:
             "total_payments": sum(r.total_payment for r in self.history),
             "total_revenue_after_tax": sum(r.total_revenue_after_tax for r in self.history),
             "average_net_profit_per_round": df['순수익(세후)'].mean(),
-            "positive_net_profit_round": next((r.company_round for r in self.history if r.cumulative_net_profit > 0), None)
+            "positive_net_profit_round": positive_round,
+            "investment_before_profit": investment_before_profit
         }
 
 
@@ -155,8 +171,14 @@ class MultiPlanSimulationResults:
         fastest_positive = min((s for s in summaries.values() if s.get('positive_net_profit_round')), 
                               key=lambda x: x.get('positive_net_profit_round', float('inf')), default=None)
         
+        # Calculate totals
         total_payments_all_plans = sum(s.get('total_payments', 0) for s in summaries.values())
         total_revenue_all_plans = sum(s.get('total_revenue_after_tax', 0) for s in summaries.values())
+        total_investment_before_profit = sum(s.get('investment_before_profit', 0) for s in summaries.values())
+        
+        # Find plan with lowest investment before profit
+        lowest_investment_plan = min((s for s in summaries.values() if s.get('investment_before_profit', 0) > 0), 
+                                    key=lambda x: x.get('investment_before_profit', float('inf')), default=None)
         
         return {
             "total_plans_simulated": len(self.plan_results),
@@ -165,9 +187,11 @@ class MultiPlanSimulationResults:
             "best_final_profit_plan": best_final_profit.get('plan_id') if best_final_profit else None,
             "best_avg_profit_plan": best_avg_profit.get('plan_id') if best_avg_profit else None,
             "fastest_positive_plan": fastest_positive.get('plan_id') if fastest_positive else None,
+            "lowest_investment_plan": lowest_investment_plan.get('plan_id') if lowest_investment_plan else None,
             "total_payments_all_plans": total_payments_all_plans,
             "total_revenue_all_plans": total_revenue_all_plans,
-            "overall_net_profit": total_revenue_all_plans - total_payments_all_plans
+            "overall_net_profit": total_revenue_all_plans - total_payments_all_plans,
+            "total_investment_before_profit": total_investment_before_profit
         }
     
     def to_comparative_dataframe(self) -> pd.DataFrame:
@@ -187,7 +211,8 @@ class MultiPlanSimulationResults:
                 'Total Revenue': summary.get('total_revenue_after_tax', 0),
                 'Max Investors': summary.get('max_investor_count', 0),
                 'Avg Profit per Round': summary.get('average_net_profit_per_round', 0),
-                'First Positive Round': summary.get('positive_net_profit_round', 'Never')
+                'First Positive Round': summary.get('positive_net_profit_round', 'Never'),
+                'Investment Before Profit': summary.get('investment_before_profit', 0)
             })
         
         df = pd.DataFrame(comparison_data)

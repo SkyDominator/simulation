@@ -8,15 +8,21 @@ import logging
 from typing import Dict, List, Any, Optional
 import pandas as pd
 
-try:
-    import matplotlib.pyplot as plt
-    MATPLOTLIB_AVAILABLE = True
-except ImportError:
-    MATPLOTLIB_AVAILABLE = False
-    
+# Import SimulationResults and MultiPlanSimulationResults classes
 from models.results import SimulationResults, MultiPlanSimulationResults
 
+# Configure logging
 logger = logging.getLogger(__name__)
+
+# Define a function to check matplotlib availability when needed
+def _check_matplotlib():
+    """Check if matplotlib is available and return the plt module if it is."""
+    try:
+        import matplotlib.pyplot as plt
+        return True, plt
+    except ImportError:
+        logger.warning("Matplotlib is not available. Visualization features will be disabled.")
+        return False, None
 
 
 def format_number(number: float) -> str:
@@ -76,10 +82,12 @@ def print_simulation_summary(results: SimulationResults) -> None:
     print(f"Maximum number of investors: {summary['max_investor_count']}")
     print(f"Total payments: {format_number(summary['total_payments'])}")
     print(f"Total revenue (after tax): {format_number(summary['total_revenue_after_tax'])}")
+    print(f"Final net profit: {format_number(summary['final_net_profit'])}")
     print(f"Average net profit per round: {format_number(summary['average_net_profit_per_round'])}")
     
     if summary['positive_net_profit_round']:
         print(f"First round with positive cumulative profit: {summary['positive_net_profit_round']}")
+        print(f"Total investment before profitability: {format_number(summary['investment_before_profit'])}")
     else:
         print("No round achieved positive cumulative profit")
 
@@ -114,6 +122,7 @@ def print_multi_plan_summary(multi_results: MultiPlanSimulationResults, show_ind
     print(f"Total payments across all plans: {format_number(comprehensive['total_payments_all_plans'])}")
     print(f"Total revenue across all plans: {format_number(comprehensive['total_revenue_all_plans'])}")
     print(f"Overall net profit across all plans: {format_number(comprehensive['overall_net_profit'])}")
+    print(f"Total investment before profitability across all plans: {format_number(comprehensive['total_investment_before_profit'])}")
     
     print("\n--- Best Performing Plans ---")
     if comprehensive['best_final_profit_plan']:
@@ -130,6 +139,11 @@ def print_multi_plan_summary(multi_results: MultiPlanSimulationResults, show_ind
         fastest_summary = comprehensive['plan_summaries'][comprehensive['fastest_positive_plan']]
         print(f"Fastest to positive profit: Plan {comprehensive['fastest_positive_plan']} " +
               f"(Round {fastest_summary['positive_net_profit_round']})")
+              
+    if comprehensive['lowest_investment_plan']:
+        lowest_investment_summary = comprehensive['plan_summaries'][comprehensive['lowest_investment_plan']]
+        print(f"Lowest investment before profit: Plan {comprehensive['lowest_investment_plan']} " +
+              f"({format_number(lowest_investment_summary['investment_before_profit'])})")
     
     # Print comparative table
     print("\n--- Plan Comparison Table ---")
@@ -150,7 +164,9 @@ def plot_simulation_results(results: SimulationResults, save_path: Optional[str]
         results (SimulationResults): The simulation results to plot
         save_path (Optional[str]): If provided, save the plots to this path
     """
-    if not MATPLOTLIB_AVAILABLE:
+    # Check matplotlib availability
+    matplotlib_available, plt = _check_matplotlib()
+    if not matplotlib_available:
         logger.warning("Matplotlib not available. Install with: pip install matplotlib")
         return
         
@@ -159,6 +175,11 @@ def plot_simulation_results(results: SimulationResults, save_path: Optional[str]
         return
         
     try:
+        # Double-check plt is available (since _check_matplotlib might return None for plt)
+        if plt is None:
+            logger.warning("Cannot create plots because matplotlib is not available")
+            return
+            
         df = results.to_dataframe()
         
         # Create a figure with multiple subplots
@@ -209,8 +230,8 @@ def plot_simulation_results(results: SimulationResults, save_path: Optional[str]
         if save_path:
             plt.savefig(save_path)
             logger.info(f"Plots saved to {save_path}")
-        
-        plt.show()
+        else:
+            plt.show()
         
     except Exception as e:
         logger.error(f"Failed to generate plots: {str(e)}")
@@ -218,45 +239,37 @@ def plot_simulation_results(results: SimulationResults, save_path: Optional[str]
 
 def plot_multi_plan_comparison(multi_results: MultiPlanSimulationResults, save_path: Optional[str] = None) -> None:
     """
-    Generate comparison plots for multiple plans.
+    Generate comparison charts for multiple plans.
     
     Args:
-        multi_results (MultiPlanSimulationResults): The multi-plan simulation results
-        save_path (Optional[str]): If provided, save the plots to this path
+        multi_results (MultiPlanSimulationResults): The multi-plan simulation results to visualize
+        save_path (Optional[str]): Path to save the visualization image
     """
-    if not MATPLOTLIB_AVAILABLE:
-        logger.warning("Matplotlib not available. Install with: pip install matplotlib")
+    # Check matplotlib availability
+    matplotlib_available, plt = _check_matplotlib()
+    if not matplotlib_available:
+        logger.warning("Matplotlib is not available. Skipping chart generation.")
         return
         
     if not multi_results.plan_results:
         logger.warning("No simulation data to plot")
         return
-        
+    
     try:
-        # Create a figure with multiple subplots
-        fig, axs = plt.subplots(2, 2, figsize=(15, 10))
-        fig.suptitle('Multi-Plan Simulation Comparison', fontsize=16)
-        
-        colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive']
-        
-        # Plot 1: Cumulative Net Profit Comparison
-        ax = axs[0, 0]
-        for i, (plan_id, results) in enumerate(multi_results.plan_results.items()):
-            df = results.to_dataframe()
-            color = colors[i % len(colors)]
-            ax.plot(df['전체 회차'], df['누적 순수익(세후)'], color=color, label=f'Plan {plan_id}')
-        ax.axhline(y=0, color='k', linestyle='-', alpha=0.3)
-        ax.set_title('Cumulative Net Profit Comparison')
-        ax.set_xlabel('Round')
-        ax.set_ylabel('Amount')
-        ax.legend()
-        ax.grid(True)
-        
-        # Plot 2: Final Net Profit Bar Chart
-        ax = axs[0, 1]
+        # Double-check plt is available
+        if plt is None:
+            logger.warning("Cannot create plots because matplotlib is not available")
+            return
+            
+        # Get comparative data
         comparison_df = multi_results.to_comparative_dataframe()
+            
+        # Create a 2x2 grid of plots
+        fig, axs = plt.subplots(2, 2, figsize=(15, 10))
+        
+        # Plot 1: Final Net Profit
+        ax = axs[0, 0]
         bars = ax.bar(comparison_df['Plan'], comparison_df['Final Net Profit'])
-        # Color bars: green for positive, red for negative
         for bar, profit in zip(bars, comparison_df['Final Net Profit']):
             bar.set_color('green' if profit >= 0 else 'red')
         ax.set_title('Final Net Profit by Plan')
@@ -264,21 +277,29 @@ def plot_multi_plan_comparison(multi_results: MultiPlanSimulationResults, save_p
         ax.set_ylabel('Final Net Profit')
         ax.grid(True, axis='y')
         
-        # Plot 3: Total Payments vs Revenue
+        # Plot 2: Investment Before Profitability (New Plot)
+        ax = axs[0, 1]
+        ax.bar(comparison_df['Plan'], comparison_df['Investment Before Profit'], color='orange')
+        ax.set_title('Investment Before Profitability by Plan')
+        ax.set_xlabel('Plan')
+        ax.set_ylabel('Investment Before Reaching Profitability')
+        ax.grid(True, axis='y')
+        
+        # Plot 3: First Positive Round
         ax = axs[1, 0]
-        ax.scatter(comparison_df['Total Payments'], comparison_df['Total Revenue'], 
-                  s=100, alpha=0.7)
-        for i, plan in enumerate(comparison_df['Plan']):
-            ax.annotate(plan, (comparison_df.iloc[i]['Total Payments'], 
-                             comparison_df.iloc[i]['Total Revenue']))
-        # Add diagonal line where payments = revenue
-        max_val = max(comparison_df['Total Payments'].max(), comparison_df['Total Revenue'].max())
-        ax.plot([0, max_val], [0, max_val], 'k--', alpha=0.5, label='Break-even line')
-        ax.set_title('Total Payments vs Total Revenue')
-        ax.set_xlabel('Total Payments')
-        ax.set_ylabel('Total Revenue')
-        ax.legend()
-        ax.grid(True)
+        # Convert 'Never' to a high number for plotting
+        first_positive = comparison_df['First Positive Round'].copy()
+        first_positive = first_positive.replace('Never', float('inf'))
+        # Only plot finite values
+        mask = first_positive != float('inf')
+        if mask.any():
+            ax.bar(comparison_df.loc[mask, 'Plan'], first_positive[mask], color='purple')
+            ax.set_title('First Positive Round by Plan')
+            ax.set_xlabel('Plan')
+            ax.set_ylabel('Round Number')
+            ax.grid(True, axis='y')
+        else:
+            ax.text(0.5, 0.5, 'No positive rounds', ha='center', va='center', transform=ax.transAxes)
         
         # Plot 4: Average Profit per Round
         ax = axs[1, 1]
@@ -295,8 +316,8 @@ def plot_multi_plan_comparison(multi_results: MultiPlanSimulationResults, save_p
         if save_path:
             plt.savefig(save_path)
             logger.info(f"Comparison plots saved to {save_path}")
-        
-        plt.show()
+        else:
+            plt.show()
         
     except Exception as e:
         logger.error(f"Failed to generate comparison plots: {str(e)}")
@@ -314,8 +335,30 @@ def export_to_excel(results: SimulationResults, file_path: str) -> None:
         Exception: If export fails
     """
     try:
-        df = results.to_dataframe()
-        df.to_excel(file_path, index=False)
+        with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
+            # Export detailed results
+            df = results.to_dataframe()
+            df.to_excel(writer, sheet_name='Detailed Results', index=False)
+            
+            # Export summary
+            summary = results.get_summary()
+            
+            # Create a more readable summary
+            summary_data = [
+                {'Metric': 'Plan ID', 'Value': summary['plan_id']},
+                {'Metric': 'Total Rounds', 'Value': summary['total_rounds']},
+                {'Metric': 'Final Net Profit', 'Value': summary['final_net_profit']},
+                {'Metric': 'Maximum Investor Count', 'Value': summary['max_investor_count']},
+                {'Metric': 'Total Payments', 'Value': summary['total_payments']},
+                {'Metric': 'Total Revenue (After Tax)', 'Value': summary['total_revenue_after_tax']},
+                {'Metric': 'Average Net Profit Per Round', 'Value': summary['average_net_profit_per_round']},
+                {'Metric': 'First Positive Round', 'Value': summary.get('positive_net_profit_round', 'Never')},
+                {'Metric': 'Investment Before Profitability', 'Value': summary.get('investment_before_profit', 0)}
+            ]
+            
+            summary_df = pd.DataFrame(summary_data)
+            summary_df.to_excel(writer, sheet_name='Summary', index=False)
+            
         logger.info(f"Results exported to {file_path}")
     except Exception as e:
         logger.error(f"Failed to export results to Excel: {str(e)}")
@@ -347,15 +390,42 @@ def export_multi_plan_to_excel(multi_results: MultiPlanSimulationResults, file_p
             
             # Export comprehensive summary
             comprehensive = multi_results.get_comprehensive_summary()
-            summary_data = []
-            for key, value in comprehensive.items():
-                if key != 'plan_summaries':  # Skip the nested dict
-                    summary_data.append({'Metric': key, 'Value': value})
+            
+            # Create summary dataframe with better formatting
+            summary_data = [
+                {'Metric': 'Total Plans Simulated', 'Value': comprehensive['total_plans_simulated']},
+                {'Metric': 'Rounds Per Plan', 'Value': comprehensive['total_rounds_per_plan']},
+                {'Metric': 'Total Payments All Plans', 'Value': comprehensive['total_payments_all_plans']},
+                {'Metric': 'Total Revenue All Plans', 'Value': comprehensive['total_revenue_all_plans']},
+                {'Metric': 'Overall Net Profit', 'Value': comprehensive['overall_net_profit']},
+                {'Metric': 'Total Investment Before Profitability', 'Value': comprehensive['total_investment_before_profit']},
+                {'Metric': 'Best Final Profit Plan', 'Value': comprehensive['best_final_profit_plan']},
+                {'Metric': 'Best Average Profit Plan', 'Value': comprehensive['best_avg_profit_plan']},
+                {'Metric': 'Fastest To Positive Plan', 'Value': comprehensive['fastest_positive_plan']},
+                {'Metric': 'Lowest Investment Plan', 'Value': comprehensive['lowest_investment_plan']}
+            ]
             
             summary_df = pd.DataFrame(summary_data)
             summary_df.to_excel(writer, sheet_name='Overall Summary', index=False)
+            
+            # Create a dedicated sheet for investment before profitability analysis
+            investment_data = []
+            for plan_id, plan_summary in comprehensive['plan_summaries'].items():
+                investment_data.append({
+                    'Plan': plan_id,
+                    'Investment Before Profitability': plan_summary.get('investment_before_profit', 0),
+                    'First Positive Round': plan_summary.get('positive_net_profit_round', 'Never'),
+                    'Final Net Profit': plan_summary.get('final_net_profit', 0)
+                })
+            
+            investment_df = pd.DataFrame(investment_data)
+            investment_df = investment_df.sort_values('Investment Before Profitability')
+            investment_df.to_excel(writer, sheet_name='Investment Analysis', index=False)
         
         logger.info(f"Multi-plan results exported to {file_path}")
     except Exception as e:
         logger.error(f"Failed to export multi-plan results to Excel: {str(e)}")
         raise
+
+
+# This function was duplicated, so we're removing the duplicate and keeping plot_simulation_results
