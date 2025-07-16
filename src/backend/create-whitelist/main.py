@@ -66,7 +66,7 @@ for user in users_to_add:
     users_data.append({
         "name": user["name"],
         "phone_number": user["phone_number"],
-        "hash": hashed_value
+        "user_hash": hashed_value
     })
 
 # Create a pandas DataFrame
