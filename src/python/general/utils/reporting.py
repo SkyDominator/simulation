@@ -192,7 +192,7 @@ def export_to_excel(results: GeneralSimulationResults, output_dir: str = "output
     output_file = os.path.join(output_dir, f"general_simulation_{results.plan_id}_{timestamp}.xlsx")
     
     # Create a Pandas Excel writer
-    with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
         # Sheet 1: Round-by-round results
         df_rounds = results.to_dataframe()
         df_rounds.to_excel(writer, sheet_name='회차별_결과', index=False)
