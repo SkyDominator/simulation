@@ -349,6 +349,61 @@ class GeneralSimulationService:
         else:  # Re-entry investor
             return p['min_payment_re']
 
+    def _calculate_potential_revenue_share(self, investor: GeneralInvestor, actual_payment: float) -> float:
+        """
+        Calculate the potential revenue share for an investor based on their payment and internal round.
+        
+        This method calculates what each investor would receive based on their individual
+        formula without considering the total revenue pool. These values are later scaled
+        to distribute the actual revenue pool proportionally.
+        
+        Args:
+            investor (GeneralInvestor): The investor to calculate revenue share for
+            actual_payment (float): The actual payment made by the investor
+            
+        Returns:
+            float: The calculated potential revenue share
+        """
+        internal_round = investor.internal_round
+        p = self.params
+        
+        base_calc_value = actual_payment / p['revenue_base_divisor']
+
+        if internal_round <= 2:
+            return base_calc_value * p['sales_commission']
+        
+        elif internal_round == 3:
+            # For round 3, include the settlement bonus in the potential revenue
+            revenue_r3 = (base_calc_value * p['sales_commission']) + p['settlement_bonus']
+            # Set the base return for this investor for future rounds
+            investor.set_base_return(revenue_r3)
+            return revenue_r3
+        
+        elif internal_round >= 4:
+            # Get the bonus rate for this round, default to 0 if not specified
+            bonus_rate = p['round_bonus_rates'].get(internal_round, 0)
+            
+            # Calculate potential bonus but cap it at max_bonus
+            bonus_amount = min(
+                base_calc_value * bonus_rate,
+                p['max_bonus']
+            )
+            
+            # Apply the achievement rate for the current round
+            achievement_rate = p['sales_achievement_rates'].get(self.current_company_round, 0)
+            additional_revenue = bonus_amount * achievement_rate
+            
+            # Add the additional revenue to the base return from round 3
+            if investor.base_return_r3 is not None:
+                return investor.base_return_r3 + additional_revenue
+            else:
+                # If we don't have the base return, just use the bonus calculation
+                # This is a fallback case and shouldn't happen in normal operation
+                logger.warning(f"Investor {investor.id} has no base_return_r3 value in round {internal_round}")
+                return base_calc_value * p['sales_commission'] + additional_revenue
+            
+        return 0
+
     def run_single_round(self) -> CompanyRoundResult:
         """
         Execute a single round of the general simulation.
@@ -363,7 +418,6 @@ class GeneralSimulationService:
         
         # Track metrics for this round
         total_payment_this_round = 0
-        total_revenue_this_round = 0
         graduated_count = 0
         internal_round_distribution = Counter()
         
@@ -386,6 +440,7 @@ class GeneralSimulationService:
         active_investor_ids = list(self.investors.keys())
         next_round_investor_ids = []
         
+        # First pass: Collect all payments for this round
         for investor_id in active_investor_ids:
             investor = self.investors[investor_id]
             
@@ -401,13 +456,7 @@ class GeneralSimulationService:
             investor.add_payment(company_round, actual_payment)
             total_payment_this_round += actual_payment
             
-            # Calculate and process revenue
-            revenue = self._calculate_revenue(investor, actual_payment)
-            revenue = round(revenue)
-            investor.add_revenue(company_round, revenue)
-            total_revenue_this_round += revenue
-            
-            # Update investor status
+            # Update investor status for next round
             if not investor.is_graduated(self.max_rounds):
                 investor.increment_round()
                 next_round_investor_ids.append(investor_id)
@@ -415,6 +464,39 @@ class GeneralSimulationService:
                 investor.graduate()
                 graduated_count += 1
                 logger.debug(f"Investor {investor_id} graduated in round {company_round}")
+        
+        # KEY CHANGE: Calculate total revenue available for distribution
+        # 83% of all payments in this round become the revenue pool
+        revenue_pool = total_payment_this_round * 0.83
+        logger.info(f"Round {company_round}: Total payments: {total_payment_this_round:.0f}, "
+                   f"Revenue pool (83%): {revenue_pool:.0f}")
+        
+        # Second pass: Distribute revenue according to investor formulas
+        # First, calculate each investor's share ratio based on their internal round
+        total_revenue_this_round = 0
+        investor_revenue_share = {}
+        
+        # Calculate the potential revenue for each investor based on their formula
+        total_potential_revenue = 0
+        for investor_id in next_round_investor_ids:
+            investor = self.investors[investor_id]
+            # Use the existing formula but without applying the actual payment yet
+            # Just to calculate the relative weights
+            base_payment = self._calculate_actual_payment(investor)
+            potential_revenue = self._calculate_potential_revenue_share(investor, base_payment)
+            investor_revenue_share[investor_id] = potential_revenue
+            total_potential_revenue += potential_revenue
+        
+        # Now distribute the actual revenue pool based on the calculated shares
+        if total_potential_revenue > 0:
+            scaling_factor = revenue_pool / total_potential_revenue
+            for investor_id, potential_revenue in investor_revenue_share.items():
+                investor = self.investors[investor_id]
+                actual_revenue = round(potential_revenue * scaling_factor)
+                investor.add_revenue(company_round, actual_revenue)
+                total_revenue_this_round += actual_revenue
+                logger.debug(f"Investor {investor_id} (round {investor.internal_round}): "
+                           f"Revenue: {actual_revenue:.0f}")
         
         # Tax calculation (3.3%)
         tax_rate = 0.033
