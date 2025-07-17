@@ -1,5 +1,7 @@
 import os
 import hashlib
+import requests # JWKS를 가져오기 위해 추가
+
 from typing import List, Dict, Any
 
 from dotenv import load_dotenv
@@ -40,10 +42,12 @@ app.add_middleware(
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # JWT 인증 설정
-SECRET_KEY = os.getenv("SUPABASE_JWT_SECRET")
-ALGORITHM = "HS256"
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token") # 이 프로젝트에서는 직접 사용하지 않음
+# (업그레이드) JWT 인증 설정
 oauth2_scheme = HTTPBearer()
+# JWKS(공개키 목록)를 가져올 URL
+jwks_url = f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json"
+# JWKS를 캐싱하여 매번 요청하지 않도록 함
+jwks_cache = {}
 
 # --- 2. Pydantic 모델 정의 (데이터 유효성 검사) ---
 
@@ -73,15 +77,52 @@ async def get_current_user_id(token_result: HTTPAuthorizationCredentials = Depen
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # HTTPBearer는 토큰 자체(credentials)를 반환
         token = token_result.credentials
-        # Supabase에서 발급한 JWT 토큰을 해독
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub") # 'sub' 클레임에 사용자 ID(uuid)가 들어있음
+        
+        # 1. 토큰 헤더에서 kid(Key ID) 가져오기
+        unverified_header = jwt.get_unverified_header(token)
+        kid = unverified_header.get("kid")
+        if not kid:
+            raise credentials_exception
+
+        # 2. JWKS(공개키 목록) 가져오기 (캐시 확인)
+        global jwks_cache
+        if not jwks_cache:
+            response = requests.get(jwks_url)
+            response.raise_for_status()
+            jwks_cache = response.json()
+
+        # 3. kid에 맞는 공개키(public key) 찾기
+        rsa_key = {}
+        for key_data in jwks_cache.get("keys", []):
+            if key_data["kid"] == kid:
+                rsa_key = {
+                    "kty": key_data["kty"],
+                    "kid": key_data["kid"],
+                    "use": key_data["use"],
+                    "n": key_data["n"],
+                    "e": key_data["e"],
+                }
+                break
+        
+        if not rsa_key:
+            raise credentials_exception
+
+        # 4. 찾은 공개키로 토큰 검증 및 해독
+        payload = jwt.decode(
+            token,
+            rsa_key,
+            algorithms=["RS256"],
+            audience="authenticated" 
+        )
+        
+        user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-    except (JWTError, AttributeError):
+            
+    except (JWTError, AttributeError, requests.exceptions.RequestException):
         raise credentials_exception
+        
     return user_id
 
 
