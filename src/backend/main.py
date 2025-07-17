@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
 from pydantic import BaseModel
 from supabase import create_client, Client
+from fastapi.security import HTTPBearer
 
 # --- 1. 초기 설정 ---
 
@@ -41,7 +42,8 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # JWT 인증 설정
 SECRET_KEY = os.getenv("SUPABASE_JWT_SECRET")
 ALGORITHM = "HS256"
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token") # 이 프로젝트에서는 직접 사용하지 않음
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token") # 이 프로젝트에서는 직접 사용하지 않음
+oauth2_scheme = HTTPBearer()
 
 # --- 2. Pydantic 모델 정의 (데이터 유효성 검사) ---
 
@@ -64,20 +66,21 @@ class SimulationRequest(BaseModel):
 
 # --- 3. 사용자 인증 의존성 ---
 
-# JWT 토큰을 검증하고 사용자 ID를 반환하는 함수
-async def get_current_user_id(token: str = Depends(oauth2_scheme)):
+async def get_current_user_id(token_result: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        # HTTPBearer는 토큰 자체(credentials)를 반환
+        token = token_result.credentials
         # Supabase에서 발급한 JWT 토큰을 해독
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub") # 'sub' 클레임에 사용자 ID(uuid)가 들어있음
         if user_id is None:
             raise credentials_exception
-    except JWTError:
+    except (JWTError, AttributeError):
         raise credentials_exception
     return user_id
 
@@ -136,4 +139,4 @@ def run_simulation(req: SimulationRequest, user_id: str = Depends(get_current_us
 # 이 파일이 직접 실행될 때 uvicorn 서버를 구동
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="localhost", port=8000)
