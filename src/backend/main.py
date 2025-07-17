@@ -4,7 +4,7 @@ from typing import List, Dict, Any
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
 from pydantic import BaseModel
@@ -66,7 +66,7 @@ class SimulationRequest(BaseModel):
 
 # --- 3. 사용자 인증 의존성 ---
 
-async def get_current_user_id(token_result: str = Depends(oauth2_scheme)):
+async def get_current_user_id(token_result: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
