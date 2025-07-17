@@ -4,3 +4,4 @@ __pycache__/
 
 # Distribution / packaging
 .venv/
+src/backend/backend-venv/
