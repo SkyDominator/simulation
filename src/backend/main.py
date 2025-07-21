@@ -72,7 +72,7 @@ class SimulationRequest(BaseModel):
 
 # --- 3. 사용자 인증 의존성 ---
 
-async def get_current_user_id(token_result: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
+async def authenticate_jwt_token(token_result: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -145,13 +145,13 @@ def verify_user(request: UserCheckRequest):
 
 # 특정 사용자의 모든 플랜 조회 API
 @app.get("/api/plans")
-def get_plans(user_id: str = Depends(get_current_user_id)):
+def get_plans(user_id: str = Depends(authenticate_jwt_token)):
     response = supabase.table('plans').select("*").eq('user_id', user_id).execute()
     return response.data
 
 # 새 플랜 생성 API
 @app.post("/api/plans")
-def create_plan(plan: PlanCreate, user_id: str = Depends(get_current_user_id)):
+def create_plan(plan: PlanCreate, user_id: str = Depends(authenticate_jwt_token)):
     # Pydantic 모델을 딕셔너리로 변환하고, user_id 추가
     plan_data = plan.dict()
     plan_data['user_id'] = user_id
@@ -164,7 +164,7 @@ def create_plan(plan: PlanCreate, user_id: str = Depends(get_current_user_id)):
 
 # 투자 시뮬레이션 실행 API
 @app.post("/api/run-simulation")
-def run_simulation(req: SimulationRequest, user_id: str = Depends(get_current_user_id)):
+def run_simulation(req: SimulationRequest, user_id: str = Depends(authenticate_jwt_token)):
     # 여기에 기존 Python 투자 모델 코드를 함수 형태로 가져와서 사용
     # def run_my_financial_model(plan_data: dict) -> dict: ...
     # simulation_result = run_my_financial_model(req.plan_data)
