@@ -18,6 +18,7 @@ from fastapi.security import HTTPBearer
 # Supabase URL과 키를 환경 변수에서 불러오기
 SUPABASE_URL: str = os.getenv("SUPABASE_URL")
 SUPABASE_KEY: str = os.getenv("SUPABASE_KEY")
+SUPABASE_SECRET_KEY: str = os.getenv("SUPABASE_SECRET_KEY")
 
 # .env 파일에서 환경 변수 불러오기
 load_dotenv()
@@ -39,7 +40,8 @@ app.add_middleware(
 )
 
 # Supabase 클라이언트 초기화
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 # JWT 인증 설정
 # (업그레이드) JWT 인증 설정
