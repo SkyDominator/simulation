@@ -7,7 +7,7 @@
   npm install @supabase/supabase-js
 */
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { createClient, Session, User } from '@supabase/supabase-js';
+import { createClient, type Session, type User } from '@supabase/supabase-js';
 
 // --- 1. 타입 정의: 앱 전체에서 사용될 데이터 구조를 정의합니다 ---
 // 이 부분은 TypeScript의 장점으로, 코드의 안정성을 높여줍니다.
