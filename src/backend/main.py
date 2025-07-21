@@ -112,7 +112,7 @@ async def get_current_user_id(token_result: HTTPAuthorizationCredentials = Depen
         payload = jwt.decode(
             token,
             rsa_key,
-            algorithms=["RS256"],
+            algorithms=["P256"],
             audience="authenticated" 
         )
         
