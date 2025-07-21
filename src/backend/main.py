@@ -79,10 +79,11 @@ async def get_current_user_id(token_result: HTTPAuthorizationCredentials = Depen
     try:
         token = token_result.credentials
         
-        # 1. 토큰 헤더에서 kid(Key ID) 가져오기
+        # 1. 토큰 헤더에서 kid(Key ID)와 alg(알고리즘) 가져오기
         unverified_header = jwt.get_unverified_header(token)
         kid = unverified_header.get("kid")
-        if not kid:
+        alg = unverified_header.get("alg")
+        if not kid or not alg:
             raise credentials_exception
 
         # 2. JWKS(공개키 목록) 가져오기 (캐시 확인)
@@ -93,26 +94,21 @@ async def get_current_user_id(token_result: HTTPAuthorizationCredentials = Depen
             jwks_cache = response.json()
 
         # 3. kid에 맞는 공개키(public key) 찾기
-        rsa_key = {}
-        for key_data in jwks_cache.get("keys", []):
-            if key_data["kid"] == kid:
-                rsa_key = {
-                    "kty": key_data["kty"],
-                    "kid": key_data["kid"],
-                    "use": key_data["use"],
-                    "n": key_data["n"],
-                    "e": key_data["e"],
-                }
-                break
+        public_key = None
+        keys = jwks_cache.get("keys", [])[0]
+        if keys["kid"] == kid:
+            public_key = keys
         
-        if not rsa_key:
+        if not public_key:
+            # 캐시가 오래되었을 수 있으므로, 캐시를 비우고 다시 시도
+            jwks_cache = {}
             raise credentials_exception
 
-        # 4. 찾은 공개키로 토큰 검증 및 해독
+        # 4. 찾은 공개키와 토큰 헤더의 알고리즘으로 검증 및 해독
         payload = jwt.decode(
             token,
-            rsa_key,
-            algorithms=["P256"],
+            public_key, # python-jose는 JWK 딕셔너리를 직접 처리할 수 있습니다.
+            algorithms=[alg], # 토큰 헤더에서 가져온 알고리즘(ES256 등)을 사용합니다.
             audience="authenticated" 
         )
         
