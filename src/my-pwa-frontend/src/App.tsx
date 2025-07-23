@@ -43,10 +43,10 @@ type Page = 'whitelist' | 'login' | 'main' | 'plan-editor' | 'results';
 // !!! 중요: 아래 값을 자신의 Supabase 프로젝트 URL과 Publishable Key로 직접 변경해주세요 !!!
 // Vite의 환경 변수(.env) 관련 빌드 오류를 피하기 위해 코드에 직접 키를 입력합니다.
 // 경고: 이 프로젝트를 GitHub 등에 공개적으로 올릴 경우, 이 키들을 노출하지 않도록 주의해야 합니다.
-const supabaseUrl = 'YOUR_SUPABASE_URL'; // 예: 'https://xyz.supabase.co'
-const supabaseKey = 'YOUR_PUBLISHABLE_KEY'; // 예: 'ey...'
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
+const supabaseKey = process.env.REACT_APP_SUPABASE_KEY
 
-if (supabaseUrl === 'YOUR_SUPABASE_URL' || supabaseKey === 'YOUR_PUBLISHABLE_KEY') {
+if (!supabaseUrl || !supabaseKey) {
   // 이 에러는 키를 입력하지 않았을 때 나타납니다. 위의 변수에 실제 키를 입력해주세요.
   alert("Supabase URL과 Key를 App.tsx 파일 상단에 직접 입력해주세요.");
 }
