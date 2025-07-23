@@ -33,6 +33,7 @@ interface AuthContextType {
 // API 응답 타입
 interface WhitelistCheckResponse {
   is_whitelisted: boolean;
+  detail?: string; // 추가 정보 (예: 명단에 없을 경우)
 }
 
 // 페이지 종류를 정의 (간단한 라우팅을 위해 사용)
