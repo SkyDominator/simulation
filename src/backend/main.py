@@ -138,7 +138,7 @@ def verify_user(request: UserCheckRequest):
     hashed_value = hashlib.sha256(combined_string.encode('utf-8')).hexdigest()
     
     response = supabase.table('whitelist').select("user_hash").eq('user_hash', hashed_value).execute()
-    
+
     if response.data:
         return {"is_whitelisted": True}
     return {"is_whitelisted": False, "detail": "User not in whitelist"}

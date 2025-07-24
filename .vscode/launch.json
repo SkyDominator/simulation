@@ -1,0 +1,13 @@
+// filepath: .vscode/launch.json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "pwa-chrome",
+      "request": "launch",
+      "name": "Vite: Chrome",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src/my-pwa-frontend/src"
+    }
+  ]
+}
