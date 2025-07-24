@@ -308,7 +308,8 @@ const MainPage: React.FC<{ setPage: (page: Page) => void; setEditingPlan: (plan:
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold truncate">안녕하세요, {user?.email}님!</h1>
+        <h1 className="text-2xl md:text-3xl font-bold truncate">안녕하세요, {user?.user_metadata?.name || user?.email}님!</h1>
+
         <Button onClick={signOut} className="bg-gray-500 hover:bg-gray-600 flex-shrink-0">로그아웃</Button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
