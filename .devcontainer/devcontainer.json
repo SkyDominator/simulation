@@ -4,10 +4,7 @@
   "service": "backend",
   "workspaceFolder": "/workspaces",
 
-  // "frontend" 서비스 컨테이너에서 "npm install"을 실행하도록 수정
-  "postCreateCommand": {
-    "frontend": "npm install"
-  },
+  // postCreateCommand가 없어야 합니다.
 
   "customizations": {
     "vscode": {
