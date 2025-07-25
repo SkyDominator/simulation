@@ -187,12 +187,20 @@ const Button: React.FC<{ onClick?: () => void; children: React.ReactNode; classN
 );
 
 // 입력 필드 컴포넌트
-const Input: React.FC<{ value: string | number; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; placeholder?: string; type?: string; className?: string; }> = 
-({ value, onChange, placeholder, type = 'text', className = '' }) => (
+const Input: React.FC<{ 
+  value: string | number; 
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; 
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  placeholder?: string; 
+  type?: string; 
+  className?: string; 
+}> = 
+({ value, onChange, onBlur, placeholder, type = 'text', className = '' }) => (
   <input
     type={type}
     value={value}
     onChange={onChange}
+    onBlur={onBlur}
     placeholder={placeholder}
     className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
   />
@@ -352,6 +360,14 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
     investments: [],
   });
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
+  // Add new state variables for validation modal
+  const [isValidationModalOpen, setValidationModalOpen] = useState(false);
+  const [validationData, setValidationData] = useState<{
+    value: number;
+    min: number;
+    max: number;
+    field: keyof Plan;
+  } | null>(null);
 
   // 총 회차가 변경될 때마다 investment 배열을 자동으로 생성/조정합니다.
   useEffect(() => {
@@ -363,9 +379,28 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
   }, [plan.simulation_rounds, editingPlan]); // editingPlan이 변경될 때도 investments를 초기화하기 위해 의존성 추가
   // 하지만, editingPlan이 null이 아닐 때는 기존 투자 정보를 유지해야 합니다.
 
-  const handleNext = () => setStep(s => s + 1);
+  // Update handleNext to include validation
+  const handleNext = () => {
+    // For step 3, validate simulation_rounds before proceeding
+    if (step === 3) {
+      const isABC = ['A', 'B', 'C'].includes(plan.plan_type);
+      const min = isABC ? 15 : 18;
+      const max = isABC ? 150 : 180;
+      
+      // If validation fails, the modal will be shown and we return early
+      if (!handleValidation(plan.simulation_rounds, min, max, 'simulation_rounds')) {
+        return;
+      }
+    }
+    
+    // If validation passes or we're on another step, proceed normally
+    setStep(s => s + 1);
+  };
+  
   const handleBack = () => setStep(s => s - 1);
 
+  // 회차별 투자액 변경 핸들러
+  // 사용자가 입력한 투자액을 업데이트합니다. 투자액 업데이트하면 re-render
   const handleInvestmentChange = (round: number, amount: string) => {
     const newInvestments = plan.investments.map(inv => 
       inv.round === round ? { ...inv, amount: parseInt(amount, 10) || 0 } : inv
@@ -373,6 +408,34 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
     setPlan({ ...plan, investments: newInvestments });
   };
 
+  // Add validation handler
+  const handleValidation = (value: number, min: number, max: number, field: keyof Plan) => {
+    if (value < min || value > max) {
+      setValidationData({ value, min, max, field });
+      setValidationModalOpen(true);
+      return false; // Validation failed, show modal
+    }
+    return true; // Validation passed, proceed
+  };
+
+  // Handle validation confirmation
+  const handleValidationConfirm = () => {
+    if (!validationData) return;
+    
+    const { value, min, max, field } = validationData;
+    const newValue = value < min ? min : max;
+    
+    setPlan(prev => ({ ...prev, [field]: newValue }));
+    setValidationModalOpen(false);
+  };
+
+  // Handle validation cancellation
+  const handleValidationCancel = () => {
+    setValidationModalOpen(false);
+  };
+
+ // 최종 저장 핸들러
+  // 사용자가 입력한 플랜 정보를 백엔드에 저장합니다.
   const handleSave = async () => {
     if (!session) return;
     // 투자액이 0인 경우 최소 투자액(여기서는 100으로 가정)으로 자동 입력
@@ -424,7 +487,7 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
             />
           </div>
         );
-      case 3: // 시뮬레이션 총 회차 수 선택
+      case 3: { // 시뮬레이션 총 회차 수 선택
         const isABC = ['A', 'B', 'C'].includes(plan.plan_type);
         const min = isABC ? 15 : 18;
         const max = isABC ? 150 : 180;
@@ -436,14 +499,17 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
               type="number" 
               value={plan.simulation_rounds} 
               onChange={e => {
-                let val = parseInt(e.target.value, 10) || min;
-                if (val < min) val = min;
-                if (val > max) val = max;
+                // 일단 인풋 필드에 어떤 값이던지 받아들이고 이 값으로 plan.simulation_rounds를 업데이트합니다. 그리고 "다음 단계"를 눌렀을 때, handleNext에서 handleValidation을 호출하여 검증합니다. 그래서 조건에 따라 그냥 넘어가거나 아니면 handleNext에서 step을 증가시키지 않고 Modal을 띄워서 min/max로 수정할지 말지를 문의합니다. 
+
+                const val = parseInt(e.target.value, 10) || min;
+                // Update value immediately without validation
                 setPlan({ ...plan, simulation_rounds: val });
               }}
+              // Remove the onBlur validation as we'll validate when Next is clicked
             />
           </div>
         );
+    }
       case 4: // 회차별 투자액 입력
         return (
           <div>
@@ -505,6 +571,26 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
           <div className="flex justify-end gap-4 mt-4">
             <Button onClick={() => setConfirmModalOpen(false)} className="bg-gray-500 hover:bg-gray-600">취소</Button>
             <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">최종 저장</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add validation modal */}
+      <Modal 
+        isOpen={isValidationModalOpen} 
+        onClose={handleValidationCancel} 
+        title="입력값 경고"
+      >
+        <div>
+          <p>
+            {validationData && validationData.value < validationData.min 
+              ? `값이 최소 ${validationData?.min}보다 작습니다. ${validationData?.min}으로 설정하시겠습니까?`
+              : `값이 최대 ${validationData?.max}보다 큽니다. ${validationData?.max}로 설정하시겠습니까?`
+            }
+          </p>
+          <div className="flex justify-end gap-4 mt-4">
+            <Button onClick={handleValidationCancel} className="bg-gray-500 hover:bg-gray-600">취소</Button>
+            <Button onClick={handleValidationConfirm} className="bg-blue-600 hover:bg-blue-700">확인</Button>
           </div>
         </div>
       </Modal>
