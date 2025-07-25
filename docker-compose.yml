@@ -3,24 +3,28 @@ version: '3.8'
 services:
   backend:
     build:
-      context: .
-      dockerfile: src/backend/Dockerfile
+      context: ./src/backend
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    # --- 이 부분을 수정 ---
-    # 프로젝트 전체(.)를 컨테이너의 /workspaces에 연결
     volumes:
-      - .:/workspaces:cached
+      - ./src/backend:/app:cached
+      - /app/backend-venv  # Exclude virtual environment
     env_file:
       - .env
+    environment:
+      - PYTHONPATH=/app
 
   frontend:
     build:
-      context: .
-      dockerfile: src/my-pwa-frontend/Dockerfile
+      context: ./src/my-pwa-frontend
+      dockerfile: Dockerfile
     ports:
       - "5173:5173"
-    # --- 이 부분도 일관성을 위해 수정 ---
     volumes:
-      - .:/workspaces:cached
-    command: npm run dev -- --host
+      - ./src/my-pwa-frontend:/app:cached
+      - /app/node_modules  # Exclude node_modules
+    environment:
+      - VITE_HOST=0.0.0.0
+    depends_on:
+      - backend

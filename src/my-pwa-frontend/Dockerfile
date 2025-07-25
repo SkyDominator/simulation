@@ -1,13 +1,15 @@
-# 사용할 Node 버전을 정확히 명시
 FROM node:22.11.0
 
-WORKDIR /workspaces/src/my-pwa-frontend
+WORKDIR /app
 
-COPY src/my-pwa-frontend/package*.json ./
-
-# 이미지 빌드 시 의존성을 설치
+# Copy package files first for better caching
+COPY package*.json ./
 RUN npm ci
 
-COPY src/my-pwa-frontend/ .
+# Copy application code
+COPY . .
 
-CMD ["npm", "run", "dev"]
+# Expose port
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
