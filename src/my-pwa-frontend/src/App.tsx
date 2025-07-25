@@ -60,39 +60,55 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 // AuthProvider: 앱의 최상위 컴포넌트를 감싸서, 모든 자식 컴포넌트에게 인증 상태를 제공합니다.
 const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+    const [session, setSession] = useState<Session | null>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+// In AuthProvider, make sure to handle unsubscribe properly
+    useEffect(() => {
     const getSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
+        try {
+        const { data } = await supabase.auth.getSession();
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+        } catch (error) {
+        console.error("Auth error:", error);
+        } finally {
+        setLoading(false);
+        }
     };
+
     getSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+        (_event, session) => {
+        try {
+            setSession(session);
+            setUser(session?.user ?? null);
+        } catch (error) {
+            console.error("Auth state change error:", error);
+        }
         setLoading(false);
-      }
+        }
     );
 
+    // Ensure proper cleanup
     return () => {
-      authListener.subscription.unsubscribe();
+        try {
+        authListener?.subscription?.unsubscribe();
+        } catch (error) {
+        console.error("Cleanup error:", error);
+        }
     };
-  }, []);
+    }, []);
 
-  const signOut = async () => {
+    const signOut = async () => {
     await supabase.auth.signOut();
-  };
+    };
 
-  const value = { session, user, loading, signOut };
+    const value = { session, user, loading, signOut };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 // useAuth: 자식 컴포넌트에서 인증 상태를 쉽게 가져다 쓸 수 있게 해주는 커스텀 훅(Hook)
@@ -436,30 +452,44 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
 
  // 최종 저장 핸들러
   // 사용자가 입력한 플랜 정보를 백엔드에 저장합니다.
-  const handleSave = async () => {
+// Improve API call error handling
+    const handleSave = async () => {
     if (!session) return;
-    // 투자액이 0인 경우 최소 투자액(여기서는 100으로 가정)으로 자동 입력
-    const finalPlan = {
+    
+    // Set a flag to track if component is still mounted
+    let isMounted = true;
+    
+    try {
+        const finalPlan = {
         ...plan,
         investments: plan.investments.map(inv => ({
             ...inv,
             amount: inv.amount === 0 ? 100 : inv.amount
         }))
-    };
-    
-    try {
+        };
+        
         if (editingPlan) {
-            await api.updatePlan(finalPlan, session.access_token);
+        await api.updatePlan(finalPlan, session.access_token);
         } else {
-            await api.createPlan(finalPlan, session.access_token);
+        await api.createPlan(finalPlan, session.access_token);
         }
+        
+        if (isMounted) {
         setConfirmModalOpen(false);
         setPage('main');
+        }
     } catch (error) {
-        console.error(error);
+        console.error("Save error:", error);
+        if (isMounted) {
         alert("저장에 실패했습니다.");
+        }
     }
-  };
+    
+    // Cleanup function
+    return () => {
+        isMounted = false;
+    };
+    };
 
   const renderStep = () => {
     switch (step) {
