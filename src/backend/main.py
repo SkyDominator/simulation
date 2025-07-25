@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 # --- 1. 초기 설정 ---
 
 # Supabase URL과 키를 환경 변수에서 불러오기
-SUPABASE_URL: str = os.getenv("SUPABASE_URL")
-SUPABASE_KEY: str = os.getenv("SUPABASE_KEY")
-SUPABASE_SECRET_KEY: str = os.getenv("SUPABASE_SECRET_KEY")
+SUPABASE_URL: str = "https://kihlqhomsychihwzwzuo.supabase.co"
+SUPABASE_KEY: str = "sb_publishable_8H_WkhgiIM40Y9H32qaahw_2HKn3fdF"
+SUPABASE_SECRET_KEY: str = "sb_secret_gp3MLdgaREIYCrRsaNZZeQ_KO7XXoRk"
 
 # .env 파일에서 환경 변수 불러오기
 load_dotenv()
