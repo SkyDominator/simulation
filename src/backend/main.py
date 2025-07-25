@@ -12,6 +12,14 @@ from jose import JWTError, jwt
 from pydantic import BaseModel
 from supabase import create_client, Client
 from fastapi.security import HTTPBearer
+from constants import PLAN_PARAMETERS
+
+import json
+
+# 로깅 설정
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # --- 1. 초기 설정 ---
 
@@ -69,6 +77,13 @@ class PlanCreate(BaseModel):
 class SimulationRequest(BaseModel):
     plan_data: Dict[str, Any]
 
+class ParametersVersionResponse(BaseModel):
+    version: str
+    last_updated: str
+
+# Add new model for plan parameters
+class PlanParametersResponse(BaseModel):
+    parameters: Dict[str, Dict[str, Any]]
 
 # --- 3. 사용자 인증 의존성 ---
 
@@ -123,7 +138,6 @@ async def authenticate_jwt_token(token_result: HTTPAuthorizationCredentials = De
         
     return user_id
 
-
 # --- 4. API 엔드포인트 구현 ---
 
 # 루트 엔드포인트 (서버 동작 확인용)
@@ -131,6 +145,48 @@ async def authenticate_jwt_token(token_result: HTTPAuthorizationCredentials = De
 def read_root():
     return {"message": "Investment Simulator API is running"}
 
+# Plan parameters version endpoint
+@app.get("/api/parameters/version", response_model=ParametersVersionResponse)
+def get_parameters_version(user_id: str = Depends(authenticate_jwt_token)):
+    """
+    Returns the current version of plan parameters.
+    This allows clients to check if their cached parameters are up to date.
+    """
+    # Generate a version hash based on the actual parameters content
+    try:    
+        # Create a hash from the stringified parameters to use as version
+        params_str = json.dumps(PLAN_PARAMETERS, sort_keys=True)
+        version = hashlib.sha256(params_str.encode()).hexdigest()[:10]
+        
+        return {
+            "version": version,
+            "last_updated": "2023-07-25T00:00:00Z"  # Use actual timestamp in production
+        }
+    except Exception as e:
+        logging.error(f"Error generating parameters version: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate parameters version: {str(e)}")
+
+# Plan parameters endpoint
+@app.get("/api/parameters", response_model=PlanParametersResponse)
+def get_parameters(version_info: Dict = Depends(get_parameters_version)):
+    """
+    Returns all plan parameters, focusing on min_payment_new for now.
+    """
+    try:
+        # Extract only the min_payment_new from each plan's parameters
+        parameters = {}
+        for plan_type in ['A', 'B', 'C', 'D', 'R', 'E', 'F', 'K', 'P']:
+            plan_params = PLAN_PARAMETERS.get(plan_type, {})
+            parameters[plan_type] = {
+                "min_payment_new": plan_params.get('min_payment_new', {}),
+                "max_rounds": plan_params.get('max_rounds', 30)
+            }
+            
+        return {"parameters": parameters}
+    except Exception as e:
+        logging.error(f"Error fetching parameters: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch parameters: {str(e)}")
+    
 # 명단 확인 API
 @app.post("/api/verify-user")
 def verify_user(request: UserCheckRequest):
