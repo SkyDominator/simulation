@@ -2,12 +2,12 @@
   "name": "My Full-Stack App",
   "dockerComposeFile": "../docker-compose.yml",
   "service": "backend",
+  "workspaceFolder": "/workspaces",
 
-  // 컨테이너에 접속했을 때 기본 폴더를 프로젝트 루트로 변경
-  "workspaceFolder": "/workspaces", 
-
-  // npm install을 실행할 경로를 새 구조에 맞게 수정
-  "postCreateCommand": "npm --prefix src/my-pwa-frontend install", 
+  // "frontend" 서비스 컨테이너에서 "npm install"을 실행하도록 수정
+  "postCreateCommand": {
+    "frontend": "npm install"
+  },
 
   "customizations": {
     "vscode": {
