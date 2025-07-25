@@ -1,24 +1,26 @@
-# docker-compose.yml
-
 version: '3.8'
 
 services:
   backend:
     build:
-      context: . # 빌드 컨텍스트를 프로젝트 루트(.)로 설정
-      dockerfile: src/backend/Dockerfile # 사용할 Dockerfile 경로 지정
+      context: .
+      dockerfile: src/backend/Dockerfile
     ports:
       - "8000:8000"
+    # --- 이 부분을 수정 ---
+    # 프로젝트 전체(.)를 컨테이너의 /workspaces에 연결
     volumes:
-      - ./src/backend:/workspaces/src/backend # 소스코드 동기화 경로 수정
+      - .:/workspaces:cached
+    env_file:
+      - .env
 
   frontend:
     build:
-      context: . # 빌드 컨텍스트를 프로젝트 루트(.)로 설정
-      dockerfile: src/my-pwa-frontend/Dockerfile # 사용할 Dockerfile 경로 지정
+      context: .
+      dockerfile: src/my-pwa-frontend/Dockerfile
     ports:
       - "5173:5173"
+    # --- 이 부분도 일관성을 위해 수정 ---
     volumes:
-      - ./src/my-pwa-frontend:/workspaces/src/my-pwa-frontend # 소스코드 동기화 경로 수정
-      # node_modules는 동기화에서 제외
-      - /workspaces/src/my-pwa-frontend/node_modules
+      - .:/workspaces:cached
+    command: npm run dev -- --host
