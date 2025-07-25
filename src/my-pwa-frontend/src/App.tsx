@@ -361,6 +361,7 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
     });
     setPlan(p => ({ ...p, investments: newInvestments }));
   }, [plan.simulation_rounds, editingPlan]); // editingPlan이 변경될 때도 investments를 초기화하기 위해 의존성 추가
+  // 하지만, editingPlan이 null이 아닐 때는 기존 투자 정보를 유지해야 합니다.
 
   const handleNext = () => setStep(s => s + 1);
   const handleBack = () => setStep(s => s - 1);
