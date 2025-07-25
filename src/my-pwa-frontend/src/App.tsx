@@ -292,7 +292,11 @@ const LoginPage: React.FC = () => {
 };
 
 // 6.3. 메인 페이지
-const MainPage: React.FC<{ setPage: (page: Page) => void; setEditingPlan: (plan: Plan | null) => void }> = ({ setPage, setEditingPlan }) => {
+const MainPage: React.FC<{ 
+  setPage: (page: Page) => void; 
+  setEditingPlan: (plan: Plan | null) => void;
+  openNotice?: () => void;
+}> = ({ setPage, setEditingPlan, openNotice }) => {
   const { user, signOut } = useAuth();
 
   const handleNewPlan = () => {
@@ -310,7 +314,14 @@ const MainPage: React.FC<{ setPage: (page: Page) => void; setEditingPlan: (plan:
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl md:text-3xl font-bold truncate">안녕하세요, {user?.user_metadata?.name || user?.email}님!</h1>
 
-        <Button onClick={signOut} className="bg-gray-500 hover:bg-gray-600 flex-shrink-0">로그아웃</Button>
+        <div className="flex space-x-2">
+          {openNotice && (
+            <Button onClick={openNotice} className="bg-blue-600 hover:bg-blue-700 flex-shrink-0">
+              공지사항
+            </Button>
+          )}
+          <Button onClick={signOut} className="bg-gray-500 hover:bg-gray-600 flex-shrink-0">로그아웃</Button>
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div onClick={handleNewPlan} className="p-6 bg-blue-500 text-white rounded-lg shadow-md cursor-pointer hover:bg-blue-600 transition-colors">
@@ -523,7 +534,14 @@ const AppController: React.FC = () => {
   const [page, setPage] = useState<Page>('main');
   const [isWhitelisted, setWhitelisted] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-  const [isNoticeOpen, setNoticeOpen] = useState(true);
+  const [isNoticeOpen, setNoticeOpen] = useState(false);
+
+  // Show notice when user first logs in
+  useEffect(() => {
+    if (session && !loading) {
+      setNoticeOpen(true);
+    }
+  }, [session, loading]);
 
   // 로딩 중일 때는 로딩 화면을 표시
   if (loading) {
@@ -542,23 +560,46 @@ const AppController: React.FC = () => {
   const renderPage = () => {
     switch (page) {
       case 'main':
-        return <MainPage setPage={setPage} setEditingPlan={setEditingPlan} />;
+        return <MainPage 
+          setPage={setPage} 
+          setEditingPlan={setEditingPlan}
+          openNotice={() => setNoticeOpen(true)}
+        />;
       case 'plan-editor':
         return <PlanEditorPage setPage={setPage} editingPlan={editingPlan} />;
       case 'results':
         return <ResultsPage setPage={setPage} />;
       default:
-        return <MainPage setPage={setPage} setEditingPlan={setEditingPlan} />;
+        return <MainPage 
+          setPage={setPage} 
+          setEditingPlan={setEditingPlan}
+          openNotice={() => setNoticeOpen(true)}
+        />;
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Modal isOpen={isNoticeOpen && page === 'main'} onClose={() => setNoticeOpen(false)} title="공지사항">
-          <p>공지사항 내용이 여기에 표시됩니다.</p>
-          <div className="flex justify-end mt-4">
-              <Button onClick={() => setNoticeOpen(false)} className="bg-blue-600 hover:bg-blue-700">확인</Button>
+      <Modal isOpen={isNoticeOpen} onClose={() => setNoticeOpen(false)} title="공지사항">
+        <div className="space-y-3">
+          <div className="bg-gray-50 p-3 rounded-md border-l-4 border-blue-500">
+            <p className="text-gray-700">공지 1: 신규 시뮬레이션 기능이 추가되었습니다.</p>
           </div>
+          
+          <div className="bg-gray-50 p-3 rounded-md border-l-4 border-blue-500">
+            <p className="text-gray-700">공지 2: 7월 30일 시스템 점검 예정입니다.</p>
+          </div>
+          
+          <div className="bg-gray-50 p-3 rounded-md border-l-4 border-blue-500">
+            <p className="text-gray-700">공지 3: 새로운 투자 전략 플랜이 출시되었습니다.</p>
+          </div>
+          
+          <div className="flex justify-end mt-6">
+            <Button onClick={() => setNoticeOpen(false)} className="bg-blue-600 hover:bg-blue-700 shadow-md">
+              확인
+            </Button>
+          </div>
+        </div>
       </Modal>
       {renderPage()}
     </div>
