@@ -17,5 +17,6 @@
                 "github.copilot-chat/gemini-2.5-pro"
             ]
         }
-    }
+    },
+    "remote.containers.devContainerJson": ".\\.devcontainer\\devcontainer.json"
 }
