@@ -1,0 +1,22 @@
+# /my-project/docker-compose.yml
+
+version: '3.8'
+
+services:
+  # 백엔드 서비스 정의
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app  # 내 PC의 backend 폴더와 컨테이너의 /app 폴더를 동기화
+
+  # 프론트엔드 서비스 정의
+  frontend:
+    build: ./my-pwa-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./my-pwa-frontend:/app
+      # node_modules는 동기화에서 제외 (성능 문제 방지)
+      - /app/node_modules
