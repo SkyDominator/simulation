@@ -17,7 +17,7 @@ interface Plan {
   id?: string; // DB에 저장된 후에는 UUID가 할당됩니다.
   plan_type: string;
   company_round: number;
-  total_rounds: number;
+  simulation_rounds: number;
   investments: { round: number; amount: number }[];
   user_id?: string;
 }
@@ -348,19 +348,19 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
   const [plan, setPlan] = useState<Plan>(editingPlan || {
     plan_type: 'A',
     company_round: 1,
-    total_rounds: 15,
+    simulation_rounds: 15,
     investments: [],
   });
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
 
   // 총 회차가 변경될 때마다 investment 배열을 자동으로 생성/조정합니다.
   useEffect(() => {
-    const newInvestments = Array.from({ length: plan.total_rounds }, (_, i) => {
+    const newInvestments = Array.from({ length: plan.simulation_rounds }, (_, i) => {
         const existing = plan.investments.find(inv => inv.round === i + 1);
         return existing || { round: i + 1, amount: 0 }; // 최소 투자액은 0으로 초기화
     });
     setPlan(p => ({ ...p, investments: newInvestments }));
-  }, [plan.total_rounds, editingPlan]); // editingPlan이 변경될 때도 investments를 초기화하기 위해 의존성 추가
+  }, [plan.simulation_rounds, editingPlan]); // editingPlan이 변경될 때도 investments를 초기화하기 위해 의존성 추가
 
   const handleNext = () => setStep(s => s + 1);
   const handleBack = () => setStep(s => s - 1);
@@ -433,12 +433,12 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
             <p className="text-sm mb-2">최소: {min}, 최대: {max}</p>
             <Input 
               type="number" 
-              value={plan.total_rounds} 
+              value={plan.simulation_rounds} 
               onChange={e => {
                 let val = parseInt(e.target.value, 10) || min;
                 if (val < min) val = min;
                 if (val > max) val = max;
-                setPlan({ ...plan, total_rounds: val });
+                setPlan({ ...plan, simulation_rounds: val });
               }}
             />
           </div>
@@ -500,7 +500,7 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
           <h3 className="font-bold">플랜 요약</h3>
           <p>플랜 타입: {plan.plan_type}</p>
           <p>회사 회차: {plan.company_round}</p>
-          <p>총 회차: {plan.total_rounds}</p>
+          <p>총 시뮬레이션 회차: {plan.simulation_rounds}</p>
           <div className="flex justify-end gap-4 mt-4">
             <Button onClick={() => setConfirmModalOpen(false)} className="bg-gray-500 hover:bg-gray-600">취소</Button>
             <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">최종 저장</Button>
