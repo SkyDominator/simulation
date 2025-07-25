@@ -136,6 +136,25 @@ const api = {
     if (!response.ok) throw new Error('명단 확인에 실패했습니다.');
     return response.json();
   },
+
+    // Add parameter version check
+    checkParametersVersion: async (token: string): Promise<{version: string, last_updated: string}> => {
+    const response = await fetch(`${API_BASE_URL}/parameters/version`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error('파라미터 버전 확인에 실패했습니다.');
+    return response.json();
+    },
+
+    // Add parameters fetching
+    getParameters: async (token: string): Promise<{parameters: typeof DEFAULT_INVESTMENT_AMOUNTS}> => {
+    const response = await fetch(`${API_BASE_URL}/parameters`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error('파라미터를 불러오는 데 실패했습니다.');
+    return response.json();
+    },
+
   // 사용자의 모든 플랜 가져오기
   getPlans: async (token: string): Promise<Plan[]> => {
     const response = await fetch(`${API_BASE_URL}/plans`, {
@@ -735,3 +754,5 @@ function App() {
 }
 
 export default App;
+
+
