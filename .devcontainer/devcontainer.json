@@ -2,7 +2,7 @@
   "name": "My Full-Stack App",
   "dockerComposeFile": "../docker-compose.yml",
   "service": "backend",
-  "workspaceFolder": "/workspaces",
+  "workspaceFolder": "/src",
 
   // postCreateCommand가 없어야 합니다.
 
