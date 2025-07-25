@@ -497,13 +497,13 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
             <p className="text-sm mb-2">최소: {min}, 최대: {max}</p>
             <Input 
               type="number" 
-              value={plan.simulation_rounds === null ? "" : plan.simulation_rounds} 
+              value={isNaN(plan.simulation_rounds) ? "" : plan.simulation_rounds} 
               onChange={e => {
-                // 일단 인풋 필드에 어떤 값이던지 받아들이고 이 값으로 plan.simulation_rounds를 업데이트합니다. 그리고 "다음 단계"를 눌렀을 때, handleNext에서 handleValidation을 호출하여 검증합니다. 그래서 조건에 따라 그냥 넘어가거나 아니면 handleNext에서 step을 증가시키지 않고 Modal을 띄워서 min/max로 수정할지 말지를 문의합니다. 
-                
-                const val = e.target.value
+                // 일단 인풋 필드에 어떤 값이던지 받아들이고 이 값으로 plan.simulation_rounds를 업데이트합니다. 그리고 "다음 단계"를 눌렀을 때, handleNext에서 handleValidation을 호출하여 검증합니다. 그래서 조건에 따라 그냥 넘어가거나 아니면 handleNext에서 step을 증가시키지 않고 Modal을 띄워서 min/max로 수정할지 말지를 문의합니다.
+
+                const val = e.target.value;
                 // Update value immediately without validation
-                setPlan({ ...plan, simulation_rounds: val === "" ? null : parseInt(val, 10) });
+                setPlan({ ...plan, simulation_rounds: val === "" ? NaN : parseInt(val, 10) });
               }}
               // Remove the onBlur validation as we'll validate when Next is clicked
             />
