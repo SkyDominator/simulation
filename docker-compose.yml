@@ -8,12 +8,14 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./src/backend:/app:cached
-      - /app/backend-venv  # Exclude virtual environment
+      - ./src:/src:cached
+      - /src/backend/backend-venv  # Exclude virtual environment
     env_file:
       - .env
     environment:
-      - PYTHONPATH=/app
+      - PYTHONPATH=/src/backend
+    working_dir: /src/backend
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
   frontend:
     build:
@@ -22,9 +24,11 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./src/my-pwa-frontend:/app:cached
-      - /app/node_modules  # Exclude node_modules
+      - ./src:/src:cached
+      - /src/my-pwa-frontend/node_modules  # Exclude node_modules
     environment:
       - VITE_HOST=0.0.0.0
     depends_on:
       - backend
+    working_dir: /src/my-pwa-frontend
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
