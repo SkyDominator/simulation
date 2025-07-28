@@ -53,6 +53,57 @@ class SimulationResults:
         """
         self.history.append(result)
     
+    def _find_complete_turning_point(self) -> Optional[int]:
+        """
+        Find the complete turning point round where no following rounds show
+        direction changes toward negative side.
+        
+        Returns:
+            Optional[int]: The round number of the complete turning point, or None if not found
+        """
+        if len(self.history) <= 2:
+            return None
+        
+        # Work backwards from the end to find the last round where
+        # profit direction changed to negative
+        last_negative_direction_change = None
+        
+        for i in range(len(self.history) - 1, 0, -1):
+            current_cumulative = self.history[i].cumulative_net_profit
+            prev_cumulative = self.history[i-1].cumulative_net_profit
+            
+            # If current round shows a decrease in cumulative profit (negative direction)
+            if current_cumulative < prev_cumulative:
+                last_negative_direction_change = self.history[i].company_round
+                break
+        
+        # If no negative direction change was found, the complete turning point
+        # is the first turning point (if it exists)
+        if last_negative_direction_change is None:
+            # Find the first positive direction change
+            for i in range(1, len(self.history)):
+                current_cumulative = self.history[i].cumulative_net_profit
+                prev_cumulative = self.history[i-1].cumulative_net_profit
+                
+                if current_cumulative > prev_cumulative:
+                    return self.history[i].company_round
+            return None
+        
+        # The complete turning point is the round after the last negative direction change
+        for i, result in enumerate(self.history):
+            if result.company_round > last_negative_direction_change:
+                # Check if this round and all following rounds maintain positive direction
+                is_complete_turning_point = True
+                for j in range(i, len(self.history) - 1):
+                    if self.history[j+1].cumulative_net_profit < self.history[j].cumulative_net_profit:
+                        is_complete_turning_point = False
+                        break
+                
+                if is_complete_turning_point:
+                    return result.company_round
+        
+        return None
+    
     def to_dataframe(self) -> pd.DataFrame:
         """
         Convert simulation results to a pandas DataFrame.
@@ -101,8 +152,9 @@ class SimulationResults:
                 investment_before_profit = -self.history[pre_positive_idx].cumulative_net_profit
         
         # Find the round where cumulative net profit starts turning in positive direction
-        # (gets less negative or more positive)
-        turning_point_round = None
+        # (gets less negative or more positive) - this is the FIRST turning point
+        first_turning_point_round = None
+        complete_turning_point_round = None
         max_negative_profit = 0
         
         if len(self.history) > 1:
@@ -119,11 +171,16 @@ class SimulationResults:
                     max_negative_profit = current_cumulative
                 
                 # If the cumulative profit is increasing (going in positive direction)
-                # and we haven't found a turning point yet
-                if current_cumulative > prev_cumulative and turning_point_round is None:
-                    turning_point_round = result.company_round
+                # and we haven't found the first turning point yet
+                if current_cumulative > prev_cumulative and first_turning_point_round is None:
+                    first_turning_point_round = result.company_round
                 
                 prev_cumulative = current_cumulative
+            
+            # Find the complete turning point - the round after which no following rounds
+            # show direction changes toward negative side
+            if first_turning_point_round is not None:
+                complete_turning_point_round = self._find_complete_turning_point()
         
         return {
             "plan_id": self.plan_id,
@@ -135,7 +192,8 @@ class SimulationResults:
             "average_net_profit_per_round": df['순수익(세후)'].mean(),
             "positive_net_profit_round": positive_round,
             "investment_before_profit": investment_before_profit,
-            "turning_point_round": turning_point_round,  # First round where profit starts moving in positive direction
+            "first_turning_point_round": first_turning_point_round,  # First round where profit starts moving in positive direction
+            "complete_turning_point_round": complete_turning_point_round,  # Round after which no following rounds show negative direction
             "max_negative_profit": max_negative_profit  # Maximum negative value of the cumulative net profit
         }
 
@@ -207,9 +265,13 @@ class MultiPlanSimulationResults:
         lowest_investment_plan = min((s for s in summaries.values() if s.get('investment_before_profit', 0) > 0), 
                                     key=lambda x: x.get('investment_before_profit', float('inf')), default=None)
         
-        # Find plan with earliest turning point (when profit starts moving in positive direction)
-        earliest_turning_point_plan = min((s for s in summaries.values() if s.get('turning_point_round')),
-                                        key=lambda x: x.get('turning_point_round', float('inf')), default=None)
+        # Find plan with earliest first turning point (when profit starts moving in positive direction)
+        earliest_first_turning_point_plan = min((s for s in summaries.values() if s.get('first_turning_point_round')),
+                                        key=lambda x: x.get('first_turning_point_round', float('inf')), default=None)
+        
+        # Find plan with earliest complete turning point (sustained positive direction)
+        earliest_complete_turning_point_plan = min((s for s in summaries.values() if s.get('complete_turning_point_round')),
+                                          key=lambda x: x.get('complete_turning_point_round', float('inf')), default=None)
         
         # Find plan with smallest max negative profit (least negative dip)
         least_negative_dip_plan = max((s for s in summaries.values()),
@@ -223,7 +285,8 @@ class MultiPlanSimulationResults:
             "best_avg_profit_plan": best_avg_profit.get('plan_id') if best_avg_profit else None,
             "fastest_positive_plan": fastest_positive.get('plan_id') if fastest_positive else None,
             "lowest_investment_plan": lowest_investment_plan.get('plan_id') if lowest_investment_plan else None,
-            "earliest_turning_point_plan": earliest_turning_point_plan.get('plan_id') if earliest_turning_point_plan else None,
+            "earliest_first_turning_point_plan": earliest_first_turning_point_plan.get('plan_id') if earliest_first_turning_point_plan else None,
+            "earliest_complete_turning_point_plan": earliest_complete_turning_point_plan.get('plan_id') if earliest_complete_turning_point_plan else None,
             "least_negative_dip_plan": least_negative_dip_plan.get('plan_id') if least_negative_dip_plan else None,
             "total_payments_all_plans": total_payments_all_plans,
             "total_revenue_all_plans": total_revenue_all_plans,
@@ -250,7 +313,8 @@ class MultiPlanSimulationResults:
                 'Avg Profit per Round': summary.get('average_net_profit_per_round', 0),
                 'First Positive Round': summary.get('positive_net_profit_round', 'Never'),
                 'Investment Before Profit': summary.get('investment_before_profit', 0),
-                'Turning Point Round': summary.get('turning_point_round', 'Never'),  # Round when profit starts moving up
+                'First Turning Point Round': summary.get('first_turning_point_round', 'Never'),  # First round when profit starts moving up
+                'Complete Turning Point Round': summary.get('complete_turning_point_round', 'Never'),  # Round with sustained positive direction
                 'Max Negative Profit': summary.get('max_negative_profit', 0)  # Deepest dip in the investment hole
             })
         
