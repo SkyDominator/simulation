@@ -3,6 +3,13 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Python Debugger: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal"
+    },
+    {
       "type": "pwa-chrome",
       "request": "launch",
       "name": "Vite: Chrome",
@@ -11,4 +18,3 @@
     }
   ]
 }
-
