@@ -9,6 +9,9 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { createClient, type Session, type User } from '@supabase/supabase-js';
 
+// 투자 금액 상수 파일을 import합니다.
+import { DEFAULT_INVESTMENT_AMOUNTS } from './constants';
+
 // --- 1. 타입 정의: 앱 전체에서 사용될 데이터 구조를 정의합니다 ---
 // 이 부분은 TypeScript의 장점으로, 코드의 안정성을 높여줍니다.
 
@@ -531,8 +534,9 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
             <h2 className="text-xl font-bold mb-4">2. 회사 회차 선택</h2>
             <Input 
               type="number" 
-              value={plan.company_round} 
-              onChange={e => setPlan({ ...plan, company_round: parseInt(e.target.value, 10) || 1 })}
+              value={plan.company_round == 0 ? "" : plan.company_round}
+              placeholder="회차를 입력하세요 (예: 1)" 
+              onChange={e => setPlan({ ...plan, company_round: parseInt(e.target.value, 10) || 0 })}
             />
           </div>
         );
@@ -545,7 +549,8 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
             <h2 className="text-xl font-bold mb-4">3. 시뮬레이션 총 회차 수 선택</h2>
             <p className="text-sm mb-2">최소: {min}, 최대: {max}</p>
             <Input 
-              type="number" 
+              type="number"
+              placeholder={`최소 ${min}, 최대 ${max} 회차`}
               value={isNaN(plan.simulation_rounds) ? "" : plan.simulation_rounds} 
               onChange={e => {
                 // 일단 인풋 필드에 어떤 값이던지 받아들이고 이 값으로 plan.simulation_rounds를 업데이트합니다. 그리고 "다음 단계"를 눌렀을 때, handleNext에서 handleValidation을 호출하여 검증합니다. 그래서 조건에 따라 그냥 넘어가거나 아니면 handleNext에서 step을 증가시키지 않고 Modal을 띄워서 min/max로 수정할지 말지를 문의합니다.
