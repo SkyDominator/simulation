@@ -440,8 +440,9 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
   // 회차별 투자액 변경 핸들러
   // 사용자가 입력한 투자액을 업데이트합니다. 투자액 업데이트하면 re-render
   const handleInvestmentChange = (round: number, amount: string) => {
+    const parsedAmount = amount === '' ? 0 : parseInt(amount, 10);
     const newInvestments = plan.investments.map(inv => 
-      inv.round === round ? { ...inv, amount: parseInt(amount, 10) || 0 } : inv
+      inv.round === round ? { ...inv, amount: parsedAmount } : inv
     );
     setPlan({ ...plan, investments: newInvestments });
   };
@@ -484,10 +485,16 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
     try {
         const finalPlan = {
         ...plan,
-        investments: plan.investments.map(inv => ({
-            ...inv,
-            amount: inv.amount === 0 ? 100 : inv.amount
-        }))
+        investments: plan.investments.map(inv => {
+            // If amount is 0, use the default minimum investment amount for this plan type and round
+            const planType = plan.plan_type as keyof typeof DEFAULT_INVESTMENT_AMOUNTS;
+            const roundKey = inv.round as keyof typeof DEFAULT_INVESTMENT_AMOUNTS[typeof planType]['min_payment_new'];
+            const defaultAmount = DEFAULT_INVESTMENT_AMOUNTS[planType].min_payment_new[roundKey];
+            return {
+                ...inv,
+                amount: inv.amount === 0 ? defaultAmount : inv.amount
+            };
+        })
         };
         
         if (editingPlan) {
@@ -578,19 +585,26 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
                   </tr>
                 </thead>
                 <tbody>
-                  {plan.investments.map((inv, index) => (
-                    <tr key={inv.round} className="bg-white border-b">
-                      <td className="px-6 py-4">{plan.company_round + index}</td>
-                      <td className="px-6 py-4">{inv.round}</td>
-                      <td className="px-6 py-4">
-                        <Input 
-                          type="number" 
-                          value={inv.amount} 
-                          onChange={e => handleInvestmentChange(inv.round, e.target.value)} 
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                  {plan.investments.map((inv, index) => {
+                    // Get the default investment amount for this plan type and round
+                    const planType = plan.plan_type as keyof typeof DEFAULT_INVESTMENT_AMOUNTS;
+                    const roundKey = inv.round as keyof typeof DEFAULT_INVESTMENT_AMOUNTS[typeof planType]['min_payment_new'];
+                    const defaultAmount = DEFAULT_INVESTMENT_AMOUNTS[planType].min_payment_new[roundKey];
+                    return (
+                      <tr key={inv.round} className="bg-white border-b">
+                        <td className="px-6 py-4">{plan.company_round + index}</td>
+                        <td className="px-6 py-4">{inv.round}</td>
+                        <td className="px-6 py-4">
+                          <Input 
+                            type="number" 
+                            value={inv.amount || ''}
+                            placeholder={`${defaultAmount.toLocaleString()}`}
+                            onChange={e => handleInvestmentChange(inv.round, e.target.value)}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
