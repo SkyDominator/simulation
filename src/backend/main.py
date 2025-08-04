@@ -2,7 +2,7 @@ import os
 import hashlib
 import requests # JWKS를 가져오기 위해 추가
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, status
@@ -15,6 +15,8 @@ from fastapi.security import HTTPBearer
 from constants import PLAN_PARAMETERS
 
 import json
+
+from simulation_service import FinancialSimulationService
 
 # 로깅 설정
 import logging
@@ -84,6 +86,17 @@ class ParametersVersionResponse(BaseModel):
 # Add new model for plan parameters
 class PlanParametersResponse(BaseModel):
     parameters: Dict[str, Dict[str, Any]]
+    
+# Custom simulation request model
+class CustomSimulationRequest(BaseModel):
+    plan_id: str
+    max_rounds: int
+    scheduled_payment: Dict[str, int]
+    
+# Custom simulation response model
+class CustomSimulationResponse(BaseModel):
+    plan_id: str
+    history: List[Dict[str, Any]]
 
 # --- 3. 사용자 인증 의존성 ---
 
@@ -129,9 +142,11 @@ async def authenticate_jwt_token(token_result: HTTPAuthorizationCredentials = De
             audience="authenticated" 
         )
         
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        sub = payload.get("sub")
+        if sub is None:
             raise credentials_exception
+            
+        user_id: str = str(sub)
             
     except (JWTError, AttributeError, requests.exceptions.RequestException):
         raise credentials_exception
@@ -228,6 +243,48 @@ def run_simulation(req: SimulationRequest, user_id: str = Depends(authenticate_j
     # 예시 결과
     simulation_result = {"expected_return": 15000, "principal": 10000}
     return simulation_result
+
+# 사용자 정의 시뮬레이션 API 엔드포인트
+@app.post("/api/custom-simulation", response_model=CustomSimulationResponse)
+def custom_simulation(request: CustomSimulationRequest, user_id: str = Depends(authenticate_jwt_token)):
+    """
+    Run a financial simulation with custom parameters:
+    - plan_id: The plan type (A, B, C, etc.)
+    - max_rounds: The number of rounds to simulate
+    - scheduled_payment: A dictionary mapping round numbers to payment amounts
+    
+    Other parameters will use defaults from the specified plan.
+    """
+    try:
+        # Convert string keys in scheduled_payment dict to integers
+        scheduled_payment = {int(k): v for k, v in request.scheduled_payment.items()}
+        
+        # Validate the plan ID
+        if request.plan_id not in PLAN_PARAMETERS:
+            raise HTTPException(status_code=400, detail=f"Invalid plan ID: {request.plan_id}")
+        
+        # Get max_rounds from plan or use provided value, whichever is smaller
+        plan_max_rounds = PLAN_PARAMETERS[request.plan_id].get('max_rounds', 36)
+        max_rounds = min(request.max_rounds, plan_max_rounds)
+        
+        # Initialize the simulation service with the specified plan and custom scheduled payments
+        simulator = FinancialSimulationService(
+            plan_id=request.plan_id,
+            scheduled_payment=scheduled_payment
+        )
+        
+        # Run the simulation
+        results = simulator.run_simulation(max_rounds)
+        
+        # Convert results to dictionary format for the response
+        return results.to_dict()
+        
+    except ValueError as e:
+        logging.error(f"Simulation error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.error(f"Unexpected error in simulation: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Simulation failed: {str(e)}")
 
 # --- 5. 로컬에서 개발 서버 실행 ---
 
