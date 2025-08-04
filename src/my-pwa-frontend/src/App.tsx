@@ -23,6 +23,23 @@ interface Plan {
   simulation_rounds: number;
   investments: { round: number; amount: number }[];
   user_id?: string;
+  simulation_results?: SimulationResults;
+}
+
+// 시뮬레이션 결과 구조
+interface SimulationRoundResult {
+  company_round: number;
+  investor_count: number;
+  total_payment: number;
+  total_revenue_before_tax: number;
+  total_revenue_after_tax: number;
+  net_profit_after_tax: number;
+  cumulative_net_profit: number;
+}
+
+interface SimulationResults {
+  plan_id: string;
+  history: SimulationRoundResult[];
 }
 
 // 인증 관련 상태와 함수들을 담을 컨텍스트(Context) 타입
@@ -194,7 +211,7 @@ const api = {
     return Promise.resolve();
   },
   // 시뮬레이션 결과 가져오기
-  runSimulation: async (plan: Plan, token: string): Promise<any> => {
+  runSimulation: async (plan: Plan, token: string): Promise<SimulationResults> => {
      const response = await fetch(`${API_BASE_URL}/run-simulation`, {
       method: 'POST',
       headers: {
@@ -204,6 +221,29 @@ const api = {
       body: JSON.stringify({ plan_data: plan }),
     });
     if (!response.ok) throw new Error('시뮬레이션 실행에 실패했습니다.');
+    return response.json();
+  },
+  
+  // 커스텀 시뮬레이션 실행 API
+  runCustomSimulation: async (
+    plan_id: string,
+    max_rounds: number,
+    scheduled_payment: Record<string, number>,
+    token: string
+  ): Promise<SimulationResults> => {
+    const response = await fetch(`${API_BASE_URL}/custom-simulation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        plan_id,
+        max_rounds,
+        scheduled_payment
+      }),
+    });
+    if (!response.ok) throw new Error('커스텀 시뮬레이션 실행에 실패했습니다.');
     return response.json();
   }
 };
@@ -282,7 +322,8 @@ const WhitelistCheckPage: React.FC<{ onVerified: () => void }> = ({ onVerified }
       } else {
         setError('가입 대상이 아닙니다. 관리자에게 문의하세요.');
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      console.error('Whitelist check error:', err);
       setError('확인 중 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setLoading(false);
@@ -398,6 +439,8 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
     investments: [],
   });
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
   // Add new state variables for validation modal
   const [isValidationModalOpen, setValidationModalOpen] = useState(false);
   const [validationData, setValidationData] = useState<{
@@ -414,7 +457,7 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
         return existing || { round: i + 1, amount: 0 }; // 최소 투자액은 0으로 초기화
     });
     setPlan(p => ({ ...p, investments: newInvestments }));
-  }, [plan.simulation_rounds, editingPlan]); // editingPlan이 변경될 때도 investments를 초기화하기 위해 의존성 추가
+  }, [plan.simulation_rounds, plan.investments, editingPlan]); // editingPlan이 변경될 때도 investments를 초기화하기 위해 의존성 추가
   // 하지만, editingPlan이 null이 아닐 때는 기존 투자 정보를 유지해야 합니다.
 
   // Update handleNext to include validation
@@ -474,43 +517,78 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
   };
 
  // 최종 저장 핸들러
-  // 사용자가 입력한 플랜 정보를 백엔드에 저장합니다.
-// Improve API call error handling
+  // 사용자가 입력한 플랜 정보를 백엔드에 저장하고 시뮬레이션 결과를 가져옵니다.
     const handleSave = async () => {
     if (!session) return;
     
     // Set a flag to track if component is still mounted
     let isMounted = true;
+    // Show loading state
+    setIsLoading(true);
     
     try {
-        const finalPlan = {
-        ...plan,
-        investments: plan.investments.map(inv => {
+        // 사용자가 입력한 scheduled_payment 객체 만들기
+        const scheduled_payment: Record<string, number> = {};
+        
+        plan.investments.forEach(inv => {
             // If amount is 0, use the default minimum investment amount for this plan type and round
             const planType = plan.plan_type as keyof typeof DEFAULT_INVESTMENT_AMOUNTS;
             const roundKey = inv.round as keyof typeof DEFAULT_INVESTMENT_AMOUNTS[typeof planType]['min_payment_new'];
             const defaultAmount = DEFAULT_INVESTMENT_AMOUNTS[planType].min_payment_new[roundKey];
-            return {
-                ...inv,
-                amount: inv.amount === 0 ? defaultAmount : inv.amount
-            };
-        })
+            const amount = inv.amount === 0 ? defaultAmount : inv.amount;
+            
+            // Convert to string key for the API
+            scheduled_payment[inv.round.toString()] = amount;
+        });
+        
+        // 커스텀 시뮬레이션 API 호출
+        const simulationResults = await api.runCustomSimulation(
+            plan.plan_type,
+            plan.simulation_rounds,
+            scheduled_payment,
+            session.access_token
+        );
+        
+        // 시뮬레이션 결과 저장
+        const finalPlan = {
+            ...plan,
+            investments: plan.investments.map(inv => {
+                // If amount is 0, use the default minimum investment amount for this plan type and round
+                const planType = plan.plan_type as keyof typeof DEFAULT_INVESTMENT_AMOUNTS;
+                const roundKey = inv.round as keyof typeof DEFAULT_INVESTMENT_AMOUNTS[typeof planType]['min_payment_new'];
+                const defaultAmount = DEFAULT_INVESTMENT_AMOUNTS[planType].min_payment_new[roundKey];
+                return {
+                    ...inv,
+                    amount: inv.amount === 0 ? defaultAmount : inv.amount
+                };
+            }),
+            simulation_results: simulationResults
         };
         
+        // 플랜 저장
         if (editingPlan) {
-        await api.updatePlan(finalPlan, session.access_token);
+            await api.updatePlan(finalPlan, session.access_token);
         } else {
-        await api.createPlan(finalPlan, session.access_token);
+            await api.createPlan(finalPlan, session.access_token);
         }
         
         if (isMounted) {
-        setConfirmModalOpen(false);
-        setPage('main');
+            setConfirmModalOpen(false);
+            // 저장 완료 후 메인 페이지로 이동
+            setPage('main');
+            // 저장 완료 알림 및 결과 페이지 이동 옵션
+            if (confirm('플랜이 저장되었습니다. 결과 보기 페이지로 이동하시겠습니까?')) {
+                setPage('results');
+            }
         }
     } catch (error) {
-        console.error("Save error:", error);
+        console.error("Save or simulation error:", error);
         if (isMounted) {
-        alert("저장에 실패했습니다.");
+            alert("저장 또는 시뮬레이션에 실패했습니다.");
+        }
+    } finally {
+        if (isMounted) {
+            setIsLoading(false);
         }
     }
     
@@ -638,10 +716,18 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
           <p>총 시뮬레이션 회차: {plan.simulation_rounds}</p>
           <div className="flex justify-end gap-4 mt-4">
             <Button onClick={() => setConfirmModalOpen(false)} className="bg-gray-500 hover:bg-gray-600">취소</Button>
-            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">최종 저장</Button>
+            <Button 
+              onClick={handleSave} 
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={isLoading}
+            >
+              {isLoading ? '처리 중...' : '최종 저장'}
+            </Button>
           </div>
         </div>
       </Modal>
+
+      {/* No simulation results modal - results are shown in ResultsPage */}
 
       {/* Add validation modal */}
       <Modal 
@@ -668,15 +754,162 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
 
 // 6.5. 결과 보기 페이지
 const ResultsPage: React.FC<{ setPage: (page: Page) => void }> = ({ setPage }) => {
-    // 이 페이지는 사용자의 모든 플랜을 가져와 각 플랜에 대한 시뮬레이션 결과를 보여줘야 합니다.
-    // 현재는 UI 구조만 잡아놓았습니다.
-    return (
-        <div className="p-8 max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold mb-8">시뮬레이션 결과</h1>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <p>여기에 각 플랜별 탭과 시뮬레이션 결과가 표시됩니다.</p>
+    const { session } = useAuth();
+    const [plans, setPlans] = useState<Plan[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+    const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+
+    // 플랜 목록 가져오기
+    useEffect(() => {
+        const fetchPlans = async () => {
+            if (!session) return;
+            
+            setLoading(true);
+            setError(null);
+            
+            try {
+                const fetchedPlans = await api.getPlans(session.access_token);
+                setPlans(fetchedPlans);
+                
+                // 기본적으로 첫 번째 플랜 선택
+                if (fetchedPlans.length > 0) {
+                    setSelectedPlanId(fetchedPlans[0].id || null);
+                    setSelectedPlan(fetchedPlans[0]);
+                }
+            } catch (err) {
+                console.error('Failed to fetch plans:', err);
+                setError('플랜 목록을 불러오는데 실패했습니다.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        fetchPlans();
+    }, [session]);
+    
+    // 플랜 선택 변경 시
+    const handlePlanChange = (planId: string) => {
+        const plan = plans.find(p => p.id === planId) || null;
+        setSelectedPlanId(planId);
+        setSelectedPlan(plan);
+    };
+    
+    // 선택된 플랜의 시뮬레이션 결과 표시
+    const renderSimulationResults = () => {
+        if (!selectedPlan?.simulation_results) {
+            return (
+                <div className="text-center py-8">
+                    <p>선택한 플랜의 시뮬레이션 결과가 없습니다.</p>
+                </div>
+            );
+        }
+        
+        const results = selectedPlan.simulation_results;
+        const lastRound = results.history[results.history.length - 1];
+        
+        return (
+            <div>
+                <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <h3 className="font-bold text-gray-700 mb-2">플랜 정보</h3>
+                        <p>플랜 타입: <span className="font-semibold">{selectedPlan.plan_type}</span></p>
+                        <p>회사 회차: <span className="font-semibold">{selectedPlan.company_round}</span></p>
+                        <p>총 시뮬레이션 회차: <span className="font-semibold">{selectedPlan.simulation_rounds}</span></p>
+                    </div>
+                    
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <h3 className="font-bold text-gray-700 mb-2">시뮬레이션 요약</h3>
+                        <p>총 라운드: <span className="font-semibold">{results.history.length}</span></p>
+                        <p>최종 투자자 수: <span className="font-semibold">{lastRound?.investor_count || 0}</span></p>
+                    </div>
+                    
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <h3 className="font-bold text-gray-700 mb-2">최종 수익 결과</h3>
+                        <p>최종 누적 순이익: <span className="font-semibold text-lg text-purple-700">{lastRound?.cumulative_net_profit.toLocaleString() || 0} 원</span></p>
+                    </div>
+                </div>
+                
+                <div className="overflow-x-auto mb-4">
+                    <h3 className="font-bold text-lg mb-3">상세 시뮬레이션 결과</h3>
+                    <table className="w-full text-sm text-left">
+                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
+                            <tr>
+                                <th scope="col" className="px-3 py-2">회차</th>
+                                <th scope="col" className="px-3 py-2">투자자 수</th>
+                                <th scope="col" className="px-3 py-2">총 투자금</th>
+                                <th scope="col" className="px-3 py-2">세후 수익</th>
+                                <th scope="col" className="px-3 py-2">순이익</th>
+                                <th scope="col" className="px-3 py-2">누적 순이익</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {results.history.map((round) => (
+                                <tr key={round.company_round} className="bg-white border-b hover:bg-gray-50">
+                                    <td className="px-3 py-2">{round.company_round}</td>
+                                    <td className="px-3 py-2">{round.investor_count}</td>
+                                    <td className="px-3 py-2">{round.total_payment.toLocaleString()}</td>
+                                    <td className="px-3 py-2">{round.total_revenue_after_tax.toLocaleString()}</td>
+                                    <td className="px-3 py-2">{round.net_profit_after_tax.toLocaleString()}</td>
+                                    <td className="px-3 py-2 font-semibold">
+                                        {round.cumulative_net_profit.toLocaleString()}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <Button onClick={() => setPage('main')} className="mt-4 bg-gray-200 text-black hover:bg-gray-300">메인으로 돌아가기</Button>
+        );
+    };
+
+    return (
+        <div className="p-8 max-w-6xl mx-auto">
+            <h1 className="text-3xl font-bold mb-8">시뮬레이션 결과</h1>
+            
+            {loading ? (
+                <div className="text-center py-16">
+                    <p className="text-lg">데이터 로딩 중...</p>
+                </div>
+            ) : error ? (
+                <div className="bg-red-100 p-4 rounded-md text-red-700 mb-4">
+                    <p>{error}</p>
+                </div>
+            ) : plans.length === 0 ? (
+                <div className="bg-yellow-50 p-6 rounded-lg shadow-md mb-4">
+                    <p>아직 생성된 플랜이 없습니다. 먼저 플랜을 생성해주세요.</p>
+                </div>
+            ) : (
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                    <div className="mb-6">
+                        <h2 className="text-xl font-bold mb-3">플랜 선택</h2>
+                        <div className="flex flex-wrap gap-2">
+                            {plans.map((plan) => (
+                                <Button 
+                                    key={plan.id} 
+                                    onClick={() => handlePlanChange(plan.id!)}
+                                    className={`${
+                                        selectedPlanId === plan.id 
+                                        ? 'bg-blue-600 hover:bg-blue-700' 
+                                        : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
+                                    }`}
+                                >
+                                    {plan.plan_type} 플랜 ({plan.company_round}회차)
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                        {renderSimulationResults()}
+                    </div>
+                </div>
+            )}
+            
+            <Button onClick={() => setPage('main')} className="mt-4 bg-gray-200 text-black hover:bg-gray-300">
+                메인으로 돌아가기
+            </Button>
         </div>
     );
 }
