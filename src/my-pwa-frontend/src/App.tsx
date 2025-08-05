@@ -431,13 +431,41 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
 
   // 총 회차가 변경될 때마다 investment 배열을 자동으로 생성/조정합니다.
   useEffect(() => {
+    // 이미 investments가 있고 길이가 simulation_rounds와 같으면 수정하지 않음
+    if (editingPlan && plan.investments && plan.investments.length === plan.simulation_rounds) {
+      return;
+    }
+    
     const newInvestments = Array.from({ length: plan.simulation_rounds }, (_, i) => {
-        const existing = plan.investments.find(inv => inv.round === i + 1);
-        return existing || { round: i + 1, amount: 0 }; // 최소 투자액은 0으로 초기화
+        // 기존 투자액이 있는지 확인
+        const existing = plan.investments?.find(inv => inv.round === i + 1);
+        
+        if (existing) {
+          return existing; // 기존 투자액 사용
+        } else {
+          // 기본 투자액 정보 가져오기 시도
+          let defaultAmount = 0;
+          try {
+            const planType = plan.plan_type as keyof typeof DEFAULT_INVESTMENT_AMOUNTS;
+            const round = i + 1;
+            // 안전하게 타입 처리 및 존재 여부 확인
+            const planData = DEFAULT_INVESTMENT_AMOUNTS[planType];
+            if (planData && planData.min_payment_new) {
+              // 타입 안전하게 처리
+              const minPayments = planData.min_payment_new as Record<string | number, number>;
+              if (round in minPayments) {
+                defaultAmount = minPayments[round];
+              }
+            }
+          } catch (error) {
+            console.error("Error getting default investment amount:", error);
+          }
+          return { round: i + 1, amount: defaultAmount }; // 기본 투자액으로 초기화
+        }
     });
+    
     setPlan(p => ({ ...p, investments: newInvestments }));
-  }, [plan.simulation_rounds, plan.investments, editingPlan]); // editingPlan이 변경될 때도 investments를 초기화하기 위해 의존성 추가
-  // 하지만, editingPlan이 null이 아닐 때는 기존 투자 정보를 유지해야 합니다.
+  }, [plan.simulation_rounds, plan.plan_type, plan.investments, editingPlan]); // 모든 관련 의존성 포함
 
   // Update handleNext to include validation
   const handleNext = () => {
@@ -451,6 +479,36 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
       if (!handleValidation(plan.simulation_rounds, min, max, 'simulation_rounds')) {
         return;
       }
+      
+      // Step 3에서 4로 넘어갈 때 investments 배열을 강제로 업데이트
+      const newInvestments = Array.from({ length: plan.simulation_rounds }, (_, i) => {
+        // 기존 투자액이 있는지 확인
+        const existing = plan.investments?.find(inv => inv.round === i + 1);
+        
+        if (existing) {
+          return existing; // 기존 투자액 사용
+        } else {
+          // 기본 투자액 정보 가져오기
+          let defaultAmount = 0;
+          try {
+            const planType = plan.plan_type as keyof typeof DEFAULT_INVESTMENT_AMOUNTS;
+            const planData = DEFAULT_INVESTMENT_AMOUNTS[planType];
+            if (planData && planData.min_payment_new) {
+              const minPayments = planData.min_payment_new as Record<string | number, number>;
+              const round = i + 1;
+              if (round in minPayments) {
+                defaultAmount = minPayments[round];
+              }
+            }
+          } catch (error) {
+            console.error("Error setting default investment amount:", error);
+          }
+          return { round: i + 1, amount: defaultAmount };
+        }
+      });
+      
+      // 직접 투자 금액 배열 업데이트
+      setPlan(prevPlan => ({ ...prevPlan, investments: newInvestments }));
     }
     
     // If validation passes or we're on another step, proceed normally
@@ -462,6 +520,8 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
   // 회차별 투자액 변경 핸들러
   // 사용자가 입력한 투자액을 업데이트합니다. 투자액 업데이트하면 re-render
   const handleInvestmentChange = (round: number, amount: string) => {
+    // 사용자가 값을 지우면 빈 문자열로 유지하되, investments에는 0을 저장
+    // 0은 handleSave에서 defaultAmount로 대체될 것임
     const parsedAmount = amount === '' ? 0 : parseInt(amount, 10);
     const newInvestments = plan.investments.map(inv => 
       inv.round === round ? { ...inv, amount: parsedAmount } : inv
@@ -510,11 +570,25 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
         const scheduled_payment: Record<string, number> = {};
         
         plan.investments.forEach(inv => {
-            // If amount is 0, use the default minimum investment amount for this plan type and round
+            // If amount is 0 or not set, use the default minimum investment amount for this plan type and round
             const planType = plan.plan_type as keyof typeof DEFAULT_INVESTMENT_AMOUNTS;
-            const roundKey = inv.round as keyof typeof DEFAULT_INVESTMENT_AMOUNTS[typeof planType]['min_payment_new'];
-            const defaultAmount = DEFAULT_INVESTMENT_AMOUNTS[planType].min_payment_new[roundKey];
-            const amount = inv.amount === 0 ? defaultAmount : inv.amount;
+            // 타입 안전하게 처리
+            let defaultAmount = 0;
+            try {
+                const planData = DEFAULT_INVESTMENT_AMOUNTS[planType];
+                if (planData && planData.min_payment_new) {
+                    // 타입 안전하게 처리
+                    const minPayments = planData.min_payment_new as Record<string | number, number>;
+                    if (inv.round in minPayments) {
+                        defaultAmount = minPayments[inv.round];
+                    }
+                }
+            } catch (error) {
+                console.error("Error getting default amount in save:", error);
+            }
+            
+            // 만약 투자액이 없거나 0이면 기본액 사용
+            const amount = !inv.amount || inv.amount <= 0 ? defaultAmount : inv.amount;
             
             // Convert to string key for the API
             scheduled_payment[inv.round.toString()] = amount;
@@ -625,26 +699,52 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
                   </tr>
                 </thead>
                 <tbody>
-                  {plan.investments.map((inv, index) => {
-                    // Get the default investment amount for this plan type and round
-                    const planType = plan.plan_type as keyof typeof DEFAULT_INVESTMENT_AMOUNTS;
-                    const roundKey = inv.round as keyof typeof DEFAULT_INVESTMENT_AMOUNTS[typeof planType]['min_payment_new'];
-                    const defaultAmount = DEFAULT_INVESTMENT_AMOUNTS[planType].min_payment_new[roundKey];
-                    return (
-                      <tr key={inv.round} className="bg-white border-b">
-                        <td className="px-6 py-4">{plan.company_round + index}</td>
-                        <td className="px-6 py-4">{inv.round}</td>
-                        <td className="px-6 py-4">
-                          <Input 
-                            type="number" 
-                            value={inv.amount || ''}
-                            placeholder={`${defaultAmount.toLocaleString()}`}
-                            onChange={e => handleInvestmentChange(inv.round, e.target.value)}
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {plan.investments && plan.investments.length > 0 ? (
+                    plan.investments.map((inv, index) => {
+                      // Get the default investment amount for this plan type and round
+                      const planType = plan.plan_type as keyof typeof DEFAULT_INVESTMENT_AMOUNTS;
+                      // 안전하게 defaultAmount 설정
+                      let defaultAmount = 0;
+                      try {
+                        const planData = DEFAULT_INVESTMENT_AMOUNTS[planType];
+                        if (planData && planData.min_payment_new) {
+                          // 타입 안전하게 처리
+                          const minPayments = planData.min_payment_new as Record<string | number, number>;
+                          if (inv.round in minPayments) {
+                            defaultAmount = minPayments[inv.round];
+                          }
+                        }
+                      } catch (error) {
+                        console.error("Error getting default amount:", error);
+                      }
+                      
+                      return (
+                        <tr key={inv.round} className="bg-white border-b">
+                          <td className="px-6 py-4">{plan.company_round + index}</td>
+                          <td className="px-6 py-4">{inv.round}</td>
+                          <td className="px-6 py-4">
+                            <Input 
+                              type="number" 
+                              value={inv.amount || ''}
+                              placeholder={defaultAmount ? `기본값: ${defaultAmount.toLocaleString()}` : '투자액 입력 (0 불가)'}
+                              onChange={e => {
+                                const val = parseInt(e.target.value);
+                                // 음수 및 0 입력 방지
+                                const amount = isNaN(val) || val <= 0 ? '' : e.target.value;
+                                handleInvestmentChange(inv.round, amount);
+                              }}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-4 text-center">
+                        투자 회차 정보가 없습니다. 이전 단계에서 총 회차를 설정해주세요.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
