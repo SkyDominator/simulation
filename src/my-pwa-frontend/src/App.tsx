@@ -174,8 +174,16 @@ const api = {
 
   // 사용자의 모든 플랜 기본 정보 가져오기 (시뮬레이션 결과 제외)
   getPlans: async (token: string): Promise<Plan[]> => {
-    const response = await fetch(`${API_BASE_URL}/plans`, {
-      headers: { 'Authorization': `Bearer ${token}` },
+    // 캐시 방지를 위해 URL에 타임스탬프 추가
+    const timestamp = new Date().getTime();
+    const response = await fetch(`${API_BASE_URL}/plans?_=${timestamp}`, {
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        // 캐시 방지 헤더 추가
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
     });
     if (!response.ok) throw new Error('플랜 목록을 불러오는 데 실패했습니다.');
     return response.json();
@@ -201,11 +209,17 @@ const api = {
   
   // 커스텀 시뮬레이션 실행 API
   runCustomSimulation: async (
-    plan_id: string,
+    plan_type: string,
     max_rounds: number,
     scheduled_payment: Record<string, number>,
     token: string
   ): Promise<SimulationResults & { success: boolean, message: string }> => {
+    // 고유한 plan_id를 생성 - 현재 시간과 랜덤값을 조합하여 고유성 보장
+    // 이렇게 하면 동일한 plan_type(예: "A")이라도 매번 새로운 plan_id가 생성됨
+    const timestamp = new Date().getTime();
+    const random = Math.floor(Math.random() * 10000);
+    const unique_plan_id = `${plan_type}_${timestamp}_${random}`;
+    
     const response = await fetch(`${API_BASE_URL}/custom-simulation`, {
       method: 'POST',
       headers: {
@@ -213,7 +227,7 @@ const api = {
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
-        plan_id,
+        plan_id: unique_plan_id,  // 고유한 plan_id 사용
         max_rounds,
         scheduled_payment
       }),
@@ -629,7 +643,12 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
             
             // 결과 보기 페이지 이동 옵션
             if (confirm('시뮬레이션 결과 보기 페이지로 이동하시겠습니까?')) {
-                setPage('results');
+                // 잠시 지연 후 결과 페이지로 이동 (백엔드 처리 및 DB 반영 시간 확보)
+                setTimeout(() => {
+                    if (isMounted) {
+                        setPage('results');
+                    }
+                }, 500); // 0.5초 지연
             }
         }
     } catch (error) {
@@ -853,6 +872,7 @@ const ResultsPage: React.FC<{ setPage: (page: Page) => void }> = ({ setPage }) =
             setError(null);
             
             try {
+                // 매번 최신 데이터를 가져오도록 함
                 const fetchedPlans = await api.getPlans(session.access_token);
                 setPlans(fetchedPlans);
                 
@@ -869,7 +889,9 @@ const ResultsPage: React.FC<{ setPage: (page: Page) => void }> = ({ setPage }) =
         };
         
         fetchPlans();
-    }, [session]);
+        
+        // view가 변경될 때마다 데이터 다시 로드 (selection 화면으로 돌아올 때 최신 데이터 표시)
+    }, [session, view]);
     
     // 플랜 선택 변경 시
     const handlePlanChange = (planId: string) => {

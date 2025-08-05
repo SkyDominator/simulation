@@ -263,28 +263,31 @@ def run_simulation(req: SimulationRequest, user_id: str = Depends(authenticate_j
 def custom_simulation(request: CustomSimulationRequest, user_id: str = Depends(authenticate_jwt_token)):
     """
     Run a financial simulation with custom parameters:
-    - plan_id: The plan type (A, B, C, etc.)
+    - plan_id: The unique plan identifier (format: planType_timestamp_random)
     - max_rounds: The number of rounds to simulate
     - scheduled_payment: A dictionary mapping round numbers to payment amounts
     
-    Other parameters will use defaults from the specified plan.
     The simulation results are saved to the Supabase database.
     """
     try:
+        # Extract the plan_type from the plan_id (e.g., 'A_timestamp_random' -> 'A')
+        plan_parts = request.plan_id.split('_')
+        plan_type = plan_parts[0]  # First part is the plan type
+        
+        # Validate the plan type
+        if plan_type not in PLAN_PARAMETERS:
+            raise HTTPException(status_code=400, detail=f"Invalid plan type: {plan_type}")
+        
         # Convert string keys in scheduled_payment dict to integers
         scheduled_payment = {int(k): v for k, v in request.scheduled_payment.items()}
         
-        # Validate the plan ID
-        if request.plan_id not in PLAN_PARAMETERS:
-            raise HTTPException(status_code=400, detail=f"Invalid plan ID: {request.plan_id}")
-        
         # Get max_rounds from plan or use provided value, whichever is smaller
-        plan_max_rounds = PLAN_PARAMETERS[request.plan_id].get('max_rounds', 36)
+        plan_max_rounds = PLAN_PARAMETERS[plan_type].get('max_rounds', 36)
         max_rounds = min(request.max_rounds, plan_max_rounds)
         
         # Initialize the simulation service with the specified plan and custom scheduled payments
         simulator = FinancialSimulationService(
-            plan_id=request.plan_id,
+            plan_id=plan_type,  # Use plan_type for simulation
             scheduled_payment=scheduled_payment
         )
         
@@ -297,7 +300,7 @@ def custom_simulation(request: CustomSimulationRequest, user_id: str = Depends(a
         # Prepare data for Supabase DB
         plan_data = {
             "user_id": user_id,
-            "plan_type": request.plan_id,
+            "plan_type": plan_type,  # Store the actual plan type
             "company_round": 1,  # Default to 1 if not specified
             "simulation_rounds": max_rounds,
             "investments": [
@@ -307,20 +310,8 @@ def custom_simulation(request: CustomSimulationRequest, user_id: str = Depends(a
             "simulation_results": results_dict
         }
         
-        # Try to find if this plan already exists for this user
-        existing_plans = supabase.table("plans").select("id").eq("user_id", user_id).eq("plan_type", request.plan_id).execute()
-        
-        # Save to Supabase
-        db_response = None
-        if existing_plans.data and len(existing_plans.data) > 0:
-            # Update existing plan
-            plan_id = existing_plans.data[0]["id"]
-            db_response = supabase.table("plans").update(plan_data).eq("id", plan_id).execute()
-            logging.info(f"Updated plan {plan_id} for user {user_id}")
-        else:
-            # Create new plan
-            db_response = supabase.table("plans").insert(plan_data).execute()
-            logging.info(f"Created new plan for user {user_id}")
+        # ALWAYS create a new plan when a new simulation is run
+        db_response = supabase.table("plans").insert(plan_data).execute()
         
         # Check if save was successful
         if not db_response or not db_response.data:
