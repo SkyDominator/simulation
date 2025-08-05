@@ -1,4 +1,3 @@
-// filepath: .vscode/launch.json
 {
   "version": "0.2.0",
   "configurations": [
@@ -10,11 +9,38 @@
       "console": "integratedTerminal"
     },
     {
-      "type": "pwa-chrome",
+      "name": "Backend: FastAPI Server",
+      "type": "debugpy",
       "request": "launch",
+      "program": "${workspaceFolder}/src/backend/main.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/src/backend",
+      "python": "${workspaceFolder}/src/backend/backend-venv/Scripts/python.exe",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src/backend"
+      },
+      "args": []
+    },
+    {
+      "type": "pwa-chrome",
+      "request": "launch", 
       "name": "Vite: Chrome",
       "url": "http://localhost:5173",
-      "webRoot": "${workspaceFolder}/src/my-pwa-frontend/src"
+      "webRoot": "${workspaceFolder}/src/my-pwa-frontend",
+      "sourceMaps": true,
+      "userDataDir": false,
+      "runtimeArgs": [
+        "--disable-web-security",
+        "--disable-features=VizDisplayCompositor"
+      ],
+      "timeout": 30000,
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Launch Full Stack",
+      "configurations": ["Backend: FastAPI Server", "Vite: Chrome"],
+      "stopAll": true
     }
   ]
 }
