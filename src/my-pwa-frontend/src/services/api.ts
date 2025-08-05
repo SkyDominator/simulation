@@ -20,7 +20,7 @@ export const api = {
       return await response.json();
     } catch (error) {
       console.error('Whitelist check error:', error);
-      return { success: false, message: error.message, is_whitelisted: false };
+      return { success: false, message: error, is_whitelisted: false };
     }
   },
   
