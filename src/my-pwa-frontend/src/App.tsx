@@ -5,6 +5,13 @@
   이 과정을 생략하면 "Could not resolve '@supabase/supabase-js'" 에러가 발생합니다.
 
   npm install @supabase/supabase-js
+  
+  [프로그램 흐름]
+  1. 사용자가 step 1~4까지 플랜 정보 입력 후 저장
+  2. 프론트엔드가 백엔드 custom-simulation API 호출
+  3. 백엔드가 시뮬레이션 수행 및 결과를 Supabase DB에 저장
+  4. 성공 시 사용자에게 결과 보기 페이지 이동 옵션 제공
+  5. 결과 페이지에서 플랜 선택 후 해당 결과 확인 가능
 */
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { createClient, type Session, type User } from '@supabase/supabase-js';
@@ -160,23 +167,7 @@ const api = {
     return response.json();
   },
 
-    // Add parameter version check
-    checkParametersVersion: async (token: string): Promise<{version: string, last_updated: string}> => {
-    const response = await fetch(`${API_BASE_URL}/parameters/version`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-    });
-    if (!response.ok) throw new Error('파라미터 버전 확인에 실패했습니다.');
-    return response.json();
-    },
-
-    // Add parameters fetching
-    getParameters: async (token: string): Promise<{parameters: typeof DEFAULT_INVESTMENT_AMOUNTS}> => {
-    const response = await fetch(`${API_BASE_URL}/parameters`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-    });
-    if (!response.ok) throw new Error('파라미터를 불러오는 데 실패했습니다.');
-    return response.json();
-    },
+    // 현재 흐름에서는 파라미터를 직접 constants.ts에서 가져오므로 관련 API 제거
 
   // 사용자의 모든 플랜 가져오기
   getPlans: async (token: string): Promise<Plan[]> => {
@@ -187,45 +178,9 @@ const api = {
     return response.json();
   },
   // 새 플랜 생성하기
-  createPlan: async (plan: Plan, token: string): Promise<Plan> => {
-    const response = await fetch(`${API_BASE_URL}/plans`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(plan),
-    });
-    if (!response.ok) throw new Error('플랜 생성에 실패했습니다.');
-    return response.json();
-  },
-  // (추가) 기존 플랜 수정하기
-  updatePlan: async (plan: Plan, token: string): Promise<Plan> => {
-    // 실제 구현 시에는 백엔드에 PUT /api/plans/{plan.id} 와 같은 엔드포인트가 필요합니다.
-    console.log('Updating plan:', plan, token);
-    // 현재는 생성 API를 임시로 호출합니다.
-    return api.createPlan(plan, token); 
-  },
-  // (추가) 플랜 삭제하기
-  deletePlan: async (planId: string, token: string): Promise<void> => {
-    // 실제 구현 시에는 백엔드에 DELETE /api/plans/{planId} 와 같은 엔드포인트가 필요합니다.
-    console.log('Deleting plan:', planId, token);
-    // 현재는 아무 작업도 하지 않습니다.
-    return Promise.resolve();
-  },
-  // 시뮬레이션 결과 가져오기
-  runSimulation: async (plan: Plan, token: string): Promise<SimulationResults> => {
-     const response = await fetch(`${API_BASE_URL}/run-simulation`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ plan_data: plan }),
-    });
-    if (!response.ok) throw new Error('시뮬레이션 실행에 실패했습니다.');
-    return response.json();
-  },
+  // 이제 백엔드에서 직접 DB에 저장하므로 별도의 createPlan API가 필요 없음
+  // 이제 우리 흐름에서는 백엔드가 직접 DB에 저장/수정하므로 별도의 updatePlan, deletePlan 함수가 필요 없음
+  // 사용하지 않는 runSimulation API 제거
   
   // 커스텀 시뮬레이션 실행 API
   runCustomSimulation: async (
@@ -401,9 +356,9 @@ const MainPage: React.FC<{
     setPage('plan-editor');
   };
   
-  // (구현) 기존 플랜 수정/삭제 기능은 이 곳에 추가합니다.
-  const handleManagePlans = () => {
-      alert("기존 플랜 수정/삭제 기능은 여기에 구현됩니다.");
+  // 결과 보기 페이지로 이동
+  const handleGoToResults = () => {
+      setPage('results');
   }
 
   return (
@@ -425,14 +380,11 @@ const MainPage: React.FC<{
           <h2 className="text-2xl font-bold">새 플랜 만들기</h2>
           <p>새로운 투자 시나리오를 시작합니다.</p>
         </div>
-        <div onClick={handleManagePlans} className="p-6 bg-green-500 text-white rounded-lg shadow-md cursor-pointer hover:bg-green-600 transition-colors">
-          <h2 className="text-2xl font-bold">기존 플랜 수정/삭제</h2>
-          <p>생성한 플랜을 관리합니다.</p>
-        </div>
-        <div onClick={() => setPage('results')} className="p-6 bg-purple-500 text-white rounded-lg shadow-md cursor-pointer hover:bg-purple-600 transition-colors col-span-1 md:col-span-2">
+        <div onClick={handleGoToResults} className="p-6 bg-green-500 text-white rounded-lg shadow-md cursor-pointer hover:bg-green-600 transition-colors">
           <h2 className="text-2xl font-bold">결과 보기</h2>
-          <p>모든 플랜의 시뮬레이션 결과를 확인합니다.</p>
+          <p>저장된 플랜의 시뮬레이션 결과를 확인합니다.</p>
         </div>
+        {/* 중복되는 결과 보기 항목 제거 */}
       </div>
     </div>
   );
