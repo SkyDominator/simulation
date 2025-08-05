@@ -455,6 +455,11 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
               const minPayments = planData.min_payment_new as Record<string | number, number>;
               if (round in minPayments) {
                 defaultAmount = minPayments[round];
+              } else {
+                // 정의되지 않은 회차의 경우 해당 플랜 타입의 마지막 정의된 회차 값 사용
+                // A, B, C 플랜은 15회차까지, D, R, E, F, K, P 플랜은 18회차까지 정의됨
+                const maxRound = ['A', 'B', 'C'].includes(planType) ? 15 : 18;
+                defaultAmount = minPayments[maxRound]; // 해당 플랜의 마지막 회차 값
               }
             }
           } catch (error) {
@@ -498,6 +503,11 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
               const round = i + 1;
               if (round in minPayments) {
                 defaultAmount = minPayments[round];
+              } else {
+                // 정의되지 않은 회차의 경우 해당 플랜 타입의 마지막 정의된 회차 값 사용
+                // A, B, C 플랜은 15회차까지, D, R, E, F, K, P 플랜은 18회차까지 정의됨
+                const maxRound = ['A', 'B', 'C'].includes(planType) ? 15 : 18;
+                defaultAmount = minPayments[maxRound]; // 해당 플랜의 마지막 회차 값
               }
             }
           } catch (error) {
@@ -581,6 +591,11 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
                     const minPayments = planData.min_payment_new as Record<string | number, number>;
                     if (inv.round in minPayments) {
                         defaultAmount = minPayments[inv.round];
+                    } else {
+                        // 정의되지 않은 회차의 경우 해당 플랜 타입의 마지막 정의된 회차 값 사용
+                        // A, B, C 플랜은 15회차까지, D, R, E, F, K, P 플랜은 18회차까지 정의됨
+                        const maxRound = ['A', 'B', 'C'].includes(planType) ? 15 : 18;
+                        defaultAmount = minPayments[maxRound]; // 해당 플랜의 마지막 회차 값
                     }
                 }
             } catch (error) {
@@ -712,6 +727,11 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
                           const minPayments = planData.min_payment_new as Record<string | number, number>;
                           if (inv.round in minPayments) {
                             defaultAmount = minPayments[inv.round];
+                          } else {
+                            // 정의되지 않은 회차의 경우 해당 플랜 타입의 마지막 정의된 회차 값 사용
+                            // A, B, C 플랜은 15회차까지, D, R, E, F, K, P 플랜은 18회차까지 정의됨
+                            const maxRound = ['A', 'B', 'C'].includes(planType) ? 15 : 18;
+                            defaultAmount = minPayments[maxRound]; // 해당 플랜의 마지막 회차 값
                           }
                         }
                       } catch (error) {
