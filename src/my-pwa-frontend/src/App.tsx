@@ -24,6 +24,9 @@ interface Plan {
   investments: { round: number; amount: number }[];
   user_id?: string;
   simulation_results?: SimulationResults;
+  created_at?: string; // Supabase에서 자동으로 생성되는 timestamp
+  updated_at?: string; // Supabase에서 자동으로 업데이트되는 timestamp
+  last_simulation_date?: string; // 마지막 시뮬레이션 실행 날짜
 }
 
 // 시뮬레이션 결과 구조
@@ -230,7 +233,7 @@ const api = {
     max_rounds: number,
     scheduled_payment: Record<string, number>,
     token: string
-  ): Promise<SimulationResults> => {
+  ): Promise<SimulationResults & { success: boolean, message: string }> => {
     const response = await fetch(`${API_BASE_URL}/custom-simulation`, {
       method: 'POST',
       headers: {
@@ -244,7 +247,14 @@ const api = {
       }),
     });
     if (!response.ok) throw new Error('커스텀 시뮬레이션 실행에 실패했습니다.');
-    return response.json();
+    const data = await response.json();
+    
+    // 백엔드에서 반환된 success 및 message 필드 확인
+    if (!data.success) {
+      throw new Error(data.message || '시뮬레이션 결과 저장에 실패했습니다.');
+    }
+    
+    return data;
   }
 };
 
@@ -542,49 +552,32 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
         });
         
         // 커스텀 시뮬레이션 API 호출
-        const simulationResults = await api.runCustomSimulation(
+        // 백엔드에서 시뮬레이션 실행 후 결과를 Supabase에 저장하는 과정을 수행
+        await api.runCustomSimulation(
             plan.plan_type,
             plan.simulation_rounds,
             scheduled_payment,
             session.access_token
         );
         
-        // 시뮬레이션 결과 저장
-        const finalPlan = {
-            ...plan,
-            investments: plan.investments.map(inv => {
-                // If amount is 0, use the default minimum investment amount for this plan type and round
-                const planType = plan.plan_type as keyof typeof DEFAULT_INVESTMENT_AMOUNTS;
-                const roundKey = inv.round as keyof typeof DEFAULT_INVESTMENT_AMOUNTS[typeof planType]['min_payment_new'];
-                const defaultAmount = DEFAULT_INVESTMENT_AMOUNTS[planType].min_payment_new[roundKey];
-                return {
-                    ...inv,
-                    amount: inv.amount === 0 ? defaultAmount : inv.amount
-                };
-            }),
-            simulation_results: simulationResults
-        };
-        
-        // 플랜 저장
-        if (editingPlan) {
-            await api.updatePlan(finalPlan, session.access_token);
-        } else {
-            await api.createPlan(finalPlan, session.access_token);
-        }
-        
         if (isMounted) {
             setConfirmModalOpen(false);
-            // 저장 완료 후 메인 페이지로 이동
+            
+            // 성공 메시지 표시
+            alert('시뮬레이션이 완료되었고 결과가 성공적으로 저장되었습니다.');
+            
+            // 메인 페이지로 이동
             setPage('main');
-            // 저장 완료 알림 및 결과 페이지 이동 옵션
-            if (confirm('플랜이 저장되었습니다. 결과 보기 페이지로 이동하시겠습니까?')) {
+            
+            // 결과 보기 페이지 이동 옵션
+            if (confirm('시뮬레이션 결과 보기 페이지로 이동하시겠습니까?')) {
                 setPage('results');
             }
         }
     } catch (error) {
         console.error("Save or simulation error:", error);
         if (isMounted) {
-            alert("저장 또는 시뮬레이션에 실패했습니다.");
+            alert("시뮬레이션 실행 또는 결과 저장에 실패했습니다.");
         }
     } finally {
         if (isMounted) {
@@ -760,6 +753,7 @@ const ResultsPage: React.FC<{ setPage: (page: Page) => void }> = ({ setPage }) =
     const [error, setError] = useState<string | null>(null);
     const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+    const [view, setView] = useState<'selection' | 'results'>('selection');
 
     // 플랜 목록 가져오기
     useEffect(() => {
@@ -794,6 +788,15 @@ const ResultsPage: React.FC<{ setPage: (page: Page) => void }> = ({ setPage }) =
         const plan = plans.find(p => p.id === planId) || null;
         setSelectedPlanId(planId);
         setSelectedPlan(plan);
+    };
+    
+    // 플랜을 선택하고 결과 화면으로 이동
+    const handleViewResults = () => {
+        if (selectedPlanId && selectedPlan) {
+            setView('results');
+        } else {
+            alert('먼저 플랜을 선택해주세요.');
+        }
     };
     
     // 선택된 플랜의 시뮬레이션 결과 표시
@@ -863,6 +866,70 @@ const ResultsPage: React.FC<{ setPage: (page: Page) => void }> = ({ setPage }) =
             </div>
         );
     };
+    
+    // 플랜 선택 화면
+    const renderPlanSelectionView = () => {
+        return (
+            <div className="bg-white p-6 rounded-lg shadow-md">
+                <h2 className="text-xl font-bold mb-4">플랜 선택</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    {plans.map((plan) => (
+                        <div 
+                            key={plan.id} 
+                            onClick={() => handlePlanChange(plan.id!)}
+                            className={`p-4 border rounded-lg cursor-pointer ${
+                                selectedPlanId === plan.id 
+                                ? 'border-blue-500 bg-blue-50' 
+                                : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                            }`}
+                        >
+                            <h3 className="font-bold text-lg">{plan.plan_type} 플랜</h3>
+                            <p>회사 회차: {plan.company_round}</p>
+                            <p>시뮬레이션 회차: {plan.simulation_rounds}</p>
+                            {plan.simulation_results && (
+                                <div className="mt-2 text-sm text-green-700">
+                                    <p>✓ 시뮬레이션 결과 있음</p>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+                
+                <div className="flex justify-end">
+                    <Button 
+                        onClick={handleViewResults} 
+                        className="bg-blue-600 hover:bg-blue-700"
+                        disabled={!selectedPlanId}
+                    >
+                        결과 보기
+                    </Button>
+                </div>
+            </div>
+        );
+    };
+    
+    // 결과 화면
+    const renderResultsView = () => {
+        return (
+            <div className="bg-white p-6 rounded-lg shadow-md">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold">
+                        {selectedPlan?.plan_type} 플랜 ({selectedPlan?.company_round}회차) 시뮬레이션 결과
+                    </h2>
+                    <Button 
+                        onClick={() => setView('selection')} 
+                        className="bg-gray-500 hover:bg-gray-600"
+                    >
+                        ← 플랜 선택으로 돌아가기
+                    </Button>
+                </div>
+                
+                <div className="bg-gray-50 p-4 rounded-lg">
+                    {renderSimulationResults()}
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="p-8 max-w-6xl mx-auto">
@@ -881,30 +948,7 @@ const ResultsPage: React.FC<{ setPage: (page: Page) => void }> = ({ setPage }) =
                     <p>아직 생성된 플랜이 없습니다. 먼저 플랜을 생성해주세요.</p>
                 </div>
             ) : (
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <div className="mb-6">
-                        <h2 className="text-xl font-bold mb-3">플랜 선택</h2>
-                        <div className="flex flex-wrap gap-2">
-                            {plans.map((plan) => (
-                                <Button 
-                                    key={plan.id} 
-                                    onClick={() => handlePlanChange(plan.id!)}
-                                    className={`${
-                                        selectedPlanId === plan.id 
-                                        ? 'bg-blue-600 hover:bg-blue-700' 
-                                        : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
-                                    }`}
-                                >
-                                    {plan.plan_type} 플랜 ({plan.company_round}회차)
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        {renderSimulationResults()}
-                    </div>
-                </div>
+                view === 'selection' ? renderPlanSelectionView() : renderResultsView()
             )}
             
             <Button onClick={() => setPage('main')} className="mt-4 bg-gray-200 text-black hover:bg-gray-300">

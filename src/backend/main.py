@@ -254,6 +254,7 @@ def custom_simulation(request: CustomSimulationRequest, user_id: str = Depends(a
     - scheduled_payment: A dictionary mapping round numbers to payment amounts
     
     Other parameters will use defaults from the specified plan.
+    The simulation results are saved to the Supabase database.
     """
     try:
         # Convert string keys in scheduled_payment dict to integers
@@ -276,8 +277,46 @@ def custom_simulation(request: CustomSimulationRequest, user_id: str = Depends(a
         # Run the simulation
         results = simulator.run_simulation(max_rounds)
         
-        # Convert results to dictionary format for the response
-        return results.to_dict()
+        # Convert results to dictionary format
+        results_dict = results.to_dict()
+        
+        # Prepare data for Supabase DB
+        plan_data = {
+            "user_id": user_id,
+            "plan_type": request.plan_id,
+            "company_round": 1,  # Default to 1 if not specified
+            "simulation_rounds": max_rounds,
+            "investments": [
+                {"round": int(round_num), "amount": amount}
+                for round_num, amount in request.scheduled_payment.items()
+            ],
+            "simulation_results": results_dict
+        }
+        
+        # Try to find if this plan already exists for this user
+        existing_plans = supabase.table("plans").select("id").eq("user_id", user_id).eq("plan_type", request.plan_id).execute()
+        
+        # Save to Supabase
+        db_response = None
+        if existing_plans.data and len(existing_plans.data) > 0:
+            # Update existing plan
+            plan_id = existing_plans.data[0]["id"]
+            db_response = supabase.table("plans").update(plan_data).eq("id", plan_id).execute()
+            logging.info(f"Updated plan {plan_id} for user {user_id}")
+        else:
+            # Create new plan
+            db_response = supabase.table("plans").insert(plan_data).execute()
+            logging.info(f"Created new plan for user {user_id}")
+        
+        # Check if save was successful
+        if not db_response or not db_response.data:
+            logging.error(f"Failed to save plan to database: {db_response}")
+            raise HTTPException(status_code=500, detail="Failed to save plan to database")
+        
+        # Return the simulation results along with a success message
+        results_dict["success"] = True
+        results_dict["message"] = "Plan saved successfully"
+        return results_dict
         
     except ValueError as e:
         logging.error(f"Simulation error: {str(e)}")
