@@ -484,7 +484,8 @@ const PlanEditorPage: React.FC<{ setPage: (page: Page) => void; editingPlan: Pla
     });
     
     setPlan(p => ({ ...p, investments: newInvestments }));
-  }, [plan.simulation_rounds, plan.plan_type, plan.investments, editingPlan]); // 모든 관련 의존성 포함
+  }, []); // 모든 관련 의존성 포함
+//   }, [plan.simulation_rounds, plan.plan_type, plan.investments, editingPlan]); // 모든 관련 의존성 포함
 
   // Update handleNext to include validation
   const handleNext = () => {
