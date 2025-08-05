@@ -214,11 +214,25 @@ def verify_user(request: UserCheckRequest):
         return {"is_whitelisted": True}
     return {"is_whitelisted": False, "detail": "User not in whitelist"}
 
-# 특정 사용자의 모든 플랜 조회 API
+# 특정 사용자의 모든 플랜 조회 API - 간단한 정보만 반환
 @app.get("/api/plans")
 def get_plans(user_id: str = Depends(authenticate_jwt_token)):
-    response = supabase.table('plans').select("*").eq('user_id', user_id).execute()
+    # 시뮬레이션 결과는 제외하고 기본 정보만 조회
+    response = supabase.table('plans').select(
+        "id, plan_type, company_round, simulation_rounds, created_at, updated_at"
+    ).eq('user_id', user_id).execute()
     return response.data
+
+# 특정 플랜의 상세 정보 및 시뮬레이션 결과 조회 API
+@app.get("/api/plans/{plan_id}")
+def get_plan_details(plan_id: str, user_id: str = Depends(authenticate_jwt_token)):
+    # 특정 플랜의 모든 정보(시뮬레이션 결과 포함) 조회
+    response = supabase.table('plans').select("*").eq('id', plan_id).eq('user_id', user_id).execute()
+    
+    if not response.data:
+        raise HTTPException(status_code=404, detail=f"Plan with ID {plan_id} not found")
+    
+    return response.data[0]
 
 # 새 플랜 생성 API
 @app.post("/api/plans")

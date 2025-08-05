@@ -11,7 +11,10 @@
   2. 프론트엔드가 백엔드 custom-simulation API 호출
   3. 백엔드가 시뮬레이션 수행 및 결과를 Supabase DB에 저장
   4. 성공 시 사용자에게 결과 보기 페이지 이동 옵션 제공
-  5. 결과 페이지에서 플랜 선택 후 해당 결과 확인 가능
+  5. 결과 페이지에서 사용자가 플랜 목록을 확인하고 플랜 선택
+  6. "결과 보기" 버튼 클릭 시 프론트엔드가 백엔드에 특정 플랜의 시뮬레이션 결과 요청
+  7. 백엔드가 Supabase DB에서 해당 플랜의 결과를 조회하여 프론트엔드로 전달
+  8. 프론트엔드는 받은 결과를 화면에 표시
 */
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { createClient, type Session, type User } from '@supabase/supabase-js';
@@ -169,12 +172,26 @@ const api = {
 
     // 현재 흐름에서는 파라미터를 직접 constants.ts에서 가져오므로 관련 API 제거
 
-  // 사용자의 모든 플랜 가져오기
+  // 사용자의 모든 플랜 기본 정보 가져오기 (시뮬레이션 결과 제외)
   getPlans: async (token: string): Promise<Plan[]> => {
     const response = await fetch(`${API_BASE_URL}/plans`, {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     if (!response.ok) throw new Error('플랜 목록을 불러오는 데 실패했습니다.');
+    return response.json();
+  },
+  
+  // 특정 플랜의 상세 정보 및 시뮬레이션 결과 가져오기
+  getPlanDetails: async (planId: string, token: string): Promise<Plan> => {
+    const response = await fetch(`${API_BASE_URL}/plans/${planId}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('해당 플랜을 찾을 수 없습니다.');
+      }
+      throw new Error('플랜 상세 정보를 불러오는 데 실패했습니다.');
+    }
     return response.json();
   },
   // 새 플랜 생성하기
@@ -707,7 +724,7 @@ const ResultsPage: React.FC<{ setPage: (page: Page) => void }> = ({ setPage }) =
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
     const [view, setView] = useState<'selection' | 'results'>('selection');
 
-    // 플랜 목록 가져오기
+    // 플랜 목록 가져오기 (기본 정보만)
     useEffect(() => {
         const fetchPlans = async () => {
             if (!session) return;
@@ -722,7 +739,6 @@ const ResultsPage: React.FC<{ setPage: (page: Page) => void }> = ({ setPage }) =
                 // 기본적으로 첫 번째 플랜 선택
                 if (fetchedPlans.length > 0) {
                     setSelectedPlanId(fetchedPlans[0].id || null);
-                    setSelectedPlan(fetchedPlans[0]);
                 }
             } catch (err) {
                 console.error('Failed to fetch plans:', err);
@@ -742,12 +758,25 @@ const ResultsPage: React.FC<{ setPage: (page: Page) => void }> = ({ setPage }) =
         setSelectedPlan(plan);
     };
     
-    // 플랜을 선택하고 결과 화면으로 이동
-    const handleViewResults = () => {
-        if (selectedPlanId && selectedPlan) {
-            setView('results');
-        } else {
+    // 플랜을 선택하고 결과 화면으로 이동 - 백엔드에서 상세 정보 요청
+    const handleViewResults = async () => {
+        if (!selectedPlanId || !session) {
             alert('먼저 플랜을 선택해주세요.');
+            return;
+        }
+        
+        setLoading(true);
+        
+        try {
+            // 백엔드에서 선택한 플랜의 상세 정보(시뮬레이션 결과 포함) 요청
+            const planDetails = await api.getPlanDetails(selectedPlanId, session.access_token);
+            setSelectedPlan(planDetails);
+            setView('results');
+        } catch (error) {
+            console.error('플랜 상세 정보 로드 실패:', error);
+            alert('선택한 플랜의 시뮬레이션 결과를 불러오는데 실패했습니다.');
+        } finally {
+            setLoading(false);
         }
     };
     
@@ -877,7 +906,13 @@ const ResultsPage: React.FC<{ setPage: (page: Page) => void }> = ({ setPage }) =
                 </div>
                 
                 <div className="bg-gray-50 p-4 rounded-lg">
-                    {renderSimulationResults()}
+                    {loading ? (
+                        <div className="text-center py-8">
+                            <p className="text-lg">결과 로딩 중...</p>
+                        </div>
+                    ) : (
+                        renderSimulationResults()
+                    )}
                 </div>
             </div>
         );
