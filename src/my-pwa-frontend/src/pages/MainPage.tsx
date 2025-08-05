@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../components/Button';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import type { Plan } from '../types/types';
+import type { Plan, Page } from '../types/types';
+
 
 interface MainPageProps {
-  setPage: (page: any) => void; 
+  setPage: (page: Page) => void; 
   setEditingPlan: (plan: Plan | null) => void;
   openNotice?: () => void;
 }

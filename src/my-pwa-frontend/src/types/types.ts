@@ -4,7 +4,7 @@ export interface Plan {
   plan_type: string;
   company_round: number;
   simulation_rounds: number;
-  investments: Investment[];
+  investments?: Investment[];
   created_at?: string;
   updated_at?: string;
 }
