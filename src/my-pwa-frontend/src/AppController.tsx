@@ -27,7 +27,7 @@ const AppController: React.FC = () => {
         case 'whitelist':
           return <WhitelistCheckPage onVerified={() => setPage('login')} />;
         case 'login':
-          return <LoginPage />;
+          return <LoginPage onVerified={() => setPage('main')} />;
         default:
           return <WhitelistCheckPage onVerified={() => setPage('login')} />;
       }
