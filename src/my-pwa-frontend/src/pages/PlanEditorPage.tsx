@@ -190,17 +190,6 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
   const [isValidationModalOpen, setValidationModalOpen] = useState(false);
   const [validationData, setValidationData] = useState<ValidationData | null>(null);
 
-  // Update investments when plan type or simulation rounds change
-  useEffect(() => {
-    // Skip if we're editing a plan and investments count already matches simulation rounds
-    if (editingPlan && plan.investments && plan.investments.length === plan.simulation_rounds) {
-      return;
-    }
-    
-    const newInvestments = generateInvestments(plan.simulation_rounds, plan.plan_type, plan.investments);
-    setPlan(p => ({ ...p, investments: newInvestments }));
-  }, [plan.simulation_rounds, plan.plan_type, editingPlan]);
-
   const handleInvestmentChange = (round: number, amount: string) => {
     const parsedAmount = amount === '' ? 0 : parseInt(amount, 10);
     const newInvestments = plan.investments.map(inv => 
@@ -323,6 +312,17 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
         return null;
     }
   };
+
+  // Update investments when plan type or simulation rounds change
+  useEffect(() => {
+    // Skip if we're editing a plan and investments count already matches simulation rounds
+    if (editingPlan && plan.investments && plan.investments.length === plan.simulation_rounds) {
+      return;
+    }
+    
+    const newInvestments = generateInvestments(plan.simulation_rounds, plan.plan_type, plan.investments);
+    setPlan(p => ({ ...p, investments: newInvestments }));
+  }, []);
 
   return (
     <div className="p-4 md:p-8">
