@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
 import WhitelistCheckPage from './pages/WhitelistCheckPage';
 import LoginPage from './pages/LoginPage';
@@ -27,7 +27,7 @@ const AppController: React.FC = () => {
         case 'whitelist':
           return <WhitelistCheckPage onVerified={() => setPage('login')} />;
         case 'login':
-          return <LoginPage onVerified={() => setPage('main')} />;
+          return <LoginPage />;
         default:
           return <WhitelistCheckPage onVerified={() => setPage('login')} />;
       }
@@ -51,6 +51,12 @@ const AppController: React.FC = () => {
       }
     }
   };
+
+  useEffect(() => {
+    if(user){
+      setPage('main');
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-gray-50">

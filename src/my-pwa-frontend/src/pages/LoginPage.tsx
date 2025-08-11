@@ -2,11 +2,7 @@ import React from 'react';
 import { Button } from '../components/Button';
 import { supabase } from '../supabaseClient';
 
-interface LoginPageProps {
-    onVerified: () => void;
-}
-
-const LoginPage: React.FC<LoginPageProps> = ({onVerified}) => {
+const LoginPage: React.FC = () => {
     const handleSocialLogin = async (provider: 'google' | 'kakao') => {
         try {
             await supabase.auth.signInWithOAuth({
@@ -15,8 +11,6 @@ const LoginPage: React.FC<LoginPageProps> = ({onVerified}) => {
                     redirectTo: window.location.origin
                 }
             });
-            // 로그인 성공 후 페이지 이동
-            onVerified();
         } catch (error) {
             console.error(`${provider} login error:`, error);
             alert('로그인 중 오류가 발생했습니다. 다시 시도해주세요.');
