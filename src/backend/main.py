@@ -258,7 +258,7 @@ class SimulationPlanCreateResponse(BaseModel):
 
 class SimulationRunRequest(BaseModel):
     """Request model for running a simulation on an existing plan"""
-    db_plan_id: str  # ID of the plan in the database
+    simulation_id: str  # ID of the plan in the database
 
 @app.post("/api/simulation/plan", response_model=SimulationPlanCreateResponse)
 def create_simulation_plan(
@@ -345,21 +345,21 @@ def run_simulation(
     Returns:
     - SimulationResponse: The simulation results
     """
-    logger.info(f"Running simulation for plan ID: {request.db_plan_id}, user_id: {user_id}")
+    logger.info(f"Running simulation for plan ID: {request.simulation_id}, user_id: {user_id}")
     
     try:
         # Step 2: Find and load the simulation request info
-        db_response = supabase.table("plans").select("*").eq("id", request.db_plan_id).eq("user_id", user_id).execute()
+        db_response = supabase.table("plans").select("*").eq("id", request.simulation_id).eq("user_id", user_id).execute()
         
         if not db_response.data:
-            logger.error(f"Plan not found: {request.db_plan_id}")
-            raise HTTPException(status_code=404, detail=f"Plan with ID {request.db_plan_id} not found")
+            logger.error(f"Plan not found: {request.simulation_id}")
+            raise HTTPException(status_code=404, detail=f"Plan with ID {request.simulation_id} not found")
         
         plan_data = db_response.data[0]
         
         # Step 3: Check if simulation results already exist
         if plan_data.get("simulation_results"):
-            logger.info(f"Returning existing simulation results for plan: {request.db_plan_id}")
+            logger.info(f"Returning existing simulation results for plan: {request.simulation_id}")
             results_dict = plan_data["simulation_results"]
             
             # Ensure plan_id is available
@@ -377,7 +377,7 @@ def run_simulation(
             return response_data
         
         # Step 4: If no simulation results exist, run the simulation
-        logger.info(f"Running new simulation for plan: {request.db_plan_id}")
+        logger.info(f"Running new simulation for plan: {request.simulation_id}")
         
         # Extract plan details with proper type checking
         plan_id = plan_data.get("plan_id")
@@ -413,7 +413,7 @@ def run_simulation(
         # Step 5: Save simulation results back to the database
         update_response = supabase.table("plans").update({
             "simulation_results": results_dict
-        }).eq("id", request.db_plan_id).execute()
+        }).eq("id", request.simulation_id).execute()
         
         if not update_response.data:
             logger.error(f"Failed to update plan with simulation results: {update_response}")
