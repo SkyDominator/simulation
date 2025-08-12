@@ -21,7 +21,7 @@ export interface SimulationResults {
     company_round: number;
     scheduled_payment: Record<string, number>;
   };
-  output: any; // You can define a more specific type based on your actual response structure
+  output: unknown; // You can define a more specific type based on your actual response structure
 }
 
 export interface WhitelistCheckResponse {
@@ -29,6 +29,14 @@ export interface WhitelistCheckResponse {
   message: string;
   is_whitelisted: boolean;
   detail?: string;
+}
+
+// Response from POST /api/simulation/create
+export interface SimulationCreateResponse {
+  id: string;
+  plan_id: string;
+  message: string;
+  success: boolean;
 }
 
 // Define a type for the page navigation

@@ -1,4 +1,4 @@
-import { type Plan, type SimulationResults, type WhitelistCheckResponse } from '../types/types';
+import { type Plan, type WhitelistCheckResponse, type SimulationCreateResponse } from '../types/types';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api'; // 로컬 FastAPI 서버 주소
 
@@ -20,7 +20,7 @@ export const api = {
       return await response.json();
     } catch (error) {
       console.error('Whitelist check error:', error);
-      return { success: false, message: error, is_whitelisted: false };
+  return { success: false, message: String(error), is_whitelisted: false };
     }
   },
   
@@ -62,38 +62,41 @@ export const api = {
     }
   },
   
-  runCustomSimulation: async (
+  createSimulation: async (
     plan_id: string,
     max_rounds: number,
     scheduled_payment: Record<string, number>,
     token: string,
     company_round: number = 1
-  ): Promise<SimulationResults & { success: boolean, message: string }> => {
-    const response = await fetch(`${API_BASE_URL}/simulation`, {
+  ): Promise<SimulationCreateResponse> => {
+    const response = await fetch(`${API_BASE_URL}/simulation/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
-        plan_id: plan_id,
+        plan_id,
         max_rounds,
         scheduled_payment,
         company_round,
       }),
     });
-    
+
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
+      // Try to surface backend error message if available
+      try {
+        const err = await response.json();
+        throw new Error(err?.detail || `API error: ${response.status}`);
+      } catch {
+        throw new Error(`API error: ${response.status}`);
+      }
     }
-    
-    const data = await response.json();
-    
-    // 백엔드에서 반환된 success 및 message 필드 확인
+
+    const data: SimulationCreateResponse = await response.json();
     if (!data.success) {
-      throw new Error(data.message || '시뮬레이션 실행에 실패했습니다.');
+      throw new Error(data.message || '시뮬레이션 생성 요청에 실패했습니다.');
     }
-    
     return data;
   }
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '../../components/Button';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -20,18 +20,23 @@ import {
   ValidationModal, 
   InvestmentValidationModal 
 } from './modals';
-import { getPlanLimits, generateInvestments, getDefaultInvestmentAmount } from './utils/investmentUtils';
+import { getPlanLimits, generateInvestments } from './utils/investmentUtils';
 import { validateNumericValue, validateInvestmentAmounts } from './utils/validationUtils';
 
 const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan }) => {
   const { session } = useAuth();
   const [step, setStep] = useState(1);
-  const [plan, setPlan] = useState<Plan>({
+  const initialPlan: Plan = {
     plan_id: editingPlan?.plan_id || 'A',
     company_round: editingPlan?.company_round || 1,
     simulation_rounds: editingPlan?.simulation_rounds || 15,
-    investments: editingPlan?.investments || [],
-  });
+    investments: editingPlan?.investments || generateInvestments(
+      editingPlan?.simulation_rounds || 15,
+      editingPlan?.plan_id || 'A',
+      editingPlan?.investments || []
+    ),
+  };
+  const [plan, setPlan] = useState<Plan>(initialPlan);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isValidationModalOpen, setValidationModalOpen] = useState(false);
@@ -138,27 +143,19 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
         scheduled_payment[inv.round.toString()] = inv.amount;
       });
       
-      // Run custom simulation
-      await api.runCustomSimulation(
+      // Request simulation creation only
+      await api.createSimulation(
         plan.plan_id,
         plan.simulation_rounds,
         scheduled_payment,
         session.access_token,
         plan.company_round
       );
-      
+
       if (isMounted) {
         setConfirmModalOpen(false);
-        alert('시뮬레이션이 완료되었고 결과가 성공적으로 저장되었습니다.');
+        alert('시뮬레이션을 요청 완료했습니다.');
         setPage('main');
-        
-        if (confirm('시뮬레이션 결과 보기 페이지로 이동하시겠습니까?')) {
-          setTimeout(() => {
-            if (isMounted) {
-              setPage('results');
-            }
-          }, 500);
-        }
       }
     } catch (error) {
       console.error("Save or simulation error:", error);
@@ -200,16 +197,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
     }
   };
 
-  // Update investments when plan type or simulation rounds change
-  useEffect(() => {
-    // Skip if we're editing a plan and investments count already matches simulation rounds
-    if (editingPlan && (plan.investments || []).length === plan.simulation_rounds) {
-      return;
-    }
-    
-    const newInvestments = generateInvestments(plan.simulation_rounds, plan.plan_id, plan.investments || []);
-    setPlan(p => ({ ...p, investments: newInvestments }));
-  }, []);
+  // No useEffect needed; investments are initialized above and refreshed on step transitions
 
   const handleInvestmentValidationClose = () => {
     setInvestmentValidationModalOpen(false);
@@ -226,7 +214,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
           {step > 1 ? <Button onClick={handleBack} className="bg-gray-500 hover:bg-gray-600">뒤로 가기</Button> : <div />}
           <div className="flex gap-4">
             {step < 4 && <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700">다음 단계</Button>}
-            {step === 4 && <Button onClick={handleSaveClick} className="bg-green-600 hover:bg-green-700">저장</Button>}
+            {step === 4 && <Button onClick={handleSaveClick} className="bg-green-600 hover:bg-green-700"> 저장</Button>}
           </div>
         </div>
       </div>
