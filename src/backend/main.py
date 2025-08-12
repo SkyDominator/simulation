@@ -75,10 +75,7 @@ class PlanCreate(BaseModel):
     total_rounds: int
     investments: List[Dict[str, Any]]
 
-# 시뮬레이션 실행 요청 모델
-class SimulationRequest(BaseModel):
-    plan_data: Dict[str, Any]
-
+# API Response Models
 class ParametersVersionResponse(BaseModel):
     version: str
     last_updated: str
@@ -86,13 +83,6 @@ class ParametersVersionResponse(BaseModel):
 # Add new model for plan parameters
 class PlanParametersResponse(BaseModel):
     parameters: Dict[str, Dict[str, Any]]
-    
-# Custom simulation request model
-class SimulationRequest(BaseModel):
-    plan_id: str
-    max_rounds: int
-    company_round: int = 1  # Default to 1 if not provided
-    scheduled_payment: Dict[str, int]
     
 # Custom simulation response model
 class SimulationResponse(BaseModel):
@@ -250,73 +240,202 @@ def create_plan(plan: PlanCreate, user_id: str = Depends(authenticate_jwt_token)
         return response.data[0]
     raise HTTPException(status_code=400, detail="Failed to create plan")
 
-# 투자 시뮬레이션 실행 API
-# 사용자 정의 시뮬레이션 API 엔드포인트
-@app.post("/api/simulation", response_model=SimulationResponse)
-def custom_simulation(request: SimulationRequest, user_id: str = Depends(authenticate_jwt_token)):
+# --- 시뮬레이션 관련 API 엔드포인트 --- 
+
+class SimulationPlanCreate(BaseModel):
+    """Model for creating a simulation plan without running the simulation"""
+    plan_id: str
+    max_rounds: int
+    company_round: int = 1
+    scheduled_payment: Dict[str, int]
+
+class SimulationPlanCreateResponse(BaseModel):
+    """Response model for creating a simulation plan"""
+    id: str
+    plan_id: str
+    message: str
+    success: bool
+
+class SimulationRunRequest(BaseModel):
+    """Request model for running a simulation on an existing plan"""
+    db_plan_id: str  # ID of the plan in the database
+
+@app.post("/api/simulation/plan", response_model=SimulationPlanCreateResponse)
+def create_simulation_plan(
+    request: SimulationPlanCreate, 
+    user_id: str = Depends(authenticate_jwt_token)
+) -> SimulationPlanCreateResponse:
     """
-    Run a financial simulation with custom parameters:
-    - plan_id: The unique plan identifier (format: planType_timestamp_random)
-    - max_rounds: The number of rounds to simulate
-    - scheduled_payment: A dictionary mapping round numbers to payment amounts
+    Step 1: Save the simulation request info in the database without running the simulation.
     
-    The simulation results are saved to the Supabase database.
+    Parameters:
+    - request: The simulation plan parameters
+    - user_id: The authenticated user's ID
+    
+    Returns:
+    - SimulationPlanCreateResponse: The created plan's details
     """
+    logger.info(f"Creating simulation plan for user_id: {user_id}")
+    
     try:
         # Validate the plan type
         if request.plan_id not in PLAN_PARAMETERS:
             raise HTTPException(status_code=400, detail=f"Invalid plan type: {request.plan_id}")
-
-        # Convert string keys in scheduled_payment dict to integers
-        scheduled_payment = {int(k): v for k, v in request.scheduled_payment.items()}
         
         # Get max_rounds from plan or use provided value, whichever is smaller
         plan_max_rounds = PLAN_PARAMETERS[request.plan_id].get('max_rounds', 36)
         max_rounds = min(request.max_rounds, plan_max_rounds)
         
-        # Initialize the simulation service with the specified plan and custom scheduled payments
-        simulator = FinancialSimulationService(
-            plan_id=request.plan_id,  # Use request.plan_id for simulation
-            scheduled_payment=scheduled_payment
-        )
-        
-        # Run the simulation
-        results = simulator.run_simulation(max_rounds)
-        
-        # Convert results to dictionary format
-        results_dict = results.to_dict()
-        
-        # Prepare data for Supabase DB
+        # Prepare plan data for database
         plan_data = {
             "user_id": user_id,
-            "plan_id": request.plan_id,  # Store the actual plan ID
-            "company_round": request.company_round,  # Use the company_round from the request
+            "plan_id": request.plan_id,
+            "company_round": request.company_round,
             "simulation_rounds": max_rounds,
             "investments": [
                 {"round": int(round_num), "amount": amount}
                 for round_num, amount in request.scheduled_payment.items()
             ],
-            "simulation_results": results_dict
+            # No simulation_results yet
         }
         
-        # ALWAYS create a new plan when a new simulation is run
+        # Create a new plan in the database
         db_response = supabase.table("plans").insert(plan_data).execute()
         
         # Check if save was successful
         if not db_response or not db_response.data:
-            logging.error(f"Failed to save plan to database: {db_response}")
+            logger.error(f"Failed to save plan to database: {db_response}")
             raise HTTPException(status_code=500, detail="Failed to save plan to database")
         
-        # Return the simulation results along with a success message
-        results_dict["success"] = True
-        results_dict["message"] = "Plan saved successfully"
-        return results_dict
+        # Return success response with the created plan ID
+        created_plan = db_response.data[0]
+        logger.info(f"Created plan with ID: {created_plan['id']}")
+        
+        return SimulationPlanCreateResponse(
+            id=created_plan['id'],
+            plan_id=request.plan_id,
+            message="Simulation plan saved successfully",
+            success=True
+        )
         
     except ValueError as e:
-        logging.error(f"Simulation error: {str(e)}")
+        logger.error(f"Validation error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logging.error(f"Unexpected error in simulation: {str(e)}")
+        logger.error(f"Unexpected error in create_simulation_plan: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create simulation plan: {str(e)}")
+
+@app.post("/api/simulation/run", response_model=SimulationResponse)
+def run_simulation(
+    request: SimulationRunRequest, 
+    user_id: str = Depends(authenticate_jwt_token)
+) -> SimulationResponse:
+    """
+    Steps 2-5: Run a simulation for an existing plan.
+    
+    This function:
+    1. Finds and loads simulation request info from the database
+    2. If simulation results already exist, returns them
+    3. Otherwise, runs the simulation, saves and returns the results
+    
+    Parameters:
+    - request: Contains the database plan ID to run simulation for
+    - user_id: The authenticated user's ID
+    
+    Returns:
+    - SimulationResponse: The simulation results
+    """
+    logger.info(f"Running simulation for plan ID: {request.db_plan_id}, user_id: {user_id}")
+    
+    try:
+        # Step 2: Find and load the simulation request info
+        db_response = supabase.table("plans").select("*").eq("id", request.db_plan_id).eq("user_id", user_id).execute()
+        
+        if not db_response.data:
+            logger.error(f"Plan not found: {request.db_plan_id}")
+            raise HTTPException(status_code=404, detail=f"Plan with ID {request.db_plan_id} not found")
+        
+        plan_data = db_response.data[0]
+        
+        # Step 3: Check if simulation results already exist
+        if plan_data.get("simulation_results"):
+            logger.info(f"Returning existing simulation results for plan: {request.db_plan_id}")
+            results_dict = plan_data["simulation_results"]
+            
+            # Ensure plan_id is available
+            plan_id = plan_data.get("plan_id", "")
+            if not isinstance(plan_id, str):
+                plan_id = str(plan_id) if plan_id else ""
+            
+            # Construct properly typed response
+            response_data = SimulationResponse(
+                plan_id=plan_id,
+                history=results_dict.get("history", []),
+                message="Retrieved existing simulation results",
+                success=True
+            )
+            return response_data
+        
+        # Step 4: If no simulation results exist, run the simulation
+        logger.info(f"Running new simulation for plan: {request.db_plan_id}")
+        
+        # Extract plan details with proper type checking
+        plan_id = plan_data.get("plan_id")
+        if not isinstance(plan_id, str):
+            raise ValueError(f"Invalid plan_id: {plan_id}")
+            
+        max_rounds = plan_data.get("simulation_rounds")
+        if not isinstance(max_rounds, int):
+            max_rounds = int(max_rounds) if max_rounds else 30  # Default if missing or invalid
+        
+        # Extract investments and convert to scheduled_payment format
+        investments = plan_data.get("investments", [])
+        scheduled_payment = {str(inv.get("round", 0)): inv.get("amount", 0) for inv in investments}
+        
+        # Convert string keys in scheduled_payment dict to integers with proper validation
+        scheduled_payment_int: Dict[int, int] = {}
+        for k, v in scheduled_payment.items():
+            try:
+                scheduled_payment_int[int(k)] = int(v)
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid scheduled payment entry: {k}={v}, error: {e}")
+                # Skip invalid entries
+        
+        # Initialize and run simulation
+        simulator = FinancialSimulationService(
+            plan_id=plan_id,
+            scheduled_payment=scheduled_payment_int
+        )
+        
+        results = simulator.run_simulation(max_rounds)
+        results_dict = results.to_dict()
+        
+        # Step 5: Save simulation results back to the database
+        update_response = supabase.table("plans").update({
+            "simulation_results": results_dict
+        }).eq("id", request.db_plan_id).execute()
+        
+        if not update_response.data:
+            logger.error(f"Failed to update plan with simulation results: {update_response}")
+            # Continue anyway - we'll return results even if saving failed
+        
+        # Prepare the response data
+        response_data = SimulationResponse(
+            plan_id=plan_id,
+            history=results_dict.get("history", []),
+            message="Simulation completed and results saved",
+            success=True
+        )
+        return response_data
+        
+    except ValueError as e:
+        logger.error(f"Simulation error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in run_simulation: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Simulation failed: {str(e)}")
 
 # --- 5. 로컬에서 개발 서버 실행 ---
