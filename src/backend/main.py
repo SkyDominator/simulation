@@ -70,7 +70,7 @@ class UserCheckRequest(BaseModel):
 
 # 투자 플랜 생성/수정 요청 모델
 class PlanCreate(BaseModel):
-    plan_type: str
+    plan_id: str
     company_round: int
     total_rounds: int
     investments: List[Dict[str, Any]]
@@ -191,9 +191,9 @@ def get_parameters(version_info: Dict = Depends(get_parameters_version)):
     try:
         # Extract only the min_payment_new from each plan's parameters
         parameters = {}
-        for plan_type in ['A', 'B', 'C', 'D', 'R', 'E', 'F', 'K', 'P']:
-            plan_params = PLAN_PARAMETERS.get(plan_type, {})
-            parameters[plan_type] = {
+        for plan_id in ['A', 'B', 'C', 'D', 'R', 'E', 'F', 'K', 'P']:
+            plan_params = PLAN_PARAMETERS.get(plan_id, {})
+            parameters[plan_id] = {
                 "min_payment_new": plan_params.get('min_payment_new', {}),
                 "max_rounds": plan_params.get('max_rounds', 30)
             }
@@ -220,7 +220,7 @@ def verify_user(request: UserCheckRequest):
 def get_plans(user_id: str = Depends(authenticate_jwt_token)):
     # 시뮬레이션 결과는 제외하고 기본 정보만 조회
     response = supabase.table('plans').select(
-        "id, plan_type, company_round, simulation_rounds, created_at, updated_at"
+        "id, plan_id, company_round, simulation_rounds, created_at, updated_at"
     ).eq('user_id', user_id).execute()
     return response.data
 
