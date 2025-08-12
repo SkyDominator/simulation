@@ -242,14 +242,14 @@ def create_plan(plan: PlanCreate, user_id: str = Depends(authenticate_jwt_token)
 
 # --- 시뮬레이션 관련 API 엔드포인트 --- 
 
-class SimulationPlanCreate(BaseModel):
+class SimulationCreateRequest(BaseModel):
     """Model for creating a simulation plan without running the simulation"""
     plan_id: str
     max_rounds: int
     company_round: int = 1
     scheduled_payment: Dict[str, int]
 
-class SimulationPlanCreateResponse(BaseModel):
+class SimulationCreateResponse(BaseModel):
     """Response model for creating a simulation plan"""
     id: str
     plan_id: str
@@ -260,11 +260,11 @@ class SimulationRunRequest(BaseModel):
     """Request model for running a simulation on an existing plan"""
     simulation_id: str  # ID of the plan in the database
 
-@app.post("/api/simulation/plan", response_model=SimulationPlanCreateResponse)
-def create_simulation_plan(
-    request: SimulationPlanCreate, 
+@app.post("/api/simulation/create", response_model=SimulationCreateResponse)
+def create_simulation(
+    request: SimulationCreateRequest, 
     user_id: str = Depends(authenticate_jwt_token)
-) -> SimulationPlanCreateResponse:
+) -> SimulationCreateResponse:
     """
     Step 1: Save the simulation request info in the database without running the simulation.
     
@@ -311,7 +311,7 @@ def create_simulation_plan(
         created_plan = db_response.data[0]
         logger.info(f"Created plan with ID: {created_plan['id']}")
         
-        return SimulationPlanCreateResponse(
+        return SimulationCreateResponse(
             id=created_plan['id'],
             plan_id=request.plan_id,
             message="Simulation plan saved successfully",
