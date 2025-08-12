@@ -25,6 +25,16 @@ interface ValidationData {
   field: keyof Plan;
 }
 
+// Add interface for investment validation
+interface InvestmentValidationResult {
+  hasInvalidInvestments: boolean;
+  correctedInvestments: Array<{
+    round: number;
+    oldAmount: number | string;
+    newAmount: number;
+  }>;
+}
+
 // Helper functions
 const getDefaultInvestmentAmount = (planType: string, round: number): number => {
   try {
@@ -189,6 +199,14 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
   const [isLoading, setIsLoading] = useState(false);
   const [isValidationModalOpen, setValidationModalOpen] = useState(false);
   const [validationData, setValidationData] = useState<ValidationData | null>(null);
+  
+  // Add state for investment validation modal
+  const [isInvestmentValidationModalOpen, setInvestmentValidationModalOpen] = useState(false);
+  const [invalidInvestments, setInvalidInvestments] = useState<Array<{
+    round: number;
+    oldAmount: number | string;
+    newAmount: number;
+  }>>([]);
 
   const handleInvestmentChange = (round: number, amount: string) => {
     const parsedAmount = amount === '' ? 0 : parseInt(amount, 10);
@@ -215,6 +233,69 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
     
     setPlan(prev => ({ ...prev, [field]: newValue }));
     setValidationModalOpen(false);
+  };
+
+  // Add a function to validate investment amounts
+  const validateInvestmentAmounts = (): InvestmentValidationResult => {
+    const correctedInvestments: Array<{
+      round: number;
+      oldAmount: number | string;
+      newAmount: number;
+    }> = [];
+    
+    // Create a copy of investments to modify
+    const updatedInvestments = [...plan.investments];
+    
+    // Check each investment
+    updatedInvestments.forEach((inv, index) => {
+      const defaultAmount = getDefaultInvestmentAmount(plan.plan_type, inv.round);
+      
+      // Check if the amount is NaN, less than default, or less than or equal to 0
+      if (isNaN(inv.amount) || inv.amount < defaultAmount || inv.amount <= 0) {
+        // Store the original value for reporting
+        const oldAmount = inv.amount;
+        
+        // Update to default amount
+        updatedInvestments[index] = {
+          ...inv,
+          amount: defaultAmount
+        };
+        
+        // Add to list of corrected investments
+        correctedInvestments.push({
+          round: inv.round,
+          oldAmount,
+          newAmount: defaultAmount
+        });
+      }
+    });
+    
+    // If any investments were corrected, update the plan
+    if (correctedInvestments.length > 0) {
+      setPlan(prevPlan => ({
+        ...prevPlan,
+        investments: updatedInvestments
+      }));
+    }
+    
+    return {
+      hasInvalidInvestments: correctedInvestments.length > 0,
+      correctedInvestments
+    };
+  };
+
+  const handleSaveClick = () => {
+    // Validate investments before showing confirm modal
+    const validation = validateInvestmentAmounts();
+    
+    if (validation.hasInvalidInvestments) {
+      // Show validation modal with list of changes
+      setInvalidInvestments(validation.correctedInvestments);
+      setInvestmentValidationModalOpen(true);
+    } else {
+      // Proceed to confirmation modal
+      setConfirmModalOpen(true);
+    }
   };
 
   const handleNext = () => {
@@ -333,7 +414,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
           {step > 1 ? <Button onClick={handleBack} className="bg-gray-500 hover:bg-gray-600">뒤로 가기</Button> : <div />}
           <div className="flex gap-4">
             {step < 4 && <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700">다음 단계</Button>}
-            {step === 4 && <Button onClick={() => setConfirmModalOpen(true)} className="bg-green-600 hover:bg-green-700">저장</Button>}
+            {step === 4 && <Button onClick={handleSaveClick} className="bg-green-600 hover:bg-green-700">저장</Button>}
           </div>
         </div>
       </div>
@@ -375,6 +456,60 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
           <div className="flex justify-end gap-4 mt-4">
             <Button onClick={() => setValidationModalOpen(false)} className="bg-gray-500 hover:bg-gray-600">취소</Button>
             <Button onClick={handleValidationConfirm} className="bg-blue-600 hover:bg-blue-700">확인</Button>
+          </div>
+        </div>
+      </Modal>
+      
+      {/* Investment Validation Modal */}
+      <Modal
+        isOpen={isInvestmentValidationModalOpen}
+        onClose={() => {
+          setInvestmentValidationModalOpen(false);
+          // Show confirmation modal after acknowledging investment changes
+          setConfirmModalOpen(true);
+        }}
+        title="투자액 자동 수정 알림"
+      >
+        <div>
+          <p className="mb-4">
+            일부 회차의 투자액이 최소 필수 금액보다 작거나 유효하지 않아 자동으로 수정되었습니다:
+          </p>
+          <div className="max-h-60 overflow-y-auto mb-4 border rounded">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2">회차</th>
+                  <th className="px-4 py-2">기존 입력값</th>
+                  <th className="px-4 py-2">수정된 값</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invalidInvestments.map((item) => (
+                  <tr key={item.round} className="border-t">
+                    <td className="px-4 py-2 text-center">{item.round}</td>
+                    <td className="px-4 py-2 text-center">
+                      {item.oldAmount === '' || isNaN(Number(item.oldAmount)) 
+                        ? '입력 없음' 
+                        : Number(item.oldAmount).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-2 text-center font-medium text-blue-600">
+                      {item.newAmount.toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex justify-end">
+            <Button 
+              onClick={() => {
+                setInvestmentValidationModalOpen(false);
+                setConfirmModalOpen(true);
+              }} 
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              확인하고 계속하기
+            </Button>
           </div>
         </div>
       </Modal>
