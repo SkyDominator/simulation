@@ -8,6 +8,7 @@
       "program": "${file}",
       "console": "integratedTerminal"
     },
+
     {
       "name": "Backend: FastAPI Server",
       "type": "debugpy",
@@ -21,5 +22,22 @@
       },
       "args": []
     },
+
+    {
+    "name": "Launch Chrome (new profile)",
+    "type": "pwa-chrome",
+    "request": "launch",
+    "url": "http://localhost:5173",
+    "webRoot": "${workspaceFolder}/src/my-pwa-frontend",
+    "runtimeExecutable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "runtimeArgs": [
+        "--remote-debugging-port=9222",
+        "--user-data-dir=${workspaceFolder}\\.vscode\\chrome-profile",
+        "--disable-extensions",
+        "--no-first-run"
+    ],
+    "trace": true
+    }
+
   ],
 }

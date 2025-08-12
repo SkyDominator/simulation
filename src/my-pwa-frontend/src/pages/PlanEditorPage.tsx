@@ -151,10 +151,10 @@ const InvestmentEditor = ({
                     <Input 
                       type="number" 
                       value={inv.amount || ''}
-                      placeholder={defaultAmount ? `기본값: ${defaultAmount.toLocaleString()}` : '투자액 입력 (0 불가)'}
+                      placeholder={defaultAmount ? `최소값: ${defaultAmount.toLocaleString()}` : '투자액 입력 (0 불가)'}
                       onChange={e => {
                         const val = parseInt(e.target.value);
-                        const amount = isNaN(val) || val <= 0 ? '' : e.target.value;
+                        const amount = isNaN(val) ? '' : e.target.value;
                         onInvestmentChange(inv.round, amount);
                       }}
                     />
