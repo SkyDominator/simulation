@@ -46,7 +46,11 @@ export const CompanyRoundSelector: React.FC<CompanyRoundSelectorProps> = ({ comp
       type="number" 
       value={companyRound === 0 ? "" : companyRound}
       placeholder="회차를 입력하세요 (예: 1)" 
-      onChange={e => onChange(parseInt(e.target.value, 10) || 0)}
+      onChange={e => {
+        // Ensure it's parsed as an integer
+        const value = parseInt(e.target.value, 10) || 0;
+        onChange(value);
+      }}
     />
   </div>
 );
@@ -65,7 +69,11 @@ export const SimulationRoundsSelector: React.FC<SimulationRoundsSelectorProps> =
         type="number"
         placeholder={`최소 ${min}, 최대 ${max} 회차`}
         value={isNaN(simulationRounds) ? "" : simulationRounds} 
-        onChange={e => onChange(e.target.value === "" ? NaN : parseInt(e.target.value, 10))}
+        onChange={e => {
+          // Parse as integer or NaN if empty
+          const value = e.target.value === "" ? NaN : parseInt(e.target.value, 10);
+          onChange(value);
+        }}
       />
     </div>
   );
@@ -102,9 +110,11 @@ export const InvestmentEditor: React.FC<InvestmentEditorProps> = ({
                       value={inv.amount || ''}
                       placeholder={defaultAmount ? `최소값: ${defaultAmount.toLocaleString()}` : '투자액 입력 (0 불가)'}
                       onChange={e => {
+                        // Ensure we're working with integers
                         const val = parseInt(e.target.value);
                         const amount = isNaN(val) ? '' : e.target.value;
-                        onInvestmentChange(inv.round, amount);
+                        // Pass the string to be parsed in the handler
+                        onInvestmentChange(parseInt(inv.round.toString(), 10), amount);
                       }}
                     />
                   </td>

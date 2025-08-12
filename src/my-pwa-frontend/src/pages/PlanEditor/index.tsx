@@ -47,6 +47,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
 
   // Handlers
   const handleInvestmentChange = (round: number, amount: string) => {
+    // Ensure amount is parsed as an integer
     const parsedAmount = amount === '' ? 0 : parseInt(amount, 10);
     const newInvestments = (plan.investments || []).map(inv => 
       inv.round === round ? { ...inv, amount: parsedAmount } : inv
@@ -76,7 +77,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
 
   const handleSaveClick = () => {
     // Validate investments before showing confirm modal
-    const validation = validateInvestmentAmounts(plan.investments, plan.plan_type);
+    const validation = validateInvestmentAmounts(plan.investments || [], plan.plan_type);
     
     if (validation.hasInvalidInvestments) {
       // Show validation modal with list of changes
@@ -87,7 +88,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
       if (validation.updatedInvestments) {
         setPlan(prevPlan => ({
           ...prevPlan,
-          investments: validation.updatedInvestments || prevPlan.investments
+          investments: validation.updatedInvestments || prevPlan.investments || []
         }));
       }
     } else {
