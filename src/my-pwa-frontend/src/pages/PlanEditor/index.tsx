@@ -48,7 +48,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
   // Handlers
   const handleInvestmentChange = (round: number, amount: string) => {
     const parsedAmount = amount === '' ? 0 : parseInt(amount, 10);
-    const newInvestments = plan.investments.map(inv => 
+    const newInvestments = (plan.investments || []).map(inv => 
       inv.round === round ? { ...inv, amount: parsedAmount } : inv
     );
     setPlan({ ...plan, investments: newInvestments });
@@ -133,7 +133,8 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
         plan.plan_type,
         plan.simulation_rounds,
         scheduled_payment,
-        session.access_token
+        session.access_token,
+        plan.company_round
       );
       
       if (isMounted) {
@@ -179,7 +180,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
         />;
       case 4:
         return <InvestmentEditor 
-          investments={plan.investments} 
+          investments={plan.investments || []} 
           companyRound={plan.company_round} 
           planType={plan.plan_type}
           onInvestmentChange={handleInvestmentChange} 
@@ -192,13 +193,13 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
   // Update investments when plan type or simulation rounds change
   useEffect(() => {
     // Skip if we're editing a plan and investments count already matches simulation rounds
-    if (editingPlan && plan.investments.length === plan.simulation_rounds) {
+    if (editingPlan && (plan.investments || []).length === plan.simulation_rounds) {
       return;
     }
     
-    const newInvestments = generateInvestments(plan.simulation_rounds, plan.plan_type, plan.investments);
+    const newInvestments = generateInvestments(plan.simulation_rounds, plan.plan_type, plan.investments || []);
     setPlan(p => ({ ...p, investments: newInvestments }));
-  }, [editingPlan, plan.plan_type, plan.simulation_rounds, plan.investments.length]);
+  }, [editingPlan, plan.plan_type, plan.simulation_rounds, plan.investments?.length, plan.investments]);
 
   const handleInvestmentValidationClose = () => {
     setInvestmentValidationModalOpen(false);

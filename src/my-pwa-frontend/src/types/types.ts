@@ -18,6 +18,7 @@ export interface SimulationResults {
   input: {
     plan_type: string;
     max_rounds: number;
+    company_round: number;
     scheduled_payment: Record<string, number>;
   };
   output: any; // You can define a more specific type based on your actual response structure

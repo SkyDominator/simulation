@@ -66,9 +66,10 @@ export const api = {
     plan_type: string,
     max_rounds: number,
     scheduled_payment: Record<string, number>,
-    token: string
+    token: string,
+    company_round: number = 1
   ): Promise<SimulationResults & { success: boolean, message: string }> => {
-    const response = await fetch(`${API_BASE_URL}/simulation/run`, {
+    const response = await fetch(`${API_BASE_URL}/custom-simulation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -78,6 +79,7 @@ export const api = {
         plan_type,
         max_rounds,
         scheduled_payment,
+        company_round,
       }),
     });
     

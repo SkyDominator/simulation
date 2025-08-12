@@ -91,6 +91,7 @@ class PlanParametersResponse(BaseModel):
 class CustomSimulationRequest(BaseModel):
     plan_id: str
     max_rounds: int
+    company_round: int = 1  # Default to 1 if not provided
     scheduled_payment: Dict[str, int]
     
 # Custom simulation response model
@@ -248,16 +249,6 @@ def create_plan(plan: PlanCreate, user_id: str = Depends(authenticate_jwt_token)
     raise HTTPException(status_code=400, detail="Failed to create plan")
 
 # 투자 시뮬레이션 실행 API
-@app.post("/api/run-simulation")
-def run_simulation(req: SimulationRequest, user_id: str = Depends(authenticate_jwt_token)):
-    # 여기에 기존 Python 투자 모델 코드를 함수 형태로 가져와서 사용
-    # def run_my_financial_model(plan_data: dict) -> dict: ...
-    # simulation_result = run_my_financial_model(req.plan_data)
-    
-    # 예시 결과
-    simulation_result = {"expected_return": 15000, "principal": 10000}
-    return simulation_result
-
 # 사용자 정의 시뮬레이션 API 엔드포인트
 @app.post("/api/custom-simulation", response_model=CustomSimulationResponse)
 def custom_simulation(request: CustomSimulationRequest, user_id: str = Depends(authenticate_jwt_token)):
@@ -301,7 +292,7 @@ def custom_simulation(request: CustomSimulationRequest, user_id: str = Depends(a
         plan_data = {
             "user_id": user_id,
             "plan_type": plan_type,  # Store the actual plan type
-            "company_round": 1,  # Default to 1 if not specified
+            "company_round": request.company_round,  # Use the company_round from the request
             "simulation_rounds": max_rounds,
             "investments": [
                 {"round": int(round_num), "amount": amount}
