@@ -88,16 +88,18 @@ class PlanParametersResponse(BaseModel):
     parameters: Dict[str, Dict[str, Any]]
     
 # Custom simulation request model
-class CustomSimulationRequest(BaseModel):
+class SimulationRequest(BaseModel):
     plan_id: str
     max_rounds: int
     company_round: int = 1  # Default to 1 if not provided
     scheduled_payment: Dict[str, int]
     
 # Custom simulation response model
-class CustomSimulationResponse(BaseModel):
+class SimulationResponse(BaseModel):
     plan_id: str
     history: List[Dict[str, Any]]
+    message: str
+    success: bool
 
 # --- 3. 사용자 인증 의존성 ---
 
@@ -250,8 +252,8 @@ def create_plan(plan: PlanCreate, user_id: str = Depends(authenticate_jwt_token)
 
 # 투자 시뮬레이션 실행 API
 # 사용자 정의 시뮬레이션 API 엔드포인트
-@app.post("/api/simulation", response_model=CustomSimulationResponse)
-def custom_simulation(request: CustomSimulationRequest, user_id: str = Depends(authenticate_jwt_token)):
+@app.post("/api/simulation", response_model=SimulationResponse)
+def custom_simulation(request: SimulationRequest, user_id: str = Depends(authenticate_jwt_token)):
     """
     Run a financial simulation with custom parameters:
     - plan_id: The unique plan identifier (format: planType_timestamp_random)
