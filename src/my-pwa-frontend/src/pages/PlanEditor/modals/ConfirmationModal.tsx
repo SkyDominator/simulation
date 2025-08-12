@@ -21,7 +21,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   <Modal isOpen={isOpen} onClose={onClose} title="저장 확인">
     <div>
       <h3 className="font-bold">플랜 요약</h3>
-      <p>플랜 타입: {plan.plan_type}</p>
+      <p>플랜 타입: {plan.plan_id}</p>
       <p>회사 회차: {plan.company_round}</p>
       <p>총 시뮬레이션 회차: {plan.simulation_rounds}</p>
       <div className="flex justify-end gap-4 mt-4">

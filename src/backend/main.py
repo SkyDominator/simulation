@@ -250,7 +250,7 @@ def create_plan(plan: PlanCreate, user_id: str = Depends(authenticate_jwt_token)
 
 # 투자 시뮬레이션 실행 API
 # 사용자 정의 시뮬레이션 API 엔드포인트
-@app.post("/api/request-simulation", response_model=CustomSimulationResponse)
+@app.post("/api/simulation", response_model=CustomSimulationResponse)
 def custom_simulation(request: CustomSimulationRequest, user_id: str = Depends(authenticate_jwt_token)):
     """
     Run a financial simulation with custom parameters:
@@ -261,24 +261,20 @@ def custom_simulation(request: CustomSimulationRequest, user_id: str = Depends(a
     The simulation results are saved to the Supabase database.
     """
     try:
-        # Extract the plan_type from the plan_id (e.g., 'A_timestamp_random' -> 'A')
-        plan_parts = request.plan_id.split('_')
-        plan_type = plan_parts[0]  # First part is the plan type
-        
         # Validate the plan type
-        if plan_type not in PLAN_PARAMETERS:
-            raise HTTPException(status_code=400, detail=f"Invalid plan type: {plan_type}")
-        
+        if request.plan_id not in PLAN_PARAMETERS:
+            raise HTTPException(status_code=400, detail=f"Invalid plan type: {request.plan_id}")
+
         # Convert string keys in scheduled_payment dict to integers
         scheduled_payment = {int(k): v for k, v in request.scheduled_payment.items()}
         
         # Get max_rounds from plan or use provided value, whichever is smaller
-        plan_max_rounds = PLAN_PARAMETERS[plan_type].get('max_rounds', 36)
+        plan_max_rounds = PLAN_PARAMETERS[request.plan_id].get('max_rounds', 36)
         max_rounds = min(request.max_rounds, plan_max_rounds)
         
         # Initialize the simulation service with the specified plan and custom scheduled payments
         simulator = FinancialSimulationService(
-            plan_id=plan_type,  # Use plan_type for simulation
+            plan_id=request.plan_id,  # Use request.plan_id for simulation
             scheduled_payment=scheduled_payment
         )
         
@@ -291,7 +287,7 @@ def custom_simulation(request: CustomSimulationRequest, user_id: str = Depends(a
         # Prepare data for Supabase DB
         plan_data = {
             "user_id": user_id,
-            "plan_type": plan_type,  # Store the actual plan type
+            "plan_id": request.plan_id,  # Store the actual plan ID
             "company_round": request.company_round,  # Use the company_round from the request
             "simulation_rounds": max_rounds,
             "investments": [

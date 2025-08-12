@@ -1,7 +1,7 @@
 export interface Plan {
   id?: string;
   user_id?: string;
-  plan_type: string;
+  plan_id: string;
   company_round: number;
   simulation_rounds: number;
   investments?: Investment[];

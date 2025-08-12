@@ -63,20 +63,20 @@ export const api = {
   },
   
   runCustomSimulation: async (
-    plan_type: string,
+    plan_id: string,
     max_rounds: number,
     scheduled_payment: Record<string, number>,
     token: string,
     company_round: number = 1
   ): Promise<SimulationResults & { success: boolean, message: string }> => {
-    const response = await fetch(`${API_BASE_URL}/request-simulation`, {
+    const response = await fetch(`${API_BASE_URL}/simulation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
-        plan_type,
+        plan_id: plan_id,
         max_rounds,
         scheduled_payment,
         company_round,

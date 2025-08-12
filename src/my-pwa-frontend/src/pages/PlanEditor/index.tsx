@@ -27,7 +27,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
   const { session } = useAuth();
   const [step, setStep] = useState(1);
   const [plan, setPlan] = useState<Plan>({
-    plan_type: editingPlan?.plan_type || 'A',
+    plan_id: editingPlan?.plan_id || 'A',
     company_round: editingPlan?.company_round || 1,
     simulation_rounds: editingPlan?.simulation_rounds || 15,
     investments: editingPlan?.investments || [],
@@ -77,7 +77,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
 
   const handleSaveClick = () => {
     // Validate investments before showing confirm modal
-    const validation = validateInvestmentAmounts(plan.investments || [], plan.plan_type);
+    const validation = validateInvestmentAmounts(plan.investments || [], plan.plan_id);
     
     if (validation.hasInvalidInvestments) {
       // Show validation modal with list of changes
@@ -99,14 +99,14 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
 
   const handleNext = () => {
     if (step === 3) {
-      const { min, max } = getPlanLimits(plan.plan_type);
+      const { min, max } = getPlanLimits(plan.plan_id);
       
       if (!handleValidation(plan.simulation_rounds, min, max, 'simulation_rounds')) {
         return;
       }
       
       // Force update investments when going from step 3 to 4
-      const newInvestments = generateInvestments(plan.simulation_rounds, plan.plan_type, plan.investments);
+      const newInvestments = generateInvestments(plan.simulation_rounds, plan.plan_id, plan.investments);
       setPlan(prevPlan => ({ ...prevPlan, investments: newInvestments }));
     }
     
@@ -131,7 +131,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
       
       // Run custom simulation
       await api.runCustomSimulation(
-        plan.plan_type,
+        plan.plan_id,
         plan.simulation_rounds,
         scheduled_payment,
         session.access_token,
@@ -170,20 +170,20 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
   const renderStep = () => {
     switch (step) {
       case 1:
-        return <PlanTypeSelector planType={plan.plan_type} onChange={value => setPlan({ ...plan, plan_type: value })} />;
+        return <PlanTypeSelector planType={plan.plan_id} onChange={value => setPlan({ ...plan, plan_id: value })} />;
       case 2:
         return <CompanyRoundSelector companyRound={plan.company_round} onChange={value => setPlan({ ...plan, company_round: value })} />;
       case 3:
         return <SimulationRoundsSelector 
           simulationRounds={plan.simulation_rounds} 
-          planType={plan.plan_type} 
+          planType={plan.plan_id} 
           onChange={value => setPlan({ ...plan, simulation_rounds: value })} 
         />;
       case 4:
         return <InvestmentEditor 
           investments={plan.investments || []} 
           companyRound={plan.company_round} 
-          planType={plan.plan_type}
+          planType={plan.plan_id}
           onInvestmentChange={handleInvestmentChange} 
         />;
       default:
@@ -198,7 +198,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
       return;
     }
     
-    const newInvestments = generateInvestments(plan.simulation_rounds, plan.plan_type, plan.investments || []);
+    const newInvestments = generateInvestments(plan.simulation_rounds, plan.plan_id, plan.investments || []);
     setPlan(p => ({ ...p, investments: newInvestments }));
   }, []);
 

@@ -107,7 +107,7 @@ const MainPage: React.FC<MainPageProps> = ({ setPage, setEditingPlan, openNotice
                 {plans.map((plan) => (
                   <tr key={plan.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {plan.plan_type} 플랜
+                      {plan.plan_id} 플랜
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {plan.company_round}
