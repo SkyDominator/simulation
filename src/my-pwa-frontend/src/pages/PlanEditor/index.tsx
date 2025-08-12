@@ -200,7 +200,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
     
     const newInvestments = generateInvestments(plan.simulation_rounds, plan.plan_type, plan.investments || []);
     setPlan(p => ({ ...p, investments: newInvestments }));
-  }, [editingPlan, plan.plan_type, plan.simulation_rounds, plan.investments?.length, plan.investments]);
+  }, []);
 
   const handleInvestmentValidationClose = () => {
     setInvestmentValidationModalOpen(false);
