@@ -125,10 +125,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
       const scheduled_payment: Record<string, number> = {};
       
       plan.investments.forEach(inv => {
-        const defaultAmount = getDefaultInvestmentAmount(plan.plan_type, inv.round);
-        // Use default amount if amount is 0 or not set
-        const amount = !inv.amount || inv.amount <= 0 ? defaultAmount : inv.amount;
-        scheduled_payment[inv.round.toString()] = amount;
+        scheduled_payment[inv.round.toString()] = inv.amount;
       });
       
       // Run custom simulation
