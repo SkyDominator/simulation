@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../../components/Button';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -49,6 +49,14 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
     oldAmount: number | string;
     newAmount: number;
   }>>([]);
+
+  // Track mount status to avoid state updates after unmount
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Handlers
   const handleInvestmentChange = (round: number, amount: string) => {
@@ -130,20 +138,14 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
 
   const handleSave = async () => {
     if (!session) return;
-    
-    let isMounted = true;
+
     setIsLoading(true);
-    
     try {
-      // Create scheduled_payment object
       const scheduled_payment: Record<string, number> = {};
-      
-      // Safely handle possibly undefined investments
       (plan.investments || []).forEach(inv => {
         scheduled_payment[inv.round.toString()] = inv.amount;
       });
-      
-      // Request simulation creation only
+
       await api.createSimulation(
         plan.plan_id,
         plan.simulation_rounds,
@@ -152,25 +154,21 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
         plan.company_round
       );
 
-      if (isMounted) {
+      if (isMountedRef.current) {
         setConfirmModalOpen(false);
         alert('시뮬레이션을 요청 완료했습니다.');
         setPage('main');
       }
     } catch (error) {
-      console.error("Save or simulation error:", error);
-      if (isMounted) {
-        alert("시뮬레이션 실행 또는 결과 저장에 실패했습니다.");
+      console.error('Save or simulation error:', error);
+      if (isMountedRef.current) {
+        alert('시뮬레이션 실행 또는 결과 저장에 실패했습니다.');
       }
     } finally {
-      if (isMounted) {
+      if (isMountedRef.current) {
         setIsLoading(false);
       }
     }
-    
-    return () => {
-      isMounted = false;
-    };
   };
 
   const renderStep = () => {
