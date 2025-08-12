@@ -1,0 +1,252 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from '../../components/Button';
+import { useAuth } from '../../context/AuthContext';
+import { api } from '../../services/api';
+import type { Plan } from '../../types/types';
+import type { ValidationData } from './types/index';
+
+interface PlanEditorPageProps {
+  setPage: (page: string) => void;
+  editingPlan: Plan | null;
+}
+import { 
+  PlanTypeSelector, 
+  CompanyRoundSelector, 
+  SimulationRoundsSelector, 
+  InvestmentEditor 
+} from './components';
+import { 
+  ConfirmationModal, 
+  ValidationModal, 
+  InvestmentValidationModal 
+} from './modals';
+import { getPlanLimits, generateInvestments, getDefaultInvestmentAmount } from './utils/investmentUtils';
+import { validateNumericValue, validateInvestmentAmounts } from './utils/validationUtils';
+
+const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan }) => {
+  const { session } = useAuth();
+  const [step, setStep] = useState(1);
+  const [plan, setPlan] = useState<Plan>({
+    plan_type: editingPlan?.plan_type || 'A',
+    company_round: editingPlan?.company_round || 1,
+    simulation_rounds: editingPlan?.simulation_rounds || 15,
+    investments: editingPlan?.investments || [],
+  });
+  const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isValidationModalOpen, setValidationModalOpen] = useState(false);
+  const [validationData, setValidationData] = useState<ValidationData | null>(null);
+  
+  // Add state for investment validation modal
+  const [isInvestmentValidationModalOpen, setInvestmentValidationModalOpen] = useState(false);
+  const [invalidInvestments, setInvalidInvestments] = useState<Array<{
+    round: number;
+    oldAmount: number | string;
+    newAmount: number;
+  }>>([]);
+
+  // Handlers
+  const handleInvestmentChange = (round: number, amount: string) => {
+    const parsedAmount = amount === '' ? 0 : parseInt(amount, 10);
+    const newInvestments = plan.investments.map(inv => 
+      inv.round === round ? { ...inv, amount: parsedAmount } : inv
+    );
+    setPlan({ ...plan, investments: newInvestments });
+  };
+
+  const handleValidation = (value: number, min: number, max: number, field: keyof Plan) => {
+    const validationResult = validateNumericValue(value, min, max, field);
+    if (validationResult) {
+      setValidationData(validationResult);
+      setValidationModalOpen(true);
+      return false;
+    }
+    return true;
+  };
+
+  const handleValidationConfirm = () => {
+    if (!validationData) return;
+    
+    const { value, min, max, field } = validationData;
+    const newValue = value < min ? min : max;
+    
+    setPlan(prev => ({ ...prev, [field]: newValue }));
+    setValidationModalOpen(false);
+  };
+
+  const handleSaveClick = () => {
+    // Validate investments before showing confirm modal
+    const validation = validateInvestmentAmounts(plan.investments, plan.plan_type);
+    
+    if (validation.hasInvalidInvestments) {
+      // Show validation modal with list of changes
+      setInvalidInvestments(validation.correctedInvestments);
+      setInvestmentValidationModalOpen(true);
+      
+      // Update investments with corrected values if available
+      if (validation.updatedInvestments) {
+        setPlan(prevPlan => ({
+          ...prevPlan,
+          investments: validation.updatedInvestments || prevPlan.investments
+        }));
+      }
+    } else {
+      // Proceed to confirmation modal
+      setConfirmModalOpen(true);
+    }
+  };
+
+  const handleNext = () => {
+    if (step === 3) {
+      const { min, max } = getPlanLimits(plan.plan_type);
+      
+      if (!handleValidation(plan.simulation_rounds, min, max, 'simulation_rounds')) {
+        return;
+      }
+      
+      // Force update investments when going from step 3 to 4
+      const newInvestments = generateInvestments(plan.simulation_rounds, plan.plan_type, plan.investments);
+      setPlan(prevPlan => ({ ...prevPlan, investments: newInvestments }));
+    }
+    
+    setStep(s => s + 1);
+  };
+  
+  const handleBack = () => setStep(s => s - 1);
+
+  const handleSave = async () => {
+    if (!session) return;
+    
+    let isMounted = true;
+    setIsLoading(true);
+    
+    try {
+      // Create scheduled_payment object
+      const scheduled_payment: Record<string, number> = {};
+      
+      plan.investments.forEach(inv => {
+        const defaultAmount = getDefaultInvestmentAmount(plan.plan_type, inv.round);
+        // Use default amount if amount is 0 or not set
+        const amount = !inv.amount || inv.amount <= 0 ? defaultAmount : inv.amount;
+        scheduled_payment[inv.round.toString()] = amount;
+      });
+      
+      // Run custom simulation
+      await api.runCustomSimulation(
+        plan.plan_type,
+        plan.simulation_rounds,
+        scheduled_payment,
+        session.access_token
+      );
+      
+      if (isMounted) {
+        setConfirmModalOpen(false);
+        alert('시뮬레이션이 완료되었고 결과가 성공적으로 저장되었습니다.');
+        setPage('main');
+        
+        if (confirm('시뮬레이션 결과 보기 페이지로 이동하시겠습니까?')) {
+          setTimeout(() => {
+            if (isMounted) {
+              setPage('results');
+            }
+          }, 500);
+        }
+      }
+    } catch (error) {
+      console.error("Save or simulation error:", error);
+      if (isMounted) {
+        alert("시뮬레이션 실행 또는 결과 저장에 실패했습니다.");
+      }
+    } finally {
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    }
+    
+    return () => {
+      isMounted = false;
+    };
+  };
+
+  const renderStep = () => {
+    switch (step) {
+      case 1:
+        return <PlanTypeSelector planType={plan.plan_type} onChange={value => setPlan({ ...plan, plan_type: value })} />;
+      case 2:
+        return <CompanyRoundSelector companyRound={plan.company_round} onChange={value => setPlan({ ...plan, company_round: value })} />;
+      case 3:
+        return <SimulationRoundsSelector 
+          simulationRounds={plan.simulation_rounds} 
+          planType={plan.plan_type} 
+          onChange={value => setPlan({ ...plan, simulation_rounds: value })} 
+        />;
+      case 4:
+        return <InvestmentEditor 
+          investments={plan.investments} 
+          companyRound={plan.company_round} 
+          planType={plan.plan_type}
+          onInvestmentChange={handleInvestmentChange} 
+        />;
+      default:
+        return null;
+    }
+  };
+
+  // Update investments when plan type or simulation rounds change
+  useEffect(() => {
+    // Skip if we're editing a plan and investments count already matches simulation rounds
+    if (editingPlan && plan.investments.length === plan.simulation_rounds) {
+      return;
+    }
+    
+    const newInvestments = generateInvestments(plan.simulation_rounds, plan.plan_type, plan.investments);
+    setPlan(p => ({ ...p, investments: newInvestments }));
+  }, [editingPlan, plan.plan_type, plan.simulation_rounds, plan.investments.length]);
+
+  const handleInvestmentValidationClose = () => {
+    setInvestmentValidationModalOpen(false);
+    // Show confirmation modal after acknowledging investment changes
+    setConfirmModalOpen(true);
+  };
+
+  return (
+    <div className="p-4 md:p-8">
+      <h1 className="text-2xl md:text-3xl font-bold mb-8">{editingPlan ? '플랜 수정하기' : '새 플랜 만들기'}</h1>
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        {renderStep()}
+        <div className="flex justify-between mt-8">
+          {step > 1 ? <Button onClick={handleBack} className="bg-gray-500 hover:bg-gray-600">뒤로 가기</Button> : <div />}
+          <div className="flex gap-4">
+            {step < 4 && <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700">다음 단계</Button>}
+            {step === 4 && <Button onClick={handleSaveClick} className="bg-green-600 hover:bg-green-700">저장</Button>}
+          </div>
+        </div>
+      </div>
+      <Button onClick={() => setPage('main')} className="mt-4 bg-gray-200 text-black hover:bg-gray-300">메인으로 돌아가기</Button>
+
+      {/* Modals */}
+      <ConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setConfirmModalOpen(false)}
+        onConfirm={handleSave}
+        plan={plan}
+        isLoading={isLoading}
+      />
+
+      <ValidationModal
+        isOpen={isValidationModalOpen}
+        onClose={() => setValidationModalOpen(false)}
+        onConfirm={handleValidationConfirm}
+        validationData={validationData}
+      />
+      
+      <InvestmentValidationModal
+        isOpen={isInvestmentValidationModalOpen}
+        onClose={handleInvestmentValidationClose}
+        invalidInvestments={invalidInvestments}
+      />
+    </div>
+  );
+};
+
+export default PlanEditorPage;
