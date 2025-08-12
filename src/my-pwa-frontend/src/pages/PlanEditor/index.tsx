@@ -113,7 +113,15 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
     setStep(s => s + 1);
   };
   
-  const handleBack = () => setStep(s => s - 1);
+  const handleBack = () => {
+    // Close all modals when going back
+    setConfirmModalOpen(false);
+    setInvestmentValidationModalOpen(false);
+    setValidationModalOpen(false);
+    
+    // Go back one step
+    setStep(s => s - 1);
+  };
 
   const handleSave = async () => {
     if (!session) return;
@@ -125,7 +133,8 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
       // Create scheduled_payment object
       const scheduled_payment: Record<string, number> = {};
       
-      plan.investments.forEach(inv => {
+      // Safely handle possibly undefined investments
+      (plan.investments || []).forEach(inv => {
         scheduled_payment[inv.round.toString()] = inv.amount;
       });
       
@@ -221,7 +230,18 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
           </div>
         </div>
       </div>
-      <Button onClick={() => setPage('main')} className="mt-4 bg-gray-200 text-black hover:bg-gray-300">메인으로 돌아가기</Button>
+      <Button 
+        onClick={() => {
+          // Close all modals when returning to main
+          setConfirmModalOpen(false);
+          setInvestmentValidationModalOpen(false);
+          setValidationModalOpen(false);
+          setPage('main');
+        }} 
+        className="mt-4 bg-gray-200 text-black hover:bg-gray-300"
+      >
+        메인으로 돌아가기
+      </Button>
 
       {/* Modals */}
       <ConfirmationModal
