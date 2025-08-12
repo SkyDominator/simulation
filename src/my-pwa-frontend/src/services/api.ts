@@ -69,7 +69,7 @@ export const api = {
     token: string,
     company_round: number = 1
   ): Promise<SimulationResults & { success: boolean, message: string }> => {
-    const response = await fetch(`${API_BASE_URL}/custom-simulation`, {
+    const response = await fetch(`${API_BASE_URL}/request-simulation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

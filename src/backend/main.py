@@ -250,7 +250,7 @@ def create_plan(plan: PlanCreate, user_id: str = Depends(authenticate_jwt_token)
 
 # 투자 시뮬레이션 실행 API
 # 사용자 정의 시뮬레이션 API 엔드포인트
-@app.post("/api/custom-simulation", response_model=CustomSimulationResponse)
+@app.post("/api/request-simulation", response_model=CustomSimulationResponse)
 def custom_simulation(request: CustomSimulationRequest, user_id: str = Depends(authenticate_jwt_token)):
     """
     Run a financial simulation with custom parameters:
