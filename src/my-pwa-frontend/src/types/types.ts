@@ -1,6 +1,5 @@
 export interface Plan {
-  id?: string;
-  user_id?: string;
+  simulation_id: string;
   plan_id: string;
   company_round: number;
   simulation_rounds: number;
@@ -24,6 +23,15 @@ export interface SimulationResults {
   output: unknown; // You can define a more specific type based on your actual response structure
 }
 
+// Response from POST /api/simulation/run
+export interface SimulationRunResponse {
+  simulation_id: string;
+  plan_id: string;
+  history: Array<Record<string, unknown>>;
+  message: string;
+  success: boolean;
+}
+
 export interface WhitelistCheckResponse {
   success: boolean;
   message: string;
@@ -33,7 +41,7 @@ export interface WhitelistCheckResponse {
 
 // Response from POST /api/simulation/create
 export interface SimulationCreateResponse {
-  id: string;
+  simulation_id: string;
   plan_id: string;
   message: string;
   success: boolean;

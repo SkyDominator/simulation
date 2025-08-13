@@ -1,11 +1,13 @@
 import React from 'react';
 import { Button } from '../components/Button';
+import type { SimulationRunResponse, Page } from '../types/types';
 
 interface ResultsPageProps {
-  setPage: (page: any) => void;
+  setPage: (page: Page) => void;
+  result: SimulationRunResponse | null;
 }
 
-const ResultsPage: React.FC<ResultsPageProps> = ({ setPage }) => {
+const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-8">
@@ -19,9 +21,24 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage }) => {
       </div>
       
       <div className="bg-white rounded-lg shadow-md p-6">
-        <p className="text-center py-4">
-          이 페이지는 추후 구현될 예정입니다.
-        </p>
+        {!result ? (
+          <p className="text-center py-4">표시할 결과가 없습니다.</p>
+        ) : (
+          <div>
+            <div className="mb-4">
+              <div className="text-sm text-gray-600">플랜</div>
+              <div className="font-semibold">{result.plan_id}</div>
+            </div>
+            <div className="mb-4">
+              <div className="text-sm text-gray-600">시뮬레이션 ID</div>
+              <div className="font-mono text-sm">{result.simulation_id}</div>
+            </div>
+            <div className="mb-2 font-semibold">히스토리 (최근 10개)</div>
+            <pre className="bg-gray-50 p-4 rounded text-xs overflow-auto max-h-96">
+              {JSON.stringify(result.history?.slice(-10), null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   );

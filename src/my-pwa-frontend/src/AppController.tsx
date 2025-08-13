@@ -6,12 +6,14 @@ import MainPage from './pages/MainPage';
 import PlanEditorPage from './pages/PlanEditorPage';
 import ResultsPage from './pages/ResultsPage';
 import { type Plan, type Page } from './types/types';
+import type { SimulationRunResponse } from './types/types';
 
 const AppController: React.FC = () => {
   const [page, setPage] = useState<Page>('whitelist');
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-  const [isNoticeOpen, setNoticeOpen] = useState(false);
+  const [, setNoticeOpen] = useState(false);
   const { user } = useAuth();
+  const [simulationResult, setSimulationResult] = useState<SimulationRunResponse | null>(null);
 
   // 공지사항 열기
   const handleOpenNotice = () => {
@@ -34,18 +36,19 @@ const AppController: React.FC = () => {
     } else {
       // 로그인한 경우
       switch (page) {
-        case 'main':
+    case 'main':
           return (
             <MainPage 
               setPage={setPage} 
               setEditingPlan={setEditingPlan}
               openNotice={handleOpenNotice}
+      setSimulationResult={setSimulationResult}
             />
           );
         case 'plan-editor':
           return <PlanEditorPage setPage={setPage} editingPlan={editingPlan} />;
         case 'results':
-          return <ResultsPage setPage={setPage} />;
+          return <ResultsPage setPage={setPage} result={simulationResult} />;
         default:
           return <MainPage setPage={setPage} setEditingPlan={setEditingPlan} />;
       }

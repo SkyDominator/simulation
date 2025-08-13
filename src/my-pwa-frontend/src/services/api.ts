@@ -1,4 +1,4 @@
-import { type Plan, type WhitelistCheckResponse, type SimulationCreateResponse } from '../types/types';
+import { type Plan, type WhitelistCheckResponse, type SimulationCreateResponse, type SimulationRunResponse } from '../types/types';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api'; // 로컬 FastAPI 서버 주소
 
@@ -24,9 +24,38 @@ export const api = {
     }
   },
   
-  getPlans: async (token: string): Promise<Plan[]> => {
+  runSimulation: async (
+    simulation_id: string,
+    token: string
+  ): Promise<SimulationRunResponse> => {
+    const response = await fetch(`${API_BASE_URL}/simulation/run`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ simulation_id }),
+    });
+
+    if (!response.ok) {
+      try {
+        const err = await response.json();
+        throw new Error(err?.detail || `API error: ${response.status}`);
+      } catch {
+        throw new Error(`API error: ${response.status}`);
+      }
+    }
+
+    const data: SimulationRunResponse = await response.json();
+    if (!data.success) {
+      throw new Error(data.message || '시뮬레이션 실행에 실패했습니다.');
+    }
+    return data;
+  },
+  
+  getSimulations: async (token: string): Promise<Plan[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/plans`, {
+      const response = await fetch(`${API_BASE_URL}/simulations`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -42,10 +71,10 @@ export const api = {
       return [];
     }
   },
-  
-  getPlanDetails: async (planId: string, token: string): Promise<Plan> => {
+
+  getSimulationDetails: async (simulationId: string, token: string): Promise<Plan> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/plans/${planId}`, {
+      const response = await fetch(`${API_BASE_URL}/simulations/${simulationId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -92,7 +121,7 @@ export const api = {
       }
     }
 
-    const data: SimulationCreateResponse = await response.json();
+  const data: SimulationCreateResponse = await response.json();
     if (!data.success) {
       throw new Error(data.message || '시뮬레이션 생성 요청에 실패했습니다.');
     }

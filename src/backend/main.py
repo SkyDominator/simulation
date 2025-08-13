@@ -86,6 +86,7 @@ class PlanParametersResponse(BaseModel):
     
 # Custom simulation response model
 class SimulationResponse(BaseModel):
+    simulation_id: str
     plan_id: str
     history: List[Dict[str, Any]]
     message: str
@@ -207,38 +208,23 @@ def verify_user(request: UserCheckRequest):
         return {"is_whitelisted": True}
     return {"is_whitelisted": False, "detail": "User not in whitelist"}
 
-# 특정 사용자의 모든 플랜 조회 API - 간단한 정보만 반환
-@app.get("/api/plans")
-def get_plans(user_id: str = Depends(authenticate_jwt_token)):
-    # 시뮬레이션 결과는 제외하고 기본 정보만 조회
-    response = supabase.table('plans').select(
-        "id, plan_id, company_round, simulation_rounds, created_at, updated_at"
-    ).eq('user_id', user_id).execute()
+# 특정 사용자의 모든 시뮬레이션 정보 조회 API 
+@app.get("/api/simulations")
+def get_simulations(user_id: str = Depends(authenticate_jwt_token)):
+    response = supabase.table('simulations').select("*").eq('user_id', user_id).execute()
+    if not response.data:
+        raise HTTPException(status_code=404, detail="No simulations found for this user")
     return response.data
 
-# 특정 플랜의 상세 정보 및 시뮬레이션 결과 조회 API
-@app.get("/api/plans/{plan_id}")
-def get_plan_details(plan_id: str, user_id: str = Depends(authenticate_jwt_token)):
-    # 특정 플랜의 모든 정보(시뮬레이션 결과 포함) 조회
-    response = supabase.table('plans').select("*").eq('id', plan_id).eq('user_id', user_id).execute()
-    
-    if not response.data:
-        raise HTTPException(status_code=404, detail=f"Plan with ID {plan_id} not found")
-    
-    return response.data[0]
+# 특정 시뮬레이션의 상세 정보 및 결과 조회 API
+@app.get("/api/simulations/{simulation_id}")
+def get_simulation_details(simulation_id: str, user_id: str = Depends(authenticate_jwt_token)):
+    # 특정 시뮬레이션의 모든 정보(결과 포함) 조회
+    response = supabase.table('simulations').select("*").eq('id', simulation_id).eq('user_id', user_id).execute()
 
-# 새 플랜 생성 API
-@app.post("/api/plans")
-def create_plan(plan: PlanCreate, user_id: str = Depends(authenticate_jwt_token)):
-    # Pydantic 모델을 딕셔너리로 변환하고, user_id 추가
-    plan_data = plan.dict()
-    plan_data['user_id'] = user_id
-    
-    response = supabase.table('plans').insert(plan_data).execute()
-    
-    if response.data:
-        return response.data[0]
-    raise HTTPException(status_code=400, detail="Failed to create plan")
+    if not response.data:
+        raise HTTPException(status_code=404, detail=f"Simulation with ID {simulation_id} not found")
+    return response.data
 
 # --- 시뮬레이션 관련 API 엔드포인트 --- 
 
@@ -251,7 +237,7 @@ class SimulationCreateRequest(BaseModel):
 
 class SimulationCreateResponse(BaseModel):
     """Response model for creating a simulation plan"""
-    id: str
+    simulation_id: str
     plan_id: str
     message: str
     success: bool
@@ -300,7 +286,7 @@ def create_simulation(
         }
         
         # Create a new plan in the database
-        db_response = supabase.table("plans").insert(plan_data).execute()
+        db_response = supabase.table("simulations").insert(plan_data).execute()
         
         # Check if save was successful
         if not db_response or not db_response.data:
@@ -312,7 +298,7 @@ def create_simulation(
         logger.info(f"Created plan with ID: {created_plan['id']}")
         
         return SimulationCreateResponse(
-            id=created_plan['id'],
+            simulation_id=created_plan['id'],
             plan_id=request.plan_id,
             message="Simulation request saved successfully",
             success=True
@@ -349,7 +335,7 @@ def run_simulation(
     
     try:
         # Step 2: Find and load the simulation request info
-        db_response = supabase.table("plans").select("*").eq("id", request.simulation_id).eq("user_id", user_id).execute()
+        db_response = supabase.table("simulations").select("*").eq("id", request.simulation_id).eq("user_id", user_id).execute()
         
         if not db_response.data:
             logger.error(f"Plan not found: {request.simulation_id}")
@@ -369,6 +355,7 @@ def run_simulation(
             
             # Construct properly typed response
             response_data = SimulationResponse(
+                simulation_id=request.simulation_id,
                 plan_id=plan_id,
                 history=results_dict.get("history", []),
                 message="Retrieved existing simulation results",
@@ -411,7 +398,7 @@ def run_simulation(
         results_dict = results.to_dict()
         
         # Step 5: Save simulation results back to the database
-        update_response = supabase.table("plans").update({
+        update_response = supabase.table("simulations").update({
             "simulation_results": results_dict
         }).eq("id", request.simulation_id).execute()
         
@@ -421,6 +408,7 @@ def run_simulation(
         
         # Prepare the response data
         response_data = SimulationResponse(
+            simulation_id=request.simulation_id,
             plan_id=plan_id,
             history=results_dict.get("history", []),
             message="Simulation completed and results saved",

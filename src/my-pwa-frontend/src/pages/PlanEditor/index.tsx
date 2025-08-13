@@ -2,11 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../../components/Button';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import type { Plan } from '../../types/types';
+import type { Plan, Page } from '../../types/types';
 import type { ValidationData } from './types/index';
 
 interface PlanEditorPageProps {
-  setPage: (page: string) => void;
+  setPage: (page: Page) => void;
   editingPlan: Plan | null;
 }
 import { 
@@ -148,13 +148,21 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
         scheduled_payment[inv.round.toString()] = inv.amount;
       });
 
-      await api.createSimulation(
+      const createResponse = await api.createSimulation(
         plan.plan_id,
         plan.simulation_rounds,
         scheduled_payment,
         session.access_token,
         plan.company_round
       );
+      // Update current plan state with the returned simulation_id
+      if (createResponse?.simulation_id) {
+        setPlan(prev => ({ ...prev, simulation_id: createResponse.simulation_id }));
+      }
+      else{
+        alert('시뮬레이션 ID를 찾을 수 없습니다.');
+        return;
+      }
 
     if (isMountedRef.current) {
       setConfirmModalOpen(false);
@@ -165,7 +173,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
     } catch (error) {
       console.error('Save or simulation error:', error);
       if (isMountedRef.current) {
-        alert('시뮬레이션 실행 또는 결과 저장에 실패했습니다.');
+        alert('시뮬레이션 요청에 실패했습니다.');
       }
     } finally {
         // do nothing
