@@ -166,13 +166,6 @@ const MainPage: React.FC<MainPageProps> = ({ setPage, setEditingPlan, openNotice
           <p className="text-center py-4">아직 생성된 플랜이 없습니다. '새 플랜 만들기'를 클릭하여 시작하세요.</p>
         )}
       </div>
-      
-      <Button 
-        onClick={handleGoToResults} 
-        className="w-full bg-blue-600 hover:bg-blue-700"
-      >
-        시뮬레이션 결과 보기
-      </Button>
     </div>
   );
 };

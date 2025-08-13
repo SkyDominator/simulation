@@ -64,10 +64,20 @@ export const api = {
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
-      
-      return await response.json();
+
+      const data = await response.json();
+      if (Array.isArray(data)) {
+          data.forEach((item: { [key: string]: unknown }) => {
+              if (item && typeof item === 'object' && 'id' in item) {
+                  item.simulation_id = item.id;
+                  delete item.id;
+              }
+          });
+      }
+      return data;
+
     } catch (error) {
-      console.error('Get plans error:', error);
+      console.error('Get simulations error:', error);
       return [];
     }
   },

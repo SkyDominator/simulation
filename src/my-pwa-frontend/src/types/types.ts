@@ -1,11 +1,11 @@
 export interface Plan {
   simulation_id: string;
-  plan_id: string;
   company_round: number;
-  simulation_rounds: number;
   investments?: Investment[];
+  simulation_rounds: number;
   created_at?: string;
   updated_at?: string;
+  plan_id: string;
 }
 
 export interface Investment {

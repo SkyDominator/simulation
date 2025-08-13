@@ -211,7 +211,7 @@ def verify_user(request: UserCheckRequest):
 # 특정 사용자의 모든 시뮬레이션 정보 조회 API 
 @app.get("/api/simulations")
 def get_simulations(user_id: str = Depends(authenticate_jwt_token)):
-    response = supabase.table('simulations').select("*").eq('user_id', user_id).execute()
+    response = supabase.table('simulations').select("id, company_round, investments, simulation_rounds, created_at, updated_at, plan_id").eq('user_id', user_id).execute()
     if not response.data:
         raise HTTPException(status_code=404, detail="No simulations found for this user")
     return response.data
