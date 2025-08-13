@@ -52,7 +52,9 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
 
   // Track mount status to avoid state updates after unmount
   const isMountedRef = useRef(true);
+
   useEffect(() => {
+    // No effect body.
     return () => {
       isMountedRef.current = false;
     };
@@ -154,20 +156,19 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
         plan.company_round
       );
 
-      if (isMountedRef.current) {
-        setConfirmModalOpen(false);
-        alert('시뮬레이션을 요청 완료했습니다.');
-        setPage('main');
-      }
+    if (isMountedRef.current) {
+      setConfirmModalOpen(false);
+      setIsLoading(false);
+      alert('시뮬레이션을 요청 완료했습니다.');
+      setPage('main');
+    }
     } catch (error) {
       console.error('Save or simulation error:', error);
       if (isMountedRef.current) {
         alert('시뮬레이션 실행 또는 결과 저장에 실패했습니다.');
       }
     } finally {
-      if (isMountedRef.current) {
-        setIsLoading(false);
-      }
+        // do nothing
     }
   };
 
