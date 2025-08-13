@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/Button';
+import { Modal } from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import type { Plan, Page } from '../types/types';
@@ -18,6 +19,9 @@ const MainPage: React.FC<MainPageProps> = ({ setPage, setEditingPlan, openNotice
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [runningId, setRunningId] = useState<string>("");
+  const [deletingId, setDeletingId] = useState<string>("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [targetPlan, setTargetPlan] = useState<Plan | null>(null);
   
   // 시뮬레이션 데이터 로드
   useEffect(() => {
@@ -38,6 +42,16 @@ const MainPage: React.FC<MainPageProps> = ({ setPage, setEditingPlan, openNotice
     
     loadPlans();
   }, [user, session]);
+
+  const refreshPlans = async () => {
+    if (!session) return;
+    try {
+      const data = await api.getSimulations(session.access_token);
+      setPlans(data);
+    } catch (error) {
+      console.error('Error refreshing plans:', error);
+    }
+  };
 
   const handleNewPlan = () => {
     setEditingPlan(null); // 새 플랜이므로 기존 데이터 없음
@@ -62,7 +76,29 @@ const MainPage: React.FC<MainPageProps> = ({ setPage, setEditingPlan, openNotice
     }
   };
 
+  const openDeleteConfirm = (plan: Plan) => {
+    setTargetPlan(plan);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!session || !targetPlan) return;
+    try {
+      setDeletingId(targetPlan.simulation_id);
+      await api.deleteSimulation(targetPlan.simulation_id, session.access_token);
+      setConfirmOpen(false);
+      setTargetPlan(null);
+      await refreshPlans();
+    } catch (e) {
+      console.error('Delete simulation error:', e);
+      alert('삭제에 실패했습니다.');
+    } finally {
+      setDeletingId("");
+    }
+  };
+
   return (
+    <>
     <div className="p-8 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">투자 시뮬레이션</h1>
@@ -146,10 +182,17 @@ const MainPage: React.FC<MainPageProps> = ({ setPage, setEditingPlan, openNotice
                       </button>
                       <button
                         onClick={() => handleViewResults(plan)}
-                        className="text-green-600 hover:text-green-900 disabled:text-gray-400"
+                        className="text-green-600 hover:text-green-900 disabled:text-gray-400 mr-4"
                         disabled={runningId === (plan.simulation_id)}
                       >
                         {runningId === (plan.simulation_id) ? '실행 중…' : '결과 보기'}
+                      </button>
+                      <button
+                        onClick={() => openDeleteConfirm(plan)}
+                        className="text-red-600 hover:text-red-900 disabled:text-gray-400"
+                        disabled={deletingId === plan.simulation_id}
+                      >
+                        {deletingId === plan.simulation_id ? '삭제 중…' : '삭제'}
                       </button>
                     </td>
                   </tr>
@@ -162,6 +205,14 @@ const MainPage: React.FC<MainPageProps> = ({ setPage, setEditingPlan, openNotice
         )}
       </div>
     </div>
+      <Modal isOpen={confirmOpen} onClose={() => setConfirmOpen(false)} title="삭제 확인">
+        <p className="mb-6">선택한 시뮬레이션을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+        <div className="flex justify-end gap-3">
+          <Button onClick={() => setConfirmOpen(false)} className="bg-gray-500 hover:bg-gray-600">취소</Button>
+          <Button onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">삭제</Button>
+        </div>
+      </Modal>
+    </>
   );
 };
 

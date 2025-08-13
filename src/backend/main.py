@@ -246,6 +246,16 @@ class SimulationRunRequest(BaseModel):
     """Request model for running a simulation on an existing plan"""
     simulation_id: str  # ID of the plan in the database
 
+class SimulationDeleteRequest(BaseModel):
+    """Request model for deleting an existing simulation"""
+    simulation_id: str
+
+class SimulationDeleteResponse(BaseModel):
+    """Response model for deleting an existing simulation"""
+    simulation_id: str
+    message: str
+    success: bool
+
 @app.post("/api/simulation/create", response_model=SimulationCreateResponse)
 def create_simulation(
     request: SimulationCreateRequest, 
@@ -425,6 +435,69 @@ def run_simulation(
     except Exception as e:
         logger.error(f"Unexpected error in run_simulation: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Simulation failed: {str(e)}")
+
+@app.delete("/api/simulations/{simulation_id}", response_model=SimulationDeleteResponse)
+def delete_simulation(
+    simulation_id: str,
+    user_id: str = Depends(authenticate_jwt_token)
+) -> SimulationDeleteResponse:
+    """
+    Delete a simulation row owned by the authenticated user.
+
+    Parameters:
+    - simulation_id: The ID of the simulation (row id in `simulations` table)
+    - user_id: The authenticated user's ID
+
+    Returns:
+    - SimulationDeleteResponse indicating success
+    """
+    logger.info(f"Deleting simulation id={simulation_id} for user_id={user_id}")
+    try:
+        # Verify the record exists and belongs to the user
+        check_response = (
+            supabase
+            .table("simulations")
+            .select("id")
+            .eq("id", simulation_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+        if not check_response.data:
+            logger.warning(f"Delete requested for non-existent or unauthorized simulation id={simulation_id} user_id={user_id}")
+            raise HTTPException(status_code=404, detail=f"Simulation with ID {simulation_id} not found")
+
+        # Perform the delete
+        _ = (
+            supabase
+            .table("simulations")
+            .delete()
+            .eq("id", simulation_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+        logger.info(f"Deleted simulation id={simulation_id}")
+        return SimulationDeleteResponse(
+            simulation_id=simulation_id,
+            message="Simulation deleted",
+            success=True,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in delete_simulation: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete simulation: {str(e)}")
+
+@app.post("/api/simulation/delete", response_model=SimulationDeleteResponse)
+def delete_simulation_post(
+    request: SimulationDeleteRequest,
+    user_id: str = Depends(authenticate_jwt_token)
+) -> SimulationDeleteResponse:
+    """
+    Alternative POST endpoint to delete a simulation using a JSON body.
+    Useful when DELETE with a body is inconvenient from some clients.
+    """
+    return delete_simulation(request.simulation_id, user_id)  # type: ignore[arg-type]
 
 # --- 5. 로컬에서 개발 서버 실행 ---
 

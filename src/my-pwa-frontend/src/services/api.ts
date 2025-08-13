@@ -24,6 +24,33 @@ export const api = {
     }
   },
   
+  deleteSimulation: async (
+    simulation_id: string,
+    token: string
+  ): Promise<{ simulation_id: string; message: string; success: boolean }> => {
+    const response = await fetch(`${API_BASE_URL}/simulations/${simulation_id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      try {
+        const err = await response.json();
+        throw new Error(err?.detail || `API error: ${response.status}`);
+      } catch {
+        throw new Error(`API error: ${response.status}`);
+      }
+    }
+
+    const data = await response.json();
+    if (!data?.success) {
+      throw new Error(data?.message || '삭제에 실패했습니다.');
+    }
+    return data;
+  },
+  
   runSimulation: async (
     simulation_id: string,
     token: string
