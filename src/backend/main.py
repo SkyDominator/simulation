@@ -314,7 +314,7 @@ def create_simulation(
         return SimulationCreateResponse(
             id=created_plan['id'],
             plan_id=request.plan_id,
-            message="Simulation plan saved successfully",
+            message="Simulation request saved successfully",
             success=True
         )
         

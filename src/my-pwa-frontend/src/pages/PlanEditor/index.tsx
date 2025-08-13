@@ -54,7 +54,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
   const isMountedRef = useRef(true);
 
   useEffect(() => {
-    // No effect body.
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };

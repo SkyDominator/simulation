@@ -78,11 +78,10 @@ export const api = {
       body: JSON.stringify({
         plan_id,
         max_rounds,
-        scheduled_payment,
         company_round,
+        scheduled_payment,
       }),
     });
-
     if (!response.ok) {
       // Try to surface backend error message if available
       try {
