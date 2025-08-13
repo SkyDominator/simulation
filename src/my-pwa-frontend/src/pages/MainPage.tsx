@@ -43,11 +43,6 @@ const MainPage: React.FC<MainPageProps> = ({ setPage, setEditingPlan, openNotice
     setEditingPlan(null); // 새 플랜이므로 기존 데이터 없음
     setPage('plan-editor');
   };
-  
-  // 결과 보기 페이지로 이동
-  const handleGoToResults = () => {
-      setPage('results');
-  }
 
   // Run simulation for a specific plan and navigate to results
   const handleViewResults = async (plan: Plan) => {
