@@ -16,10 +16,13 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   onConfirm,
   validationData
 }) => (
-  <Modal 
-    isOpen={isOpen} 
-    onClose={onClose} 
+  <Modal
+    isOpen={isOpen}
+    onClose={onClose}
     title="입력값 경고"
+    size="sm"
+    draggable
+    fullScreenOnMobile
   >
     <div>
       <p>

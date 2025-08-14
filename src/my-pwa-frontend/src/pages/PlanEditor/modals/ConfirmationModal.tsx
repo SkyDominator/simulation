@@ -18,7 +18,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   plan,
   isLoading
 }) => (
-  <Modal isOpen={isOpen} onClose={onClose} title="저장 확인">
+  <Modal isOpen={isOpen} onClose={onClose} title="저장 확인" size="sm" draggable fullScreenOnMobile>
     <div>
       <h3 className="font-bold">플랜 요약</h3>
       <p>플랜 타입: {plan.plan_id}</p>

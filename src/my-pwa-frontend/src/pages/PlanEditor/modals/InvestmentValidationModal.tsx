@@ -23,6 +23,9 @@ const InvestmentValidationModal: React.FC<InvestmentValidationModalProps> = ({
     isOpen={isOpen}
     onClose={onClose}
     title="투자액 자동 수정 알림"
+    size="lg"
+    draggable
+    fullScreenOnMobile
   >
     <div>
       <p className="mb-4">
