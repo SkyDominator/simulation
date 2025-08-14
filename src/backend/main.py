@@ -1,12 +1,11 @@
-import os
 import hashlib
-import requests # JWKS를 가져오기 위해 추가
+import requests  # JWKS를 가져오기 위해 추가
 
 from typing import List, Dict, Any, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
 from pydantic import BaseModel, ConfigDict
@@ -14,7 +13,6 @@ from supabase import create_client, Client
 from fastapi.security import HTTPBearer
 from constants import PLAN_PARAMETERS
 
-import json
 
 from simulation_service import FinancialSimulationService
 

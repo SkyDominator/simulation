@@ -3,7 +3,7 @@ import { useAuth } from './context/AuthContext';
 import WhitelistCheckPage from './pages/WhitelistCheckPage';
 import LoginPage from './pages/LoginPage';
 import MainPage from './pages/MainPage';
-import PlanEditorPage from './pages/PlanEditorPage';
+import PlanEditorPage from './pages/PlanEditor';
 import ResultsPage from './pages/ResultsPage';
 import { type Plan, type Page } from './types/types';
 import type { SimulationRunResponse } from './types/types';

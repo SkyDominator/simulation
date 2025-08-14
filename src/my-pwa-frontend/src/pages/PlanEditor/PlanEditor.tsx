@@ -1,3 +1,1 @@
-import PlanEditorPage from './index';
-
-export default PlanEditorPage;
+// (removed) Redundant re-export. Import from './index'.

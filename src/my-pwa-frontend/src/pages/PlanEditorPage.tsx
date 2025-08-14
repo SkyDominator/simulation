@@ -1,4 +1,1 @@
-import PlanEditor from './PlanEditor/index';
-
-// Export the refactored component
-export default PlanEditor;
+// (removed) Wrapper previously re-exporting PlanEditor. Use ./pages/PlanEditor/index.tsx directly.
