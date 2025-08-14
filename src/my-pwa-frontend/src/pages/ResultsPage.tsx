@@ -8,6 +8,7 @@ import type { SimulationRunResponse, Page } from '../types/types';
 const COLUMN_ORDER: string[] = [
   'company_round',
   'investor_count',
+  'amount',
   'total_payment',
   'total_revenue_before_tax',
   'total_revenue_after_tax',
@@ -25,9 +26,22 @@ interface ResultsPageProps {
 
 const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
   const historyRaw = (result?.history ?? []) as unknown[];
-  const history: Array<Record<string, unknown>> = historyRaw.map((e) =>
+  let history: Array<Record<string, unknown>> = historyRaw.map((e) =>
     (e && typeof e === 'object') ? (e as Record<string, unknown>) : {}
   );
+
+  // Inject sequential company_round values and amount column.
+  if (result) {
+    const scheduled = result.scheduled_payment || {};
+    const base = result.company_round || 0;
+    history = history.map((row, idx) => {
+      const companyRound = base + idx; // first row = base, then increment
+      const newRow: Record<string, unknown> = { ...row, company_round: companyRound };
+      const amt = scheduled[idx + 1];
+      if (amt !== undefined) newRow.amount = amt;
+      return newRow;
+    });
+  }
 
   const formatValue = (val: unknown): string => {
     if (val === null || val === undefined) return '';
@@ -54,11 +68,12 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
   const columns = collectColumns();
   // Map specific column keys to Korean labels
   const columnLabelMap: Record<string, string> = {
-    company_round: '회차',
+    company_round: '회사 회차',
     investor_count: '아바타 개수',
     cumulative_net_profit: '총 이익',
+    amount: '회차 매출액',
     net_profit_after_tax: '이익(세후)',
-    total_payment: '매출액',
+    total_payment: '총 매출액',
     total_revenue_after_tax: '수당(세후)',
     total_revenue_before_tax: '수당(세전)',
   };

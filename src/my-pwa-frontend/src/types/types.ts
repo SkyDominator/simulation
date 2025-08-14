@@ -27,6 +27,9 @@ export interface SimulationResults {
 export interface SimulationRunResponse {
   simulation_id: string;
   plan_id: string;
+  company_round: number; // added to mirror backend SimulationResponse
+  simulation_rounds: number; // added to mirror backend SimulationResponse
+  scheduled_payment: Record<string, number>; // added to mirror backend SimulationResponse
   history: Array<Record<string, unknown>>;
   message: string;
   success: boolean;
