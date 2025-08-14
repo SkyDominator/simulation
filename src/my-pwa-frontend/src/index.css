@@ -34,6 +34,14 @@ body {
   min-height: 100vh;
 }
 
+/* Modal animation & scrollbar utilities */
+.animate-fade-in { animation: fadeInModal .18s ease forwards; opacity: 0; transform: translateY(4px); }
+@keyframes fadeInModal { to { opacity: 1; transform: translateY(0); } }
+.custom-scrollbar::-webkit-scrollbar { width: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background:#94a3b8; }
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;

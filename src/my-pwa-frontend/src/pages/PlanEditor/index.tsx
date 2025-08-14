@@ -287,8 +287,8 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
       
       <InvestmentValidationModal
         isOpen={isInvestmentValidationModalOpen}
-  onClose={handleInvestmentValidationClose}
-  onConfirm={handleInvestmentValidationConfirm}
+        onClose={handleInvestmentValidationClose}
+        onConfirm={handleInvestmentValidationConfirm}
         invalidInvestments={invalidInvestments}
       />
     </div>

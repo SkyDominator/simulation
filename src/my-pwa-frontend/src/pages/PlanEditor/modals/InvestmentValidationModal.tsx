@@ -5,7 +5,7 @@ import { Modal } from '../../../components/Modal';
 interface InvestmentValidationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void; // user acknowledges corrections
+  onConfirm: () => void;
   invalidInvestments: Array<{
     round: number;
     oldAmount: number | string;
