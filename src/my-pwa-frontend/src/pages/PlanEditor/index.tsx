@@ -27,6 +27,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
   const { session } = useAuth();
   const [step, setStep] = useState(1);
   const initialPlan: Plan = {
+  simulation_id: editingPlan?.simulation_id || '',
     plan_id: editingPlan?.plan_id || 'A',
     company_round: editingPlan?.company_round || 1,
     simulation_rounds: editingPlan?.simulation_rounds || 15,
@@ -148,26 +149,37 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
         scheduled_payment[inv.round.toString()] = inv.amount;
       });
 
-      const createResponse = await api.createSimulation(
-        plan.plan_id,
-        plan.simulation_rounds,
-        scheduled_payment,
-        session.access_token,
-        plan.company_round
-      );
-      // Update current plan state with the returned simulation_id
-      if (createResponse?.simulation_id) {
-        setPlan(prev => ({ ...prev, simulation_id: createResponse.simulation_id }));
-      }
-      else{
-        alert('시뮬레이션 ID를 찾을 수 없습니다.');
-        return;
+      if (plan.simulation_id) {
+        // Update existing simulation
+        await api.updateSimulation(
+          session.access_token,
+          plan.simulation_id,
+          plan.plan_id,
+          plan.company_round,
+          plan.simulation_rounds,
+          scheduled_payment,
+        );
+      } else {
+        // Create new simulation
+        const createResponse = await api.createSimulation(
+          session.access_token,
+          plan.plan_id,
+          plan.company_round,
+          plan.simulation_rounds,
+          scheduled_payment
+        );
+        if (createResponse?.simulation_id) {
+          setPlan(prev => ({ ...prev, simulation_id: createResponse.simulation_id }));
+        } else {
+          alert('시뮬레이션 ID를 찾을 수 없습니다.');
+          return;
+        }
       }
 
     if (isMountedRef.current) {
       setConfirmModalOpen(false);
       setIsLoading(false);
-      alert('시뮬레이션을 요청 완료했습니다.');
+      alert(plan.simulation_id ? '시뮬레이션이 업데이트되었습니다.' : '시뮬레이션이 생성되었습니다.');
       setPage('main');
     }
     } catch (error) {

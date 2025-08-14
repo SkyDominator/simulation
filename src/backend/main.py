@@ -154,48 +154,7 @@ async def authenticate_jwt_token(token_result: HTTPAuthorizationCredentials = De
 def read_root():
     return {"message": "Investment Simulator API is running"}
 
-# Plan parameters version endpoint
-@app.get("/api/parameters/version", response_model=ParametersVersionResponse)
-def get_parameters_version(user_id: str = Depends(authenticate_jwt_token)):
-    """
-    Returns the current version of plan parameters.
-    This allows clients to check if their cached parameters are up to date.
-    """
-    # Generate a version hash based on the actual parameters content
-    try:    
-        # Create a hash from the stringified parameters to use as version
-        params_str = json.dumps(PLAN_PARAMETERS, sort_keys=True)
-        version = hashlib.sha256(params_str.encode()).hexdigest()[:10]
-        
-        return {
-            "version": version,
-            "last_updated": "2023-07-25T00:00:00Z"  # Use actual timestamp in production
-        }
-    except Exception as e:
-        logging.error(f"Error generating parameters version: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate parameters version: {str(e)}")
 
-# Plan parameters endpoint
-@app.get("/api/parameters", response_model=PlanParametersResponse)
-def get_parameters(version_info: Dict = Depends(get_parameters_version)):
-    """
-    Returns all plan parameters, focusing on min_payment_new for now.
-    """
-    try:
-        # Extract only the min_payment_new from each plan's parameters
-        parameters = {}
-        for plan_id in ['A', 'B', 'C', 'D', 'R', 'E', 'F', 'K', 'P']:
-            plan_params = PLAN_PARAMETERS.get(plan_id, {})
-            parameters[plan_id] = {
-                "min_payment_new": plan_params.get('min_payment_new', {}),
-                "max_rounds": plan_params.get('max_rounds', 30)
-            }
-            
-        return {"parameters": parameters}
-    except Exception as e:
-        logging.error(f"Error fetching parameters: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch parameters: {str(e)}")
-    
 # 명단 확인 API
 @app.post("/api/verify-user")
 def verify_user(request: UserCheckRequest):
@@ -231,8 +190,8 @@ def get_simulation_details(simulation_id: str, user_id: str = Depends(authentica
 class SimulationCreateRequest(BaseModel):
     """Model for creating a simulation plan without running the simulation"""
     plan_id: str
-    max_rounds: int
     company_round: int = 1
+    simulation_rounds: int
     scheduled_payment: Dict[str, int]
 
 class SimulationCreateResponse(BaseModel):
@@ -253,6 +212,20 @@ class SimulationDeleteRequest(BaseModel):
 class SimulationDeleteResponse(BaseModel):
     """Response model for deleting an existing simulation"""
     simulation_id: str
+    message: str
+    success: bool
+
+class SimulationUpdateRequest(BaseModel):
+    """Request model for updating an existing simulation plan (invalidates previous results)"""
+    plan_id: str
+    company_round: int
+    simulation_rounds: int
+    scheduled_payment: Dict[str, int]
+
+class SimulationUpdateResponse(BaseModel):
+    """Response model for updating an existing simulation plan"""
+    simulation_id: str
+    plan_id: str
     message: str
     success: bool
 
@@ -278,16 +251,12 @@ def create_simulation(
         if request.plan_id not in PLAN_PARAMETERS:
             raise HTTPException(status_code=400, detail=f"Invalid plan type: {request.plan_id}")
         
-        # Get max_rounds from plan or use provided value, whichever is smaller
-        plan_max_rounds = PLAN_PARAMETERS[request.plan_id].get('max_rounds', 36)
-        max_rounds = min(request.max_rounds, plan_max_rounds)
-        
         # Prepare plan data for database
         plan_data = {
             "user_id": user_id,
             "plan_id": request.plan_id,
             "company_round": request.company_round,
-            "simulation_rounds": max_rounds,
+            "simulation_rounds": request.simulation_rounds,
             "investments": [
                 {"round": int(round_num), "amount": amount}
                 for round_num, amount in request.scheduled_payment.items()
@@ -380,11 +349,10 @@ def run_simulation(
         plan_id = plan_data.get("plan_id")
         if not isinstance(plan_id, str):
             raise ValueError(f"Invalid plan_id: {plan_id}")
-            
-        max_rounds = plan_data.get("simulation_rounds")
-        if not isinstance(max_rounds, int):
-            max_rounds = int(max_rounds) if max_rounds else 30  # Default if missing or invalid
         
+        simulation_rounds = plan_data.get("simulation_rounds")
+        if not isinstance(simulation_rounds, int):
+            simulation_rounds = int(simulation_rounds) if simulation_rounds else 36  # Default if missing or invalid
         # Extract investments and convert to scheduled_payment format
         investments = plan_data.get("investments", [])
         scheduled_payment = {str(inv.get("round", 0)): inv.get("amount", 0) for inv in investments}
@@ -404,7 +372,7 @@ def run_simulation(
             scheduled_payment=scheduled_payment_int
         )
         
-        results = simulator.run_simulation(max_rounds)
+        results = simulator.run_simulation(simulation_rounds)
         results_dict = results.to_dict()
         
         # Step 5: Save simulation results back to the database
@@ -435,6 +403,72 @@ def run_simulation(
     except Exception as e:
         logger.error(f"Unexpected error in run_simulation: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Simulation failed: {str(e)}")
+
+@app.patch("/api/simulations/{simulation_id}", response_model=SimulationUpdateResponse)
+def update_simulation(
+    simulation_id: str,
+    request: SimulationUpdateRequest,
+    user_id: str = Depends(authenticate_jwt_token)
+) -> SimulationUpdateResponse:
+    """
+    Update an existing simulation's parameters (plan type, company round, max rounds, scheduled payments).
+    This invalidates any previously stored simulation_results so they will be recomputed on next run.
+    """
+    logger.info(f"Updating simulation id={simulation_id} for user_id={user_id}")
+    try:
+        # Validate plan type
+        if request.plan_id not in PLAN_PARAMETERS:
+            raise HTTPException(status_code=400, detail=f"Invalid plan type: {request.plan_id}")
+
+        # Check ownership & existence
+        existing = (
+            supabase
+            .table("simulations")
+            .select("id")
+            .eq("id", simulation_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+        if not existing.data:
+            raise HTTPException(status_code=404, detail=f"Simulation with ID {simulation_id} not found")
+
+        investments = [
+            {"round": int(round_num), "amount": amount}
+            for round_num, amount in request.scheduled_payment.items()
+        ]
+
+        update_payload = {
+            "plan_id": request.plan_id,
+            "company_round": request.company_round,
+            "simulation_rounds": request.simulation_rounds,
+            "investments": investments,
+            # Invalidate existing results so they are recalculated on next run
+            "simulation_results": None,
+        }
+
+        db_response = (
+            supabase
+            .table("simulations")
+            .update(update_payload)
+            .eq("id", simulation_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+        if not db_response.data:
+            raise HTTPException(status_code=500, detail="Failed to update simulation")
+
+        return SimulationUpdateResponse(
+            simulation_id=simulation_id,
+            plan_id=request.plan_id,
+            message="Simulation updated successfully (previous results invalidated)",
+            success=True,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in update_simulation: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update simulation: {str(e)}")
 
 @app.delete("/api/simulations/{simulation_id}", response_model=SimulationDeleteResponse)
 def delete_simulation(
