@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './context/AuthContext';
 import WhitelistCheckPage from './pages/WhitelistCheckPage';
 import LoginPage from './pages/LoginPage';
@@ -8,7 +8,7 @@ import ResultsPage from './pages/ResultsPage';
 import { type Plan, type Page } from './types/types';
 import type { SimulationRunResponse } from './types/types';
 
-const AppController: React.FC = () => {
+const AppController = () => {
   const [page, setPage] = useState<Page>('whitelist');
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [, setNoticeOpen] = useState(false);
@@ -20,52 +20,38 @@ const AppController: React.FC = () => {
     setNoticeOpen(true);
   };
 
-  // 적절한 페이지 렌더링
-  const renderPage = () => {
-    // 로그인 여부에 따라 페이지 처리
+  const whitelistOrLogin: Record<'whitelist' | 'login', React.ReactElement> = useMemo(() => ({
+    whitelist: <WhitelistCheckPage onVerified={() => setPage('login')} />,
+    login: <LoginPage />,
+  }), [setPage]);
+
+  const mainPages: Record<'main' | 'plan-editor' | 'results', React.ReactElement> = useMemo(() => ({
+    main: (
+      <MainPage
+        setPage={setPage}
+        setEditingPlan={setEditingPlan}
+        openNotice={handleOpenNotice}
+        setSimulationResult={setSimulationResult}
+      />
+    ),
+    'plan-editor': <PlanEditorPage setPage={setPage} editingPlan={editingPlan} />,
+    results: <ResultsPage setPage={setPage} result={simulationResult} />,
+  }), [editingPlan, simulationResult, setPage]);
+
+  const renderPage = useCallback(() => {
     if (!user) {
-      // 아직 로그인하지 않은 경우
-      switch (page) {
-        case 'whitelist':
-          return <WhitelistCheckPage onVerified={() => setPage('login')} />;
-        case 'login':
-          return <LoginPage />;
-        default:
-          return <WhitelistCheckPage onVerified={() => setPage('login')} />;
-      }
-    } else {
-      // 로그인한 경우
-      switch (page) {
-        case 'main':
-          return (
-            <MainPage
-              setPage={setPage}
-              setEditingPlan={setEditingPlan}
-              openNotice={handleOpenNotice}
-              setSimulationResult={setSimulationResult}
-            />
-          );
-        case 'plan-editor':
-          return <PlanEditorPage setPage={setPage} editingPlan={editingPlan} />;
-        case 'results':
-          return <ResultsPage setPage={setPage} result={simulationResult} />;
-        default:
-          return (
-            <MainPage
-              setPage={setPage}
-              setEditingPlan={setEditingPlan}
-              openNotice={handleOpenNotice}
-              setSimulationResult={setSimulationResult}
-            />
-          );
-      }
+      return (page === 'whitelist' || page === 'login')
+        ? whitelistOrLogin[page]
+        : whitelistOrLogin.whitelist;
     }
-  };
+    if (page === 'main' || page === 'plan-editor' || page === 'results') {
+      return mainPages[page];
+    }
+    return mainPages.main;
+  }, [user, page, whitelistOrLogin, mainPages]);
 
   useEffect(() => {
-    if(user){
-      setPage('main');
-    }
+    if (user) setPage('main');
   }, [user]);
 
   return (
