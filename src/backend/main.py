@@ -9,7 +9,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from supabase import create_client, Client
 from fastapi.security import HTTPBearer
 from constants import PLAN_PARAMETERS
@@ -100,6 +100,25 @@ class SimulationResponse(BaseModel):
     history: List[Dict[str, Any]]
     message: str
     success: bool
+
+# --- DB row models (Pydantic v2) ---
+class InvestmentItem(BaseModel):
+    round: int
+    amount: int
+
+class SimulationRow(BaseModel):
+    id: str
+    user_id: str
+    plan_id: str
+    company_round: int
+    simulation_rounds: int
+    investments: List[InvestmentItem] = []
+    simulation_results: Optional[Dict[str, Any]] = None
+    model_config = ConfigDict(extra='allow')  # allow created_at, updated_at, etc.
+
+def _scheduled_payment_from_investments(investments: List[InvestmentItem]) -> Dict[str, int]:
+    """Convert investment list to the scheduled_payment mapping (string keys)."""
+    return {str(item.round): int(item.amount) for item in investments}
 
 # --- 3. 사용자 인증 의존성 ---
 
@@ -329,116 +348,59 @@ def run_simulation(
             raise HTTPException(status_code=404, detail=f"Plan with ID {request.simulation_id} not found")
         
         plan_data = db_response.data[0]
-        
-        # Step 3: Check if simulation results already exist
-        if plan_data.get("simulation_results"):
+
+        # Validate and normalize via Pydantic
+        row = SimulationRow.model_validate(plan_data)  # raises if inconsistent
+        scheduled_payment_map = _scheduled_payment_from_investments(row.investments)
+
+        # If results already exist, return them
+        if row.simulation_results:
             logger.info(f"Returning existing simulation results for plan: {request.simulation_id}")
-            results_dict = plan_data["simulation_results"]
-            
-            # Ensure plan_id is available
-            plan_id = plan_data.get("plan_id", "")
-            if not isinstance(plan_id, str):
-                plan_id = str(plan_id) if plan_id else ""
-            # Extract creation parameters
-            company_round_val = plan_data.get("company_round", 0)
-            try:
-                company_round_int = int(company_round_val) if company_round_val is not None else 0
-            except (ValueError, TypeError):
-                company_round_int = 0
-            simulation_rounds_val = plan_data.get("simulation_rounds", 0)
-            try:
-                simulation_rounds_int = int(simulation_rounds_val) if simulation_rounds_val is not None else 0
-            except (ValueError, TypeError):
-                simulation_rounds_int = 0
-            investments_existing = plan_data.get("investments", []) or []
-            scheduled_payment_existing: Dict[str, int] = {}
-            if isinstance(investments_existing, list):
-                for inv in investments_existing:
-                    if isinstance(inv, dict):
-                        try:
-                            round_key = str(inv.get("round", 0))
-                            amount_val = inv.get("amount", 0)
-                            scheduled_payment_existing[round_key] = int(amount_val) if amount_val is not None else 0
-                        except (ValueError, TypeError):
-                            continue
-            
-            # Construct properly typed response
-            response_data = SimulationResponse(
-                simulation_id=request.simulation_id,
-                plan_id=plan_id,
-                company_round=company_round_int,
-                simulation_rounds=simulation_rounds_int,
-                scheduled_payment=scheduled_payment_existing,
+            results_dict = row.simulation_results or {}
+            return SimulationResponse(
+                simulation_id=row.id,
+                plan_id=row.plan_id,
+                company_round=row.company_round,
+                simulation_rounds=row.simulation_rounds,
+                scheduled_payment=scheduled_payment_map,
                 history=results_dict.get("history", []),
                 message="Retrieved existing simulation results",
-                success=True
+                success=True,
             )
-            return response_data
-        
-        # Step 4: If no simulation results exist, run the simulation
+
+        # Run new simulation
         logger.info(f"Running new simulation for plan: {request.simulation_id}")
-        
-        # Extract plan details with proper type checking
-        plan_id = plan_data.get("plan_id")
-        if not isinstance(plan_id, str):
-            raise ValueError(f"Invalid plan_id: {plan_id}")
-        
-        company_round_val = plan_data.get("company_round", 0)
-        try:
-            company_round_int = int(company_round_val) if company_round_val is not None else 0
-        except (ValueError, TypeError):
-            company_round_int = 0
-        simulation_rounds_val = plan_data.get("simulation_rounds")
-        if not isinstance(simulation_rounds_val, int):
-            try:
-                simulation_rounds = int(simulation_rounds_val) if simulation_rounds_val else 36
-            except (ValueError, TypeError):
-                simulation_rounds = 36
-        else:
-            simulation_rounds = simulation_rounds_val
-        # Extract investments and convert to scheduled_payment format
-        investments = plan_data.get("investments", [])
-        scheduled_payment = {str(inv.get("round", 0)): inv.get("amount", 0) for inv in investments}
-        
-        # Convert string keys in scheduled_payment dict to integers with proper validation
-        scheduled_payment_int: Dict[int, int] = {}
-        for k, v in scheduled_payment.items():
-            try:
-                scheduled_payment_int[int(k)] = int(v)
-            except (ValueError, TypeError) as e:
-                logger.warning(f"Invalid scheduled payment entry: {k}={v}, error: {e}")
-                # Skip invalid entries
-        
-        # Initialize and run simulation
+        # Build int-keyed dict for simulator
+        scheduled_payment_int = {int(k): v for k, v in scheduled_payment_map.items()}
+
         simulator = FinancialSimulationService(
-            plan_id=plan_id,
-            scheduled_payment=scheduled_payment_int
+            plan_id=row.plan_id,
+            scheduled_payment=scheduled_payment_int,
         )
-        
-        results = simulator.run_simulation(simulation_rounds)
+        results = simulator.run_simulation(row.simulation_rounds)
         results_dict = results.to_dict()
-        
-        # Step 5: Save simulation results back to the database
-        update_response = supabase.table("simulations").update({
-            "simulation_results": results_dict
-        }).eq("id", request.simulation_id).execute()
-        
+
+        # Persist results
+        update_response = (
+            supabase
+            .table("simulations")
+            .update({"simulation_results": results_dict})
+            .eq("id", request.simulation_id)
+            .execute()
+        )
         if not update_response.data:
             logger.error(f"Failed to update plan with simulation results: {update_response}")
-            # Continue anyway - we'll return results even if saving failed
-        
-        # Prepare the response data
-        response_data = SimulationResponse(
-            simulation_id=request.simulation_id,
-            plan_id=plan_id,
-            company_round=company_round_int,
-            simulation_rounds=simulation_rounds,
-            scheduled_payment=scheduled_payment,  # original string-keyed mapping
+
+        return SimulationResponse(
+            simulation_id=row.id,
+            plan_id=row.plan_id,
+            company_round=row.company_round,
+            simulation_rounds=row.simulation_rounds,
+            scheduled_payment=scheduled_payment_map,
             history=results_dict.get("history", []),
             message="Simulation completed and results saved",
-            success=True
+            success=True,
         )
-        return response_data
         
     except ValueError as e:
         logger.error(f"Simulation error: {str(e)}")
