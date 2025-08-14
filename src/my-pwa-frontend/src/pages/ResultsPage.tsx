@@ -65,8 +65,6 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
   return SHOW_UNLISTED_COLUMNS ? [...presentOrdered, ...rest] : presentOrdered;
   };
 
-  const columns = collectColumns();
-  // Map specific column keys to Korean labels
   const columnLabelMap: Record<string, string> = {
     company_round: '회사 회차',
     investor_count: '아바타 개수',
@@ -80,6 +78,43 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
 
   const headerLabel = (key: string) =>
     columnLabelMap[key] ?? key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+
+  const columns = collectColumns();
+  // Compute dynamic widths (in ch) based on header + cell content lengths
+  const columnCharWidths: Record<string, number> = {};
+  for (const col of columns) {
+    columnCharWidths[col] = headerLabel(col).length; // start with header length
+  }
+  history.forEach((row) => {
+    columns.forEach((col) => {
+      const raw = formatValue(row[col]);
+      const len = raw.length;
+      if (len > columnCharWidths[col]) columnCharWidths[col] = len;
+    });
+  });
+  // Build style map (add a small buffer). Use minWidth so columns can still expand if needed.
+  const colStyles: Record<string, React.CSSProperties> = {};
+  const WIDE_COLS = new Set(['company_round','investor_count','amount']);
+  columns.forEach((col) => {
+    let ch = Math.min(Math.max(columnCharWidths[col] + 2, 6), 80); // clamp
+    if (WIDE_COLS.has(col)) {
+      ch = Math.min(ch + 6, 90); // give extra breathing room for key columns
+    }
+    colStyles[col] = { minWidth: `${ch}ch` };
+  });
+
+  // Define numeric columns for right alignment
+  const NUMERIC_COLUMNS = new Set([
+    'company_round',
+    'investor_count',
+    'amount',
+    'total_payment',
+    'total_revenue_before_tax',
+    'total_revenue_after_tax',
+    'net_profit_after_tax',
+    'cumulative_net_profit'
+  ]);
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto">
@@ -128,13 +163,14 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
               <p className="text-center text-gray-500 py-8">히스토리가 없습니다.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full border-collapse">
+                <table className="table-auto border-collapse">
                   <thead>
                     <tr className="bg-gray-50">
                       {columns.map((col) => (
                         <th
                           key={col}
-                          className="sticky top-0 z-10 text-left text-xs font-medium text-gray-600 uppercase tracking-wider px-4 py-2 border-b"
+                          className="sticky top-0 z-10 text-center text-xs font-medium text-gray-600 tracking-wider px-4 py-2 border-b"
+                          style={colStyles[col]}
                         >
                           {headerLabel(col)}
                         </th>
@@ -144,11 +180,18 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
                   <tbody className="divide-y divide-gray-100">
                     {history.map((row, idx) => (
                       <tr key={idx} className="hover:bg-gray-50">
-                        {columns.map((col) => (
-                          <td key={col} className="px-4 py-2 text-sm text-gray-900 align-top">
-                            {formatValue(row[col])}
-                          </td>
-                        ))}
+                        {columns.map((col) => {
+                          const isNumeric = NUMERIC_COLUMNS.has(col);
+                          return (
+                            <td
+                              key={col}
+                              className={`px-4 py-2 text-sm text-gray-900 align-top ${isNumeric ? 'text-right tabular-nums' : 'text-left'}`}
+                              style={colStyles[col]}
+                            >
+                              {formatValue(row[col])}
+                            </td>
+                          );
+                        })}
                       </tr>
                     ))}
                   </tbody>
