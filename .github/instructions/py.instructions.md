@@ -2,33 +2,22 @@
 applyTo: '**/*.py'
 ---
 
-Refactor the provided Python code to improve its structure and readability while maintaining the same functionality. Follow the refactoring guidelines below.
+Follow the general guidelines below when writing Python codes.
 
-## Development Environment
+## General Guidelines
 
-1. Windows 10 or 11 OS
-2. Python 3.10 or later
-
-## Basic Requirements
-
-1. Strictly follow the SOLID (SRP, OCP, LSP, ISP, DIP) rule.
-2. Write each function and class "pure", as much as possible. 
-   - Avoid side effects, such as modifying global variables or using mutable default arguments.
-   - Use return values instead of modifying input arguments.
-   - Ensure that functions and classes are reusable and testable.
-3. Apply type hinting to all functions and classes.
-4. Use logging module for logging errors, warnings, and info.
-5. Use Windows System Environment Variables for loading API key
-6. Use `__init__.py` to define the package structure and import necessary modules.
-7. Separate constants, configurations, and utility functions into their own modules.
-
-## Code Review
-
-After refactoring, you should review the result of refactoring. Ensure that the code is reviewed for:
-
-1. Produce exactly the same output as before.
-2. Maintainability and extensibility.
-   - Ensure that the code is modular and easy to understand.
-3. Proper error handling and logging.
-4. Performance optimizations and efficiency improvements.
-5. Clarity and readability of the code.
+1. **Code Quality**: Ensure the code is clean, well-structured, and follows Python best practices. 
+   - Use meaningful variable and function names.
+   - Keep functions short and focused on a single task. Try to make each function "pure", meaning it should not have side effects and should return the same output for the same input.
+   - Avoid deep nesting of code blocks.
+   - Use logging instead of print statements for debugging and information output.
+   - Use type hints to improve code readability and help with static analysis.
+   - use context7.
+2. **Documentation**: Add docstrings to functions and classes, and inline comments where necessary to explain complex logic.
+3. **Error Handling**: Implement appropriate error handling to manage exceptions gracefully.
+4. **Performance**: Optimize code for performance where applicable, but prioritize readability and maintainability.
+5. **Dependencies**: If new libraries are introduced, ensure they are documented and included in the requirements file. 
+6. **Security**: Be mindful of security best practices, especially when handling user input or sensitive data.
+7. **Refactoring**: If you encounter code that can be improved, refactor it while ensuring existing functionality remains intact.
+8. **Functionality**: Ensure that the code meets the specified requirements and behaves as expected.
+9. **Testing**: Write and run test codes for new features or critical parts of the code to ensure reliability and facilitate future changes.

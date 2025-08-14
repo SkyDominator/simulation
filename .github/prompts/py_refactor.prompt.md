@@ -5,11 +5,6 @@ description: Refactor the code to improve its structure and readability without 
 
 Refactor the provided Python code to improve its structure and readability while maintaining the same functionality. Follow the refactoring guidelines below.
 
-## Development Environment
-
-1. Windows 10 or 11 OS
-2. Python 3.10 or later
-
 ## Basic Requirements
 
 1. Strictly follow the SOLID (SRP, OCP, LSP, ISP, DIP) rule.

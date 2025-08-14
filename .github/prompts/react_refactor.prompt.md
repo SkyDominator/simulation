@@ -1,3 +1,10 @@
+---
+mode: agent
+description: Refactor the code to improve its structure and readability without changing its functionality.
+---
+
+Refactor the provided React code to improve its structure and readability while maintaining the same functionality. Follow the refactoring principles below.
+
 ## Core Principles of React Coding (TypeScript + Vite + React)
 
 ### 1. Embrace Functional Components and Hooks

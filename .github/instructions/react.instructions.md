@@ -2,6 +2,8 @@
 applyTo: '**/*.tsx, **/*.ts, **/*.js, **/*.jsx'
 ---
 
+Follow the general guidelines below when writing React, TypeScript, and JavaScript code.
+
 ## Core Principles of React Coding (TypeScript + Vite + React)
 
 ### 1. Embrace Functional Components and Hooks
