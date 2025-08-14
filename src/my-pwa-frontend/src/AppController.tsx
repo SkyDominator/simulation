@@ -36,13 +36,13 @@ const AppController: React.FC = () => {
     } else {
       // 로그인한 경우
       switch (page) {
-    case 'main':
+        case 'main':
           return (
-            <MainPage 
-              setPage={setPage} 
+            <MainPage
+              setPage={setPage}
               setEditingPlan={setEditingPlan}
               openNotice={handleOpenNotice}
-      setSimulationResult={setSimulationResult}
+              setSimulationResult={setSimulationResult}
             />
           );
         case 'plan-editor':
@@ -50,7 +50,14 @@ const AppController: React.FC = () => {
         case 'results':
           return <ResultsPage setPage={setPage} result={simulationResult} />;
         default:
-          return <MainPage setPage={setPage} setEditingPlan={setEditingPlan} />;
+          return (
+            <MainPage
+              setPage={setPage}
+              setEditingPlan={setEditingPlan}
+              openNotice={handleOpenNotice}
+              setSimulationResult={setSimulationResult}
+            />
+          );
       }
     }
   };

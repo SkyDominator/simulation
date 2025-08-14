@@ -178,12 +178,11 @@ def get_simulations(user_id: str = Depends(authenticate_jwt_token)):
 # 특정 시뮬레이션의 상세 정보 및 결과 조회 API
 @app.get("/api/simulations/{simulation_id}")
 def get_simulation_details(simulation_id: str, user_id: str = Depends(authenticate_jwt_token)):
-    # 특정 시뮬레이션의 모든 정보(결과 포함) 조회
+    """Fetch a single simulation record (including results if present)."""
     response = supabase.table('simulations').select("*").eq('id', simulation_id).eq('user_id', user_id).execute()
-
     if not response.data:
         raise HTTPException(status_code=404, detail=f"Simulation with ID {simulation_id} not found")
-    return response.data
+    return response.data[0]
 
 # --- 시뮬레이션 관련 API 엔드포인트 --- 
 

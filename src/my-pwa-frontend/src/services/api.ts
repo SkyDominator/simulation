@@ -120,8 +120,12 @@ export const api = {
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
-      
-      return await response.json();
+      const data = await response.json();
+      if (data && typeof data === 'object' && 'id' in data) {
+        data.simulation_id = data.id;
+        delete data.id;
+      }
+      return data;
     } catch (error) {
       console.error('Get plan details error:', error);
       throw error;
