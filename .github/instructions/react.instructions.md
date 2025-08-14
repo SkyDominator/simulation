@@ -1,5 +1,5 @@
 ---
-applyTo: '**.tsx, **.ts, **.js, **.jsx'
+applyTo: '**/*.tsx, **/*.ts, **/*.js, **/*.jsx'
 ---
 
 ## Core Principles of React Coding (TypeScript + Vite + React)
