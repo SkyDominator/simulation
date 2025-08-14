@@ -26,14 +26,17 @@ import { validateNumericValue, validateInvestmentAmounts } from './utils/validat
 const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan }) => {
   const { session } = useAuth();
   const [step, setStep] = useState(1);
+  const getDefaultSimulationRounds = (planType: string) => (['A','B','C'].includes(planType) ? 15 : 18);
+  const basePlanType = editingPlan?.plan_id || 'A';
+  const defaultSimRounds = getDefaultSimulationRounds(basePlanType);
   const initialPlan: Plan = {
-  simulation_id: editingPlan?.simulation_id || '',
-    plan_id: editingPlan?.plan_id || 'A',
+    simulation_id: editingPlan?.simulation_id || '',
+    plan_id: basePlanType,
     company_round: editingPlan?.company_round || 1,
-    simulation_rounds: editingPlan?.simulation_rounds || 15,
+    simulation_rounds: editingPlan?.simulation_rounds ?? defaultSimRounds,
     investments: editingPlan?.investments || generateInvestments(
-      editingPlan?.simulation_rounds || 15,
-      editingPlan?.plan_id || 'A',
+      editingPlan?.simulation_rounds ?? defaultSimRounds,
+      basePlanType,
       editingPlan?.investments || []
     ),
   };
@@ -195,7 +198,19 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
   const renderStep = () => {
     switch (step) {
       case 1:
-        return <PlanTypeSelector planType={plan.plan_id} onChange={value => setPlan({ ...plan, plan_id: value })} />;
+        return <PlanTypeSelector planType={plan.plan_id} onChange={value => {
+          setPlan(prev => {
+            const prevDefault = getDefaultSimulationRounds(prev.plan_id);
+            const nextDefault = getDefaultSimulationRounds(value);
+            const userUnmodified = prev.simulation_rounds === prevDefault;
+            return {
+              ...prev,
+              plan_id: value,
+              simulation_rounds: userUnmodified ? nextDefault : prev.simulation_rounds,
+              investments: userUnmodified ? generateInvestments(nextDefault, value, prev.investments) : prev.investments,
+            };
+          });
+        }} />;
       case 2:
         return <CompanyRoundSelector companyRound={plan.company_round} onChange={value => setPlan({ ...plan, company_round: value })} />;
       case 3:
