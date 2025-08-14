@@ -94,6 +94,12 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
     setValidationModalOpen(false);
   };
 
+  const handleInvestmentValidationConfirm = () => {
+    setInvestmentValidationModalOpen(false);
+    // Show confirmation modal after acknowledging investment changes
+    setConfirmModalOpen(true);
+  };
+
   const handleSaveClick = () => {
     // Validate investments before showing confirm modal
     const validation = validateInvestmentAmounts(plan.investments || [], plan.plan_id);
@@ -235,8 +241,6 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
 
   const handleInvestmentValidationClose = () => {
     setInvestmentValidationModalOpen(false);
-    // Show confirmation modal after acknowledging investment changes
-    setConfirmModalOpen(true);
   };
 
   return (
@@ -283,7 +287,8 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
       
       <InvestmentValidationModal
         isOpen={isInvestmentValidationModalOpen}
-        onClose={handleInvestmentValidationClose}
+  onClose={handleInvestmentValidationClose}
+  onConfirm={handleInvestmentValidationConfirm}
         invalidInvestments={invalidInvestments}
       />
     </div>

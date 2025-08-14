@@ -5,6 +5,7 @@ import { Modal } from '../../../components/Modal';
 interface InvestmentValidationModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onConfirm: () => void; // user acknowledges corrections
   invalidInvestments: Array<{
     round: number;
     oldAmount: number | string;
@@ -15,6 +16,7 @@ interface InvestmentValidationModalProps {
 const InvestmentValidationModal: React.FC<InvestmentValidationModalProps> = ({
   isOpen,
   onClose,
+  onConfirm,
   invalidInvestments
 }) => (
   <Modal
@@ -53,12 +55,10 @@ const InvestmentValidationModal: React.FC<InvestmentValidationModalProps> = ({
         </table>
       </div>
       <div className="flex justify-end">
-        <Button 
-          onClick={onClose}
+        <Button
+          onClick={onConfirm}
           className="bg-blue-600 hover:bg-blue-700"
-        >
-          확인하고 계속하기
-        </Button>
+        >확인하고 계속하기</Button>
       </div>
     </div>
   </Modal>
