@@ -8,3 +8,5 @@ applyTo: '**.tsx, **.ts, **.js, **.jsx'
 2. It will not be uploaded to any App Store (e.g., Google Play, Apple App Store). It will be shared for installation and running to only a certain group of users via direct link or other means.
 3. As to the development environment of this app, see [this.](./env.instructions.md)
 4. The app's main target device is mobile devices, so the UI/UX should be optimized for mobile screens. However, it should also work well on desktop screens.
+5. Think hard about the user experience and how to make the app intuitive and easy to use for all users.
+6. Think hard before implementing codes.
