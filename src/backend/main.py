@@ -86,8 +86,17 @@ class PlanParametersResponse(BaseModel):
     
 # Custom simulation response model
 class SimulationResponse(BaseModel):
+    """Full simulation response including original creation parameters.
+
+    Includes all fields from SimulationCreateRequest (plan_id, company_round,
+    simulation_rounds, scheduled_payment) plus simulation execution metadata
+    and results history.
+    """
     simulation_id: str
     plan_id: str
+    company_round: int
+    simulation_rounds: int
+    scheduled_payment: Dict[str, int]
     history: List[Dict[str, Any]]
     message: str
     success: bool
@@ -189,7 +198,7 @@ def get_simulation_details(simulation_id: str, user_id: str = Depends(authentica
 class SimulationCreateRequest(BaseModel):
     """Model for creating a simulation plan without running the simulation"""
     plan_id: str
-    company_round: int = 1
+    company_round: int
     simulation_rounds: int
     scheduled_payment: Dict[str, int]
 
@@ -330,11 +339,36 @@ def run_simulation(
             plan_id = plan_data.get("plan_id", "")
             if not isinstance(plan_id, str):
                 plan_id = str(plan_id) if plan_id else ""
+            # Extract creation parameters
+            company_round_val = plan_data.get("company_round", 0)
+            try:
+                company_round_int = int(company_round_val) if company_round_val is not None else 0
+            except (ValueError, TypeError):
+                company_round_int = 0
+            simulation_rounds_val = plan_data.get("simulation_rounds", 0)
+            try:
+                simulation_rounds_int = int(simulation_rounds_val) if simulation_rounds_val is not None else 0
+            except (ValueError, TypeError):
+                simulation_rounds_int = 0
+            investments_existing = plan_data.get("investments", []) or []
+            scheduled_payment_existing: Dict[str, int] = {}
+            if isinstance(investments_existing, list):
+                for inv in investments_existing:
+                    if isinstance(inv, dict):
+                        try:
+                            round_key = str(inv.get("round", 0))
+                            amount_val = inv.get("amount", 0)
+                            scheduled_payment_existing[round_key] = int(amount_val) if amount_val is not None else 0
+                        except (ValueError, TypeError):
+                            continue
             
             # Construct properly typed response
             response_data = SimulationResponse(
                 simulation_id=request.simulation_id,
                 plan_id=plan_id,
+                company_round=company_round_int,
+                simulation_rounds=simulation_rounds_int,
+                scheduled_payment=scheduled_payment_existing,
                 history=results_dict.get("history", []),
                 message="Retrieved existing simulation results",
                 success=True
@@ -349,9 +383,19 @@ def run_simulation(
         if not isinstance(plan_id, str):
             raise ValueError(f"Invalid plan_id: {plan_id}")
         
-        simulation_rounds = plan_data.get("simulation_rounds")
-        if not isinstance(simulation_rounds, int):
-            simulation_rounds = int(simulation_rounds) if simulation_rounds else 36  # Default if missing or invalid
+        company_round_val = plan_data.get("company_round", 0)
+        try:
+            company_round_int = int(company_round_val) if company_round_val is not None else 0
+        except (ValueError, TypeError):
+            company_round_int = 0
+        simulation_rounds_val = plan_data.get("simulation_rounds")
+        if not isinstance(simulation_rounds_val, int):
+            try:
+                simulation_rounds = int(simulation_rounds_val) if simulation_rounds_val else 36
+            except (ValueError, TypeError):
+                simulation_rounds = 36
+        else:
+            simulation_rounds = simulation_rounds_val
         # Extract investments and convert to scheduled_payment format
         investments = plan_data.get("investments", [])
         scheduled_payment = {str(inv.get("round", 0)): inv.get("amount", 0) for inv in investments}
@@ -387,6 +431,9 @@ def run_simulation(
         response_data = SimulationResponse(
             simulation_id=request.simulation_id,
             plan_id=plan_id,
+            company_round=company_round_int,
+            simulation_rounds=simulation_rounds,
+            scheduled_payment=scheduled_payment,  # original string-keyed mapping
             history=results_dict.get("history", []),
             message="Simulation completed and results saved",
             success=True
