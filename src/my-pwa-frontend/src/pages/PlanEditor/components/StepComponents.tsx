@@ -26,6 +26,86 @@ interface InvestmentEditorProps {
   onInvestmentChange: (round: number, amount: string) => void;
 }
 
+// Formatted number input with thousands separators, live min enforcement, and caret preservation
+const FormattedAmountInput: React.FC<{
+  value: number | undefined;
+  minValue?: number;
+  placeholder?: string;
+  onValueChange: (val: number | null) => void;
+}> = ({ value, minValue, placeholder, onValueChange }) => {
+  const [display, setDisplay] = React.useState<string>(value ? value.toLocaleString() : '');
+  const [belowMin, setBelowMin] = React.useState(false);
+  const ref = React.useRef<HTMLInputElement>(null);
+
+  // Sync external value changes
+  React.useEffect(() => {
+    const formatted = value ? value.toLocaleString() : '';
+    if (formatted !== display) setDisplay(formatted);
+  }, [value, display]);
+
+  const setCaret = (pos: number) => {
+    requestAnimationFrame(() => {
+      if (ref.current) {
+        ref.current.setSelectionRange(pos, pos);
+      }
+    });
+  };
+
+  const computeNewCaret = (formatted: string, digitsBefore: number): number => {
+  // If no digits should appear before caret, caret stays at start.
+  if (digitsBefore === 0) return 0;
+    let count = 0;
+    for (let i = 0; i < formatted.length; i++) {
+      if (/\d/.test(formatted[i])) count++;
+      if (count === digitsBefore) return i + 1;
+    }
+    return formatted.length;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputEl = e.target;
+    const rawInput = inputEl.value;
+    const selection = inputEl.selectionStart ?? rawInput.length;
+    const digitsBeforeCursor = rawInput.slice(0, selection).replace(/,/g, '');
+    const rawDigits = rawInput.replace(/,/g, '');
+
+    if (rawDigits === '') {
+      setDisplay('');
+      onValueChange(null);
+      return;
+    }
+    if (!/^\d+$/.test(rawDigits)) {
+      // Ignore invalid characters (don't update state)
+      return;
+    }
+
+  const numeric = parseInt(rawDigits, 10);
+  setBelowMin(!!minValue && numeric < minValue);
+
+    const formatted = numeric.toLocaleString();
+    setDisplay(formatted);
+    onValueChange(numeric);
+
+    const caretDigits = Math.min(digitsBeforeCursor.length, numeric.toString().length);
+    const newCaret = computeNewCaret(formatted, caretDigits);
+    setCaret(newCaret);
+  };
+
+  return (
+    <input
+      ref={ref}
+      type="text"
+      inputMode="numeric"
+      value={display}
+      onChange={handleChange}
+      placeholder={placeholder}
+      title={belowMin && minValue ? `최소 권장 투자액: ${minValue.toLocaleString()} 이상 입력하세요.` : ''}
+      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${belowMin ? 'border-red-500 focus:ring-red-400' : 'border-gray-300'}`}
+      data-below-min={belowMin || undefined}
+    />
+  );
+};
+
 export const PlanTypeSelector: React.FC<PlanTypeSelectorProps> = ({ planType, onChange }) => (
   <div>
     <h2 className="text-xl font-bold mb-4">1. 플랜 선택</h2>
@@ -105,16 +185,16 @@ export const InvestmentEditor: React.FC<InvestmentEditorProps> = ({
                   <td className="px-6 py-4">{companyRound + index}</td>
                   <td className="px-6 py-4">{inv.round}</td>
                   <td className="px-6 py-4">
-                    <Input 
-                      type="number" 
-                      value={inv.amount || ''}
+                    <FormattedAmountInput
+                      value={inv.amount}
+                      minValue={defaultAmount}
                       placeholder={defaultAmount ? `최소값: ${defaultAmount.toLocaleString()}` : '투자액 입력 (0 불가)'}
-                      onChange={e => {
-                        // Ensure we're working with integers
-                        const val = parseInt(e.target.value);
-                        const amount = isNaN(val) ? '' : e.target.value;
-                        // Pass the string to be parsed in the handler
-                        onInvestmentChange(parseInt(inv.round.toString(), 10), amount);
+                      onValueChange={(val) => {
+                        if (val === null) {
+                          onInvestmentChange(inv.round, '');
+                        } else {
+                          onInvestmentChange(inv.round, val.toString());
+                        }
                       }}
                     />
                   </td>
