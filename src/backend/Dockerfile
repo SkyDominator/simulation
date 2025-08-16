@@ -1,7 +1,7 @@
 FROM python:3.11.6
 
 # Set working directory to match the volume mount
-WORKDIR /src/backend
+WORKDIR /app/src/backend
 
 # Copy requirements first for better caching
 COPY requirements.txt .

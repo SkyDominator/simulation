@@ -1,7 +1,7 @@
 FROM node:22.11.0
 
 # Set working directory to match the volume mount
-WORKDIR /src/my-pwa-frontend
+WORKDIR /app/src/my-pwa-frontend
 
 # Copy package files first for better caching
 COPY package*.json ./
