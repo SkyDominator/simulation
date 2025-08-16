@@ -15,7 +15,10 @@ services:
     environment:
       - PYTHONPATH=/app/src/backend
     working_dir: /app/src/backend
-    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    # keep container running but don't auto-start the app; start uvicorn manually via debugger/exec
+    
+    # command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: tail -f /dev/null
 
   frontend:
     build:
@@ -31,7 +34,10 @@ services:
     depends_on:
       - backend
     working_dir: /app/src/my-pwa-frontend
-    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+    # keep container running but don't auto-start the dev server; start npm manually when needed
+    
+    # command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+    command: tail -f /dev/null
 
 volumes:
   backend_venv:
