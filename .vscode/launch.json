@@ -24,19 +24,17 @@
       "justMyCode": true
     },
     {
-    "name": "Launch Chrome (new profile)",
-    "type": "pwa-chrome",
-    "request": "launch",
-    "url": "http://localhost:5173",
-    "webRoot": "/app/src/my-pwa-frontend",
-    "runtimeExecutable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "runtimeArgs": [
-        "--remote-debugging-port=9222",
-        "--user-data-dir=${workspaceFolder}\\.vscode\\chrome-profile",
-        "--disable-extensions",
-        "--no-first-run"
-    ],
-    "trace": true
+      "name": "Frontend: Chrome (Vite + Breakpoints)",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src/my-pwa-frontend",
+      "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "/app/src/my-pwa-frontend/*": "${webRoot}/*"
+      },
+      "trace": false
     }
   ],
   "compounds": [
