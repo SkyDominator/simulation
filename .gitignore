@@ -46,7 +46,6 @@ venv.bak/
 backend-venv/
 
 # IDE
-.vscode/
 .idea/
 
 # Node modules

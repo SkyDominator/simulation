@@ -2,14 +2,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python Debugger: Current File",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${file}",
-      "console": "integratedTerminal"
-    },
-
-    {
       "name": "Backend: FastAPI (uvicorn + reload)",
       "type": "debugpy",
       "request": "launch",
@@ -31,16 +23,27 @@
       "subProcess": true,
       "justMyCode": true
     },
-
     {
-      "name": "Frontend: Open in Host Browser (for OAuth)",
+      "name": "Frontend: Chrome (Vite + Breakpoints)",
       "type": "pwa-chrome",
       "request": "launch",
       "url": "http://localhost:5173",
       "webRoot": "${workspaceFolder}/src/my-pwa-frontend",
-      // Use host browser so OAuth flows / cookies work normally
       "runtimeExecutable": "$BROWSER",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "/app/src/my-pwa-frontend/*": "${webRoot}/*"
+      },
       "trace": false
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack Debug",
+      "configurations": [
+        "Backend: FastAPI (uvicorn + reload)",
+        "Frontend: Chrome (Vite + Breakpoints)"
+      ]
     }
   ]
 }

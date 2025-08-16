@@ -36,8 +36,8 @@ services:
     working_dir: /app/src/my-pwa-frontend
     # keep container running but don't auto-start the dev server; start npm manually when needed
     
-    # command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
-    command: tail -f /dev/null
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+    # command: tail -f /dev/null
 
 volumes:
   backend_venv:
