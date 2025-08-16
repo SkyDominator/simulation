@@ -9,7 +9,7 @@ services:
       - "8000:8000"
     volumes:
       - ./:/app:cached
-      - /app/src/backend/backend-venv  # Exclude virtual environment
+      - backend_venv:/app/src/backend/backend-venv  # named volume for backend venv
     env_file:
       - .env
     environment:
@@ -25,10 +25,16 @@ services:
       - "5173:5173"
     volumes:
       - ./:/app:cached
-      - /app/src/my-pwa-frontend/node_modules  # Exclude node_modules
+      - frontend_node_modules:/app/src/my-pwa-frontend/node_modules  # named volume for node_modules
     environment:
       - VITE_HOST=0.0.0.0
     depends_on:
       - backend
     working_dir: /app/src/my-pwa-frontend
     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+
+volumes:
+  backend_venv:
+    driver: local
+  frontend_node_modules:
+    driver: local

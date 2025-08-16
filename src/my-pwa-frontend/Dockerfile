@@ -1,5 +1,10 @@
 FROM node:22.11.0
 
+# install git for runtime usage (e.g., cloning, working with GitHub)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
 # Set working directory to match the volume mount
 WORKDIR /app/src/my-pwa-frontend
 
