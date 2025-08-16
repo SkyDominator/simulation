@@ -10,40 +10,37 @@
     },
 
     {
-    "name": "Backend: FastAPI (uvicorn + reload)",
-    "type": "debugpy",
-    "request": "launch",
-    "module": "uvicorn",
-    "args": [
+      "name": "Backend: FastAPI (uvicorn + reload)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
         "main:app",
         "--reload",
-        "--host", "127.0.0.1",
-        "--port", "8000"
-    ],
-    "cwd": "${workspaceFolder}/src/backend",
-    "python": "${workspaceFolder}/src/backend/backend-venv/Scripts/python.exe",
-    "env": {
-        "PYTHONPATH": "${workspaceFolder}/src/backend"
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000"
+      ],
+      "cwd": "/app/src/backend",
+      "python": "/app/src/backend/backend-venv/bin/python",
+      "env": {
+        "PYTHONPATH": "/app/src/backend"
+      },
+      "console": "integratedTerminal",
+      "subProcess": true,
+      "justMyCode": true
     },
-    "console": "integratedTerminal",
-    "subProcess": true,        // important: debug into uvicorn’s reloaded worker
-    "justMyCode": true
-    },
-    {
-    "name": "Launch Chrome (new profile)",
-    "type": "pwa-chrome",
-    "request": "launch",
-    "url": "http://localhost:5173",
-    "webRoot": "${workspaceFolder}/src/my-pwa-frontend",
-    "runtimeExecutable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "runtimeArgs": [
-        "--remote-debugging-port=9222",
-        "--user-data-dir=${workspaceFolder}\\.vscode\\chrome-profile",
-        "--disable-extensions",
-        "--no-first-run"
-    ],
-    "trace": true
-    }
 
-  ],
+    {
+      "name": "Frontend: Open in Host Browser (for OAuth)",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src/my-pwa-frontend",
+      // Use host browser so OAuth flows / cookies work normally
+      "runtimeExecutable": "$BROWSER",
+      "trace": false
+    }
+  ]
 }
