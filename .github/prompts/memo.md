@@ -10,3 +10,9 @@
 1. Optimistic UI update for plan values without full reload. (main page?)
 2. Add error boundary or toast system instead of alert().
 3. Centralize id normalization in a small helper to DRY the mapping.
+4. 메모 기능 추가
+
+# 배포 개선사항
+
+1. dev 환경과 production 환경 docker container 분리
+2. 
