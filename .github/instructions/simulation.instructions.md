@@ -4,8 +4,10 @@ applyTo: '**.tsx, **.ts, **.js, **.jsx'
 
 ## Development environment
 
-Backend: Python, FastAPI, Supabase
-Frontend: React, TypeScript, Vite
+* Backend: Python, FastAPI, Supabase
+    * Backend source path: `./src/backend`
+* Frontend: React, TypeScript, Vite
+    * Frontend source path: `./src/my-pwa-frontend/src`
 
 ## General requirements for my app.
 
