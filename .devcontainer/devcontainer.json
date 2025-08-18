@@ -1,18 +1,28 @@
 {
   "name": "My Full-Stack App",
-  "dockerComposeFile": "../docker-compose.yml",
+  "dockerComposeFile": ["../docker-compose.yml"],
   "service": "backend",
   "workspaceFolder": "/app",
+  "runServices": ["backend", "frontend"],
+  "shutdownAction": "stopCompose",
+  "forwardPorts": [8000, 5173],
+  "remoteUser": "root",
+  // Keep containers idle; tasks / debug will start processes.
 
-  // postCreateCommand가 없어야 합니다.
-
+  // postCreateCommand intentionally omitted (as requested)
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
+        "ms-python.vscode-pylance",
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint"
-      ]
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "python.testing.pytestEnabled": true,
+        "editor.formatOnSave": true
+      }
     }
   }
 }

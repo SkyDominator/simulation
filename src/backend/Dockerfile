@@ -1,29 +1,26 @@
 FROM python:3.11.6
 
-# install git and small utilities
+# Install git and utilities (kept minimal for faster build)
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-# Set working directory to match the volume mount
+# Dedicated location for virtual environment so source bind-mounts do NOT overwrite it
+ENV VIRTUAL_ENV=/opt/venv
+RUN python -m venv "$VIRTUAL_ENV" \
+ && "$VIRTUAL_ENV/bin/pip" install --upgrade pip setuptools wheel
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
 WORKDIR /app/src/backend
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy only requirements first for layer caching
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Create a virtualenv inside the project and install deps into it
-RUN python -m venv backend-venv \
- && backend-venv/bin/python -m pip install --upgrade pip setuptools wheel \
- && backend-venv/bin/pip install --no-cache-dir -r requirements.txt
-
-# Ensure the venv's bin is first on PATH
-ENV PATH="/app/src/backend/backend-venv/bin:${PATH}"
-
-# Copy application code (this will be overridden by volume mount in development)
+# Copy application code (bind mount will override in dev; still useful for image-based tasks)
 COPY . .
 
-# Expose port
 EXPOSE 8000
 
-# Default command (uses venv python / uvicorn installed in venv)
+# Default command (overridden by docker-compose for long‑running idle container in dev)
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

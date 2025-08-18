@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Backend: FastAPI (uvicorn + reload)",
+      "name": "Backend: FastAPI (launch)",
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
@@ -15,7 +15,7 @@
         "8000"
       ],
       "cwd": "/app/src/backend",
-      "python": "/app/src/backend/backend-venv/bin/python",
+      "python": "/opt/venv/bin/python",
       "env": {
         "PYTHONPATH": "/app/src/backend"
       },
@@ -24,8 +24,24 @@
       "justMyCode": true
     },
     {
+      "name": "Backend: FastAPI (attach)",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 5678
+      },
+      "justMyCode": true,
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/src/backend",
+          "remoteRoot": "/app/src/backend"
+        }
+      ]
+    },
+    {
       "name": "Frontend: Chrome (Vite + Breakpoints)",
-      "type": "pwa-chrome",
+      "type": "chrome",
       "request": "launch",
       "url": "http://localhost:5173",
       "webRoot": "${workspaceFolder}/src/my-pwa-frontend",
@@ -33,15 +49,14 @@
       "sourceMaps": true,
       "sourceMapPathOverrides": {
         "/app/src/my-pwa-frontend/*": "${webRoot}/*"
-      },
-      "trace": false
+      }
     }
   ],
   "compounds": [
     {
       "name": "Full Stack Debug",
       "configurations": [
-        "Backend: FastAPI (uvicorn + reload)",
+        "Backend: FastAPI (launch)",
         "Frontend: Chrome (Vite + Breakpoints)"
       ]
     }

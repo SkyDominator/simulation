@@ -16,24 +16,29 @@ The code has been refactored following SOLID principles and best practices:
 ## How to Run the Simulation
 
 1. Navigate to the project directory
-2. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-3. Run the main script:
-   ```
-   python src/python/init.py
-   ```
-4. Choose simulation type:
+1. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+1. Run the main script:
+
+```bash
+python src/python/init.py
+```
+
+1. Choose simulation type:
    - **Single plan**: Enter one plan (e.g., 'A')
    - **Multiple plans**: Enter comma-separated plans (e.g., 'A,B,C')
    - **All plans**: Enter 'all'
-5. Specify the number of simulation rounds
-6. View comprehensive results and export options
+1. Specify the number of simulation rounds
+1. View comprehensive results and export options
 
 ## Key Features
 
 ### Core Features
+
 - Modular and maintainable code structure
 - Proper error handling with logging
 - Type hints throughout the codebase
@@ -41,6 +46,7 @@ The code has been refactored following SOLID principles and best practices:
 - Extensible design for adding new plans or modifying simulation behavior
 
 ### Multi-Plan Simulation Features ✨
+
 - **Simultaneous simulation** of multiple investment plans
 - **Comparative analysis** showing best-performing plans
 - **Comprehensive reporting** with individual and aggregate results
@@ -51,21 +57,16 @@ The code has been refactored following SOLID principles and best practices:
 ## Simulation Output
 
 ### Single Plan Results
+
 - Round-by-round summary of payments, revenue, and profit
 - Overall simulation summary with key metrics
 - Excel export capability
 
 ### Multi-Plan Results
+
 - Individual plan summaries (optional)
-- **Comprehensive comparison table** showing:
-  - Final net profit for each plan
-  - Total payments and revenue
-  - Average profit per round
-  - First round achieving positive cumulative profit
-- **Best performers identification**:
-  - Highest final profit plan
-  - Best average profit per round
-  - Fastest to positive profitability
+- **Comprehensive comparison table**: final net profit for each plan, total payments and revenue, average profit per round, first round achieving positive cumulative profit
+- **Best performers identification**: highest final profit plan, best average profit per round, fastest to positive profitability
 - **Aggregate analysis** across all simulated plans
 - Advanced visualization and export options
 
@@ -92,6 +93,7 @@ The simulation applies several business rules that affect the calculation of pay
 
 Current plans supported: A, B, C, D, K, P, R, F, E
 Each plan has different:
+
 - Payment structures
 - Revenue calculations  
 - Maximum investor counts
@@ -108,14 +110,17 @@ To add a new plan:
 ## Dependencies
 
 ### Required
+
 - Python 3.7+
 - pandas (for data processing and export)
 - openpyxl (for Excel export functionality)
 
 ### Optional
+
 - matplotlib (for advanced visualization and comparison plots)
 
 Install all dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -123,6 +128,7 @@ pip install -r requirements.txt
 ## Example Usage
 
 ### Single Plan Simulation
+
 ```bash
 python src/python/init.py
 # Select: A
@@ -130,6 +136,7 @@ python src/python/init.py
 ```
 
 ### Multi-Plan Comparison
+
 ```bash
 python src/python/init.py
 # Select: A,B,C,D
@@ -139,8 +146,107 @@ python src/python/init.py
 ```
 
 ### All Plans Analysis
+
 ```bash
 python src/python/init.py
 # Select: all
 # Rounds: 30
 ```
+
+---
+
+## Containerized Full-Stack Development (FastAPI + React)
+
+The runtime application (FastAPI backend + React/Vite PWA frontend) is developed entirely inside Docker using VS Code Dev Containers for consistent cross‑platform setup (Windows / macOS / Linux).
+
+### Services
+
+| Service  | Port | Description                 |
+|----------|------|-----------------------------|
+| backend  | 8000 | FastAPI (Uvicorn, reload)   |
+| frontend | 5173 | Vite dev server (React PWA) |
+
+### Prerequisites
+
+- Docker (Desktop or Engine)
+- VS Code + Dev Containers extension
+- Git (source of truth remains your cloned repo)
+
+### Open in Dev Container
+
+1. Clone repo: `git clone <repo-url>`
+2. Open folder in VS Code.
+3. Command Palette: “Dev Containers: Reopen in Container”.
+4. Both containers start idle (no servers auto-running).
+
+### Start Backend (Launch Debug)
+
+Use VS Code debug configuration: `Backend: FastAPI (launch)`.
+
+### Start Backend (Attach Mode)
+
+1. In a terminal (inside backend container):
+
+   ```bash
+   python debug_run.py
+   ```
+
+2. Start VS Code debug config: `Backend: FastAPI (attach)`.
+
+### Start Frontend
+
+Open a terminal (inside dev container root) and run:
+
+```bash
+cd src/my-pwa-frontend
+npm run dev -- --host 0.0.0.0 --port 5173
+```
+
+Then use debug config: `Frontend: Chrome (Vite + Breakpoints)`.
+
+### Full Stack Debug Sequence
+
+1. Start backend (launch or attach variant).
+2. Start frontend dev server.
+3. Run compound: `Full Stack Debug` (opens Chrome with mapped sources).
+
+### Dependency Updates
+
+Backend (Python): add to `src/backend/requirements.txt` then rebuild:
+
+```bash
+docker compose build backend
+```
+
+Frontend (Node): modify `package.json` then inside container:
+
+```bash
+cd src/my-pwa-frontend
+npm install
+```
+
+### Virtual Environment Strategy
+
+Python virtual env lives at `/opt/venv` (image layer) so source bind mounts do not overwrite it. Node `node_modules` lives in a named volume (`frontend_node_modules`).
+
+### Troubleshooting
+
+- Breakpoints skipped (backend): confirm interpreter path `/opt/venv/bin/python` in debug config.
+- Attach not hitting: ensure port 5678 free and `debug_run.py` started.
+- Frontend HMR issues on Windows: check firewall for port 5173.
+- Module missing after adding dependency: rebuild or reinstall as above.
+
+### Rebuild Everything
+
+```bash
+docker compose build --no-cache
+docker compose up -d
+```
+
+### Stop Containers
+
+```bash
+docker compose down
+```
+
+---

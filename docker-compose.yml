@@ -9,16 +9,14 @@ services:
       - "8000:8000"
     volumes:
       - ./:/app:cached
-      - backend_venv:/app/src/backend/backend-venv  # named volume for backend venv
     env_file:
       - .env
     environment:
-      - PYTHONPATH=/app/src/backend
+      PYTHONPATH: /app/src/backend
     working_dir: /app/src/backend
-    # keep container running but don't auto-start the app; start uvicorn manually via debugger/exec
-    
-    # command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-    command: tail -f /dev/null
+    command: tail -f /dev/null  # debugger (VS Code) will launch uvicorn
+    networks:
+      - appnet
 
   frontend:
     build:
@@ -28,19 +26,20 @@ services:
       - "5173:5173"
     volumes:
       - ./:/app:cached
-      - frontend_node_modules:/app/src/my-pwa-frontend/node_modules  # named volume for node_modules
+      - frontend_node_modules:/app/src/my-pwa-frontend/node_modules
     environment:
-      - VITE_HOST=0.0.0.0
+      VITE_HOST: 0.0.0.0
     depends_on:
       - backend
     working_dir: /app/src/my-pwa-frontend
-    # keep container running but don't auto-start the dev server; start npm manually when needed
-    
-    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
-    # command: tail -f /dev/null
+    command: tail -f /dev/null  # task / debugger starts dev server
+    networks:
+      - appnet
 
 volumes:
-  backend_venv:
-    driver: local
   frontend_node_modules:
     driver: local
+
+networks:
+  appnet:
+    driver: bridge
