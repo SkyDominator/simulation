@@ -47,6 +47,7 @@ backend-venv/
 
 # IDE
 .idea/
+.vscode/chrome-debug-profile/
 
 # Node modules
 node_modules/
