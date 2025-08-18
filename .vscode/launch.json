@@ -49,7 +49,15 @@
       "sourceMaps": true,
       "sourceMapPathOverrides": {
         "/app/src/my-pwa-frontend/*": "${webRoot}/*"
-      }
+      },
+      "runtimeArgs": [
+        "--remote-debugging-port=9222",
+        "--user-data-dir=${workspaceFolder}/.vscode/chrome-debug-profile",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-extensions",
+      ],
+      "port": 9222
     }
   ],
   "compounds": [
