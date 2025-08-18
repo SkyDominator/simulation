@@ -37,6 +37,9 @@ services:
     networks:
       - appnet
 
+volumes:
+  frontend_node_modules:
+
 networks:
   appnet:
     driver: bridge
