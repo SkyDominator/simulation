@@ -32,13 +32,10 @@ services:
     depends_on:
       - backend
     working_dir: /app/src/my-pwa-frontend
-    command: tail -f /dev/null  # task / debugger starts dev server
+    # command: tail -f /dev/null  # task / debugger starts dev server
+    command: npm run dev -- --host 0.0.0.0 --port 5173 --reload
     networks:
       - appnet
-
-volumes:
-  frontend_node_modules:
-    driver: local
 
 networks:
   appnet:
