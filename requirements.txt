@@ -1,9 +1,0 @@
-# Core dependencies for partner club simulation
-pandas>=1.5.0
-openpyxl>=3.0.0
-
-# Optional dependencies for visualization
-matplotlib>=3.5.0
-
-# Development dependencies
-pytest>=7.0.0
