@@ -4,7 +4,6 @@ set -euo pipefail
 REPO_URL="${REPO_URL:-}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
 TARGET_DIR="/app"
-LOCK_FILE="${TARGET_DIR}/.clone.lock"
 
 if [ -z "$REPO_URL" ]; then
   echo "[common-init] ERROR: REPO_URL not set" >&2
@@ -18,21 +17,6 @@ if [ -n "${GITHUB_PAT_FILE:-}" ] && [ -f "${GITHUB_PAT_FILE:-}" ]; then
     REPO_URL_AUTH="$(echo "$REPO_URL" | sed -E "s#https://#https://${PAT}@#")"
   fi
 fi
-
-with_lock() {
-  if command -v flock >/dev/null 2>&1; then
-    exec 9>"$LOCK_FILE"
-    flock 9
-    "$@"
-    return
-  fi
-  while ! mkdir "${LOCK_FILE}.d" 2>/dev/null; do
-    echo "[common-init] Waiting for clone lock..."
-    sleep 1
-  done
-  trap 'rmdir "${LOCK_FILE}.d" || true' EXIT
-  "$@"
-}
 
 do_clone_or_update() {
   if [ -d "${TARGET_DIR}/.git" ]; then
@@ -51,4 +35,4 @@ do_clone_or_update() {
   git clone --branch "$GIT_BRANCH" --depth 1 "$URL_TO_USE" "$TARGET_DIR" 2>&1 | sed 's/'"${PAT:-__NO_PAT__}"'/***MASKED***/g'
 }
 
-with_lock do_clone_or_update
+do_clone_or_update
