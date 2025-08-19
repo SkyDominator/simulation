@@ -7,7 +7,7 @@ from supabase import Client, create_client
 from config.settings import settings
 from models.schemas import (
     SimulationCreateRequest, SimulationCreateResponse,
-    SimulationRunRequest, SimulationResponse,
+    SimulationRunRequest, SimulationRunResponse,
     SimulationUpdateRequest, SimulationUpdateResponse,
     SimulationDeleteRequest, SimulationDeleteResponse,
     SimulationMemoUpdateRequest, SimulationMemoUpdateResponse,
@@ -40,7 +40,6 @@ class SimulationService:
             "investments": [
                 {"round": int(r), "amount": amt} for r, amt in req.scheduled_payment.items()
             ],
-            "memo": (req.memo or '').strip() if req.memo is not None else None,
         }
         db_response = self.client.table("simulations").insert(plan_data).execute()
         if not db_response or not db_response.data:
@@ -52,10 +51,9 @@ class SimulationService:
             plan_id=req.plan_id,
             message="Simulation request saved successfully",
             success=True,
-            memo=created.get('memo'),
         )
 
-    def run(self, req: SimulationRunRequest, user_id: str) -> SimulationResponse:
+    def run(self, req: SimulationRunRequest, user_id: str) -> SimulationRunResponse:
         db_response = self.client.table("simulations").select("*").eq("id", req.simulation_id).eq("user_id", user_id).execute()
         if not db_response.data:
             raise HTTPException(status_code=404, detail=f"Plan with ID {req.simulation_id} not found")
@@ -64,13 +62,12 @@ class SimulationService:
         sched_map = scheduled_payment_from_investments(row.investments)
         if row.simulation_results:
             res_dict = row.simulation_results or {}
-            return SimulationResponse(
+            return SimulationRunResponse(
                 simulation_id=row.id,
                 plan_id=row.plan_id,
                 company_round=row.company_round,
                 simulation_rounds=row.simulation_rounds,
                 scheduled_payment=sched_map,
-                memo=row.memo,
                 history=res_dict.get("history", []),
                 message="Retrieved existing simulation results",
                 success=True,
@@ -81,13 +78,12 @@ class SimulationService:
         upd = self.client.table("simulations").update({"simulation_results": results}).eq("id", req.simulation_id).execute()
         if not upd.data:
             logger.error("Failed to persist simulation results for %s", req.simulation_id)
-        return SimulationResponse(
+        return SimulationRunResponse(
             simulation_id=row.id,
             plan_id=row.plan_id,
             company_round=row.company_round,
             simulation_rounds=row.simulation_rounds,
             scheduled_payment=sched_map,
-            memo=row.memo,
             history=results.get("history", []),
             message="Simulation completed and results saved",
             success=True,
@@ -108,7 +104,6 @@ class SimulationService:
             "simulation_rounds": req.simulation_rounds,
             "investments": investments,
             "simulation_results": None,
-            **({"memo": (req.memo or '').strip()} if req.memo is not None else {}),
         }
         upd = self.client.table("simulations").update(payload).eq("id", simulation_id).eq("user_id", user_id).execute()
         if not upd.data:
@@ -118,7 +113,6 @@ class SimulationService:
             plan_id=req.plan_id,
             message="Simulation updated successfully (previous results invalidated)",
             success=True,
-            memo=req.memo,
         )
 
     def delete(self, simulation_id: str, user_id: str) -> SimulationDeleteResponse:

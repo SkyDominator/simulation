@@ -12,27 +12,23 @@ class SimulationCreateRequest(BaseModel):
     company_round: int
     simulation_rounds: int
     scheduled_payment: Dict[str, int]
-    # Optional memo text user can attach to the simulation at creation time
-    memo: Optional[str] = None
 
 class SimulationCreateResponse(BaseModel):
     simulation_id: str
     plan_id: str
     message: str
     success: bool
-    memo: Optional[str] = None
 
 class SimulationRunRequest(BaseModel):
     simulation_id: str
 
-class SimulationResponse(BaseModel):
+class SimulationRunResponse(BaseModel):
     simulation_id: str
     plan_id: str
     company_round: int
     simulation_rounds: int
     scheduled_payment: Dict[str, int]
     history: List[Dict[str, Any]]
-    memo: Optional[str] = None
     message: str
     success: bool
 
@@ -49,14 +45,12 @@ class SimulationUpdateRequest(BaseModel):
     company_round: int
     simulation_rounds: int
     scheduled_payment: Dict[str, int]
-    memo: Optional[str] = None
 
 class SimulationUpdateResponse(BaseModel):
     simulation_id: str
     plan_id: str
     message: str
     success: bool
-    memo: Optional[str] = None
 
 class SimulationMemoUpdateRequest(BaseModel):
     memo: Optional[str] = None

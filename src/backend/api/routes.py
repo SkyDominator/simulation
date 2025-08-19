@@ -9,7 +9,7 @@ from services.simulations import SimulationService
 from models.schemas import (
     UserCheckRequest,
     SimulationCreateRequest, SimulationCreateResponse,
-    SimulationRunRequest, SimulationResponse,
+    SimulationRunRequest, SimulationRunResponse,
     SimulationUpdateRequest, SimulationUpdateResponse,
     SimulationDeleteRequest, SimulationDeleteResponse,
     SimulationMemoUpdateRequest, SimulationMemoUpdateResponse,
@@ -53,7 +53,7 @@ async def get_simulation_details(simulation_id: str, user_id: str = Depends(auth
 async def create_simulation(request: SimulationCreateRequest, user_id: str = Depends(authenticate_jwt_token)):
     return _sim_service.create(request, user_id)
 
-@router.post("/api/simulation/run", response_model=SimulationResponse)
+@router.post("/api/simulation/run", response_model=SimulationRunResponse)
 async def run_simulation(request: SimulationRunRequest, user_id: str = Depends(authenticate_jwt_token)):
     return _sim_service.run(request, user_id)
 

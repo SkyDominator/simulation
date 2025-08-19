@@ -32,7 +32,6 @@ export interface SimulationRunResponse {
   simulation_rounds: number; // added to mirror backend SimulationResponse
   scheduled_payment: Record<string, number>; // added to mirror backend SimulationResponse
   history: Array<Record<string, unknown>>;
-  memo?: string | null;
   message: string;
   success: boolean;
 }
@@ -50,7 +49,6 @@ export interface SimulationCreateResponse {
   plan_id: string;
   message: string;
   success: boolean;
-  memo?: string | null;
 }
 
 export interface SimulationMemoUpdateResponse {
