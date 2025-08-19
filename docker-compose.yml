@@ -7,13 +7,11 @@ services:
       dockerfile: Dockerfile
     environment:
       PYTHONPATH: /app/src/backend
-      REPO_URL: https://github.com/your-org/your-repo.git
+      REPO_URL: https://github.com/SkyDominator/simulation.git
       GIT_BRANCH: main
     working_dir: /app/src/backend
-    command: ["/bin/bash", "/entrypoints/backend-entrypoint.sh"]
     volumes:
       - workspace:/app
-      - ./entrypoints:/entrypoints:ro
     ports:
       - "8000:8000"
     networks:
@@ -30,13 +28,11 @@ services:
       dockerfile: Dockerfile
     environment:
       VITE_HOST: 0.0.0.0
-      REPO_URL: https://github.com/your-org/your-repo.git
+      REPO_URL: https://github.com/SkyDominator/simulation.git
       GIT_BRANCH: main
     working_dir: /app/src/my-pwa-frontend
-    command: ["/bin/bash", "/entrypoints/frontend-entrypoint.sh"]
     volumes:
       - workspace:/app
-      - ./entrypoints:/entrypoints:ro
     depends_on:
       backend:
         condition: service_healthy

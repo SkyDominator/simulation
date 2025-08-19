@@ -16,6 +16,5 @@ if [ ! -d "${TARGET_DIR}/.git" ]; then
 else
   echo "[common-init] Repository already present; fetching updates..."
   git -C "$TARGET_DIR" fetch origin "$GIT_BRANCH" || true
-  # Optional fast-forward attempt (ignore errors to avoid blocking startup)
   git -C "$TARGET_DIR" merge --ff-only "origin/$GIT_BRANCH" || true
 fi
