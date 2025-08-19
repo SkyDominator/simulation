@@ -41,6 +41,11 @@ do_clone_or_update() {
     git -C "$TARGET_DIR" reset --hard "origin/$GIT_BRANCH" || true
     return
   fi
+  # If directory non-empty but not a git repo, clear it (backend authoritative)
+  if [ -n "$(ls -A "$TARGET_DIR" 2>/dev/null)" ]; then
+    echo "[common-init] Non-git content found in $TARGET_DIR; removing before clone.";
+    find "$TARGET_DIR" -mindepth 1 -maxdepth 1 ! -name ".clone.lock" ! -name ".clone.lock.d" -exec rm -rf {} +
+  fi
   echo "[common-init] Cloning repository (branch: $GIT_BRANCH)..."
   URL_TO_USE="${REPO_URL_AUTH:-$REPO_URL}"
   git clone --branch "$GIT_BRANCH" --depth 1 "$URL_TO_USE" "$TARGET_DIR" 2>&1 | sed 's/'"${PAT:-__NO_PAT__}"'/***MASKED***/g'
