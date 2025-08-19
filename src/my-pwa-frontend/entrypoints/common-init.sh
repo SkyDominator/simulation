@@ -4,17 +4,45 @@ set -euo pipefail
 REPO_URL="${REPO_URL:-}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
 TARGET_DIR="/app"
+LOCK_FILE="${TARGET_DIR}/.clone.lock"
 
 if [ -z "$REPO_URL" ]; then
   echo "[common-init] ERROR: REPO_URL not set" >&2
   exit 1
 fi
 
-if [ ! -d "${TARGET_DIR}/.git" ]; then
-  echo "[common-init] Cloning repository $REPO_URL (branch: $GIT_BRANCH) ..."
-  git clone --branch "$GIT_BRANCH" --depth 1 "$REPO_URL" "$TARGET_DIR"
-else
-  echo "[common-init] Repository already present; fetching updates..."
-  git -C "$TARGET_DIR" fetch origin "$GIT_BRANCH" || true
-  git -C "$TARGET_DIR" merge --ff-only "origin/$GIT_BRANCH" || true
+if [ -n "${GITHUB_PAT_FILE:-}" ] && [ -f "${GITHUB_PAT_FILE:-}" ]; then
+  PAT="$(tr -d '\r\n' < "${GITHUB_PAT_FILE}")"
+  if [ -n "$PAT" ]; then
+    REPO_URL_AUTH="$(echo "$REPO_URL" | sed -E "s#https://#https://${PAT}@#")"
+  fi
 fi
+
+with_lock() {
+  if command -v flock >/dev/null 2>&1; then
+    exec 9>"$LOCK_FILE"
+    flock 9
+    "$@"
+    return
+  fi
+  while ! mkdir "${LOCK_FILE}.d" 2>/dev/null; do
+    echo "[common-init] Waiting for clone lock..."
+    sleep 1
+  done
+  trap 'rmdir "${LOCK_FILE}.d" || true' EXIT
+  "$@"
+}
+
+do_clone_or_update() {
+  if [ -d "${TARGET_DIR}/.git" ]; then
+    echo "[common-init] Repo exists – updating (branch $GIT_BRANCH)";
+    git -C "$TARGET_DIR" fetch --quiet origin "$GIT_BRANCH" || true
+    git -C "$TARGET_DIR" reset --hard "origin/$GIT_BRANCH" || true
+    return
+  fi
+  echo "[common-init] Cloning repository (branch: $GIT_BRANCH)..."
+  URL_TO_USE="${REPO_URL_AUTH:-$REPO_URL}"
+  git clone --branch "$GIT_BRANCH" --depth 1 "$URL_TO_USE" "$TARGET_DIR" 2>&1 | sed 's/'"${PAT:-__NO_PAT__}"'/***MASKED***/g'
+}
+
+with_lock do_clone_or_update

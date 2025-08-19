@@ -11,9 +11,12 @@ services:
       PYTHONPATH: /app/src/backend
       REPO_URL: https://github.com/SkyDominator/simulation.git
       GIT_BRANCH: main
+  GITHUB_PAT_FILE: /run/secrets/github_pat
     working_dir: /app/src/backend
     volumes:
       - workspace:/app
+    secrets:
+      - github_pat
     ports:
       - "8000:8000"
     networks:
@@ -32,9 +35,12 @@ services:
       VITE_HOST: 0.0.0.0
       REPO_URL: https://github.com/SkyDominator/simulation.git
       GIT_BRANCH: main
+  GITHUB_PAT_FILE: /run/secrets/github_pat
     working_dir: /app/src/my-pwa-frontend
     volumes:
       - workspace:/app
+    secrets:
+      - github_pat
     depends_on:
       backend:
         condition: service_healthy
@@ -45,6 +51,10 @@ services:
 
 volumes:
   workspace:
+
+secrets:
+  github_pat:
+    file: .secrets/github_pat.txt
 
 networks:
   appnet:
