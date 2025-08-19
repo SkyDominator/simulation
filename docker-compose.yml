@@ -17,6 +17,11 @@ services:
     command: tail -f /dev/null  # debugger (VS Code) will launch uvicorn
     networks:
       - appnet
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   frontend:
     build:
@@ -30,7 +35,8 @@ services:
     environment:
       VITE_HOST: 0.0.0.0
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     working_dir: /app/src/my-pwa-frontend
     # command: tail -f /dev/null  # task / debugger starts dev server
     command: npm run dev -- --host 0.0.0.0 --port 5173
