@@ -5,6 +5,8 @@ services:
     build:
       context: ./src/backend
       dockerfile: Dockerfile
+    env_file:
+      - ./.env
     environment:
       PYTHONPATH: /app/src/backend
       REPO_URL: https://github.com/SkyDominator/simulation.git
