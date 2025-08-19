@@ -70,7 +70,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
     investor_count: '아바타 개수',
     cumulative_net_profit: '총 이익',
     amount: '회차 매출액',
-    net_profit_after_tax: '이익(세후)',
+    net_profit_after_tax: '회차 이익(세후)',
     total_payment: '총 매출액',
     total_revenue_after_tax: '수당(세후)',
     total_revenue_before_tax: '수당(세전)',
