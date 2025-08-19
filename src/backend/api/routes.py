@@ -12,6 +12,7 @@ from models.schemas import (
     SimulationRunRequest, SimulationResponse,
     SimulationUpdateRequest, SimulationUpdateResponse,
     SimulationDeleteRequest, SimulationDeleteResponse,
+    SimulationMemoUpdateRequest, SimulationMemoUpdateResponse,
 )
 from supabase import create_client
 from config.settings import settings
@@ -59,6 +60,10 @@ async def run_simulation(request: SimulationRunRequest, user_id: str = Depends(a
 @router.patch("/api/simulations/{simulation_id}", response_model=SimulationUpdateResponse)
 async def update_simulation(simulation_id: str, request: SimulationUpdateRequest, user_id: str = Depends(authenticate_jwt_token)):
     return _sim_service.update(simulation_id, request, user_id)
+
+@router.patch("/api/simulations/{simulation_id}/memo", response_model=SimulationMemoUpdateResponse)
+async def update_simulation_memo(simulation_id: str, request: SimulationMemoUpdateRequest, user_id: str = Depends(authenticate_jwt_token)):
+    return _sim_service.update_memo(simulation_id, request, user_id)
 
 @router.delete("/api/simulations/{simulation_id}", response_model=SimulationDeleteResponse)
 async def delete_simulation(simulation_id: str, user_id: str = Depends(authenticate_jwt_token)):

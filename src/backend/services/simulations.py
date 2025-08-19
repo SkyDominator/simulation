@@ -10,6 +10,7 @@ from models.schemas import (
     SimulationRunRequest, SimulationResponse,
     SimulationUpdateRequest, SimulationUpdateResponse,
     SimulationDeleteRequest, SimulationDeleteResponse,
+    SimulationMemoUpdateRequest, SimulationMemoUpdateResponse,
     SimulationRow, scheduled_payment_from_investments
 )
 from constants import PLAN_PARAMETERS
@@ -39,6 +40,7 @@ class SimulationService:
             "investments": [
                 {"round": int(r), "amount": amt} for r, amt in req.scheduled_payment.items()
             ],
+            "memo": (req.memo or '').strip() if req.memo is not None else None,
         }
         db_response = self.client.table("simulations").insert(plan_data).execute()
         if not db_response or not db_response.data:
@@ -50,6 +52,7 @@ class SimulationService:
             plan_id=req.plan_id,
             message="Simulation request saved successfully",
             success=True,
+            memo=created.get('memo'),
         )
 
     def run(self, req: SimulationRunRequest, user_id: str) -> SimulationResponse:
@@ -67,6 +70,7 @@ class SimulationService:
                 company_round=row.company_round,
                 simulation_rounds=row.simulation_rounds,
                 scheduled_payment=sched_map,
+                memo=row.memo,
                 history=res_dict.get("history", []),
                 message="Retrieved existing simulation results",
                 success=True,
@@ -83,6 +87,7 @@ class SimulationService:
             company_round=row.company_round,
             simulation_rounds=row.simulation_rounds,
             scheduled_payment=sched_map,
+            memo=row.memo,
             history=results.get("history", []),
             message="Simulation completed and results saved",
             success=True,
@@ -103,6 +108,7 @@ class SimulationService:
             "simulation_rounds": req.simulation_rounds,
             "investments": investments,
             "simulation_results": None,
+            **({"memo": (req.memo or '').strip()} if req.memo is not None else {}),
         }
         upd = self.client.table("simulations").update(payload).eq("id", simulation_id).eq("user_id", user_id).execute()
         if not upd.data:
@@ -112,6 +118,7 @@ class SimulationService:
             plan_id=req.plan_id,
             message="Simulation updated successfully (previous results invalidated)",
             success=True,
+            memo=req.memo,
         )
 
     def delete(self, simulation_id: str, user_id: str) -> SimulationDeleteResponse:
@@ -126,7 +133,22 @@ class SimulationService:
         )
 
     def list_for_user(self, user_id: str):  # return raw supabase rows for now
-        resp = self.client.table('simulations').select("id, company_round, investments, simulation_rounds, created_at, updated_at, plan_id").eq('user_id', user_id).execute()
+        resp = self.client.table('simulations').select("id, company_round, investments, simulation_rounds, created_at, updated_at, plan_id, memo").eq('user_id', user_id).execute()
         if not resp.data:
             raise HTTPException(status_code=404, detail="No simulations found for this user")
         return resp.data
+
+    def update_memo(self, simulation_id: str, req: SimulationMemoUpdateRequest, user_id: str) -> SimulationMemoUpdateResponse:
+        # Ensure the simulation exists and belongs to user
+        existing = self.client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail=f"Simulation with ID {simulation_id} not found")
+        upd = self.client.table("simulations").update({"memo": (req.memo or '').strip() if req.memo is not None else None}).eq("id", simulation_id).eq("user_id", user_id).execute()
+        if not upd.data:
+            raise HTTPException(status_code=500, detail="Failed to update memo")
+        return SimulationMemoUpdateResponse(
+            simulation_id=simulation_id,
+            memo=upd.data[0].get('memo'),
+            message="Memo updated successfully",
+            success=True,
+        )

@@ -39,20 +39,12 @@ python src/python/init.py
 
 ### Core Features
 
-- Modular and maintainable code structure
-- Proper error handling with logging
-- Type hints throughout the codebase
-- Comprehensive documentation
-- Extensible design for adding new plans or modifying simulation behavior
 
 ### Multi-Plan Simulation Features ✨
 
-- **Simultaneous simulation** of multiple investment plans
-- **Comparative analysis** showing best-performing plans
-- **Comprehensive reporting** with individual and aggregate results
-- **Advanced visualization** comparing all plans (requires matplotlib)
-- **Multi-sheet Excel export** with detailed breakdowns
-- **Performance metrics** including fastest to profitability, highest returns, etc.
+
+### Memo Feature
+User-defined memo support added (2025-08-19). Ensure the `simulations` table has a `memo TEXT` column. A migration script is provided in `src/backend/migrations/20250819_add_memo_column.sql`.
 
 ## Simulation Output
 

@@ -6,6 +6,7 @@ export interface Plan {
   created_at?: string;
   updated_at?: string;
   plan_id: string;
+  memo?: string | null;
 }
 
 export interface Investment {
@@ -31,6 +32,7 @@ export interface SimulationRunResponse {
   simulation_rounds: number; // added to mirror backend SimulationResponse
   scheduled_payment: Record<string, number>; // added to mirror backend SimulationResponse
   history: Array<Record<string, unknown>>;
+  memo?: string | null;
   message: string;
   success: boolean;
 }
@@ -46,6 +48,14 @@ export interface WhitelistCheckResponse {
 export interface SimulationCreateResponse {
   simulation_id: string;
   plan_id: string;
+  message: string;
+  success: boolean;
+  memo?: string | null;
+}
+
+export interface SimulationMemoUpdateResponse {
+  simulation_id: string;
+  memo?: string | null;
   message: string;
   success: boolean;
 }

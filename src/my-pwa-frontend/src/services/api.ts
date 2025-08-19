@@ -1,4 +1,4 @@
-import { type Plan, type WhitelistCheckResponse, type SimulationCreateResponse, type SimulationRunResponse } from '../types/types';
+import { type Plan, type WhitelistCheckResponse, type SimulationCreateResponse, type SimulationRunResponse, type SimulationMemoUpdateResponse } from '../types/types';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api'; // 로컬 FastAPI 서버 주소
 
@@ -137,7 +137,8 @@ export const api = {
     plan_id: string,
     company_round: number = 1,
     simulation_rounds: number,
-    scheduled_payment: Record<string, number>
+    scheduled_payment: Record<string, number>,
+    memo?: string | null
   ): Promise<SimulationCreateResponse> => {
     const response = await fetch(`${API_BASE_URL}/simulation/create`, {
       method: 'POST',
@@ -150,6 +151,7 @@ export const api = {
         company_round,
         simulation_rounds,
         scheduled_payment,
+        memo,
       }),
     });
     if (!response.ok) {
@@ -175,8 +177,9 @@ export const api = {
     plan_id: string,
     company_round: number,
     simulation_rounds: number,
-    scheduled_payment: Record<string, number>
-  ): Promise<{ simulation_id: string; plan_id: string; message: string; success: boolean }> => {
+    scheduled_payment: Record<string, number>,
+    memo?: string | null
+  ): Promise<{ simulation_id: string; plan_id: string; message: string; success: boolean; memo?: string | null }> => {
     const response = await fetch(`${API_BASE_URL}/simulations/${simulation_id}`, {
       method: 'PATCH',
       headers: {
@@ -188,6 +191,7 @@ export const api = {
         simulation_rounds,
         company_round,
         scheduled_payment,
+        memo,
       }),
     });
 
@@ -203,6 +207,34 @@ export const api = {
     const data = await response.json();
     if (!data?.success) {
       throw new Error(data?.message || '시뮬레이션 업데이트에 실패했습니다.');
+    }
+    return data;
+  },
+
+  updateSimulationMemo: async (
+    token: string,
+    simulation_id: string,
+    memo: string | null
+  ): Promise<SimulationMemoUpdateResponse> => {
+    const response = await fetch(`${API_BASE_URL}/simulations/${simulation_id}/memo`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ memo }),
+    });
+    if (!response.ok) {
+      try {
+        const err = await response.json();
+        throw new Error(err?.detail || `API error: ${response.status}`);
+      } catch {
+        throw new Error(`API error: ${response.status}`);
+      }
+    }
+    const data: SimulationMemoUpdateResponse = await response.json();
+    if (!data.success) {
+      throw new Error(data.message || '메모 업데이트 실패');
     }
     return data;
   }
