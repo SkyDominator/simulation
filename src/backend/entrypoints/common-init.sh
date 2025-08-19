@@ -26,9 +26,10 @@ do_clone_or_update() {
     return
   fi
   # If directory non-empty but not a git repo, clear it (backend authoritative)
-  if [ -n "$(ls -A "$TARGET_DIR" 2>/dev/null)" ]; then
-    echo "[common-init] Non-git content found in $TARGET_DIR; removing before clone.";
-    find "$TARGET_DIR" -mindepth 1 -maxdepth 1 ! -name ".clone.lock" ! -name ".clone.lock.d" -exec rm -rf {} +
+if [ -n "$(ls -A "$TARGET_DIR" 2>/dev/null)" ]; then
+    echo "[common-init] Removing all contents of $TARGET_DIR before clone."
+    # Remove everything inside TARGET_DIR (including hidden files/directories)
+    find "$TARGET_DIR" -mindepth 1 -exec rm -rf -- {} +
   fi
   echo "[common-init] Cloning repository (branch: $GIT_BRANCH)..."
   URL_TO_USE="${REPO_URL_AUTH:-$REPO_URL}"
