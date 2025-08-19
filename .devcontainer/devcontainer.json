@@ -1,5 +1,5 @@
 {
-  "name": "My Full-Stack App",
+  "name": "My Full-Stack App (Container-Only)",
   "dockerComposeFile": ["../docker-compose.yml"],
   "service": "backend",
   "workspaceFolder": "/app",
@@ -7,7 +7,7 @@
   "shutdownAction": "stopCompose",
   "forwardPorts": [8000, 5173],
   "remoteUser": "root",
-  // Keep containers idle; tasks / debug will start processes.
+  // Workspace volume defined in docker-compose; no host bind mounts.
 
   // postCreateCommand intentionally omitted (as requested)
   "customizations": {

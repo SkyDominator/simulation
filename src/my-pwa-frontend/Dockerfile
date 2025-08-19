@@ -2,15 +2,15 @@ FROM node:20-bullseye-slim
 
 WORKDIR /app/src/my-pwa-frontend
 
-# Install dependencies first (cached) – only package.json and lock files
-COPY package*.json ./
-RUN npm ci --silent
+# Install git for runtime clone / pulls
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git bash ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/*
 
-# Copy the rest (bind mount overwrites during development)
-COPY . .
-
+# Vite host config
 ENV VITE_HOST=0.0.0.0
+
 EXPOSE 5173
 
-# Idle by default; compose will start the dev server explicitly when desired
-CMD ["tail", "-f", "/dev/null"]
+# Idle by default; compose will invoke explicit dev server script
+CMD ["/bin/bash", "/entrypoints/frontend-entrypoint.sh"]

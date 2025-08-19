@@ -5,16 +5,17 @@ services:
     build:
       context: ./src/backend
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./:/app:cached
-    env_file:
-      - .env
     environment:
       PYTHONPATH: /app/src/backend
+      REPO_URL: https://github.com/your-org/your-repo.git
+      GIT_BRANCH: main
     working_dir: /app/src/backend
-    command: tail -f /dev/null  # debugger (VS Code) will launch uvicorn
+    command: ["/bin/bash", "/entrypoints/backend-entrypoint.sh"]
+    volumes:
+      - workspace:/app
+      - ./entrypoints:/entrypoints:ro
+    ports:
+      - "8000:8000"
     networks:
       - appnet
     healthcheck:
@@ -27,24 +28,25 @@ services:
     build:
       context: ./src/my-pwa-frontend
       dockerfile: Dockerfile
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./:/app:cached
-      - frontend_node_modules:/app/src/my-pwa-frontend/node_modules
     environment:
       VITE_HOST: 0.0.0.0
+      REPO_URL: https://github.com/your-org/your-repo.git
+      GIT_BRANCH: main
+    working_dir: /app/src/my-pwa-frontend
+    command: ["/bin/bash", "/entrypoints/frontend-entrypoint.sh"]
+    volumes:
+      - workspace:/app
+      - ./entrypoints:/entrypoints:ro
     depends_on:
       backend:
         condition: service_healthy
-    working_dir: /app/src/my-pwa-frontend
-    # command: tail -f /dev/null  # task / debugger starts dev server
-    command: npm run dev -- --host 0.0.0.0 --port 5173
+    ports:
+      - "5173:5173"
     networks:
       - appnet
 
 volumes:
-  frontend_node_modules:
+  workspace:
 
 networks:
   appnet:
