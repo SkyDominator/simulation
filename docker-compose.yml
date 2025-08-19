@@ -11,7 +11,7 @@ services:
       PYTHONPATH: /app/src/backend
       REPO_URL: https://github.com/SkyDominator/simulation.git
       GIT_BRANCH: main
-  GITHUB_PAT_FILE: /run/secrets/github_pat
+      GITHUB_PAT_FILE: /run/secrets/github_pat
     working_dir: /app/src/backend
     volumes:
       - workspace:/app
@@ -22,10 +22,12 @@ services:
     networks:
       - appnet
     healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000 || exit 1"]
-      interval: 10s
+      # Requires curl in the image; install it or switch to python -c variant.
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
       timeout: 5s
-      retries: 5
+      retries: 3
+      start_period: 10s
 
   frontend:
     build:
@@ -35,7 +37,7 @@ services:
       VITE_HOST: 0.0.0.0
       REPO_URL: https://github.com/SkyDominator/simulation.git
       GIT_BRANCH: main
-  GITHUB_PAT_FILE: /run/secrets/github_pat
+      GITHUB_PAT_FILE: /run/secrets/github_pat
     working_dir: /app/src/my-pwa-frontend
     volumes:
       - workspace:/app
@@ -54,7 +56,7 @@ volumes:
 
 secrets:
   github_pat:
-    file: .secrets/github_pat.txt
+    file: ./secrets/github_pat   # Put your PAT file here (add to .gitignore)
 
 networks:
   appnet:
