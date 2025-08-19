@@ -27,6 +27,80 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
   const [memoModalOpen, setMemoModalOpen] = useState(false);
   const [memoTarget, setMemoTarget] = useState<Plan | null>(null);
   // draft stored inside MemoModal, keep minimal state here
+  type SortKey = 'plan_id' | 'company_round' | 'simulation_rounds' | 'created_at';
+  interface SortSpec { key: SortKey; dir: 'asc' | 'desc'; }
+  const [sortOrders, setSortOrders] = useState<SortSpec[]>([{ key: 'created_at', dir: 'desc' }]);
+
+  const toggleDir = (dir: 'asc' | 'desc'): 'asc' | 'desc' => (dir === 'asc' ? 'desc' : 'asc');
+
+  const handleHeaderClick = (key: SortKey, e: React.MouseEvent<HTMLTableHeaderCellElement>) => {
+    const isMulti = e.shiftKey; // shift-click adds to multi sort
+    setSortOrders((prev: SortSpec[]) => {
+      // find existing
+      const existingIndex = prev.findIndex((s: SortSpec) => s.key === key);
+      if (!isMulti) {
+        // single column mode
+        if (existingIndex === 0 && prev.length === 1) {
+          // toggle primary
+            const cur = prev[0];
+            return [{ key, dir: toggleDir(cur.dir) }];
+        }
+        // set as new primary ascending
+        return [{ key, dir: 'asc' }];
+      } else {
+        // multi-column mode
+        if (existingIndex === -1) {
+          // append new with asc
+          return [...prev, { key, dir: 'asc' }];
+        }
+        // toggle direction in place
+        const next: SortSpec[] = [...prev];
+        next[existingIndex] = { ...next[existingIndex], dir: toggleDir(next[existingIndex].dir) };
+        return next;
+      }
+    });
+  };
+
+  const sortedPlans = React.useMemo(() => {
+    const copy = [...plans];
+    copy.sort((a, b) => {
+      for (const spec of sortOrders) {
+        let av: number | string = '';
+        let bv: number | string = '';
+        switch (spec.key) {
+          case 'plan_id':
+            av = a.plan_id || '';
+            bv = b.plan_id || '';
+            break;
+          case 'company_round':
+            av = a.company_round;
+            bv = b.company_round;
+            break;
+          case 'simulation_rounds':
+            av = a.simulation_rounds;
+            bv = b.simulation_rounds;
+            break;
+          case 'created_at':
+          default:
+            av = a.created_at ? new Date(a.created_at).getTime() : 0;
+            bv = b.created_at ? new Date(b.created_at).getTime() : 0;
+            break;
+        }
+        if (av < bv) return spec.dir === 'asc' ? -1 : 1;
+        if (av > bv) return spec.dir === 'asc' ? 1 : -1;
+        // equal -> move to next spec
+      }
+      return 0;
+    });
+    return copy;
+  }, [plans, sortOrders]);
+
+  const sortIndicator = (key: SortKey) => {
+  const idx = sortOrders.findIndex((s: SortSpec) => s.key === key);
+    if (idx === -1) return null;
+    const arrow = sortOrders[idx].dir === 'asc' ? '▲' : '▼';
+    return <span className="ml-1 text-[10px] font-semibold text-gray-600">{idx + 1}{arrow}</span>;
+  };
   
   // 시뮬레이션 데이터 로드
   useEffect(() => {
@@ -161,28 +235,54 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    플랜 타입
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none"
+                    onClick={(e) => handleHeaderClick('plan_id', e)}
+                    title="Click to sort. Shift+Click to add as secondary sort"
+                  >
+                    플랜 타입 {sortIndicator('plan_id')}
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    회사 회차
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none"
+                    onClick={(e) => handleHeaderClick('company_round', e)}
+                    title="Click to sort. Shift+Click to add as secondary sort"
+                  >
+                    회사 회차 {sortIndicator('company_round')}
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    총 회차
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none"
+                    onClick={(e) => handleHeaderClick('simulation_rounds', e)}
+                    title="Click to sort. Shift+Click to add as secondary sort"
+                  >
+                    총 회차 {sortIndicator('simulation_rounds')}
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    생성일
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none"
+                    onClick={(e) => handleHeaderClick('created_at', e)}
+                    title="Click to sort. Shift+Click to add as secondary sort"
+                  >
+                    생성일 {sortIndicator('created_at')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     메모
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    액션
+                    
                   </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    
+                    </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {plans.map((plan: Plan) => (
+                  {sortedPlans.map((plan: Plan) => (
                   <tr key={plan.simulation_id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {plan.plan_id} 플랜
