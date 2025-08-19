@@ -52,7 +52,7 @@ volumes:
 
 secrets:
   github_pat:
-    file: ./secrets/github_pat.txt   # Put your PAT file here (add to .gitignore)
+    file: ./.secrets/github_pat.txt   # Put your PAT file here (add to .gitignore)
 
 networks:
   appnet:

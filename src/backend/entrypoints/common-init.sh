@@ -37,7 +37,7 @@ do_clone_or_update() {
   
   echo "[common-init] Cloning repository (branch: $GIT_BRANCH)..."
   URL_TO_USE="${REPO_URL_AUTH:-$REPO_URL}"
-  
+
   # Clone to temp directory first, then move contents
   TEMP_DIR=$(mktemp -d)
   git clone --branch "$GIT_BRANCH" --depth 1 "$URL_TO_USE" "$TEMP_DIR" 2>&1 | sed 's/'"${PAT:-__NO_PAT__}"'/***MASKED***/g'
