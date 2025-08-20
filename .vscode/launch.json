@@ -14,30 +14,14 @@
         "--port",
         "8000"
       ],
-      "cwd": "/app/src/backend",
-      "python": "/opt/venv/bin/python",
+      "cwd": "${workspaceFolder}/src/backend",
+      "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {
-        "PYTHONPATH": "/app/src/backend"
+        "PYTHONPATH": "${workspaceFolder}/src/backend"
       },
       "console": "integratedTerminal",
       "subProcess": true,
       "justMyCode": true
-    },
-    {
-      "name": "Backend: FastAPI (attach)",
-      "type": "debugpy",
-      "request": "attach",
-      "connect": {
-        "host": "localhost",
-        "port": 5678
-      },
-      "justMyCode": true,
-      "pathMappings": [
-        {
-          "localRoot": "${workspaceFolder}/src/backend",
-          "remoteRoot": "/app/src/backend"
-        }
-      ]
     },
     {
       "name": "Frontend: Chrome (Vite + Breakpoints)",
@@ -47,9 +31,7 @@
       "webRoot": "${workspaceFolder}/src/my-pwa-frontend",
       "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
       "sourceMaps": true,
-      "sourceMapPathOverrides": {
-        "/app/src/my-pwa-frontend/*": "${webRoot}/*"
-      },
+      "trace": true,
       "runtimeArgs": [
         "--remote-debugging-port=9222",
         "--user-data-dir=${workspaceFolder}/.vscode/chrome-debug-profile",

@@ -1,0 +1,72 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend: FastAPI (launch)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "main:app",
+        "--reload",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000"
+      ],
+      "cwd": "/app/src/backend",
+      "python": "/opt/venv/bin/python",
+      "env": {
+        "PYTHONPATH": "/app/src/backend"
+      },
+      "console": "integratedTerminal",
+      "subProcess": true,
+      "justMyCode": true
+    },
+    {
+      "name": "Backend: FastAPI (attach)",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 5678
+      },
+      "justMyCode": true,
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/src/backend",
+          "remoteRoot": "/app/src/backend"
+        }
+      ]
+    },
+    {
+      "name": "Frontend: Chrome (Vite + Breakpoints)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src/my-pwa-frontend",
+      "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "/app/src/my-pwa-frontend/*": "${webRoot}/*"
+      },
+      "runtimeArgs": [
+        "--remote-debugging-port=9222",
+        "--user-data-dir=${workspaceFolder}/.vscode/chrome-debug-profile",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-extensions",
+      ],
+      "port": 9222
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack Debug",
+      "configurations": [
+        "Backend: FastAPI (launch)",
+        "Frontend: Chrome (Vite + Breakpoints)"
+      ]
+    }
+  ]
+}
