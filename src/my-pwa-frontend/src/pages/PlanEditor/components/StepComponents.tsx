@@ -225,6 +225,21 @@ const FormattedAmountInput: React.FC<{
     }
   };
 
+  const handleBlur = () => {
+    // Auto-correct below-min or empty to minValue (default amount) if provided
+    const rawDigits = display.replace(/,/g, '');
+    if (!rawDigits) {
+      if (minValue !== undefined) {
+        applyNumericValue(minValue);
+      }
+      return;
+    }
+    const numeric = parseInt(rawDigits, 10);
+    if (minValue !== undefined && (isNaN(numeric) || numeric < minValue || numeric <= 0)) {
+      applyNumericValue(minValue);
+    }
+  };
+
   return (
     <div className="flex items-center gap-1">
       <input
@@ -234,6 +249,7 @@ const FormattedAmountInput: React.FC<{
         value={display}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
         placeholder={placeholder}
         title={belowMin && minValue ? `최소 권장 투자액: ${minValue.toLocaleString()} 이상 입력하세요.` : ''}
         className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${belowMin ? 'border-red-500 focus:ring-red-400' : 'border-gray-300'}`}

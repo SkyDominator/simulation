@@ -17,11 +17,10 @@ import {
 } from './components';
 import { 
   ConfirmationModal, 
-  ValidationModal, 
-  InvestmentValidationModal 
+  ValidationModal
 } from './modals';
 import { getPlanLimits, generateInvestments } from './utils/investmentUtils';
-import { validateNumericValue, validateInvestmentAmounts, validateSalesAchievementRates } from './utils/validationUtils';
+import { validateNumericValue } from './utils/validationUtils';
 
 const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan }) => {
   const { session } = useAuth();
@@ -47,13 +46,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
   const [isValidationModalOpen, setValidationModalOpen] = useState(false);
   const [validationData, setValidationData] = useState<ValidationData | null>(null);
   
-  // Add state for investment validation modal
-  const [isInvestmentValidationModalOpen, setInvestmentValidationModalOpen] = useState(false);
-  const [invalidInvestments, setInvalidInvestments] = useState<Array<{
-    round: number;
-    oldAmount: number | string;
-    newAmount: number;
-  }>>([]);
+  // (Investment validation modal removed)
 
   // Track mount status to avoid state updates after unmount
   const isMountedRef = useRef(true);
@@ -105,42 +98,9 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
     setValidationModalOpen(false);
   };
 
-  const handleInvestmentValidationConfirm = () => {
-    setInvestmentValidationModalOpen(false);
-    // Show confirmation modal after acknowledging investment changes
-    setConfirmModalOpen(true);
-  };
-
   const handleSaveClick = () => {
-    // Validate investments before showing confirm modal
-    const validation = validateInvestmentAmounts(plan.investments || [], plan.plan_id);
-    
-  if (validation.hasInvalidInvestments) {
-      // Show validation modal with list of changes
-      setInvalidInvestments(validation.correctedInvestments);
-      setInvestmentValidationModalOpen(true);
-      
-      // Update investments with corrected values if available
-      if (validation.updatedInvestments) {
-        setPlan(prevPlan => ({
-          ...prevPlan,
-          investments: validation.updatedInvestments || prevPlan.investments || []
-        }));
-      }
-    } else {
-      // Validate sales achievement rates separately (rounds 1..simulation_rounds)
-      const rounds = (plan.investments || []).map(inv => inv.round);
-      const { corrected, correctedRounds } = validateSalesAchievementRates(
-        plan.sales_achievement_rates || {},
-        rounds
-      );
-      // Apply corrections silently
-      if (correctedRounds.length > 0) {
-        setPlan(prev => ({ ...prev, sales_achievement_rates: corrected }));
-      }
-      // Proceed to confirmation modal
-      setConfirmModalOpen(true);
-    }
+  // Inputs now auto-correct on blur; just open confirmation
+  setConfirmModalOpen(true);
   };
 
   const handleNext = () => {
@@ -162,7 +122,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
   const handleBack = () => {
     // Close all modals when going back
     setConfirmModalOpen(false);
-    setInvestmentValidationModalOpen(false);
+  // removed investment validation modal state
     setValidationModalOpen(false);
     
     // Go back one step
@@ -268,9 +228,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
 
   // No useEffect needed; investments are initialized above and refreshed on step transitions
 
-  const handleInvestmentValidationClose = () => {
-    setInvestmentValidationModalOpen(false);
-  };
+  // (Investment validation modal removed)
 
   return (
     <div className="p-4 md:p-8">
@@ -289,7 +247,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
         onClick={() => {
           // Close all modals when returning to main
           setConfirmModalOpen(false);
-          setInvestmentValidationModalOpen(false);
+          // investment validation modal already removed
           setValidationModalOpen(false);
           setPage('main');
         }} 
@@ -314,12 +272,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
         validationData={validationData}
       />
       
-      <InvestmentValidationModal
-        isOpen={isInvestmentValidationModalOpen}
-        onClose={handleInvestmentValidationClose}
-        onConfirm={handleInvestmentValidationConfirm}
-        invalidInvestments={invalidInvestments}
-      />
+  {/* InvestmentValidationModal removed (auto-correction in inputs) */}
     </div>
   );
 };
