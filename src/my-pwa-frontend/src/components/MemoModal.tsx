@@ -33,16 +33,13 @@ export const MemoModal: React.FC<MemoModalProps> = ({ isOpen, initialMemo, onClo
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="메모">
-      <div className="space-y-4">
-        <textarea
-          className="w-full h-40 p-3 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          readOnly={!editing}
-          placeholder="메모를 입력하세요..."
-        />
-        <div className="flex justify-end gap-2">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="메모"
+      size="md"
+      footer={(
+        <>
           {!editing && (
             <Button onClick={() => setEditing(true)} className="bg-blue-600 hover:bg-blue-700">편집</Button>
           )}
@@ -52,7 +49,20 @@ export const MemoModal: React.FC<MemoModalProps> = ({ isOpen, initialMemo, onClo
             </Button>
           )}
           <Button onClick={onClose} className="bg-gray-500 hover:bg-gray-600">닫기</Button>
-        </div>
+        </>
+      )}
+    >
+      <div className="space-y-3">
+        <textarea
+          className="w-full h-44 p-3 border border-gray-200 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white shadow-inner"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          readOnly={!editing}
+          placeholder="메모를 입력하세요..."
+        />
+        {!editing && value && (
+          <p className="text-xs text-gray-500">편집하려면 '편집' 버튼을 누르세요.</p>
+        )}
       </div>
     </Modal>
   );

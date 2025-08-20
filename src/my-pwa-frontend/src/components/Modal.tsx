@@ -8,8 +8,12 @@ interface ModalProps {
   title: string;
   maxWidthClass?: string; // explicit override
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'auto'; // standardized sizing
-  draggable?: boolean;
+  draggable?: boolean; // now off by default; rarely needed
   fullScreenOnMobile?: boolean; // full screen on < sm breakpoint
+  hideCloseButton?: boolean;
+  noBackdropClose?: boolean; // disable closing by clicking backdrop
+  footer?: React.ReactNode; // unified footer slot
+  variant?: 'default' | 'danger' | 'info'; // header accent line
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -21,6 +25,10 @@ export const Modal: React.FC<ModalProps> = ({
   size = 'md',
   draggable = false,
   fullScreenOnMobile = true,
+  hideCloseButton = false,
+  noBackdropClose = false,
+  footer,
+  variant = 'default'
 }) => {
   const [mounted, setMounted] = React.useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -151,6 +159,7 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen || !mounted) return null;
 
   const handleBackdropClick = (e: React.MouseEvent) => {
+    if (noBackdropClose) return;
     if (e.target === e.currentTarget) onClose();
   };
 
@@ -163,7 +172,7 @@ export const Modal: React.FC<ModalProps> = ({
   };
   const resolvedMaxWidth = maxWidthClass || sizeMap[size] || sizeMap.md;
   const mobileFS = fullScreenOnMobile
-    ? `h-full max-h-full w-full rounded-none sm:rounded-lg sm:max-h-[90vh] sm:border sm:shadow-xl sm:mx-auto`
+    ? `h-full max-h-full w-full rounded-none sm:rounded-xl sm:max-h-[90vh] sm:mx-auto`
     : `w-full sm:w-auto ${resolvedMaxWidth}`;
   const widthClasses = `${mobileFS}`;
   const dialogStyle: React.CSSProperties | undefined = effectiveDraggable && position ? {
@@ -172,21 +181,30 @@ export const Modal: React.FC<ModalProps> = ({
     position: 'fixed'
   } : undefined;
 
+  const variantBar: Record<string, string> = {
+    default: 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500',
+    danger: 'bg-gradient-to-r from-red-500 to-rose-500',
+    info: 'bg-gradient-to-r from-sky-500 to-cyan-500'
+  };
+
   const content = (
     <div
-      className={`fixed inset-0 z-[2000] bg-black/50 backdrop-blur-sm p-4 ${effectiveDraggable ? '' : 'flex items-center justify-center'}`}
+      className={`fixed inset-0 z-[2000] flex items-center justify-center px-3 py-6 sm:p-6`}
       onMouseDown={handleBackdropClick}
-      role="dialog"
       aria-modal="true"
+      role="dialog"
       aria-labelledby="modal-title"
     >
+      {/* Backdrop layer */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+      {/* Dialog */}
       <div
         ref={dialogRef}
         style={dialogStyle}
-  className={`relative ${effectiveDraggable ? 'cursor-default' : ''} ${widthClasses} bg-white flex flex-col animate-fade-in max-h-[90vh] border border-gray-200 shadow-xl`}
+        className={`relative ${effectiveDraggable ? 'cursor-default' : ''} ${widthClasses} bg-white flex flex-col shadow-2xl ring-1 ring-black/10 overflow-hidden animate-[fadeScale_.18s_ease]`}
       >
         <div
-          className={`flex items-start justify-between px-6 pt-5 pb-4 border-b sticky top-0 bg-white ${effectiveDraggable ? 'cursor-move select-none' : ''}`}
+          className={`flex items-center justify-between gap-4 px-5 py-4 border-b border-gray-100 ${effectiveDraggable ? 'cursor-move select-none' : ''}`}
           onMouseDown={e => effectiveDraggable && startDrag(e.clientX, e.clientY)}
           onTouchStart={e => {
             if (!effectiveDraggable) return;
@@ -194,16 +212,29 @@ export const Modal: React.FC<ModalProps> = ({
             startDrag(t.clientX, t.clientY);
           }}
         >
-          <h3 id="modal-title" className="text-lg md:text-xl font-semibold leading-snug pr-6">{title}</h3>
-          <button
-            onClick={onClose}
-            aria-label="닫기"
-            className="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-          >✕</button>
+          <div className="flex items-center gap-3 min-w-0">
+            <span className={`h-5 w-1.5 rounded-full ${variantBar[variant]}`} />
+            <h2 id="modal-title" className="text-base sm:text-lg font-semibold tracking-tight truncate">{title}</h2>
+          </div>
+          {!hideCloseButton && (
+            <button
+              onClick={onClose}
+              aria-label="닫기"
+              className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition"
+            >
+              <span className="sr-only">Close</span>
+              ✕
+            </button>
+          )}
         </div>
-        <div className="px-6 pb-6 pt-2 overflow-y-auto custom-scrollbar flex-1">
+        <div className="px-5 pt-4 pb-6 overflow-y-auto custom-scrollbar flex-1 text-sm leading-relaxed">
           {children}
         </div>
+        {footer && (
+          <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex flex-wrap gap-2 justify-end">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -211,5 +242,7 @@ export const Modal: React.FC<ModalProps> = ({
   return createPortal(content, document.body);
 };
 
-// Tailwind utility notes (ensure added globally if using these class names):
-// .animate-fade-in { animation: fadeInModal .18s ease forwards; }
+// Tailwind utility notes:
+// Add this keyframe in your global CSS if not present:
+// @keyframes fadeScale { from { opacity:0; transform:scale(.96); } to { opacity:1; transform:scale(1);} }
+// .animate-[fadeScale_.18s_ease] leverages arbitrary values (Tailwind >=3)
