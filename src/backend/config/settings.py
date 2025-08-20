@@ -13,6 +13,8 @@ class Settings:
     supabase_anon_key: str = os.getenv("SUPABASE_KEY", "")
     supabase_service_key: str = os.getenv("SUPABASE_SERVICE_KEY", "")  # prefer service key over hard-coded secret
     cors_origins: List[str] = None  # type: ignore
+    admin_emails_raw: str = os.getenv("ADMIN_EMAILS", "")  # comma separated list
+    admin_emails: List[str] = None  # type: ignore
 
     def __post_init__(self):  # type: ignore[override]
         # object is frozen; use object.__setattr__
@@ -21,5 +23,8 @@ class Settings:
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
             ])
+        if self.admin_emails is None:
+            parsed = [e.strip().lower() for e in self.admin_emails_raw.split(',') if e.strip()]
+            object.__setattr__(self, 'admin_emails', parsed)
 
 settings = Settings()

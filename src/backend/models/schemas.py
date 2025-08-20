@@ -84,6 +84,33 @@ class NoticeDetailResponse(BaseModel):
     notice: Notice
     success: bool = True
 
+class NoticeCreateRequest(BaseModel):
+    title: str
+    content: str
+    pinned: bool = False
+    published: bool = True
+
+class NoticeCreateResponse(BaseModel):
+    id: str
+    message: str
+    success: bool
+
+class NoticeUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    pinned: Optional[bool] = None
+    published: Optional[bool] = None
+
+class NoticeUpdateResponse(BaseModel):
+    id: str
+    message: str
+    success: bool
+
+class NoticeDeleteResponse(BaseModel):
+    id: str
+    message: str
+    success: bool
+
 class InvestmentItem(BaseModel):
     round: int
     amount: int

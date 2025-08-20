@@ -13,7 +13,10 @@ from models.schemas import (
     SimulationUpdateRequest, SimulationUpdateResponse,
     SimulationDeleteRequest, SimulationDeleteResponse,
     SimulationMemoUpdateRequest, SimulationMemoUpdateResponse,
-    NoticeListResponse, NoticeDetailResponse
+    NoticeListResponse, NoticeDetailResponse,
+    NoticeCreateRequest, NoticeCreateResponse,
+    NoticeUpdateRequest, NoticeUpdateResponse,
+    NoticeDeleteResponse
 )
 from supabase import create_client
 from config.settings import settings
@@ -52,6 +55,73 @@ async def get_notice(notice_id: str):
     if not resp.data:
         raise HTTPException(status_code=404, detail="Notice not found")
     return {"notice": resp.data[0], "success": True}
+
+
+# ----------------------- Admin (protected) Notice CRUD -----------------------
+def _assert_admin(user_id: str, user_email: str | None, client) -> None:
+    # Simple check: email in configured admin list OR entry in 'admins' table mapping user_id
+    if user_email and user_email.lower() in settings.admin_emails:
+        return
+    # fallback: check admins table (optional)
+    try:
+        resp = client.table('admins').select('user_id').eq('user_id', user_id).limit(1).execute()
+        if resp.data:
+            return
+    except Exception:
+        pass
+    raise HTTPException(status_code=403, detail="Admin privileges required")
+
+def _fetch_user_email_from_profile(client, user_id: str) -> str | None:
+    try:
+        resp = client.table('profiles').select('email').eq('id', user_id).limit(1).execute()
+        if resp.data:
+            return resp.data[0].get('email')
+    except Exception:
+        return None
+    return None
+
+@router.post('/api/admin/notices', response_model=NoticeCreateResponse)
+async def create_notice(req: NoticeCreateRequest, user_id: str = Depends(authenticate_jwt_token)):
+    client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
+    user_email = _fetch_user_email_from_profile(client, user_id)
+    _assert_admin(user_id, user_email, client)
+    payload = {
+        'title': req.title.strip(),
+        'content': req.content.strip(),
+        'pinned': req.pinned,
+        'published': req.published,
+    }
+    ins = client.table('notices').insert(payload).execute()
+    if not ins.data:
+        raise HTTPException(status_code=500, detail='Failed to create notice')
+    return NoticeCreateResponse(id=ins.data[0]['id'], message='Notice created', success=True)
+
+@router.patch('/api/admin/notices/{notice_id}', response_model=NoticeUpdateResponse)
+async def update_notice(notice_id: str, req: NoticeUpdateRequest, user_id: str = Depends(authenticate_jwt_token)):
+    client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
+    user_email = _fetch_user_email_from_profile(client, user_id)
+    _assert_admin(user_id, user_email, client)
+    update_fields = {k: v for k, v in req.model_dump().items() if v is not None}
+    if 'title' in update_fields:
+        update_fields['title'] = update_fields['title'].strip()
+    if 'content' in update_fields:
+        update_fields['content'] = update_fields['content'].strip()
+    if not update_fields:
+        raise HTTPException(status_code=400, detail='No fields to update')
+    upd = client.table('notices').update(update_fields).eq('id', notice_id).execute()
+    if not upd.data:
+        raise HTTPException(status_code=404, detail='Notice not found')
+    return NoticeUpdateResponse(id=notice_id, message='Notice updated', success=True)
+
+@router.delete('/api/admin/notices/{notice_id}', response_model=NoticeDeleteResponse)
+async def delete_notice(notice_id: str, user_id: str = Depends(authenticate_jwt_token)):
+    client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
+    user_email = _fetch_user_email_from_profile(client, user_id)
+    _assert_admin(user_id, user_email, client)
+    del_resp = client.table('notices').delete().eq('id', notice_id).execute()
+    if not del_resp.data:
+        raise HTTPException(status_code=404, detail='Notice not found')
+    return NoticeDeleteResponse(id=notice_id, message='Notice deleted', success=True)
 
 @router.get("/api/simulations")
 async def get_simulations(user_id: str = Depends(authenticate_jwt_token)):
