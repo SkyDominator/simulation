@@ -1,6 +1,6 @@
 """API route registrations separated from application setup."""
 from __future__ import annotations
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict
 import hashlib
 
@@ -13,6 +13,7 @@ from models.schemas import (
     SimulationUpdateRequest, SimulationUpdateResponse,
     SimulationDeleteRequest, SimulationDeleteResponse,
     SimulationMemoUpdateRequest, SimulationMemoUpdateResponse,
+    NoticeListResponse, NoticeDetailResponse
 )
 from supabase import create_client
 from config.settings import settings
@@ -35,6 +36,22 @@ async def verify_user(request: UserCheckRequest):
     if response.data:
         return {"is_whitelisted": True}
     return {"is_whitelisted": False, "detail": "User not in whitelist"}
+
+@router.get("/api/notices", response_model=NoticeListResponse)
+async def list_notices():
+    client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
+    # Expect a table 'notices' with columns: id (uuid), title (text), content (text), pinned (bool), published (bool), created_at, updated_at
+    resp = client.table('notices').select('*').eq('published', True).order('pinned', desc=True).order('created_at', desc=True).execute()
+    notices = resp.data or []
+    return {"notices": notices, "success": True}
+
+@router.get("/api/notices/{notice_id}", response_model=NoticeDetailResponse)
+async def get_notice(notice_id: str):
+    client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
+    resp = client.table('notices').select('*').eq('id', notice_id).eq('published', True).limit(1).execute()
+    if not resp.data:
+        raise HTTPException(status_code=404, detail="Notice not found")
+    return {"notice": resp.data[0], "success": True}
 
 @router.get("/api/simulations")
 async def get_simulations(user_id: str = Depends(authenticate_jwt_token)):

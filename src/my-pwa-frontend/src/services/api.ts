@@ -1,39 +1,53 @@
-import { type Plan, type WhitelistCheckResponse, type SimulationCreateResponse, type SimulationRunResponse, type SimulationMemoUpdateResponse } from '../types/types';
+import {
+  type Plan,
+  type WhitelistCheckResponse,
+  type SimulationCreateResponse,
+  type SimulationRunResponse,
+  type SimulationMemoUpdateResponse,
+  type NoticeListResponse,
+  type NoticeDetailResponse,
+} from "../types/types";
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api'; // 로컬 FastAPI 서버 주소
+const API_BASE_URL = "http://127.0.0.1:8000/api"; // 로컬 FastAPI 서버 주소
 
 export const api = {
-  checkWhitelist: async (name: string, phone_number: string): Promise<WhitelistCheckResponse> => {
+  checkWhitelist: async (
+    name: string,
+    phone_number: string
+  ): Promise<WhitelistCheckResponse> => {
     try {
       const response = await fetch(`${API_BASE_URL}/verify-user`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ name, phone_number }),
       });
-      
+
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
-      console.error('Whitelist check error:', error);
-  return { success: false, message: String(error), is_whitelisted: false };
+      console.error("Whitelist check error:", error);
+      return { success: false, message: String(error), is_whitelisted: false };
     }
   },
-  
+
   deleteSimulation: async (
     simulation_id: string,
     token: string
   ): Promise<{ simulation_id: string; message: string; success: boolean }> => {
-    const response = await fetch(`${API_BASE_URL}/simulations/${simulation_id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/simulations/${simulation_id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       try {
@@ -46,20 +60,20 @@ export const api = {
 
     const data = await response.json();
     if (!data?.success) {
-      throw new Error(data?.message || '삭제에 실패했습니다.');
+      throw new Error(data?.message || "삭제에 실패했습니다.");
     }
     return data;
   },
-  
+
   runSimulation: async (
     simulation_id: string,
     token: string
   ): Promise<SimulationRunResponse> => {
     const response = await fetch(`${API_BASE_URL}/simulation/run`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ simulation_id }),
     });
@@ -75,76 +89,81 @@ export const api = {
 
     const data: SimulationRunResponse = await response.json();
     if (!data.success) {
-      throw new Error(data.message || '시뮬레이션 실행에 실패했습니다.');
+      throw new Error(data.message || "시뮬레이션 실행에 실패했습니다.");
     }
     return data;
   },
-  
+
   getSimulations: async (token: string): Promise<Plan[]> => {
     try {
       const response = await fetch(`${API_BASE_URL}/simulations`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
 
       const data = await response.json();
       if (Array.isArray(data)) {
-          data.forEach((item: { [key: string]: unknown }) => {
-              if (item && typeof item === 'object' && 'id' in item) {
-                  item.simulation_id = item.id;
-                  delete item.id;
-              }
-          });
+        data.forEach((item: { [key: string]: unknown }) => {
+          if (item && typeof item === "object" && "id" in item) {
+            item.simulation_id = item.id;
+            delete item.id;
+          }
+        });
       }
       return data;
-
     } catch (error) {
-      console.error('Get simulations error:', error);
+      console.error("Get simulations error:", error);
       return [];
     }
   },
 
-  getSimulationDetails: async (simulationId: string, token: string): Promise<Plan> => {
+  getSimulationDetails: async (
+    simulationId: string,
+    token: string
+  ): Promise<Plan> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/simulations/${simulationId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
+      const response = await fetch(
+        `${API_BASE_URL}/simulations/${simulationId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
       const data = await response.json();
-      if (data && typeof data === 'object' && 'id' in data) {
+      if (data && typeof data === "object" && "id" in data) {
         data.simulation_id = data.id;
         delete data.id;
       }
       return data;
     } catch (error) {
-      console.error('Get plan details error:', error);
+      console.error("Get plan details error:", error);
       throw error;
     }
   },
-  
+
   createSimulation: async (
     token: string,
     plan_id: string,
     company_round: number = 1,
     simulation_rounds: number,
     scheduled_payment: Record<string, number>,
-    sales_achievement_rates?: Record<string, number>,
+    sales_achievement_rates?: Record<string, number>
   ): Promise<SimulationCreateResponse> => {
     const response = await fetch(`${API_BASE_URL}/simulation/create`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         plan_id,
@@ -164,9 +183,9 @@ export const api = {
       }
     }
 
-  const data: SimulationCreateResponse = await response.json();
+    const data: SimulationCreateResponse = await response.json();
     if (!data.success) {
-      throw new Error(data.message || '시뮬레이션 생성 요청에 실패했습니다.');
+      throw new Error(data.message || "시뮬레이션 생성 요청에 실패했습니다.");
     }
     return data;
   },
@@ -178,22 +197,30 @@ export const api = {
     company_round: number,
     simulation_rounds: number,
     scheduled_payment: Record<string, number>,
-    sales_achievement_rates?: Record<string, number>,
-  ): Promise<{ simulation_id: string; plan_id: string; message: string; success: boolean }> => {
-    const response = await fetch(`${API_BASE_URL}/simulations/${simulation_id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        plan_id,
-        simulation_rounds,
-        company_round,
-        scheduled_payment,
-        sales_achievement_rates,
-      }),
-    });
+    sales_achievement_rates?: Record<string, number>
+  ): Promise<{
+    simulation_id: string;
+    plan_id: string;
+    message: string;
+    success: boolean;
+  }> => {
+    const response = await fetch(
+      `${API_BASE_URL}/simulations/${simulation_id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          plan_id,
+          simulation_rounds,
+          company_round,
+          scheduled_payment,
+          sales_achievement_rates,
+        }),
+      }
+    );
 
     if (!response.ok) {
       try {
@@ -206,7 +233,7 @@ export const api = {
 
     const data = await response.json();
     if (!data?.success) {
-      throw new Error(data?.message || '시뮬레이션 업데이트에 실패했습니다.');
+      throw new Error(data?.message || "시뮬레이션 업데이트에 실패했습니다.");
     }
     return data;
   },
@@ -216,14 +243,17 @@ export const api = {
     simulation_id: string,
     memo: string | null
   ): Promise<SimulationMemoUpdateResponse> => {
-    const response = await fetch(`${API_BASE_URL}/simulations/${simulation_id}/memo`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ memo }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/simulations/${simulation_id}/memo`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ memo }),
+      }
+    );
     if (!response.ok) {
       try {
         const err = await response.json();
@@ -234,8 +264,20 @@ export const api = {
     }
     const data: SimulationMemoUpdateResponse = await response.json();
     if (!data.success) {
-      throw new Error(data.message || '메모 업데이트 실패');
+      throw new Error(data.message || "메모 업데이트 실패");
     }
     return data;
-  }
+  },
+
+  // Notices (public - no auth required to read)
+  listNotices: async (): Promise<NoticeListResponse> => {
+    const response = await fetch(`${API_BASE_URL}/notices`);
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return await response.json();
+  },
+  getNotice: async (notice_id: string): Promise<NoticeDetailResponse> => {
+    const response = await fetch(`${API_BASE_URL}/notices/${notice_id}`);
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return await response.json();
+  },
 };

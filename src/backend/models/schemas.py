@@ -66,6 +66,24 @@ class SimulationMemoUpdateResponse(BaseModel):
     message: str
     success: bool
 
+class Notice(BaseModel):
+    id: str
+    title: str
+    content: str
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    pinned: Optional[bool] = False
+    published: Optional[bool] = True
+    model_config = ConfigDict(extra='allow')
+
+class NoticeListResponse(BaseModel):
+    notices: List[Notice]
+    success: bool = True
+
+class NoticeDetailResponse(BaseModel):
+    notice: Notice
+    success: bool = True
+
 class InvestmentItem(BaseModel):
     round: int
     amount: int

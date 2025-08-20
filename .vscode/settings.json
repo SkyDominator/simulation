@@ -12,11 +12,46 @@
         "simulation/.vscode/mcp.json: context7": {
             "allowedModels": [
                 "github.copilot-chat/gpt-4.1",
+                "github.copilot-chat/gpt-5",
                 "github.copilot-chat/claude-3.7-sonnet-thought",
                 "github.copilot-chat/claude-sonnet-4",
                 "github.copilot-chat/gemini-2.5-pro"
             ]
         }
     },
-    "remote.containers.devContainerJson": ".\\.devcontainer\\devcontainer.json"
+    "remote.containers.devContainerJson": ".\\.devcontainer\\devcontainer.json",
+    // ⬇️ Python 파일(.py)에 대한 설정
+  "[python]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.defaultFormatter": "ms-python.black-formatter" // Black 포맷터 사용 추천
+  },
+
+  // ⬇️ JavaScript 파일(.js, .jsx)에 대한 설정
+  "[javascript]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode" // Prettier 포맷터 사용 추천
+  },
+  "[javascriptreact]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // ⬇️ TypeScript 파일(.ts, .tsx)에 대한 설정
+  "[typescript]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // ⬇️ (강력 추천) 저장 시 자동으로 포맷팅 실행
+  "editor.formatOnSave": true,
+
 }

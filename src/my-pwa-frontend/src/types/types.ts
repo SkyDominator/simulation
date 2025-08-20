@@ -60,5 +60,26 @@ export interface SimulationMemoUpdateResponse {
   success: boolean;
 }
 
+// Notice board types
+export interface Notice {
+  id: string;
+  title: string;
+  content: string;
+  created_at?: string;
+  updated_at?: string;
+  pinned?: boolean;
+  published?: boolean;
+}
+
+export interface NoticeListResponse {
+  notices: Notice[];
+  success: boolean;
+}
+
+export interface NoticeDetailResponse {
+  notice: Notice;
+  success: boolean;
+}
+
 // Define a type for the page navigation
-export type Page = 'whitelist' | 'login' | 'main' | 'plan-editor' | 'results';
+export type Page = "whitelist" | "login" | "main" | "plan-editor" | "results";
