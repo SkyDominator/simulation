@@ -137,7 +137,8 @@ export const api = {
     plan_id: string,
     company_round: number = 1,
     simulation_rounds: number,
-    scheduled_payment: Record<string, number>
+    scheduled_payment: Record<string, number>,
+    sales_achievement_rates?: Record<string, number>,
   ): Promise<SimulationCreateResponse> => {
     const response = await fetch(`${API_BASE_URL}/simulation/create`, {
       method: 'POST',
@@ -150,6 +151,7 @@ export const api = {
         company_round,
         simulation_rounds,
         scheduled_payment,
+        sales_achievement_rates,
       }),
     });
     if (!response.ok) {
@@ -175,7 +177,8 @@ export const api = {
     plan_id: string,
     company_round: number,
     simulation_rounds: number,
-    scheduled_payment: Record<string, number>
+    scheduled_payment: Record<string, number>,
+    sales_achievement_rates?: Record<string, number>,
   ): Promise<{ simulation_id: string; plan_id: string; message: string; success: boolean }> => {
     const response = await fetch(`${API_BASE_URL}/simulations/${simulation_id}`, {
       method: 'PATCH',
@@ -188,6 +191,7 @@ export const api = {
         simulation_rounds,
         company_round,
         scheduled_payment,
+        sales_achievement_rates,
       }),
     });
 

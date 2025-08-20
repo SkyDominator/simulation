@@ -14,6 +14,7 @@ const COLUMN_ORDER: string[] = [
   'total_revenue_after_tax',
   'net_profit_after_tax',
   'cumulative_net_profit',
+  'sales_achievement_rate',
 ];
 
 // If true, any history fields not listed in COLUMN_ORDER will be appended (alphabetically)
@@ -33,12 +34,16 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
   // Inject sequential company_round values and amount column.
   if (result) {
     const scheduled = result.scheduled_payment || {};
+    const salesRates = result.sales_achievement_rates || {};
     const base = result.company_round || 0;
     history = history.map((row, idx) => {
       const companyRound = base + idx; // first row = base, then increment
       const newRow: Record<string, unknown> = { ...row, company_round: companyRound };
       const amt = scheduled[idx + 1];
       if (amt !== undefined) newRow.amount = amt;
+      // sales achievement rate mapped by personal round (idx+1) fallback 100
+      const rate = salesRates[(idx + 1).toString()];
+      newRow.sales_achievement_rate = rate !== undefined ? rate : 100;
       return newRow;
     });
   }
@@ -74,6 +79,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
     total_payment: '총 매출액',
     total_revenue_after_tax: '수당(세후)',
     total_revenue_before_tax: '수당(세전)',
+    sales_achievement_rate: '매출 달성율',
   };
 
   const headerLabel = (key: string) =>
@@ -113,7 +119,8 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
     'total_revenue_before_tax',
     'total_revenue_after_tax',
     'net_profit_after_tax',
-    'cumulative_net_profit'
+    'cumulative_net_profit',
+    'sales_achievement_rate'
   ]);
 
   return (

@@ -72,3 +72,10 @@ devcontainer up --workspace-folder . --remove-existing-container --build-no-cach
 
 docker compose exec frontend npm run dev -- --host 0.0.0.0 --port 5173
 
+## 프롬프트 작성중
+
+At the ResultPage.tsx, I want to add another column "sales_achievement_ratio" on the table, which is mapped into "매출 달성율" in columnLabelMap. 
+
+The sales_achievement_ratio column provides input box that users can control, and its value is the percentage that starts from 50 to 100. Its value can be modified in 2 decimal digits. The users can modify this value via "-" and "+" button, like the step 4 in PlanEditor page.
+
+The values in sales_achievement_ratio column

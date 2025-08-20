@@ -39,6 +39,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
       basePlanType,
       editingPlan?.investments || []
     ),
+    sales_achievement_rates: editingPlan?.sales_achievement_rates || {},
   };
   const [plan, setPlan] = useState<Plan>(initialPlan);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
@@ -72,6 +73,16 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
       inv.round === round ? { ...inv, amount: parsedAmount } : inv
     );
     setPlan({ ...plan, investments: newInvestments });
+  };
+
+  const handleSalesRateChange = (round: number, rate: number) => {
+    setPlan(prev => ({
+      ...prev,
+      sales_achievement_rates: {
+        ...(prev.sales_achievement_rates || {}),
+        [round.toString()]: rate
+      }
+    }));
   };
 
   const handleValidation = (value: number, min: number, max: number, field: keyof Plan) => {
@@ -154,8 +165,12 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
     setIsLoading(true);
     try {
       const scheduled_payment: Record<string, number> = {};
+      const sales_achievement_rates: Record<string, number> = { ...(plan.sales_achievement_rates || {}) };
       (plan.investments || []).forEach(inv => {
         scheduled_payment[inv.round.toString()] = inv.amount;
+        if (!(inv.round.toString() in sales_achievement_rates)) {
+          sales_achievement_rates[inv.round.toString()] = 100;
+        }
       });
 
       if (plan.simulation_id) {
@@ -167,6 +182,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
           plan.company_round,
           plan.simulation_rounds,
           scheduled_payment,
+          sales_achievement_rates,
         );
       } else {
         // Create new simulation
@@ -175,7 +191,8 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
           plan.plan_id,
           plan.company_round,
           plan.simulation_rounds,
-          scheduled_payment
+          scheduled_payment,
+          sales_achievement_rates,
         );
         if (createResponse?.simulation_id) {
           setPlan(prev => ({ ...prev, simulation_id: createResponse.simulation_id }));
@@ -230,7 +247,9 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
           investments={plan.investments || []} 
           companyRound={plan.company_round} 
           planType={plan.plan_id}
-          onInvestmentChange={handleInvestmentChange} 
+          onInvestmentChange={handleInvestmentChange}
+          salesAchievementRates={plan.sales_achievement_rates || {}}
+          onSalesRateChange={handleSalesRateChange}
         />;
       default:
         return null;

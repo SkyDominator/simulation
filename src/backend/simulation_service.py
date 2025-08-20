@@ -102,7 +102,7 @@ class FinancialSimulationService:
     based on plan parameters, and manages the investor lifecycle.
     """
     
-    def __init__(self, plan_id: str, scheduled_payment: Optional[Dict[int, int]] = None):
+    def __init__(self, plan_id: str, scheduled_payment: Optional[Dict[int, int]] = None, sales_achievement_rates: Optional[Dict[int, float]] = None):
         """
         Initialize the financial simulation service.
         
@@ -120,6 +120,16 @@ class FinancialSimulationService:
         # Override scheduled_payment if provided
         if scheduled_payment is not None:
             self.params['scheduled_payment'] = scheduled_payment
+        # Override sales achievement rates (already expected as fractions 0.5-1.0)
+        if sales_achievement_rates is not None:
+            # Validate and coerce ranges
+            cleaned: Dict[int, float] = {}
+            for k, v in sales_achievement_rates.items():
+                if not (0.5 <= v <= 1.0):
+                    continue
+                cleaned[int(k)] = float(v)
+            if cleaned:
+                self.params['sales_achievement_rates'] = cleaned
             
         self.plan_id = plan_id
         self.max_investor_count = self.params['max_investor_count']

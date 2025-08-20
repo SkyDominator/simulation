@@ -24,6 +24,100 @@ interface InvestmentEditorProps {
   companyRound: number;
   planType: string;
   onInvestmentChange: (round: number, amount: string) => void;
+  salesAchievementRates: Record<string, number>;
+  onSalesRateChange?: (round: number, rate: number) => void;
+}
+
+// SalesRateInput: behaves like FormattedAmountInput but for percentage (50-100) with step controls
+function SalesRateInput({ value, onChange }: { value: number; onChange: (val: number) => void; }) {
+  const [display, setDisplay] = React.useState<string>(value.toString());
+  const ref = React.useRef<HTMLInputElement>(null);
+  const MIN = 50;
+  const MAX = 100;
+
+  React.useEffect(() => {
+    const v = value.toString();
+    if (v !== display) setDisplay(v);
+  }, [value, display]);
+
+  const clamp = (n: number) => Math.min(MAX, Math.max(MIN, n));
+
+  const commit = (raw: string) => {
+    const num = parseInt(raw, 10);
+    if (isNaN(num)) return; // ignore
+    const c = clamp(num);
+    setDisplay(c.toString());
+    onChange(c);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/[^0-9]/g, '');
+    if (raw === '') {
+      setDisplay('');
+      return;
+    }
+    const trimmed = raw.slice(0, 3); // max 3 digits
+    setDisplay(trimmed);
+  };
+
+  const handleBlur = () => {
+    if (display === '') {
+      setDisplay('100');
+      onChange(100);
+      return;
+    }
+    commit(display);
+  };
+
+  const step = (dir: 1 | -1) => {
+    const current = parseInt(display || value.toString(), 10) || value;
+    const next = clamp(current + dir);
+    setDisplay(next.toString());
+    onChange(next);
+    requestAnimationFrame(() => ref.current?.focus());
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowUp') { e.preventDefault(); step(1); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); step(-1); }
+    else if (e.key === 'Enter') { commit(display); }
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <div className="relative w-24">
+        <input
+          ref={ref}
+          type="text"
+          inputMode="numeric"
+          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300 text-right pr-7"
+          value={display}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          placeholder="100"
+          aria-label="매출 달성율"
+        />
+        <span className="absolute inset-y-0 right-2 flex items-center text-gray-500 text-sm">%</span>
+      </div>
+      <div className="flex flex-col gap-1">
+        <button
+          type="button"
+          aria-label="증가"
+          className="w-8 h-5 flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-xs"
+          onClick={() => step(1)}
+          disabled={parseInt(display || value.toString(), 10) >= MAX}
+        >▲</button>
+        <button
+          type="button"
+          aria-label="감소"
+          className="w-8 h-5 flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-xs"
+          onClick={() => step(-1)}
+          disabled={parseInt(display || value.toString(), 10) <= MIN}
+        >▼</button>
+      </div>
+    </div>
+  );
 }
 
 // Formatted number input with thousands separators, live min enforcement, and caret preservation
@@ -210,10 +304,12 @@ export const InvestmentEditor: React.FC<InvestmentEditorProps> = ({
   investments, 
   companyRound, 
   planType, 
-  onInvestmentChange 
+  onInvestmentChange,
+  salesAchievementRates,
+  onSalesRateChange
 }) => (
   <div>
-    <h2 className="text-xl font-bold mb-4">4. 회차별 투자액 입력</h2>
+    <h2 className="text-xl font-bold mb-4">4. 회차별 투자액 및 매출 달성율 입력</h2>
     <div className="max-h-96 overflow-y-auto">
       <table className="w-full text-sm text-left">
         <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
@@ -221,6 +317,7 @@ export const InvestmentEditor: React.FC<InvestmentEditorProps> = ({
             <th scope="col" className="px-6 py-3">회사 회차</th>
             <th scope="col" className="px-6 py-3">개인 회차</th>
             <th scope="col" className="px-6 py-3">투자액</th>
+            <th scope="col" className="px-10 py-3">매출 달성율 (%)</th>
           </tr>
         </thead>
         <tbody>
@@ -245,12 +342,18 @@ export const InvestmentEditor: React.FC<InvestmentEditorProps> = ({
                       }}
                     />
                   </td>
+                  <td className="px-10 py-4">
+                    <SalesRateInput
+                      value={salesAchievementRates[inv.round.toString()] ?? 100}
+                      onChange={(val) => onSalesRateChange && onSalesRateChange(inv.round, val)}
+                    />
+                  </td>
                 </tr>
               );
             })
           ) : (
             <tr>
-              <td colSpan={3} className="px-6 py-4 text-center">
+              <td colSpan={4} className="px-6 py-4 text-center">
                 투자 회차 정보가 없습니다. 이전 단계에서 총 회차를 설정해주세요.
               </td>
             </tr>

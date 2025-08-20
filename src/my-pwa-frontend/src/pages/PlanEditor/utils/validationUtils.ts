@@ -21,7 +21,7 @@ export const validateNumericValue = (
  * Validates all investment amounts and returns corrected values if any issues found
  */
 export const validateInvestmentAmounts = (
-  investments: Array<{ round: number; amount: number }>, 
+  investments: Array<{ round: number; amount: number; sales_achievement_rate?: number }>, 
   planType: string
 ): InvestmentValidationResult => {
   const correctedInvestments: Array<{
@@ -31,7 +31,7 @@ export const validateInvestmentAmounts = (
   }> = [];
   
   // Create a copy of investments to modify
-  const updatedInvestments = [...investments];
+  const updatedInvestments = investments.map(inv => ({ ...inv }));
   
   // Check each investment
   updatedInvestments.forEach((inv, index) => {
@@ -55,6 +55,9 @@ export const validateInvestmentAmounts = (
         newAmount: defaultAmount
       });
     }
+
+    // Validate sales achievement rate (50-100). If invalid or missing set to 100, but record correction only if user-provided was invalid.
+  // sales_achievement_rate moved to top-level; validation handled elsewhere
   });
   
   return {

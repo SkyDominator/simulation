@@ -11,7 +11,7 @@ from models.schemas import (
     SimulationUpdateRequest, SimulationUpdateResponse,
     SimulationDeleteRequest, SimulationDeleteResponse,
     SimulationMemoUpdateRequest, SimulationMemoUpdateResponse,
-    SimulationRow, scheduled_payment_from_investments
+    SimulationRow, scheduled_payment_from_investments,
 )
 from constants import PLAN_PARAMETERS
 from simulation_service import FinancialSimulationService
@@ -32,14 +32,16 @@ class SimulationService:
     def create(self, req: SimulationCreateRequest, user_id: str) -> SimulationCreateResponse:
         if req.plan_id not in PLAN_PARAMETERS:
             raise HTTPException(status_code=400, detail=f"Invalid plan type: {req.plan_id}")
+        # Build investments list (only round & amount) now that sales_achievement_rates is normalized
+        investments = [{"round": int(r), "amount": amt} for r, amt in req.scheduled_payment.items()]
+
         plan_data = {
             "user_id": user_id,
             "plan_id": req.plan_id,
             "company_round": req.company_round,
             "simulation_rounds": req.simulation_rounds,
-            "investments": [
-                {"round": int(r), "amount": amt} for r, amt in req.scheduled_payment.items()
-            ],
+            "investments": investments,
+            "sales_achievement_rates": req.sales_achievement_rates,
         }
         db_response = self.client.table("simulations").insert(plan_data).execute()
         if not db_response or not db_response.data:
@@ -68,12 +70,15 @@ class SimulationService:
                 company_round=row.company_round,
                 simulation_rounds=row.simulation_rounds,
                 scheduled_payment=sched_map,
+                sales_achievement_rates=row.sales_achievement_rates,
                 history=res_dict.get("history", []),
                 message="Retrieved existing simulation results",
                 success=True,
             )
         sched_int = {int(k): v for k, v in sched_map.items()}
-        simulator = FinancialSimulationService(plan_id=row.plan_id, scheduled_payment=sched_int)
+        # Convert sales achievement rates percent -> fraction for simulator override
+        sales_rates_fraction = {int(k): (v / 100.0) for k, v in row.sales_achievement_rates.items()}
+        simulator = FinancialSimulationService(plan_id=row.plan_id, scheduled_payment=sched_int, sales_achievement_rates=sales_rates_fraction)
         results = simulator.run_simulation(row.simulation_rounds).to_dict()
         upd = self.client.table("simulations").update({"simulation_results": results}).eq("id", req.simulation_id).execute()
         if not upd.data:
@@ -84,6 +89,7 @@ class SimulationService:
             company_round=row.company_round,
             simulation_rounds=row.simulation_rounds,
             scheduled_payment=sched_map,
+            sales_achievement_rates=row.sales_achievement_rates,
             history=results.get("history", []),
             message="Simulation completed and results saved",
             success=True,
@@ -95,14 +101,13 @@ class SimulationService:
         existing = self.client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
         if not existing.data:
             raise HTTPException(status_code=404, detail=f"Simulation with ID {simulation_id} not found")
-        investments = [
-            {"round": int(r), "amount": amt} for r, amt in req.scheduled_payment.items()
-        ]
+        investments = [{"round": int(r), "amount": amt} for r, amt in req.scheduled_payment.items()]
         payload = {
             "plan_id": req.plan_id,
             "company_round": req.company_round,
             "simulation_rounds": req.simulation_rounds,
             "investments": investments,
+            "sales_achievement_rates": req.sales_achievement_rates,
             "simulation_results": None,
         }
         upd = self.client.table("simulations").update(payload).eq("id", simulation_id).eq("user_id", user_id).execute()
@@ -127,7 +132,7 @@ class SimulationService:
         )
 
     def list_for_user(self, user_id: str):  # return raw supabase rows for now
-        resp = self.client.table('simulations').select("id, company_round, investments, simulation_rounds, created_at, updated_at, plan_id, memo").eq('user_id', user_id).execute()
+        resp = self.client.table('simulations').select("id, company_round, investments, sales_achievement_rates, simulation_rounds, created_at, updated_at, plan_id, memo").eq('user_id', user_id).execute()
         if not resp.data:
             raise HTTPException(status_code=404, detail="No simulations found for this user")
         return resp.data

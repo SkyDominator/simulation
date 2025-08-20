@@ -12,6 +12,8 @@ class SimulationCreateRequest(BaseModel):
     company_round: int
     simulation_rounds: int
     scheduled_payment: Dict[str, int]
+    # Per company round sales achievement rates provided by user (percentage 50-100)
+    sales_achievement_rates: Dict[str, int] | None = None
 
 class SimulationCreateResponse(BaseModel):
     simulation_id: str
@@ -28,6 +30,8 @@ class SimulationRunResponse(BaseModel):
     company_round: int
     simulation_rounds: int
     scheduled_payment: Dict[str, int]
+    # Echo back sales achievement rates actually used (percent form) for transparency
+    sales_achievement_rates: Dict[str, int] | None = None
     history: List[Dict[str, Any]]
     message: str
     success: bool
@@ -45,6 +49,7 @@ class SimulationUpdateRequest(BaseModel):
     company_round: int
     simulation_rounds: int
     scheduled_payment: Dict[str, int]
+    sales_achievement_rates: Dict[str, int] | None = None
 
 class SimulationUpdateResponse(BaseModel):
     simulation_id: str
@@ -72,6 +77,8 @@ class SimulationRow(BaseModel):
     company_round: int
     simulation_rounds: int
     investments: List[InvestmentItem] = []
+    # New normalized column: mapping of round(str)->percent (50-100)
+    sales_achievement_rates: Optional[Dict[str, int]] = None
     simulation_results: Optional[Dict[str, Any]] = None
     memo: Optional[str] = None
     model_config = ConfigDict(extra='allow')

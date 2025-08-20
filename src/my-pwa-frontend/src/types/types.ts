@@ -7,6 +7,7 @@ export interface Plan {
   updated_at?: string;
   plan_id: string;
   memo?: string | null;
+  sales_achievement_rates?: Record<string, number>; // normalized top-level map
 }
 
 export interface Investment {
@@ -31,6 +32,7 @@ export interface SimulationRunResponse {
   company_round: number; // added to mirror backend SimulationResponse
   simulation_rounds: number; // added to mirror backend SimulationResponse
   scheduled_payment: Record<string, number>; // added to mirror backend SimulationResponse
+  sales_achievement_rates?: Record<string, number>; // user-provided achievement rates
   history: Array<Record<string, unknown>>;
   message: string;
   success: boolean;
