@@ -21,7 +21,7 @@ export const validateNumericValue = (
  * Validates all investment amounts and returns corrected values if any issues found
  */
 export const validateInvestmentAmounts = (
-  investments: Array<{ round: number; amount: number; sales_achievement_rate?: number }>, 
+  investments: Array<{ round: number; amount: number; }>, 
   planType: string
 ): InvestmentValidationResult => {
   const correctedInvestments: Array<{
@@ -55,9 +55,6 @@ export const validateInvestmentAmounts = (
         newAmount: defaultAmount
       });
     }
-
-    // Validate sales achievement rate (50-100). If invalid or missing set to 100, but record correction only if user-provided was invalid.
-  // sales_achievement_rate moved to top-level; validation handled elsewhere
   });
   
   return {
@@ -65,4 +62,29 @@ export const validateInvestmentAmounts = (
     correctedInvestments,
     updatedInvestments
   };
+};
+
+// Validate sales achievement rates map and return corrected copy + list of corrected rounds
+export const validateSalesAchievementRates = (
+  rates: Record<string, number | undefined>,
+  rounds: number[],
+  min = 50,
+  max = 100,
+  defaultValue = 100
+): { corrected: Record<string, number>; correctedRounds: number[] } => {
+  const corrected: Record<string, number> = {};
+  const correctedRounds: number[] = [];
+  rounds.forEach(r => {
+    const key = r.toString();
+    const raw = rates[key];
+    let val: number;
+    if (raw === undefined || raw === null || isNaN(raw) || raw < min || raw > max) {
+      val = defaultValue;
+      correctedRounds.push(r);
+    } else {
+      val = raw;
+    }
+    corrected[key] = val;
+  });
+  return { corrected, correctedRounds };
 };

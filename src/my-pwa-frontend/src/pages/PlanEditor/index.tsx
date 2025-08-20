@@ -21,7 +21,7 @@ import {
   InvestmentValidationModal 
 } from './modals';
 import { getPlanLimits, generateInvestments } from './utils/investmentUtils';
-import { validateNumericValue, validateInvestmentAmounts } from './utils/validationUtils';
+import { validateNumericValue, validateInvestmentAmounts, validateSalesAchievementRates } from './utils/validationUtils';
 
 const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan }) => {
   const { session } = useAuth();
@@ -115,7 +115,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
     // Validate investments before showing confirm modal
     const validation = validateInvestmentAmounts(plan.investments || [], plan.plan_id);
     
-    if (validation.hasInvalidInvestments) {
+  if (validation.hasInvalidInvestments) {
       // Show validation modal with list of changes
       setInvalidInvestments(validation.correctedInvestments);
       setInvestmentValidationModalOpen(true);
@@ -128,6 +128,16 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({ setPage, editingPlan })
         }));
       }
     } else {
+      // Validate sales achievement rates separately (rounds 1..simulation_rounds)
+      const rounds = (plan.investments || []).map(inv => inv.round);
+      const { corrected, correctedRounds } = validateSalesAchievementRates(
+        plan.sales_achievement_rates || {},
+        rounds
+      );
+      // Apply corrections silently
+      if (correctedRounds.length > 0) {
+        setPlan(prev => ({ ...prev, sales_achievement_rates: corrected }));
+      }
       // Proceed to confirmation modal
       setConfirmModalOpen(true);
     }

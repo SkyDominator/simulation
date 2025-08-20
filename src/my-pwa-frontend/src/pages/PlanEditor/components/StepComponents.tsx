@@ -30,48 +30,58 @@ interface InvestmentEditorProps {
 
 // SalesRateInput: behaves like FormattedAmountInput but for percentage (50-100) with step controls
 function SalesRateInput({ value, onChange }: { value: number; onChange: (val: number) => void; }) {
-  const [display, setDisplay] = React.useState<string>(value.toString());
-  const ref = React.useRef<HTMLInputElement>(null);
   const MIN = 50;
   const MAX = 100;
+  const ref = React.useRef<HTMLInputElement>(null);
+  const [display, setDisplay] = React.useState<string>(value.toString()); // empty string allowed for re-entry
+  const [internalValue, setInternalValue] = React.useState<number>(value);
 
   React.useEffect(() => {
-    const v = value.toString();
-    if (v !== display) setDisplay(v);
-  }, [value, display]);
+    if (value !== internalValue) {
+      setInternalValue(value);
+      if (display !== value.toString()) setDisplay(value.toString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   const clamp = (n: number) => Math.min(MAX, Math.max(MIN, n));
 
-  const commit = (raw: string) => {
+  const commitValue = (raw: string) => {
     const num = parseInt(raw, 10);
-    if (isNaN(num)) return; // ignore
-    const c = clamp(num);
-    setDisplay(c.toString());
-    onChange(c);
+    if (isNaN(num)) return; // ignore; allow user to keep typing
+    const clamped = clamp(num);
+    setInternalValue(clamped);
+    setDisplay(clamped.toString());
+    onChange(clamped);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/[^0-9]/g, '');
-    if (raw === '') {
+    const input = e.target.value.replace(/[^0-9]/g, '');
+    if (input === '') {
+      // allow clearing
       setDisplay('');
       return;
     }
-    const trimmed = raw.slice(0, 3); // max 3 digits
-    setDisplay(trimmed);
+    // Keep up to 3 digits; later commit will clamp
+    const next = input.slice(0, 3);
+    setDisplay(next);
   };
 
   const handleBlur = () => {
     if (display === '') {
+      // default when left empty
+      setInternalValue(100);
       setDisplay('100');
       onChange(100);
       return;
     }
-    commit(display);
+    commitValue(display);
   };
 
   const step = (dir: 1 | -1) => {
-    const current = parseInt(display || value.toString(), 10) || value;
+    const current = display === '' ? internalValue : (parseInt(display, 10) || internalValue);
     const next = clamp(current + dir);
+    setInternalValue(next);
     setDisplay(next.toString());
     onChange(next);
     requestAnimationFrame(() => ref.current?.focus());
@@ -80,7 +90,7 @@ function SalesRateInput({ value, onChange }: { value: number; onChange: (val: nu
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowUp') { e.preventDefault(); step(1); }
     else if (e.key === 'ArrowDown') { e.preventDefault(); step(-1); }
-    else if (e.key === 'Enter') { commit(display); }
+    else if (e.key === 'Enter') { commitValue(display); }
   };
 
   return (
@@ -95,26 +105,26 @@ function SalesRateInput({ value, onChange }: { value: number; onChange: (val: nu
           onChange={handleChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          placeholder="100"
+          placeholder="최소값: 50%, 최대값: 100%"
           aria-label="매출 달성율"
         />
         <span className="absolute inset-y-0 right-2 flex items-center text-gray-500 text-sm">%</span>
       </div>
-      <div className="flex flex-col gap-1">
-        <button
-          type="button"
-          aria-label="증가"
-          className="w-8 h-5 flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-xs"
-          onClick={() => step(1)}
-          disabled={parseInt(display || value.toString(), 10) >= MAX}
-        >▲</button>
+      <div className="flex gap-1">
         <button
           type="button"
           aria-label="감소"
-          className="w-8 h-5 flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-xs"
+          className="w-10 h-10 flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-lg font-medium"
           onClick={() => step(-1)}
-          disabled={parseInt(display || value.toString(), 10) <= MIN}
-        >▼</button>
+          disabled={(display === '' ? internalValue : parseInt(display, 10)) <= MIN}
+        >−</button>
+        <button
+          type="button"
+          aria-label="증가"
+          className="w-10 h-10 flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-lg font-medium"
+          onClick={() => step(1)}
+          disabled={(display === '' ? internalValue : parseInt(display, 10)) >= MAX}
+        >+</button>
       </div>
     </div>
   );
