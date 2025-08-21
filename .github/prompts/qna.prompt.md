@@ -1,0 +1,1 @@
+Answer to my questions and explain in very detailed way, like you teach a child. Don't use too much analogy. Just explain it simply and clearly, step by step if possible.

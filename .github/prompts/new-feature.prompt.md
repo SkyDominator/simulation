@@ -1,1 +1,0 @@
-First, you should go through all frontend and backend source codes and understand my codebase. Think hard to understand my codebase.

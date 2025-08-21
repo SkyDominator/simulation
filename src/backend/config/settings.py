@@ -22,6 +22,7 @@ class Settings:
             object.__setattr__(self, "cors_origins", [
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
+                "http://10.10.113.129:5173",
             ])
         if self.admin_emails is None:
             parsed = [e.strip().lower() for e in self.admin_emails_raw.split(',') if e.strip()]

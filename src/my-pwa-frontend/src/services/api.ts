@@ -8,7 +8,7 @@ import {
   type NoticeDetailResponse,
 } from "../types/types";
 
-const API_BASE_URL = "http://127.0.0.1:8000/api"; // 로컬 FastAPI 서버 주소
+const API_BASE_URL = "http://10.10.113.129:8000/api"; // 로컬 FastAPI 서버 주소
 
 export const api = {
   checkWhitelist: async (
