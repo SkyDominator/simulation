@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useAuth } from "./context/AuthContext";
+import { useAuth } from "./context/useAuth";
 import WhitelistCheckPage from "./pages/WhitelistCheckPage";
 import LoginPage from "./pages/LoginPage";
 import MainPage from "./pages/MainPage";

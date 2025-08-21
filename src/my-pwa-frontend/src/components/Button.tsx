@@ -1,33 +1,36 @@
 import React from "react";
 import MuiButton from "@mui/material/Button";
+import type { ButtonProps as MuiButtonProps } from "@mui/material/Button";
 
-interface ButtonProps {
-  onClick?: () => void;
-  children: React.ReactNode;
-  className?: string;
-  type?: "button" | "submit";
-  disabled?: boolean;
+// Extend MUI Button props while keeping backward compatibility
+export interface ButtonProps extends MuiButtonProps {
+  className?: string; // allow legacy tailwind classes if still present
 }
 
-// Preserve original API but use MUI Button for improved look & feel
-export const Button: React.FC<ButtonProps> = ({
-  onClick,
-  children,
-  className = "",
-  type = "button",
-  disabled = false,
-}) => {
-  return (
-    <MuiButton
-      variant="contained"
-      color="primary"
-      onClick={onClick}
-      className={className}
-      type={type}
-      disabled={disabled}
-      sx={{ borderRadius: 2 }}
-    >
-      {children}
-    </MuiButton>
-  );
-};
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      children,
+      variant = "contained",
+      color = "primary",
+      className = "",
+      sx,
+      ...rest
+    },
+    ref
+  ) => {
+    return (
+      <MuiButton
+        ref={ref}
+        variant={variant}
+        color={color as MuiButtonProps["color"]}
+        className={className}
+        sx={{ borderRadius: 2, ...sx }}
+        {...rest}
+      >
+        {children}
+      </MuiButton>
+    );
+  }
+);
+Button.displayName = "Button";

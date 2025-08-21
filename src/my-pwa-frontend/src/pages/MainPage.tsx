@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "../components/Button"; // wrapper around MUI Button keeping prior API
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { MemoModal } from "../components/MemoModal";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { api } from "../services/api";
 import type { Plan, Page } from "../types/types";
 import type { SimulationRunResponse } from "../types/types";
@@ -51,6 +51,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
   const [targetPlan, setTargetPlan] = useState<Plan | null>(null);
   const [memoModalOpen, setMemoModalOpen] = useState(false);
   const [memoTarget, setMemoTarget] = useState<Plan | null>(null);
+  const [signOutLoading, setSignOutLoading] = useState(false);
   // draft stored inside MemoModal, keep minimal state here
   type SortKey =
     | "plan_id"
@@ -264,9 +265,9 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
           justifyContent="space-between"
           mb={4}
         >
-          <Typography variant="h4" fontWeight={700}>
+          {/* <Typography variant="h4" fontWeight={700}>
             시뮬레이션
-          </Typography>
+          </Typography> */}
           <Stack direction="row" spacing={1}>
             {openNotice && (
               <Button onClick={openNotice} variant="contained" color="warning">
@@ -274,11 +275,21 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
               </Button>
             )}
             <Button
-              onClick={() => signOut()}
+              onClick={async () => {
+                if (signOutLoading) return;
+                try {
+                  setSignOutLoading(true);
+                  await signOut();
+                } finally {
+                  setSignOutLoading(false);
+                }
+              }}
               variant="outlined"
               color="inherit"
+              disabled={signOutLoading}
             >
-              <LogoutIcon sx={{ mr: 0.5 }} fontSize="small" /> 로그아웃
+              <LogoutIcon sx={{ mr: 0.5 }} fontSize="small" />{" "}
+              {signOutLoading ? "로그아웃 중..." : "로그아웃"}
             </Button>
           </Stack>
         </Stack>
