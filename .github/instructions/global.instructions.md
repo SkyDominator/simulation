@@ -15,3 +15,8 @@ React: 19.1.0 or later
 ## For app development
 
 Refer to [my app development instructions](./simulation.instructions.md)
+
+## For app testing
+
+* Desktop (Windows 11, Google Chrome)
+* Mobile (iPhone 11 Pro, iOS 18.1.1, Google Chrome)
