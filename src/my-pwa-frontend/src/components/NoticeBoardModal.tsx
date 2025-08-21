@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../services/api";
 import type { Notice } from "../types/types";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
+import Chip from "@mui/material/Chip";
+import Typography from "@mui/material/Typography";
 
 interface NoticeBoardModalProps {
   isOpen: boolean;
@@ -32,112 +41,138 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
 
   const selectNotice = (notice: Notice) => setActiveNotice(notice);
 
-  if (!isOpen) return null;
   return (
-    <div
-      className="fixed inset-0 z-[2000] flex items-center justify-center px-3 py-6 sm:p-6"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="notice-title"
-    >
-      <div className="absolute inset-0 bg-black/60" />
-      <div className="relative bg-white w-full max-w-4xl h-full sm:h-auto max-h-[90vh] rounded-xl shadow-xl ring-1 ring-black/10 overflow-hidden animate-[fadeScale_.18s_ease] flex flex-col">
-        <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-gray-100">
-          <h2
-            id="notice-title"
-            className="text-base sm:text-lg font-semibold tracking-tight"
+    <Dialog open={isOpen} onClose={onClose} maxWidth="lg" fullWidth>
+      <DialogTitle sx={{ fontWeight: 600 }}>공지사항</DialogTitle>
+      <DialogContent
+        dividers
+        sx={{ display: "flex", gap: 3, minHeight: { xs: 360, sm: 420 } }}
+      >
+        <div style={{ width: 260, maxWidth: "40%", flexShrink: 0 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ px: 1.5, pb: 0.5, display: "block" }}
           >
-            공지사항
-          </h2>
-          <button
-            onClick={onClose}
-            aria-label="닫기"
-            className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            ✕
-          </button>
-        </div>
-      </div>
-      <div className="flex flex-col sm:flex-row gap-4 h-full px-5 pt-4 pb-6 overflow-y-auto custom-scrollbar">
-        <div className="sm:w-64 flex-shrink-0 border rounded-lg overflow-hidden bg-white/50">
-          <div className="border-b px-3 py-2 text-xs font-semibold text-gray-500 tracking-wide uppercase bg-gray-50">
             목록
-          </div>
-          <ul className="max-h-[55vh] overflow-y-auto divide-y">
+          </Typography>
+          <List dense sx={{ maxHeight: 420, overflowY: "auto" }}>
             {loading && (
-              <li className="p-3 text-sm text-gray-500">로딩 중...</li>
+              <ListItem>
+                <ListItemText primary="로딩 중..." />
+              </ListItem>
             )}
-            {error && <li className="p-3 text-sm text-red-500">{error}</li>}
+            {error && (
+              <ListItem>
+                <ListItemText
+                  primary={error}
+                  primaryTypographyProps={{ color: "error" }}
+                />
+              </ListItem>
+            )}
             {!loading && !error && notices.length === 0 && (
-              <li className="p-4 text-xs text-gray-400">
-                등록된 공지가 없습니다.
-              </li>
+              <ListItem>
+                <ListItemText
+                  primary="등록된 공지가 없습니다."
+                  primaryTypographyProps={{
+                    variant: "caption",
+                    color: "text.secondary",
+                  }}
+                />
+              </ListItem>
             )}
-            {notices.map((n) => (
-              <li key={n.id}>
-                <button
-                  onClick={() => selectNotice(n)}
-                  className={`flex w-full text-left px-3 py-3 gap-2 group transition border-l-2 ${
-                    activeNotice?.id === n.id
-                      ? "bg-blue-50/60 border-blue-500"
-                      : "border-transparent hover:bg-gray-50"
-                  } `}
-                >
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[13px] font-medium truncate text-gray-800 group-hover:text-gray-900">
-                      {n.title}
-                    </span>
-                    <span className="text-[11px] text-gray-400 mt-0.5">
-                      {n.created_at
-                        ? new Date(n.created_at).toLocaleDateString()
-                        : ""}
-                    </span>
-                  </div>
-                  {n.pinned && (
-                    <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold">
-                      PIN
-                    </span>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
+            {notices.map((n) => {
+              const selected = activeNotice?.id === n.id;
+              return (
+                <ListItem key={n.id} disablePadding>
+                  <ListItemButton
+                    selected={selected}
+                    onClick={() => selectNotice(n)}
+                    sx={{ alignItems: "flex-start" }}
+                  >
+                    <ListItemText
+                      primary={
+                        <span
+                          style={{
+                            display: "flex",
+                            gap: 6,
+                            alignItems: "center",
+                          }}
+                        >
+                          {n.title}
+                          {n.pinned && (
+                            <Chip
+                              size="small"
+                              label="PIN"
+                              color="warning"
+                              sx={{ ml: "auto" }}
+                            />
+                          )}
+                        </span>
+                      }
+                      secondary={
+                        n.created_at
+                          ? new Date(n.created_at).toLocaleDateString()
+                          : ""
+                      }
+                      primaryTypographyProps={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        noWrap: true,
+                      }}
+                      secondaryTypographyProps={{ fontSize: 11 }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
+          </List>
         </div>
-        <div className="flex-1 min-w-0 relative">
+        <div style={{ flex: 1, minWidth: 0 }}>
           {activeNotice ? (
-            <article className="prose prose-sm max-w-none dark:prose-invert">
-              <header className="mb-4 border-b pb-3">
-                <h1 className="text-lg font-semibold leading-tight text-gray-900 flex items-center gap-2 flex-wrap">
-                  {activeNotice.pinned && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold">
-                      PIN
-                    </span>
-                  )}
-                  <span>{activeNotice.title}</span>
-                </h1>
-                <p className="text-[11px] text-gray-400 mt-1">
-                  {activeNotice.created_at
-                    ? new Date(activeNotice.created_at).toLocaleString()
-                    : ""}
-                </p>
-              </header>
-              <div className="text-[13px] leading-relaxed whitespace-pre-wrap break-words">
+            <div>
+              <Typography
+                variant="h6"
+                sx={{ mb: 1, display: "flex", gap: 1, alignItems: "center" }}
+              >
+                {activeNotice.pinned && (
+                  <Chip size="small" label="PIN" color="warning" />
+                )}
+                <span>{activeNotice.title}</span>
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", mb: 2 }}
+              >
+                {activeNotice.created_at
+                  ? new Date(activeNotice.created_at).toLocaleString()
+                  : ""}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  fontSize: 13,
+                  lineHeight: 1.6,
+                }}
+              >
                 {activeNotice.content}
-              </div>
-            </article>
-          ) : (
-            <div className="h-full grid place-items-center text-sm text-gray-400">
-              공지를 선택하세요.
+              </Typography>
             </div>
+          ) : (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ height: "100%", display: "grid", placeItems: "center" }}
+            >
+              공지를 선택하세요.
+            </Typography>
           )}
         </div>
-        {/* end inner flex */}
-      </div>
-      {/* end modal panel */}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

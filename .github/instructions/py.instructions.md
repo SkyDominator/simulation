@@ -20,4 +20,3 @@ Follow the general guidelines below when writing Python codes.
 6. **Security**: Be mindful of security best practices, especially when handling user input or sensitive data.
 7. **Refactoring**: If you encounter code that can be improved, refactor it while ensuring existing functionality remains intact.
 8. **Functionality**: Ensure that the code meets the specified requirements and behaves as expected.
-9. **Testing**: Write and run test codes for new features or critical parts of the code to ensure reliability and facilitate future changes.

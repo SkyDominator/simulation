@@ -1,5 +1,5 @@
 ---
-applyTo: '**.tsx, **.ts, **.js, **.jsx'
+applyTo: '**.tsx, **.ts, **.js, **.jsx, **.py'
 ---
 
 ## Development environment
@@ -14,13 +14,13 @@ applyTo: '**.tsx, **.ts, **.js, **.jsx'
 1. It is a PWA (Progressive Web App). It should run on both mobile devices (Android and iOS) and desktops (Windows OS) seamlessly.
 2. It will not be uploaded to any App Store (e.g., Google Play, Apple App Store). It will be shared for installation and running to only a certain group of users via direct link or other means.
 3. The app's main target device is mobile devices (Chrome browser in iPhone and Android), so the UI/UX should be optimized for mobile screens. However, it should also work well on desktop (Windows 10 or higher, Chrome browser) screens.
-4. Think hard about the user experience and how to make the app intuitive and easy to use for all users.
-5. Think hard before implementing codes.
+4. Think hard for implementing codes.
+5. Test and validate the codes you suggested after code generation. Test for new features or critical parts of the code to ensure reliability and facilitate future changes.
 
-## The instructions for backend codes
+## The guides for backend codes
 
 Refer to [this document](./py.instructions.md)
 
-## The instructions for frontend codes
+## The guides for frontend codes
 
 Refer to [this document](./react.instructions.md)
