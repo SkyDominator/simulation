@@ -340,19 +340,16 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
                           new Date(plan.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap max-w-[200px]">
-                        <input
-                          type="text"
-                          readOnly
-                          value={
-                            (plan.memo || "").length > 20
-                              ? `${(plan.memo || "").slice(0, 20)}…`
-                              : plan.memo || ""
-                          }
+                        <button
+                          type="button"
                           onClick={() => openMemo(plan)}
-                          placeholder="메모 없음"
                           title={plan.memo || ""}
-                          className="w-full text-sm border rounded px-2 py-1 cursor-pointer bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 truncate"
-                        />
+                          className="w-full text-left text-sm border rounded px-2 py-1 cursor-pointer bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 truncate"
+                        >
+                          {(plan.memo || "").length > 20
+                            ? `${(plan.memo || "").slice(0, 20)}…`
+                            : plan.memo || "메모 없음"}
+                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button

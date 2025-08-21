@@ -20,11 +20,44 @@ export const Modal: React.FC<ModalProps> = ({
   footer,
   variant = 'default'
 }) => {
-  const [mounted, setMounted] = React.useState(false);
+  // Render portal as soon as isOpen is true. Remove mount gating to avoid cases
+  // where the portal isn't rendered due to lifecycle/timing in dev mode.
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+  // Ensure we have a stable portal root. Some environments may not have
+  // document.body ready at the same time; create a #modal-root if missing.
+  const [portalRoot, setPortalRoot] = React.useState<Element | null>(() =>
+    typeof document !== 'undefined' ? document.getElementById('modal-root') : null
+  );
+
+  React.useEffect(() => {
+    if (portalRoot) return;
+    const existing = document.getElementById('modal-root');
+    if (existing) {
+      setPortalRoot(existing);
+      return;
+    }
+    const el = document.createElement('div');
+    el.id = 'modal-root';
+    document.body.appendChild(el);
+    setPortalRoot(el);
+    return () => {
+      // keep root if other code might rely on it; only remove if empty
+      try {
+        if (el.parentElement && el.childElementCount === 0) el.parentElement.removeChild(el);
+      } catch {
+        /* ignore */
+      }
+    };
+  }, [portalRoot]);
+
   // (Removed responsive state; current layout is fluid across breakpoints)
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    // debug helper
+    // console.debug will show when modal component mounts and isOpen changes
+    // Keep this lightweight; remove in production if noisy.
+    console.debug('[Modal] mounted, isOpen=', isOpen);
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -72,11 +105,12 @@ export const Modal: React.FC<ModalProps> = ({
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  if (!isOpen || !mounted) return null;
-
+  if (!isOpen) return null;
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose();
   };
+
+  
 
   const sizeMap: Record<string,string> = {
     sm: 'sm:max-w-sm',
@@ -133,7 +167,8 @@ export const Modal: React.FC<ModalProps> = ({
     </div>
   );
 
-  return createPortal(content, document.body);
+  // If portal root is available, use it; fallback to document.body
+  return createPortal(content, portalRoot || document.body);
 };
 
 // Tailwind utility notes:
