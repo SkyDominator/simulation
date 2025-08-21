@@ -1,7 +1,14 @@
 import React, { useState } from "react";
-import { Button } from "../components/Button";
-import { Input } from "../components/Input";
 import { api } from "../services/api";
+import {
+  Box,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  Stack,
+  Alert,
+} from "@mui/material";
 
 interface WhitelistCheckPageProps {
   onVerified: () => void;
@@ -44,47 +51,60 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h1 className="text-2xl font-bold mb-6 text-center">인증</h1>
-
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                이름
-              </label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="이름"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                전화번호
-              </label>
-              <Input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="전화번호 (010-1234-5678)"
-              />
-            </div>
-
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: (t) => t.palette.grey[100],
+        p: 2,
+      }}
+    >
+      <Paper elevation={4} sx={{ p: 4, width: "100%", maxWidth: 420 }}>
+        <Typography variant="h5" fontWeight={700} textAlign="center" mb={3}>
+          인증
+        </Typography>
+        <Box component="form" noValidate onSubmit={handleSubmit}>
+          <Stack spacing={2.5}>
+            <TextField
+              label="이름"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="이름"
+              fullWidth
+              size="small"
+              autoComplete="name"
+              autoFocus
+            />
+            <TextField
+              label="전화번호"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="전화번호 (010-1234-5678)"
+              fullWidth
+              size="small"
+              autoComplete="tel"
+              inputProps={{ inputMode: "tel" }}
+            />
+            {error && (
+              <Alert severity="error" sx={{ py: 0 }}>
+                {error}
+              </Alert>
+            )}
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              variant="contained"
+              size="large"
               disabled={loading}
+              fullWidth
             >
               {loading ? "확인 중..." : "인증하기"}
             </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+          </Stack>
+        </Box>
+      </Paper>
+    </Box>
   );
 };
 
