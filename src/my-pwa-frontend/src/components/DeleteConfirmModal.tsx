@@ -12,6 +12,7 @@ interface DeleteConfirmModalProps {
   message?: string;
   targetLabel?: string | null;
   loading?: boolean;
+  ordinal?: number | null; // simple sequential id shown on main page
   onCancel: () => void;
   onConfirm: () => Promise<void> | void;
 }
@@ -22,6 +23,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   message = "선택한 항목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
   targetLabel,
   loading = false,
+  ordinal: ordinal = null,
   onCancel,
   onConfirm,
 }) => {
@@ -34,13 +36,13 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
         <Typography variant="body2" sx={{ mb: targetLabel ? 1.5 : 0 }}>
           {message}
         </Typography>
-        {targetLabel && (
+        {ordinal !== null && (
           <Typography
             variant="caption"
             color="text.secondary"
             sx={{ wordBreak: "break-all" }}
           >
-            대상: {targetLabel}
+            삭제할 시뮬레이션 번호: {ordinal}
           </Typography>
         )}
       </DialogContent>

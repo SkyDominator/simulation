@@ -49,6 +49,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
   const [deletingId, setDeletingId] = useState<string>("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [targetPlan, setTargetPlan] = useState<Plan | null>(null);
+  const [targetOrdinal, setTargetOrdinal] = useState<number | null>(null);
   const [memoModalOpen, setMemoModalOpen] = useState(false);
   const [memoTarget, setMemoTarget] = useState<Plan | null>(null);
   const [signOutLoading, setSignOutLoading] = useState(false);
@@ -202,8 +203,9 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
     }
   };
 
-  const openDeleteConfirm = (plan: Plan) => {
+  const openDeleteConfirm = (plan: Plan, ordinal?: number) => {
     setTargetPlan(plan);
+    setTargetOrdinal(ordinal ?? null);
     setConfirmOpen(true);
   };
 
@@ -327,6 +329,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
+                    <TableCell sx={{ width: 40 }}>번호</TableCell>
                     <TableCell
                       onClick={(e: React.MouseEvent<HTMLTableCellElement>) =>
                         handleHeaderClick("plan_id", e)
@@ -392,7 +395,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {sortedPlans.map((plan: Plan) => {
+                  {sortedPlans.map((plan: Plan, idx: number) => {
                     const isRunning = runningId === plan.simulation_id;
                     const isDeleting = deletingId === plan.simulation_id;
                     const memoDisplay = plan.memo || "메모 없음";
@@ -402,6 +405,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
                         : memoDisplay;
                     return (
                       <TableRow key={plan.simulation_id} hover>
+                        <TableCell>{idx + 1}</TableCell>
                         <TableCell>{plan.plan_id} 플랜</TableCell>
                         <TableCell>{plan.company_round}</TableCell>
                         <TableCell>{plan.simulation_rounds}</TableCell>
@@ -469,7 +473,9 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
                                 <IconButton
                                   color="error"
                                   size="small"
-                                  onClick={() => openDeleteConfirm(plan)}
+                                  onClick={() =>
+                                    openDeleteConfirm(plan, idx + 1)
+                                  }
                                   disabled={isDeleting}
                                 >
                                   <DeleteIcon fontSize="small" />
@@ -489,9 +495,13 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
       </Container>
       <DeleteConfirmModal
         isOpen={confirmOpen}
-        onCancel={() => setConfirmOpen(false)}
+        onCancel={() => {
+          setConfirmOpen(false);
+          setTargetOrdinal(null);
+        }}
         onConfirm={handleConfirmDelete}
         loading={deletingId === targetPlan?.simulation_id}
+        ordinal={targetOrdinal}
         targetLabel={
           targetPlan
             ? `${targetPlan.plan_id} / ${targetPlan.simulation_id}`
