@@ -256,6 +256,35 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
                       <TableRow key={idx} hover>
                         {columns.map((col) => {
                           const isNumeric = NUMERIC_COLUMNS.has(col);
+                          const rawVal = row[col];
+                          let display: React.ReactNode = formatValue(rawVal);
+                          if (
+                            col === "sales_achievement_rate" &&
+                            display !== ""
+                          ) {
+                            display = `${display}%`;
+                          }
+                          if (col === "cumulative_net_profit") {
+                            const numericVal =
+                              typeof rawVal === "number"
+                                ? rawVal
+                                : parseFloat(String(rawVal));
+                            const positive =
+                              !isNaN(numericVal) && numericVal >= 0;
+                            display = (
+                              <Box
+                                component="span"
+                                sx={{
+                                  fontWeight: 700,
+                                  color: positive
+                                    ? "success.main"
+                                    : "error.main",
+                                }}
+                              >
+                                {display}
+                              </Box>
+                            );
+                          }
                           return (
                             <TableCell
                               key={col}
@@ -268,7 +297,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
                                   : undefined,
                               }}
                             >
-                              {formatValue(row[col])}
+                              {display}
                             </TableCell>
                           );
                         })}
