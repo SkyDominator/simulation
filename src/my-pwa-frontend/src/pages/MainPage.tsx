@@ -234,7 +234,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
     <>
       <div className="p-8 max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">투자 시뮬레이션</h1>
+          <h1 className="text-3xl font-bold">시뮬레이션</h1>
           <div className="flex gap-4">
             {openNotice && (
               <Button
@@ -255,12 +255,12 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
 
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">내 투자 플랜</h2>
+            <h2 className="text-xl font-bold">내 시뮬레이션</h2>
             <Button
               onClick={handleNewPlan}
               className="bg-green-600 hover:bg-green-700"
             >
-              새 플랜 만들기
+              새 시뮬레이션 만들기
             </Button>
           </div>
 
