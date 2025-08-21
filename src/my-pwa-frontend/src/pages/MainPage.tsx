@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../components/Button";
-import { Modal } from "../components/Modal";
+// Removed generic Modal; using dedicated DeleteConfirmModal
+import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { MemoModal } from "../components/MemoModal";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
@@ -393,29 +394,18 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
           )}
         </div>
       </div>
-      <Modal
+      <DeleteConfirmModal
         isOpen={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        title="삭제 확인"
-      >
-        <p className="mb-6">
-          선택한 시뮬레이션을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
-        </p>
-        <div className="flex justify-end gap-3">
-          <Button
-            onClick={() => setConfirmOpen(false)}
-            className="bg-gray-500 hover:bg-gray-600"
-          >
-            취소
-          </Button>
-          <Button
-            onClick={handleConfirmDelete}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            삭제
-          </Button>
-        </div>
-      </Modal>
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+        loading={deletingId === targetPlan?.simulation_id}
+        targetLabel={
+          targetPlan
+            ? `${targetPlan.plan_id} / ${targetPlan.simulation_id}`
+            : null
+        }
+        message="선택한 시뮬레이션을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+      />
       <MemoModal
         isOpen={memoModalOpen}
         initialMemo={memoTarget?.memo || ""}
