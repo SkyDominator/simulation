@@ -1,12 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { Button } from "../components/Button";
-// Removed generic Modal; using dedicated DeleteConfirmModal
+import { Button } from "../components/Button"; // wrapper around MUI Button keeping prior API
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { MemoModal } from "../components/MemoModal";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import type { Plan, Page } from "../types/types";
 import type { SimulationRunResponse } from "../types/types";
+// MUI imports for redesigned layout
+import {
+  Container,
+  Paper,
+  Typography,
+  Box,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
+  Tooltip,
+  Stack,
+  Chip,
+  Divider,
+  LinearProgress,
+} from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import DeleteIcon from "@mui/icons-material/Delete";
+import NoteAltIcon from "@mui/icons-material/NoteAlt";
+import LogoutIcon from "@mui/icons-material/Logout";
+import AddIcon from "@mui/icons-material/Add";
 
 interface MainPageProps {
   setPage: (page: Page) => void;
@@ -233,167 +257,225 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
 
   return (
     <>
-      <div className="p-8 max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">시뮬레이션</h1>
-          <div className="flex gap-4">
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          mb={4}
+        >
+          <Typography variant="h4" fontWeight={700}>
+            시뮬레이션
+          </Typography>
+          <Stack direction="row" spacing={1}>
             {openNotice && (
-              <Button
-                onClick={openNotice}
-                className="bg-yellow-500 hover:bg-yellow-600"
-              >
+              <Button onClick={openNotice} variant="contained" color="warning">
                 공지사항
               </Button>
             )}
             <Button
               onClick={() => signOut()}
-              className="bg-gray-500 hover:bg-gray-600"
+              variant="outlined"
+              color="inherit"
             >
-              로그아웃
+              <LogoutIcon sx={{ mr: 0.5 }} fontSize="small" /> 로그아웃
             </Button>
-          </div>
-        </div>
+          </Stack>
+        </Stack>
 
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">내 시뮬레이션</h2>
+        <Paper elevation={3} sx={{ p: 2.5, mb: 4 }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            alignItems={{ xs: "flex-start", sm: "center" }}
+            spacing={2}
+            mb={2}
+          >
+            <Typography variant="h6" fontWeight={600}>
+              내 시뮬레이션
+            </Typography>
             <Button
               onClick={handleNewPlan}
-              className="bg-green-600 hover:bg-green-700"
+              variant="contained"
+              color="success"
+              startIcon={<AddIcon />}
             >
-              새 시뮬레이션 만들기
+              새 시뮬레이션
             </Button>
-          </div>
-
-          {loading ? (
-            <p className="text-center py-4">로딩 중...</p>
-          ) : plans.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none"
-                      onClick={(e) => handleHeaderClick("plan_id", e)}
-                      title="Click to sort. Shift+Click to add as secondary sort"
-                    >
-                      플랜 타입 {sortIndicator("plan_id")}
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none"
-                      onClick={(e) => handleHeaderClick("company_round", e)}
-                      title="Click to sort. Shift+Click to add as secondary sort"
-                    >
-                      회사 회차 {sortIndicator("company_round")}
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none"
-                      onClick={(e) => handleHeaderClick("simulation_rounds", e)}
-                      title="Click to sort. Shift+Click to add as secondary sort"
-                    >
-                      총 회차 {sortIndicator("simulation_rounds")}
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none"
-                      onClick={(e) => handleHeaderClick("created_at", e)}
-                      title="Click to sort. Shift+Click to add as secondary sort"
-                    >
-                      생성일 {sortIndicator("created_at")}
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      메모
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    ></th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    ></th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    ></th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {sortedPlans.map((plan: Plan) => (
-                    <tr key={plan.simulation_id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {plan.plan_id} 플랜
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {plan.company_round}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {plan.simulation_rounds}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {plan.created_at &&
-                          new Date(plan.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap max-w-[200px]">
-                        <button
-                          type="button"
-                          onClick={() => openMemo(plan)}
-                          title={plan.memo || ""}
-                          className="w-full text-left text-sm border rounded px-2 py-1 cursor-pointer bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 truncate"
-                        >
-                          {(plan.memo || "").length > 20
-                            ? `${(plan.memo || "").slice(0, 20)}…`
-                            : plan.memo || "메모 없음"}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => {
-                            setEditingPlan(plan);
-                            setPage("plan-editor");
-                          }}
-                          className="text-blue-600 hover:text-blue-900 mr-4"
-                        >
-                          편집
-                        </button>
-                        <button
-                          onClick={() => handleViewResults(plan)}
-                          className="text-green-600 hover:text-green-900 disabled:text-gray-400 mr-4"
-                          disabled={runningId === plan.simulation_id}
-                        >
-                          {runningId === plan.simulation_id
-                            ? "실행 중…"
-                            : "결과 보기"}
-                        </button>
-                        <button
-                          onClick={() => openDeleteConfirm(plan)}
-                          className="text-red-600 hover:text-red-900 disabled:text-gray-400"
-                          disabled={deletingId === plan.simulation_id}
-                        >
-                          {deletingId === plan.simulation_id
-                            ? "삭제 중…"
-                            : "삭제"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-center py-4">
-              아직 생성된 플랜이 없습니다. '새 플랜 만들기'를 클릭하여
+          </Stack>
+          <Divider sx={{ mb: 2 }} />
+          {loading && <LinearProgress sx={{ mb: 2 }} />}
+          {!loading && plans.length === 0 && (
+            <Box py={4} textAlign="center" color="text.secondary">
+              아직 생성된 플랜이 없습니다. '새 시뮬레이션' 버튼을 눌러
               시작하세요.
-            </p>
+            </Box>
           )}
-        </div>
-      </div>
+          {!loading && plans.length > 0 && (
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small" stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell
+                      onClick={(e: React.MouseEvent<HTMLTableCellElement>) =>
+                        handleHeaderClick("plan_id", e)
+                      }
+                      sx={{ cursor: "pointer", userSelect: "none" }}
+                    >
+                      <Tooltip
+                        title="Click to sort. Shift+Click for secondary sort"
+                        arrow
+                      >
+                        <Box display="inline-flex" alignItems="center">
+                          플랜 타입 {sortIndicator("plan_id")}
+                        </Box>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell
+                      onClick={(e: React.MouseEvent<HTMLTableCellElement>) =>
+                        handleHeaderClick("company_round", e)
+                      }
+                      sx={{ cursor: "pointer", userSelect: "none" }}
+                    >
+                      <Tooltip
+                        title="Click to sort. Shift+Click for secondary sort"
+                        arrow
+                      >
+                        <Box display="inline-flex" alignItems="center">
+                          회사 회차 {sortIndicator("company_round")}
+                        </Box>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell
+                      onClick={(e: React.MouseEvent<HTMLTableCellElement>) =>
+                        handleHeaderClick("simulation_rounds", e)
+                      }
+                      sx={{ cursor: "pointer", userSelect: "none" }}
+                    >
+                      <Tooltip
+                        title="Click to sort. Shift+Click for secondary sort"
+                        arrow
+                      >
+                        <Box display="inline-flex" alignItems="center">
+                          총 회차 {sortIndicator("simulation_rounds")}
+                        </Box>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell
+                      onClick={(e: React.MouseEvent<HTMLTableCellElement>) =>
+                        handleHeaderClick("created_at", e)
+                      }
+                      sx={{ cursor: "pointer", userSelect: "none" }}
+                    >
+                      <Tooltip
+                        title="Click to sort. Shift+Click for secondary sort"
+                        arrow
+                      >
+                        <Box display="inline-flex" alignItems="center">
+                          생성일 {sortIndicator("created_at")}
+                        </Box>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell>메모</TableCell>
+                    <TableCell align="right">액션</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {sortedPlans.map((plan: Plan) => {
+                    const isRunning = runningId === plan.simulation_id;
+                    const isDeleting = deletingId === plan.simulation_id;
+                    const memoDisplay = plan.memo || "메모 없음";
+                    const truncated =
+                      memoDisplay.length > 20
+                        ? `${memoDisplay.slice(0, 20)}…`
+                        : memoDisplay;
+                    return (
+                      <TableRow key={plan.simulation_id} hover>
+                        <TableCell>{plan.plan_id} 플랜</TableCell>
+                        <TableCell>{plan.company_round}</TableCell>
+                        <TableCell>{plan.simulation_rounds}</TableCell>
+                        <TableCell>
+                          {plan.created_at &&
+                            new Date(plan.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell sx={{ maxWidth: 220 }}>
+                          <Tooltip
+                            title={memoDisplay}
+                            arrow
+                            disableHoverListener={memoDisplay === "메모 없음"}
+                          >
+                            <Chip
+                              icon={<NoteAltIcon />}
+                              label={truncated}
+                              size="small"
+                              onClick={() => openMemo(plan)}
+                              variant={plan.memo ? "filled" : "outlined"}
+                              color={plan.memo ? "primary" : "default"}
+                              sx={{ maxWidth: 200 }}
+                            />
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            justifyContent="flex-end"
+                          >
+                            <Tooltip title="편집" arrow>
+                              <span>
+                                <IconButton
+                                  color="primary"
+                                  size="small"
+                                  onClick={() => {
+                                    setEditingPlan(plan);
+                                    setPage("plan-editor");
+                                  }}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            <Tooltip
+                              title={isRunning ? "실행 중" : "결과 보기"}
+                              arrow
+                            >
+                              <span>
+                                <IconButton
+                                  color="success"
+                                  size="small"
+                                  onClick={() => handleViewResults(plan)}
+                                  disabled={isRunning}
+                                >
+                                  <PlayArrowIcon fontSize="small" />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            <Tooltip
+                              title={isDeleting ? "삭제 중" : "삭제"}
+                              arrow
+                            >
+                              <span>
+                                <IconButton
+                                  color="error"
+                                  size="small"
+                                  onClick={() => openDeleteConfirm(plan)}
+                                  disabled={isDeleting}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Paper>
+      </Container>
       <DeleteConfirmModal
         isOpen={confirmOpen}
         onCancel={() => setConfirmOpen(false)}
