@@ -6,7 +6,20 @@ import {
   Select,
   MenuItem,
   Typography,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  TableContainer,
+  Paper,
+  TextField,
+  IconButton,
+  Stack,
+  Tooltip,
 } from "@mui/material";
+import RemoveIcon from "@mui/icons-material/Remove";
+import AddIcon from "@mui/icons-material/Add";
 import {
   getPlanLimits,
   getDefaultInvestmentAmount,
@@ -53,7 +66,7 @@ function SalesRateInput({
   const MIN = 50;
   const MAX = 100;
   const ref = React.useRef<HTMLInputElement>(null);
-  const [rawDigits, setRawDigits] = React.useState<string>(value.toString()); // digits only
+  const [rawDigits, setRawDigits] = React.useState<string>(value.toString());
   const [internalValue, setInternalValue] = React.useState<number>(value);
 
   React.useEffect(() => {
@@ -68,7 +81,7 @@ function SalesRateInput({
 
   const commitValue = (digits: string) => {
     const num = parseInt(digits, 10);
-    if (isNaN(num)) return; // ignore; allow user to keep typing
+    if (isNaN(num)) return;
     const clamped = clamp(num);
     setInternalValue(clamped);
     setRawDigits(clamped.toString());
@@ -76,21 +89,17 @@ function SalesRateInput({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Remove any trailing % the user might select and delete
-    const input = e.target.value.replace(/%/g, "").replace(/[^0-9]/g, "");
+    const input = e.target.value.replace(/[^0-9]/g, "");
     if (input === "") {
-      // allow clearing
       setRawDigits("");
       return;
     }
-    // Keep up to 3 digits; later commit will clamp
     const next = input.slice(0, 3);
     setRawDigits(next);
   };
 
   const handleBlur = () => {
     if (rawDigits === "") {
-      // default when left empty
       setInternalValue(100);
       setRawDigits("100");
       onChange(100);
@@ -130,52 +139,61 @@ function SalesRateInput({
     }
   };
 
-  const displayValue = rawDigits === "" ? "" : `${rawDigits}%`;
+  const numeric = rawDigits === "" ? undefined : parseInt(rawDigits, 10);
+  const atMin = numeric !== undefined && numeric <= MIN;
+  const atMax = numeric !== undefined && numeric >= MAX;
 
   return (
-    <div className="flex items-center gap-1">
-      <div className="w-28">
-        <input
-          ref={(el) => {
-            ref.current = el;
-            if (inputRef) inputRef(el);
-          }}
-          type="text"
-          inputMode="numeric"
-          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300 text-right"
-          value={displayValue}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          placeholder="최소값: 50%, 최대값: 100%"
-          aria-label="매출 달성율"
-        />
-      </div>
-      <div className="flex gap-1">
-        <button
-          type="button"
-          aria-label="감소"
-          className="w-10 h-10 flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-lg font-medium"
-          onClick={() => step(-1)}
-          disabled={
-            (rawDigits === "" ? internalValue : parseInt(rawDigits, 10)) <= MIN
-          }
-        >
-          −
-        </button>
-        <button
-          type="button"
-          aria-label="증가"
-          className="w-10 h-10 flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-lg font-medium"
-          onClick={() => step(1)}
-          disabled={
-            (rawDigits === "" ? internalValue : parseInt(rawDigits, 10)) >= MAX
-          }
-        >
-          +
-        </button>
-      </div>
-    </div>
+    <Stack direction="row" spacing={0.5} alignItems="center">
+      <TextField
+        size="small"
+        inputRef={(el) => {
+          ref.current = el;
+          if (inputRef) inputRef(el);
+        }}
+        value={rawDigits}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        placeholder="50 - 100"
+        aria-label="매출 달성율"
+        InputProps={{
+          inputMode: "numeric",
+          endAdornment: (
+            <Typography variant="body2" component="span">
+              %
+            </Typography>
+          ),
+          sx: { width: 90, textAlign: "right" },
+        }}
+      />
+      <Stack direction="row" spacing={0.5}>
+        <Tooltip title="감소">
+          <span>
+            <IconButton
+              size="small"
+              onClick={() => step(-1)}
+              disabled={atMin}
+              aria-label="감소"
+            >
+              <RemoveIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="증가">
+          <span>
+            <IconButton
+              size="small"
+              onClick={() => step(1)}
+              disabled={atMax}
+              aria-label="증가"
+            >
+              <AddIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -193,9 +211,8 @@ const FormattedAmountInput: React.FC<{
   );
   const [belowMin, setBelowMin] = React.useState(false);
   const ref = React.useRef<HTMLInputElement>(null);
-  const STEP = 10000; // 증감 스텝 단위
+  const STEP = 10000;
 
-  // Sync external value changes
   React.useEffect(() => {
     const formatted = value ? value.toLocaleString() : "";
     if (formatted !== display) setDisplay(formatted);
@@ -210,7 +227,6 @@ const FormattedAmountInput: React.FC<{
   };
 
   const computeNewCaret = (formatted: string, digitsBefore: number): number => {
-    // If no digits should appear before caret, caret stays at start.
     if (digitsBefore === 0) return 0;
     let count = 0;
     for (let i = 0; i < formatted.length; i++) {
@@ -226,24 +242,17 @@ const FormattedAmountInput: React.FC<{
     const selection = inputEl.selectionStart ?? rawInput.length;
     const digitsBeforeCursor = rawInput.slice(0, selection).replace(/,/g, "");
     const rawDigits = rawInput.replace(/,/g, "");
-
     if (rawDigits === "") {
       setDisplay("");
       onValueChange(null);
       return;
     }
-    if (!/^\d+$/.test(rawDigits)) {
-      // Ignore invalid characters (don't update state)
-      return;
-    }
-
+    if (!/^\d+$/.test(rawDigits)) return;
     const numeric = parseInt(rawDigits, 10);
     setBelowMin(!!minValue && numeric < minValue);
-
     const formatted = numeric.toLocaleString();
     setDisplay(formatted);
     onValueChange(numeric);
-
     const caretDigits = Math.min(
       digitsBeforeCursor.length,
       numeric.toString().length
@@ -252,14 +261,12 @@ const FormattedAmountInput: React.FC<{
     setCaret(newCaret);
   };
 
-  // Increase / decrease helpers
   const applyNumericValue = (numeric: number) => {
-    if (numeric < 0) numeric = 0; // 음수 방지
+    if (numeric < 0) numeric = 0;
     setBelowMin(!!minValue && numeric < (minValue || 0));
     const formatted = numeric === 0 ? "0" : numeric.toLocaleString();
     setDisplay(formatted);
-    onValueChange(numeric === 0 ? 0 : numeric); // 0 입력 허용 여부: 기존 placeholder가 0 불가라면 필요 시 조정
-    // caret 맨 끝
+    onValueChange(numeric === 0 ? 0 : numeric);
     setCaret(formatted.length);
   };
 
@@ -289,7 +296,6 @@ const FormattedAmountInput: React.FC<{
   };
 
   const handleBlur = () => {
-    // Auto-correct below-min or empty to minValue (default amount) if provided
     const rawDigits = display.replace(/,/g, "");
     if (!rawDigits) {
       if (minValue !== undefined) {
@@ -307,48 +313,48 @@ const FormattedAmountInput: React.FC<{
   };
 
   return (
-    <div className="flex items-center gap-1">
-      <input
-        ref={(el) => {
+    <Stack direction="row" spacing={0.5} alignItems="center">
+      <TextField
+        size="small"
+        inputRef={(el) => {
           ref.current = el;
           if (inputRef) inputRef(el);
         }}
-        type="text"
-        inputMode="numeric"
         value={display}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
         placeholder={placeholder}
-        title={
-          belowMin && minValue
-            ? `최소 권장 매출액: ${minValue.toLocaleString()} 이상 입력하세요.`
-            : ""
+        error={belowMin}
+        helperText={
+          belowMin && minValue ? `최소 ${minValue.toLocaleString()} 이상` : ""
         }
-        className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-          belowMin ? "border-red-500 focus:ring-red-400" : "border-gray-300"
-        }`}
-        data-below-min={belowMin || undefined}
+        InputProps={{
+          inputMode: "numeric",
+          sx: { width: 140 },
+        }}
       />
-      <div className="flex gap-1">
-        <button
-          type="button"
-          aria-label="감소"
-          className="w-10 h-10 flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-lg font-medium"
-          onClick={() => handleStep(-1)}
-        >
-          −
-        </button>
-        <button
-          type="button"
-          aria-label="증가"
-          className="w-10 h-10 flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-lg font-medium"
-          onClick={() => handleStep(1)}
-        >
-          +
-        </button>
-      </div>
-    </div>
+      <Stack direction="row" spacing={0.5}>
+        <Tooltip title="감소">
+          <IconButton
+            size="small"
+            onClick={() => handleStep(-1)}
+            aria-label="감소"
+          >
+            <RemoveIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="증가">
+          <IconButton
+            size="small"
+            onClick={() => handleStep(1)}
+            aria-label="증가"
+          >
+            <AddIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      </Stack>
+    </Stack>
   );
 };
 
@@ -481,79 +487,73 @@ const InvestmentTable: React.FC<InvestmentEditorProps> = ({
   };
 
   return (
-    <table className="w-full text-sm text-left">
-      <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
-        <tr>
-          <th scope="col" className="px-6 py-3">
-            회사 회차
-          </th>
-          <th scope="col" className="px-6 py-3">
-            개인 회차
-          </th>
-          <th scope="col" className="px-6 py-3">
-            매출액
-          </th>
-          <th scope="col" className="px-10 py-3">
-            매출 달성율 (%)
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {investments.length > 0 ? (
-          investments.map((inv, index) => {
-            const defaultAmount = getDefaultInvestmentAmount(
-              planType,
-              inv.round
-            );
-            return (
-              <tr key={inv.round} className="bg-white border-b">
-                <td className="px-6 py-4">{companyRound + index}</td>
-                <td className="px-6 py-4">{inv.round}</td>
-                <td className="px-6 py-4">
-                  <FormattedAmountInput
-                    value={inv.amount}
-                    minValue={defaultAmount}
-                    placeholder={
-                      defaultAmount
-                        ? `최소값: ${defaultAmount.toLocaleString()}`
-                        : "매출액 입력 (0 불가)"
-                    }
-                    onValueChange={(val) => {
-                      if (val === null) {
-                        onInvestmentChange(inv.round, "");
-                      } else {
-                        onInvestmentChange(inv.round, val.toString());
+    <TableContainer component={Paper} sx={{ maxHeight: 384 }}>
+      <Table size="small" stickyHeader>
+        <TableHead>
+          <TableRow>
+            <TableCell>회사 회차</TableCell>
+            <TableCell>개인 회차</TableCell>
+            <TableCell>매출액</TableCell>
+            <TableCell>매출 달성율 (%)</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {investments.length > 0 ? (
+            investments.map((inv, index) => {
+              const defaultAmount = getDefaultInvestmentAmount(
+                planType,
+                inv.round
+              );
+              return (
+                <TableRow key={inv.round} hover>
+                  <TableCell>{companyRound + index}</TableCell>
+                  <TableCell>{inv.round}</TableCell>
+                  <TableCell>
+                    <FormattedAmountInput
+                      value={inv.amount}
+                      minValue={defaultAmount}
+                      placeholder={
+                        defaultAmount
+                          ? `최소값: ${defaultAmount.toLocaleString()}`
+                          : "매출액 입력 (0 불가)"
                       }
-                    }}
-                    onTabNext={() => focusAmount(index)}
-                    inputRef={(el: HTMLInputElement | null) => {
-                      if (el) amountRefs.current[index] = el;
-                    }}
-                  />
-                </td>
-                <td className="px-10 py-4">
-                  <SalesRateInput
-                    value={salesAchievementRates[inv.round.toString()] ?? 100}
-                    onChange={(val) =>
-                      onSalesRateChange && onSalesRateChange(inv.round, val)
-                    }
-                    onTabNext={() => focusRate(index)}
-                    inputRef={(el: HTMLInputElement | null) => {
-                      if (el) rateRefs.current[index] = el;
-                    }}
-                  />
-                </td>
-              </tr>
-            );
-          })
-        ) : (
-          <tr>
-            <td colSpan={4} className="px-6 py-4 text-center">
-              회차 정보가 없습니다. 이전 단계에서 총 회차를 설정해주세요.
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
+                      onValueChange={(val) => {
+                        if (val === null) {
+                          onInvestmentChange(inv.round, "");
+                        } else {
+                          onInvestmentChange(inv.round, val.toString());
+                        }
+                      }}
+                      onTabNext={() => focusAmount(index)}
+                      inputRef={(el: HTMLInputElement | null) => {
+                        if (el) amountRefs.current[index] = el;
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <SalesRateInput
+                      value={salesAchievementRates[inv.round.toString()] ?? 100}
+                      onChange={(val) =>
+                        onSalesRateChange && onSalesRateChange(inv.round, val)
+                      }
+                      onTabNext={() => focusRate(index)}
+                      inputRef={(el: HTMLInputElement | null) => {
+                        if (el) rateRefs.current[index] = el;
+                      }}
+                    />
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          ) : (
+            <TableRow>
+              <TableCell colSpan={4} align="center">
+                회차 정보가 없습니다. 이전 단계에서 총 회차를 설정해주세요.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 };
