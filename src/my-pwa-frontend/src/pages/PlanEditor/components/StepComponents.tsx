@@ -1,6 +1,13 @@
 import React from "react";
 import { Input } from "../../../components/Input";
 import {
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Typography,
+} from "@mui/material";
+import {
   getPlanLimits,
   getDefaultInvestmentAmount,
 } from "../utils/investmentUtils";
@@ -348,22 +355,32 @@ const FormattedAmountInput: React.FC<{
 export const PlanTypeSelector: React.FC<PlanTypeSelectorProps> = ({
   planType,
   onChange,
-}) => (
-  <div>
-    <h2 className="text-xl font-bold mb-4">1. 플랜 선택</h2>
-    <select
-      value={planType}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full p-2 border rounded-md"
-    >
-      {["A", "B", "C", "D", "R", "E", "F", "K", "P"].map((p) => (
-        <option key={p} value={p}>
-          {p} 플랜
-        </option>
-      ))}
-    </select>
-  </div>
-);
+}) => {
+  const options = ["A", "B", "C", "D", "R", "E", "F", "K", "P"];
+  return (
+    <div>
+      <Typography variant="h6" fontWeight={600} gutterBottom>
+        1. 플랜 선택
+      </Typography>
+      <FormControl fullWidth size="small">
+        <InputLabel id="plan-type-label">플랜</InputLabel>
+        <Select
+          labelId="plan-type-label"
+          id="plan-type-select"
+          label="플랜"
+          value={planType}
+          onChange={(e) => onChange(e.target.value as string)}
+        >
+          {options.map((p) => (
+            <MenuItem key={p} value={p}>
+              {p} 플랜
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+    </div>
+  );
+};
 
 export const CompanyRoundSelector: React.FC<CompanyRoundSelectorProps> = ({
   companyRound,
