@@ -1,5 +1,6 @@
 import React from "react";
 import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 
 const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Bottom navigation removed per request.
@@ -13,13 +14,25 @@ const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         bgcolor: "background.default",
       }}
     >
-      <Box
-        component="header"
-        sx={{ p: 2, bgcolor: "primary.main", color: "primary.contrastText" }}
-      >
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <h1 style={{ margin: 0, fontSize: 20 }}>생명빛 클럽 시뮬레이션</h1>
-        </div>
+      <Box component="header" sx={{ p: 2 }}>
+        <Box
+          sx={{
+            maxWidth: 600,
+            mx: "auto",
+            bgcolor: "primary.main",
+            color: "primary.contrastText",
+            borderRadius: 1,
+            px: 2,
+            py: 1,
+          }}
+        >
+          <Typography
+            component="h1"
+            sx={{ m: 0, fontSize: 20, fontWeight: 600 }}
+          >
+            생명빛 클럽 시뮬레이션
+          </Typography>
+        </Box>
       </Box>
 
       <Box
@@ -27,7 +40,7 @@ const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         sx={{
           flex: 1,
           width: "100%",
-          maxWidth: 1200,
+          maxWidth: 1400,
           margin: "0 auto",
           p: { xs: 2, md: 4 },
         }}
