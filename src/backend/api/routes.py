@@ -58,40 +58,27 @@ async def get_notice(notice_id: str):
 
 
 # ----------------------- Admin (protected) Notice CRUD -----------------------
-def _assert_admin(user_id: str, user_email: str | None, client) -> None:
-    # Simple check: email in configured admin list OR entry in 'admins' table mapping user_id
-    if user_email and user_email.lower() in settings.admin_emails:
-        return
-    # fallback: check admins table (optional)
+def _assert_admin(user_id: str, client) -> None:
+    """Authorize only if the user_id exists in the 'admins' table."""
     try:
         resp = client.table('admins').select('user_id').eq('user_id', user_id).limit(1).execute()
         if resp.data:
             return
     except Exception:
+        # fall through to 403 if table lookup fails
         pass
     raise HTTPException(status_code=403, detail="Admin privileges required")
-
-def _fetch_user_email_from_profile(client, user_id: str) -> str | None:
-    try:
-        resp = client.table('profiles').select('email').eq('id', user_id).limit(1).execute()
-        if resp.data:
-            return resp.data[0].get('email')
-    except Exception:
-        return None
-    return None
 
 @router.get('/api/admin/me')
 async def admin_me(user_id: str = Depends(authenticate_jwt_token)):
     client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
-    user_email = _fetch_user_email_from_profile(client, user_id)
-    _assert_admin(user_id, user_email, client)
+    _assert_admin(user_id, client)
     return {"is_admin": True, "success": True}
 
 @router.post('/api/admin/notices', response_model=NoticeCreateResponse)
 async def create_notice(req: NoticeCreateRequest, user_id: str = Depends(authenticate_jwt_token)):
     client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
-    user_email = _fetch_user_email_from_profile(client, user_id)
-    _assert_admin(user_id, user_email, client)
+    _assert_admin(user_id, client)
     payload = {
         'title': req.title.strip(),
         'content': req.content.strip(),
@@ -106,8 +93,7 @@ async def create_notice(req: NoticeCreateRequest, user_id: str = Depends(authent
 @router.patch('/api/admin/notices/{notice_id}', response_model=NoticeUpdateResponse)
 async def update_notice(notice_id: str, req: NoticeUpdateRequest, user_id: str = Depends(authenticate_jwt_token)):
     client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
-    user_email = _fetch_user_email_from_profile(client, user_id)
-    _assert_admin(user_id, user_email, client)
+    _assert_admin(user_id, client)
     update_fields = {k: v for k, v in req.model_dump().items() if v is not None}
     if 'title' in update_fields:
         update_fields['title'] = update_fields['title'].strip()
@@ -123,8 +109,7 @@ async def update_notice(notice_id: str, req: NoticeUpdateRequest, user_id: str =
 @router.delete('/api/admin/notices/{notice_id}', response_model=NoticeDeleteResponse)
 async def delete_notice(notice_id: str, user_id: str = Depends(authenticate_jwt_token)):
     client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
-    user_email = _fetch_user_email_from_profile(client, user_id)
-    _assert_admin(user_id, user_email, client)
+    _assert_admin(user_id, client)
     del_resp = client.table('notices').delete().eq('id', notice_id).execute()
     if not del_resp.data:
         raise HTTPException(status_code=404, detail='Notice not found')
