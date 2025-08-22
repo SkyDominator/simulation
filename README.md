@@ -242,3 +242,15 @@ docker compose down
 ```
 
 ---
+
+## PWA quick start
+
+The frontend is PWA-enabled (offline app shell + safe runtime caching for public notices). To preview and test installation locally:
+
+```powershell
+cd src\my-pwa-frontend
+npm run build; npm run preview
+```
+
+Open the preview URL in Chrome and choose “Install app”. Serve over HTTPS in production to unlock full PWA capabilities.
+

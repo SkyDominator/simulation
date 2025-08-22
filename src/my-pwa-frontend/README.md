@@ -67,3 +67,22 @@ export default tseslint.config([
   },
 ])
 ```
+
+## PWA
+
+This app is configured as a Progressive Web App using `vite-plugin-pwa`:
+
+- App shell is precached for offline start
+- Runtime caching for public notices (`/api/notices`) with a network-first strategy
+- Auto-update service worker with a simple refresh prompt
+
+Preview PWA locally (service worker active only on production build/preview):
+
+```powershell
+npm run build; npm run preview
+```
+
+Notes:
+
+- Provide PNG icons in `public/icons` for best install experience (192, 384, 512 and maskable variants)
+- Optionally set `VITE_API_BASE_URL` during build to point the public notices runtime cache at your API
