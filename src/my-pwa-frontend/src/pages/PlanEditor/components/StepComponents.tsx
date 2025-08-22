@@ -504,6 +504,7 @@ const InvestmentTable: React.FC<InvestmentEditorProps> = ({
                 planType,
                 inv.round
               );
+              const showRate = inv.round >= 4; // Hide sales rate for rounds 1-3
               return (
                 <TableRow key={inv.round} hover>
                   <TableCell>{companyRound + index}</TableCell>
@@ -531,16 +532,22 @@ const InvestmentTable: React.FC<InvestmentEditorProps> = ({
                     />
                   </TableCell>
                   <TableCell>
-                    <SalesRateInput
-                      value={salesAchievementRates[inv.round.toString()] ?? 100}
-                      onChange={(val) =>
-                        onSalesRateChange && onSalesRateChange(inv.round, val)
-                      }
-                      onTabNext={() => focusRate(index)}
-                      inputRef={(el: HTMLInputElement | null) => {
-                        if (el) rateRefs.current[index] = el;
-                      }}
-                    />
+                    {showRate ? (
+                      <SalesRateInput
+                        value={
+                          salesAchievementRates[inv.round.toString()] ?? 100
+                        }
+                        onChange={(val) =>
+                          onSalesRateChange && onSalesRateChange(inv.round, val)
+                        }
+                        onTabNext={() => focusRate(index)}
+                        inputRef={(el: HTMLInputElement | null) => {
+                          if (el) rateRefs.current[index] = el;
+                        }}
+                      />
+                    ) : (
+                      <span />
+                    )}
                   </TableCell>
                 </TableRow>
               );

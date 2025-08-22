@@ -261,7 +261,12 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
                             col === "sales_achievement_rate" &&
                             display !== ""
                           ) {
-                            display = `${display}%`;
+                            // Hide for rounds 1~3 (personal rounds index 0..2)
+                            if (idx <= 2) {
+                              display = "";
+                            } else {
+                              display = `${display}%`;
+                            }
                           }
                           if (col === "cumulative_net_profit") {
                             const numericVal =
