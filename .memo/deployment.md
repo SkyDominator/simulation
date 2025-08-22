@@ -2,7 +2,7 @@
 
 1. origin 변경
     1. backend CORS 세팅 settings
-    2. frontend API_BASE_URL
+    2. frontend API_BASE_URL (backend origin)
     3. supabase Authentication > URL Configuration : SiteURL, RedirectURL
 
 
