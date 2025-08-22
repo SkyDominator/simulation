@@ -18,7 +18,7 @@ const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         sx={{ p: 2, bgcolor: "primary.main", color: "primary.contrastText" }}
       >
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <h1 style={{ margin: 0, fontSize: 20 }}>Partner Club</h1>
+          <h1 style={{ margin: 0, fontSize: 20 }}>생명빛 클럽 시뮬레이션</h1>
         </div>
       </Box>
 

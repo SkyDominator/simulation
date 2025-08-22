@@ -1,5 +1,5 @@
 """
-Configuration module for partner club simulation.
+Configuration module for Light of Life Club simulation.
 
 This module provides access to plan parameters and configuration settings.
 """

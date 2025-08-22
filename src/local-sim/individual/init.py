@@ -1,5 +1,5 @@
 """
-Main entry point for partner club financial simulation.
+Main entry point for Light of Life Club financial simulation.
 
 This module serves as the entry point for running the financial simulation.
 It demonstrates how to use the refactored modular codebase with support for

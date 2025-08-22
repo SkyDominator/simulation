@@ -1,5 +1,5 @@
 """
-General simulation system for Partner Club.
+General simulation system for Light of Life Club.
 
 This module implements a simulation system for modeling large numbers of investors
 across many company rounds, to analyze the sustainability of investment plans.

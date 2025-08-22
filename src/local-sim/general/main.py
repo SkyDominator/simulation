@@ -26,7 +26,7 @@ from src.python.general.utils.reporting import (
 
 def parse_arguments():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Run general simulation for Partner Club")
+    parser = argparse.ArgumentParser(description="Run general simulation for Light of Life Club")
     parser.add_argument(
         "--plan", 
         type=str, 
