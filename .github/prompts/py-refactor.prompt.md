@@ -22,7 +22,7 @@ Refactor the provided Python code to improve its structure and readability while
 
 After refactoring, you should review the result of refactoring. Ensure that the code is reviewed for:
 
-1. Produce exactly the same output as before.
+1. Produce exactly the same output as before in all features.
 2. Maintainability and extensibility.
    - Ensure that the code is modular and easy to understand.
 3. Proper error handling and logging.
