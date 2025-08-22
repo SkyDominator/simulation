@@ -12,6 +12,7 @@ import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
+import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Switch from "@mui/material/Switch";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -189,7 +190,20 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose} maxWidth="lg" fullWidth>
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="lg"
+      fullWidth
+      scroll="paper"
+      PaperProps={{
+        sx: {
+          m: { xs: 0, sm: 2 },
+          width: { xs: "100%", sm: "auto" },
+          borderRadius: { xs: 0, sm: 2 },
+        },
+      }}
+    >
       <DialogTitle
         sx={{
           fontWeight: 600,
@@ -207,9 +221,24 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
       </DialogTitle>
       <DialogContent
         dividers
-        sx={{ display: "flex", gap: 3, minHeight: { xs: 360, sm: 420 } }}
+        sx={{
+          display: { xs: "block", sm: "flex" },
+          gap: 3,
+          maxHeight: { xs: "85dvh", sm: "80vh" },
+          overflowY: { xs: "auto", sm: "hidden" },
+        }}
       >
-        <div style={{ width: 260, maxWidth: "40%", flexShrink: 0 }}>
+        <Box
+          sx={{
+            width: { xs: "100%", sm: 260 },
+            maxWidth: { xs: "100%", sm: "40%" },
+            flexShrink: 0,
+            mb: { xs: 2, sm: 0 },
+            overflowY: { xs: "visible", sm: "auto" },
+            WebkitOverflowScrolling: "touch",
+            maxHeight: { sm: "80vh" },
+          }}
+        >
           <Typography
             variant="caption"
             color="text.secondary"
@@ -217,7 +246,10 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
           >
             목록
           </Typography>
-          <List dense sx={{ maxHeight: 420, overflowY: "auto" }}>
+          <List
+            dense
+            sx={{ maxHeight: { sm: "80vh" }, overflowY: { sm: "auto" } }}
+          >
             {loading && (
               <ListItem>
                 <ListItemText primary="로딩 중..." />
@@ -288,8 +320,16 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
               );
             })}
           </List>
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        </Box>
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            overflowY: { xs: "visible", sm: "auto" },
+            WebkitOverflowScrolling: "touch",
+            maxHeight: { sm: "80vh" },
+          }}
+        >
           {mode === "view" && activeNotice && (
             <div>
               <Typography
@@ -430,7 +470,7 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
               공지를 선택하세요.
             </Typography>
           )}
-        </div>
+        </Box>
       </DialogContent>
       <DeleteConfirmModal
         isOpen={confirmOpen}
