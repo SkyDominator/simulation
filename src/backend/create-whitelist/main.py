@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 # 여기에 허용할 사용자 정보를 추가하세요.
 users_to_add = [
-    {"name": "홍길동", "phone_number": "010-1234-5678"},
-    {"name": "이순신", "phone_number": "010-9876-5432"},
+    {"name": "김현영", "phone_number": "01031274918"},
+    {"name": "신성애", "phone_number": "01030417102"},
 ]
 
 def export_to_csv(data_df: pd.DataFrame, directory: str = None) -> str:

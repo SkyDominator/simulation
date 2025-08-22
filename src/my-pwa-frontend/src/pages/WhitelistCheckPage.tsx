@@ -22,6 +22,29 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Format phone as user types with auto hyphens, e.g., 010-1234-5678
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.startsWith("010")) {
+      if (digits.length <= 3) return "010-"; // auto-add hyphen right after 010
+      if (digits.length <= 7) return `010-${digits.slice(3)}`;
+      return `010-${digits.slice(3, 7)}-${digits.slice(7)}`;
+    }
+    // Other mobile prefixes (011/016/017/018/019) and generics
+    if (digits.length <= 3) return digits;
+    if (digits.length === 10) {
+      // 3-3-4 pattern for 10-digit legacy numbers
+      return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+    if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = formatPhone(e.target.value);
+    setPhone(next);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim()) {
@@ -33,7 +56,8 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
     setError("");
 
     try {
-      const result = await api.checkWhitelist(name, phone);
+      const digitsOnly = phone.replace(/\D/g, "");
+      const result = await api.checkWhitelist(name, digitsOnly);
 
       if (result.is_whitelisted) {
         onVerified();
@@ -80,12 +104,12 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
             <TextField
               label="전화번호"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={handlePhoneChange}
               placeholder="전화번호 (010-1234-5678)"
               fullWidth
               size="small"
               autoComplete="tel"
-              inputProps={{ inputMode: "tel" }}
+              inputProps={{ inputMode: "tel", maxLength: 13 }}
             />
             {error && (
               <Alert severity="error" sx={{ py: 0 }}>
