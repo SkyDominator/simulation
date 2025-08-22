@@ -10,6 +10,7 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
+import { getJSON, setJSON } from "../utils/persist";
 
 interface NoticeBoardModalProps {
   isOpen: boolean;
@@ -25,6 +26,11 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
   const [notices, setNotices] = useState<Notice[]>([]);
   const [activeNotice, setActiveNotice] = useState<Notice | null>(null);
 
+  // Persist open state
+  useEffect(() => {
+    setJSON("ui.noticeOpen", isOpen);
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
@@ -33,6 +39,14 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
       .listNotices()
       .then((res) => {
         setNotices(res.notices);
+        const savedId = getJSON<string | null>("ui.notice.activeId", null);
+        if (savedId) {
+          const match = res.notices.find((n) => n.id === savedId);
+          if (match) {
+            setActiveNotice(match);
+            return;
+          }
+        }
         if (res.notices.length > 0) setActiveNotice(res.notices[0]);
       })
       .catch((err) => setError(String(err)))
@@ -40,6 +54,10 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
   }, [isOpen]);
 
   const selectNotice = (notice: Notice) => setActiveNotice(notice);
+
+  useEffect(() => {
+    setJSON("ui.notice.activeId", activeNotice?.id ?? null);
+  }, [activeNotice?.id]);
 
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="lg" fullWidth>

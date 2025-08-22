@@ -8,14 +8,24 @@ import ResultsPage from "./pages/ResultsPage";
 import { type Plan, type Page } from "./types/types";
 import { NoticeBoardModal } from "./components/NoticeBoardModal";
 import type { SimulationRunResponse } from "./types/types";
+import { getJSON, setJSON } from "./utils/persist";
 
 const AppController = () => {
-  const [page, setPage] = useState<Page>("whitelist");
-  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-  const [noticeOpen, setNoticeOpen] = useState(false);
+  // Restore last UI state if available; default to whitelist
+  const [page, setPage] = useState<Page>(() =>
+    getJSON<Page>("ui.page", "whitelist")
+  );
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(() =>
+    getJSON<Plan | null>("ui.editingPlan", null)
+  );
+  const [noticeOpen, setNoticeOpen] = useState(() =>
+    getJSON<boolean>("ui.noticeOpen", false)
+  );
   const { user } = useAuth();
   const [simulationResult, setSimulationResult] =
-    useState<SimulationRunResponse | null>(null);
+    useState<SimulationRunResponse | null>(() =>
+      getJSON<SimulationRunResponse | null>("ui.simulationResult", null)
+    );
 
   // 공지사항 열기
   const handleOpenNotice = () => {
@@ -64,9 +74,71 @@ const AppController = () => {
     return mainPages.main;
   }, [user, page, whitelistOrLogin, mainPages]);
 
+  // Persist UI state whenever it changes
   useEffect(() => {
-    if (user) setPage("main");
-  }, [user]);
+    setJSON("ui.page", page);
+  }, [page]);
+  useEffect(() => {
+    setJSON("ui.editingPlan", editingPlan);
+  }, [editingPlan]);
+  useEffect(() => {
+    setJSON("ui.noticeOpen", noticeOpen);
+  }, [noticeOpen]);
+  useEffect(() => {
+    setJSON("ui.simulationResult", simulationResult);
+  }, [simulationResult]);
+
+  // When auth status changes: do not forcibly override page; only normalize if page is not allowed
+  useEffect(() => {
+    if (user) {
+      // If user navigated to main-section before auth, keep it; otherwise if on whitelist/login keep as-is
+      // No action to avoid jumping to main unexpectedly
+    } else {
+      // If logged out while on a protected page, send to whitelist
+      if (page === "main" || page === "plan-editor" || page === "results") {
+        setPage("whitelist");
+      }
+    }
+  }, [user, page]);
+
+  // Restore state on app/tab visibility changes (helps iOS/Android/PC when app is backgrounded and returns)
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        const savedPage = getJSON<Page>("ui.page", page);
+        const savedEditing = getJSON<Plan | null>(
+          "ui.editingPlan",
+          editingPlan
+        );
+        const savedNotice = getJSON<boolean>("ui.noticeOpen", noticeOpen);
+        const savedResult = getJSON<SimulationRunResponse | null>(
+          "ui.simulationResult",
+          simulationResult
+        );
+        // Apply only if differs to avoid loops
+        if (savedPage && savedPage !== page) setPage(savedPage);
+        if (savedNotice !== noticeOpen) setNoticeOpen(savedNotice);
+        // For objects, shallow compare by JSON string length to avoid heavy ops
+        const toJSONLen = (v: unknown) => {
+          try {
+            return JSON.stringify(v)?.length ?? 0;
+          } catch {
+            return 0;
+          }
+        };
+        if (toJSONLen(savedEditing) !== toJSONLen(editingPlan))
+          setEditingPlan(savedEditing);
+        if (toJSONLen(savedResult) !== toJSONLen(simulationResult))
+          setSimulationResult(savedResult);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onVisibility);
+    };
+  }, [page, editingPlan, noticeOpen, simulationResult]);
 
   return (
     <div className="min-h-screen bg-gray-50">

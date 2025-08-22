@@ -54,7 +54,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     // Manual storage purge (covers iOS Safari quirks)
     try {
       Object.keys(localStorage).forEach((k) => {
-        if (k.includes("auth-token") || k.startsWith("sb-")) {
+        if (
+          k.includes("auth-token") ||
+          k.startsWith("sb-") ||
+          k.startsWith("ui.")
+        ) {
           try {
             localStorage.removeItem(k);
           } catch {

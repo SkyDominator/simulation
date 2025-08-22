@@ -4,6 +4,7 @@ import { useAuth } from "../../context/useAuth";
 import { api } from "../../services/api";
 import type { Plan, Page } from "../../types/types";
 import type { ValidationData } from "./types/index";
+import { getJSON, setJSON } from "../../utils/persist";
 
 interface PlanEditorPageProps {
   setPage: (page: Page) => void;
@@ -35,12 +36,15 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   editingPlan,
 }) => {
   const { session } = useAuth();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState<number>(() =>
+    getJSON<number>("ui.planEditor.step", 1)
+  );
   const getDefaultSimulationRounds = (planType: string) =>
     ["A", "B", "C"].includes(planType) ? 15 : 18;
   const basePlanType = editingPlan?.plan_id || "A";
   const defaultSimRounds = getDefaultSimulationRounds(basePlanType);
-  const initialPlan: Plan = {
+  const persistedPlan = getJSON<Plan | null>("ui.planEditor.plan", null);
+  const initialPlan: Plan = persistedPlan || {
     simulation_id: editingPlan?.simulation_id || "",
     plan_id: basePlanType,
     company_round: editingPlan?.company_round || 1,
@@ -71,8 +75,40 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
+      // Keep draft persisted for later return
     };
   }, []);
+
+  // Persist step and plan on changes
+  useEffect(() => {
+    setJSON("ui.planEditor.step", step);
+  }, [step]);
+  useEffect(() => {
+    setJSON("ui.planEditor.plan", plan);
+  }, [plan]);
+
+  // Attempt restore when returning to visible state
+  useEffect(() => {
+    const restore = () => {
+      const s = getJSON<number>("ui.planEditor.step", step);
+      if (s !== step) setStep(s);
+      const p = getJSON<Plan | null>("ui.planEditor.plan", plan);
+      const toJSONLen = (v: unknown) => {
+        try {
+          return JSON.stringify(v)?.length ?? 0;
+        } catch {
+          return 0;
+        }
+      };
+      if (toJSONLen(p) !== toJSONLen(plan) && p) setPlan(p);
+    };
+    document.addEventListener("visibilitychange", restore);
+    window.addEventListener("focus", restore);
+    return () => {
+      document.removeEventListener("visibilitychange", restore);
+      window.removeEventListener("focus", restore);
+    };
+  }, [step, plan]);
 
   // Handlers
   const handleInvestmentChange = (round: number, amount: string) => {
@@ -212,6 +248,9 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
             ? "시뮬레이션이 업데이트되었습니다."
             : "시뮬레이션이 생성되었습니다."
         );
+        // Clear persisted draft after successful save
+        setJSON("ui.planEditor.step", 1);
+        setJSON("ui.planEditor.plan", null);
         setPage("main");
       }
     } catch (error) {
@@ -340,6 +379,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
           onClick={() => {
             setConfirmModalOpen(false);
             setValidationModalOpen(false);
+            // Keep draft but navigate away
             setPage("main");
           }}
           className="bg-gray-200 text-black hover:bg-gray-300"
