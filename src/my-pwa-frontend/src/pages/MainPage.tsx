@@ -33,6 +33,13 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import AddIcon from "@mui/icons-material/Add";
 import { getJSON, setJSON } from "../utils/persist";
 
+// Types for sorting (module scope so they are available everywhere below)
+type SortKey = "plan_id" | "company_round" | "simulation_rounds" | "created_at";
+interface SortSpec {
+  key: SortKey;
+  dir: "asc" | "desc";
+}
+
 // Stable keys and validator for persisted sort state
 const MAIN_SORT_KEY = "ui.main.sortOrders" as const;
 const VALID_SORT_KEYS = [
@@ -80,15 +87,6 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
   const [memoTarget, setMemoTarget] = useState<Plan | null>(null);
   const [signOutLoading, setSignOutLoading] = useState(false);
   // draft stored inside MemoModal, keep minimal state here
-  type SortKey =
-    | "plan_id"
-    | "company_round"
-    | "simulation_rounds"
-    | "created_at";
-  interface SortSpec {
-    key: SortKey;
-    dir: "asc" | "desc";
-  }
   const [sortOrders, setSortOrders] = useState<SortSpec[]>(() => {
     const persisted = getJSON<unknown>(MAIN_SORT_KEY, DEFAULT_SORT_ORDERS);
     return isSortSpecArray(persisted) ? persisted : DEFAULT_SORT_ORDERS;
