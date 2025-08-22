@@ -31,6 +31,32 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import NoteAltIcon from "@mui/icons-material/NoteAlt";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AddIcon from "@mui/icons-material/Add";
+import { getJSON, setJSON } from "../utils/persist";
+
+// Stable keys and validator for persisted sort state
+const MAIN_SORT_KEY = "ui.main.sortOrders" as const;
+const VALID_SORT_KEYS = [
+  "plan_id",
+  "company_round",
+  "simulation_rounds",
+  "created_at",
+] as const;
+const DEFAULT_SORT_ORDERS: SortSpec[] = [{ key: "created_at", dir: "desc" }];
+
+function isSortSpecArray(val: unknown): val is SortSpec[] {
+  if (!Array.isArray(val)) return false;
+  return val.every((item) => {
+    if (typeof item !== "object" || item === null) return false;
+    const o = item as Record<string, unknown>;
+    const key = o.key;
+    const dir = o.dir;
+    return (
+      typeof key === "string" &&
+      (VALID_SORT_KEYS as readonly string[]).includes(key) &&
+      (dir === "asc" || dir === "desc")
+    );
+  });
+}
 
 interface MainPageProps {
   setPage: (page: Page) => void;
@@ -63,9 +89,15 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
     key: SortKey;
     dir: "asc" | "desc";
   }
-  const [sortOrders, setSortOrders] = useState<SortSpec[]>([
-    { key: "created_at", dir: "desc" },
-  ]);
+  const [sortOrders, setSortOrders] = useState<SortSpec[]>(() => {
+    const persisted = getJSON<unknown>(MAIN_SORT_KEY, DEFAULT_SORT_ORDERS);
+    return isSortSpecArray(persisted) ? persisted : DEFAULT_SORT_ORDERS;
+  });
+
+  // Persist sort order on change
+  useEffect(() => {
+    setJSON(MAIN_SORT_KEY, sortOrders);
+  }, [sortOrders]);
 
   const toggleDir = (dir: "asc" | "desc"): "asc" | "desc" =>
     dir === "asc" ? "desc" : "asc";
