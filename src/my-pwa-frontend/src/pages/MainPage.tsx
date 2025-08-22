@@ -181,6 +181,13 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
   };
 
   const handleNewPlan = () => {
+    // Ensure any old PlanEditor draft/step is cleared before creating new
+    try {
+      localStorage.removeItem("ui.planEditor.step");
+      localStorage.removeItem("ui.planEditor.plan");
+    } catch {
+      /* ignore */
+    }
     setEditingPlan(null); // 새 플랜이므로 기존 데이터 없음
     setPage("plan-editor");
   };

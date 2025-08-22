@@ -379,7 +379,35 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
           onClick={() => {
             setConfirmModalOpen(false);
             setValidationModalOpen(false);
-            // Keep draft but navigate away
+            // Clear any persisted draft and step so next open is fresh
+            try {
+              localStorage.removeItem("ui.planEditor.step");
+            } catch {
+              /* ignore */
+            }
+            try {
+              localStorage.removeItem("ui.planEditor.plan");
+            } catch {
+              /* ignore */
+            }
+            try {
+              // Also clear any persisted editing context
+              localStorage.removeItem("ui.editingPlan");
+            } catch {
+              /* ignore */
+            }
+            // Reset local state (defensive) before leaving
+            setStep(1);
+            const nextDefault = getDefaultSimulationRounds("A");
+            setPlan({
+              simulation_id: "",
+              plan_id: "A",
+              company_round: 1,
+              simulation_rounds: nextDefault,
+              investments: generateInvestments(nextDefault, "A", []),
+              sales_achievement_rates: {},
+            });
+            // Navigate to main
             setPage("main");
           }}
           className="bg-gray-200 text-black hover:bg-gray-300"
