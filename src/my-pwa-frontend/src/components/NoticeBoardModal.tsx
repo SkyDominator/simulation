@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
 import type { Notice } from "../types/types";
 import Dialog from "@mui/material/Dialog";
@@ -10,6 +10,13 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Switch from "@mui/material/Switch";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import useAuth from "../context/useAuth";
+import { DeleteConfirmModal } from "./DeleteConfirmModal";
 import { getJSON, setJSON } from "../utils/persist";
 
 interface NoticeBoardModalProps {
@@ -25,6 +32,18 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [activeNotice, setActiveNotice] = useState<Notice | null>(null);
+  const { session } = useAuth();
+  const token = useMemo(() => session?.access_token ?? null, [session]);
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminBusy, setAdminBusy] = useState(false);
+  const [mode, setMode] = useState<"view" | "create" | "edit">("view");
+  const [formTitle, setFormTitle] = useState("");
+  const [formContent, setFormContent] = useState("");
+  const [formPinned, setFormPinned] = useState(false);
+  const [formPublished, setFormPublished] = useState(true);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Persist open state
   useEffect(() => {
@@ -53,15 +72,139 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
       .finally(() => setLoading(false));
   }, [isOpen]);
 
+  // Check admin on open
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!token) {
+      setIsAdmin(false);
+      return;
+    }
+    api
+      .adminMe(token)
+      .then((res) => setIsAdmin(!!res.is_admin))
+      .catch(() => setIsAdmin(false));
+  }, [isOpen, token]);
+
   const selectNotice = (notice: Notice) => setActiveNotice(notice);
 
   useEffect(() => {
     setJSON("ui.notice.activeId", activeNotice?.id ?? null);
   }, [activeNotice?.id]);
 
+  const resetFormFromActive = () => {
+    setFormTitle(activeNotice?.title ?? "");
+    setFormContent(activeNotice?.content ?? "");
+    setFormPinned(!!activeNotice?.pinned);
+    setFormPublished(activeNotice?.published !== false);
+  };
+
+  const reloadAndSelect = async (selectId?: string) => {
+    try {
+      setLoading(true);
+      const res = await api.listNotices();
+      setNotices(res.notices);
+      const toPick =
+        selectId ||
+        activeNotice?.id ||
+        getJSON<string | null>("ui.notice.activeId", null);
+      const match = res.notices.find((n) => n.id === toPick);
+      setActiveNotice(match ?? res.notices[0] ?? null);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startCreate = () => {
+    setAdminError(null);
+    setFormTitle("");
+    setFormContent("");
+    setFormPinned(false);
+    setFormPublished(true);
+    setMode("create");
+  };
+
+  const startEdit = () => {
+    setAdminError(null);
+    resetFormFromActive();
+    setMode("edit");
+  };
+
+  const cancelEdit = () => {
+    setAdminError(null);
+    setMode("view");
+  };
+
+  const saveCreate = async () => {
+    if (!token) return;
+    try {
+      setAdminBusy(true);
+      const res = await api.createNotice(token, {
+        title: formTitle.trim(),
+        content: formContent.trim(),
+        pinned: formPinned,
+        published: formPublished,
+      });
+      await reloadAndSelect(res.id);
+      setMode("view");
+    } catch (e) {
+      setAdminError(String(e));
+    } finally {
+      setAdminBusy(false);
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!token || !activeNotice) return;
+    try {
+      setAdminBusy(true);
+      await api.updateNotice(token, activeNotice.id, {
+        title: formTitle.trim(),
+        content: formContent.trim(),
+        pinned: formPinned,
+        published: formPublished,
+      });
+      await reloadAndSelect(activeNotice.id);
+      setMode("view");
+    } catch (e) {
+      setAdminError(String(e));
+    } finally {
+      setAdminBusy(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!token || !activeNotice) return;
+    try {
+      setAdminBusy(true);
+      await api.deleteNotice(token, activeNotice.id);
+      setConfirmOpen(false);
+      await reloadAndSelect(undefined);
+    } catch (e) {
+      setAdminError(String(e));
+    } finally {
+      setAdminBusy(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle sx={{ fontWeight: 600 }}>공지사항</DialogTitle>
+      <DialogTitle
+        sx={{
+          fontWeight: 600,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <span>공지사항</span>
+        {isAdmin && mode === "view" && (
+          <Button size="small" variant="contained" onClick={startCreate}>
+            새 공지
+          </Button>
+        )}
+      </DialogTitle>
       <DialogContent
         dividers
         sx={{ display: "flex", gap: 3, minHeight: { xs: 360, sm: 420 } }}
@@ -147,7 +290,7 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
           </List>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          {activeNotice ? (
+          {mode === "view" && activeNotice && (
             <div>
               <Typography
                 variant="h6"
@@ -156,7 +299,22 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
                 {activeNotice.pinned && (
                   <Chip size="small" label="PIN" color="warning" />
                 )}
-                <span>{activeNotice.title}</span>
+                <span style={{ flex: 1 }}>{activeNotice.title}</span>
+                {isAdmin && (
+                  <Stack direction="row" spacing={1}>
+                    <Button size="small" variant="outlined" onClick={startEdit}>
+                      수정
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="error"
+                      onClick={() => setConfirmOpen(true)}
+                    >
+                      삭제
+                    </Button>
+                  </Stack>
+                )}
               </Typography>
               <Typography
                 variant="caption"
@@ -179,7 +337,91 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
                 {activeNotice.content}
               </Typography>
             </div>
-          ) : (
+          )}
+
+          {mode !== "view" && (
+            <div>
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>
+                {mode === "create" ? "새 공지 작성" : "공지 수정"}
+              </Typography>
+              <Stack spacing={1.5} sx={{ maxWidth: 720 }}>
+                {adminError && (
+                  <Typography color="error" variant="caption">
+                    {adminError}
+                  </Typography>
+                )}
+                <TextField
+                  label="제목"
+                  size="small"
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                  inputProps={{ maxLength: 120 }}
+                />
+                <TextField
+                  label="내용"
+                  size="small"
+                  multiline
+                  minRows={6}
+                  value={formContent}
+                  onChange={(e) => setFormContent(e.target.value)}
+                />
+                <Stack direction="row" spacing={2}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formPinned}
+                        onChange={(e) => setFormPinned(e.target.checked)}
+                        size="small"
+                      />
+                    }
+                    label="상단 고정"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formPublished}
+                        onChange={(e) => setFormPublished(e.target.checked)}
+                        size="small"
+                      />
+                    }
+                    label="게시 공개"
+                  />
+                </Stack>
+                <Stack direction="row" spacing={1}>
+                  {mode === "create" ? (
+                    <Button
+                      variant="contained"
+                      onClick={saveCreate}
+                      disabled={
+                        adminBusy || !formTitle.trim() || !formContent.trim()
+                      }
+                    >
+                      작성
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      onClick={saveEdit}
+                      disabled={
+                        adminBusy || !formTitle.trim() || !formContent.trim()
+                      }
+                    >
+                      저장
+                    </Button>
+                  )}
+                  <Button
+                    variant="text"
+                    onClick={cancelEdit}
+                    disabled={adminBusy}
+                  >
+                    취소
+                  </Button>
+                </Stack>
+              </Stack>
+            </div>
+          )}
+
+          {mode === "view" && !activeNotice && (
             <Typography
               variant="body2"
               color="text.secondary"
@@ -190,6 +432,13 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
           )}
         </div>
       </DialogContent>
+      <DeleteConfirmModal
+        isOpen={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title="공지 삭제"
+        message="선택한 공지를 삭제할까요? 이 작업은 되돌릴 수 없습니다."
+      />
     </Dialog>
   );
 };

@@ -6,6 +6,10 @@ import {
   type SimulationMemoUpdateResponse,
   type NoticeListResponse,
   type NoticeDetailResponse,
+  type NoticeCreateResponse,
+  type NoticeUpdateResponse,
+  type NoticeDeleteResponse,
+  type AdminMeResponse,
 } from "../types/types";
 
 const API_BASE_URL = "http://10.10.113.129:8000/api"; // 로컬 FastAPI 서버 주소
@@ -269,6 +273,18 @@ export const api = {
     return data;
   },
 
+  // Admin self-check
+  adminMe: async (token: string): Promise<AdminMeResponse> => {
+    const response = await fetch(`${API_BASE_URL}/admin/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      // Non-admin will likely get 403
+      throw new Error(String(response.status));
+    }
+    return await response.json();
+  },
+
   // Notices (public - no auth required to read)
   listNotices: async (): Promise<NoticeListResponse> => {
     const response = await fetch(`${API_BASE_URL}/notices`);
@@ -278,6 +294,95 @@ export const api = {
   getNotice: async (notice_id: string): Promise<NoticeDetailResponse> => {
     const response = await fetch(`${API_BASE_URL}/notices/${notice_id}`);
     if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return await response.json();
+  },
+
+  // Admin Notice CRUD (auth required; server enforces admin)
+  createNotice: async (
+    token: string,
+    payload: {
+      title: string;
+      content: string;
+      pinned?: boolean;
+      published?: boolean;
+    }
+  ): Promise<NoticeCreateResponse> => {
+    const response = await fetch(`${API_BASE_URL}/admin/notices`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title: payload.title,
+        content: payload.content,
+        pinned: !!payload.pinned,
+        published: payload.published !== false, // default true
+      }),
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        /* ignore parse error */
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
+  updateNotice: async (
+    token: string,
+    notice_id: string,
+    payload: {
+      title?: string;
+      content?: string;
+      pinned?: boolean;
+      published?: boolean;
+    }
+  ): Promise<NoticeUpdateResponse> => {
+    const response = await fetch(`${API_BASE_URL}/admin/notices/${notice_id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        /* ignore parse error */
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
+  deleteNotice: async (
+    token: string,
+    notice_id: string
+  ): Promise<NoticeDeleteResponse> => {
+    const response = await fetch(`${API_BASE_URL}/admin/notices/${notice_id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        /* ignore parse error */
+      }
+
+      throw new Error(msg);
+    }
     return await response.json();
   },
 };

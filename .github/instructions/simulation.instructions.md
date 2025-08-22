@@ -21,7 +21,7 @@ applyTo: '**.tsx, **.ts, **.js, **.jsx, **.py'
 3. The app's main target device is mobile devices (Chrome browser in iPhone and Android), so the UI/UX should be optimized for mobile screens. However, it should also work well on desktop (Windows 10 or higher, Chrome browser) screens.
 4. Think hard for implementing codes.
 5. You can search online to utilize external and additional resources, packages, or libraries only if it fits my app project best. For example, [React Query](https://react-query.tanstack.com/) for data fetching and caching might be installed if it helps improve the app's performance or user experience given the current app structure and app user environment. No need to use unnecessary packages or libraries.
-6. Test and validate the codes you suggested after code generation. Test for new features or critical parts of the code to ensure reliability and facilitate future changes.
+6. Test and validate the codes you suggested after code generation to ensure reliability and facilitate future changes.
 
 ## The guides for backend codes
 

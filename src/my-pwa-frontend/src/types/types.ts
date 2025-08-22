@@ -81,5 +81,29 @@ export interface NoticeDetailResponse {
   success: boolean;
 }
 
+// Admin notice responses
+export interface NoticeCreateResponse {
+  id: string;
+  message: string;
+  success: boolean;
+}
+
+export interface NoticeUpdateResponse {
+  id: string;
+  message: string;
+  success: boolean;
+}
+
+export interface NoticeDeleteResponse {
+  id: string;
+  message: string;
+  success: boolean;
+}
+
+export interface AdminMeResponse {
+  is_admin: boolean;
+  success: boolean;
+}
+
 // Define a type for the page navigation
 export type Page = "whitelist" | "login" | "main" | "plan-editor" | "results";

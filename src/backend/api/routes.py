@@ -80,6 +80,13 @@ def _fetch_user_email_from_profile(client, user_id: str) -> str | None:
         return None
     return None
 
+@router.get('/api/admin/me')
+async def admin_me(user_id: str = Depends(authenticate_jwt_token)):
+    client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
+    user_email = _fetch_user_email_from_profile(client, user_id)
+    _assert_admin(user_id, user_email, client)
+    return {"is_admin": True, "success": True}
+
 @router.post('/api/admin/notices', response_model=NoticeCreateResponse)
 async def create_notice(req: NoticeCreateRequest, user_id: str = Depends(authenticate_jwt_token)):
     client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
