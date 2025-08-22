@@ -4,6 +4,8 @@ import type { Notice } from "../types/types";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
@@ -29,6 +31,8 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -193,14 +197,16 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
     <Dialog
       open={isOpen}
       onClose={onClose}
-      maxWidth="lg"
-      fullWidth
+      fullScreen={fullScreen}
+      maxWidth={false}
       scroll="paper"
       PaperProps={{
         sx: {
-          m: { xs: 0, sm: 2 },
-          width: { xs: "100%", sm: "auto" },
+          m: { xs: 0, sm: 1 },
+          width: { xs: "100vw", sm: "min(96vw, 1440px)" },
+          height: { xs: "100dvh", sm: "min(92dvh, 980px)" },
           borderRadius: { xs: 0, sm: 2 },
+          display: "flex",
         },
       }}
     >
@@ -224,19 +230,20 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
         sx={{
           display: { xs: "block", sm: "flex" },
           gap: 3,
-          maxHeight: { xs: "85dvh", sm: "80vh" },
-          overflowY: { xs: "auto", sm: "hidden" },
+          flex: 1,
+          minHeight: 0,
+          overflow: "hidden",
         }}
       >
         <Box
           sx={{
-            width: { xs: "100%", sm: 260 },
-            maxWidth: { xs: "100%", sm: "40%" },
+            width: { xs: "100%", sm: 300 },
+            maxWidth: { xs: "100%", sm: "42%" },
             flexShrink: 0,
             mb: { xs: 2, sm: 0 },
-            overflowY: { xs: "visible", sm: "auto" },
-            WebkitOverflowScrolling: "touch",
-            maxHeight: { sm: "80vh" },
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
           }}
         >
           <Typography
@@ -246,88 +253,94 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
           >
             목록
           </Typography>
-          <List
-            dense
-            sx={{ maxHeight: { sm: "80vh" }, overflowY: { sm: "auto" } }}
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
+            }}
           >
-            {loading && (
-              <ListItem>
-                <ListItemText primary="로딩 중..." />
-              </ListItem>
-            )}
-            {error && (
-              <ListItem>
-                <ListItemText
-                  primary={error}
-                  primaryTypographyProps={{ color: "error" }}
-                />
-              </ListItem>
-            )}
-            {!loading && !error && notices.length === 0 && (
-              <ListItem>
-                <ListItemText
-                  primary="등록된 공지가 없습니다."
-                  primaryTypographyProps={{
-                    variant: "caption",
-                    color: "text.secondary",
-                  }}
-                />
-              </ListItem>
-            )}
-            {notices.map((n) => {
-              const selected = activeNotice?.id === n.id;
-              return (
-                <ListItem key={n.id} disablePadding>
-                  <ListItemButton
-                    selected={selected}
-                    onClick={() => selectNotice(n)}
-                    sx={{ alignItems: "flex-start" }}
-                  >
-                    <ListItemText
-                      primary={
-                        <span
-                          style={{
-                            display: "flex",
-                            gap: 6,
-                            alignItems: "center",
-                          }}
-                        >
-                          {n.title}
-                          {n.pinned && (
-                            <Chip
-                              size="small"
-                              label="PIN"
-                              color="warning"
-                              sx={{ ml: "auto" }}
-                            />
-                          )}
-                        </span>
-                      }
-                      secondary={
-                        n.created_at
-                          ? new Date(n.created_at).toLocaleDateString()
-                          : ""
-                      }
-                      primaryTypographyProps={{
-                        fontSize: 13,
-                        fontWeight: 500,
-                        noWrap: true,
-                      }}
-                      secondaryTypographyProps={{ fontSize: 11 }}
-                    />
-                  </ListItemButton>
+            <List dense>
+              {loading && (
+                <ListItem>
+                  <ListItemText primary="로딩 중..." />
                 </ListItem>
-              );
-            })}
-          </List>
+              )}
+              {error && (
+                <ListItem>
+                  <ListItemText
+                    primary={error}
+                    primaryTypographyProps={{ color: "error" }}
+                  />
+                </ListItem>
+              )}
+              {!loading && !error && notices.length === 0 && (
+                <ListItem>
+                  <ListItemText
+                    primary="등록된 공지가 없습니다."
+                    primaryTypographyProps={{
+                      variant: "caption",
+                      color: "text.secondary",
+                    }}
+                  />
+                </ListItem>
+              )}
+              {notices.map((n) => {
+                const selected = activeNotice?.id === n.id;
+                return (
+                  <ListItem key={n.id} disablePadding>
+                    <ListItemButton
+                      selected={selected}
+                      onClick={() => selectNotice(n)}
+                      sx={{ alignItems: "flex-start" }}
+                    >
+                      <ListItemText
+                        primary={
+                          <span
+                            style={{
+                              display: "flex",
+                              gap: 6,
+                              alignItems: "center",
+                            }}
+                          >
+                            {n.title}
+                            {n.pinned && (
+                              <Chip
+                                size="small"
+                                label="PIN"
+                                color="warning"
+                                sx={{ ml: "auto" }}
+                              />
+                            )}
+                          </span>
+                        }
+                        secondary={
+                          n.created_at
+                            ? new Date(n.created_at).toLocaleDateString()
+                            : ""
+                        }
+                        primaryTypographyProps={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          noWrap: true,
+                        }}
+                        secondaryTypographyProps={{ fontSize: 11 }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                );
+              })}
+            </List>
+          </Box>
         </Box>
         <Box
           sx={{
             flex: 1,
             minWidth: 0,
-            overflowY: { xs: "visible", sm: "auto" },
+            minHeight: 0,
+            overflowY: "auto",
             WebkitOverflowScrolling: "touch",
-            maxHeight: { sm: "80vh" },
           }}
         >
           {mode === "view" && activeNotice && (
