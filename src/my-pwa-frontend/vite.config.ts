@@ -25,6 +25,30 @@ export default defineConfig({
       workbox: {
         navigateFallback: "/index.html",
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        runtimeCaching: [
+          {
+            // Public notices (GET only). Use network-first for freshness with offline fallback.
+            urlPattern: new RegExp(
+              `^${API_BASE.replace(
+                /[.*+?^${}()|[\]\\]/g,
+                "\\$&"
+              )}/notices(/.*)?$`
+            ),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api-notices",
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // Static images from same origin
+            urlPattern: /.*\.(?:png|svg|jpg|jpeg|gif|webp)$/,
+            handler: "StaleWhileRevalidate",
+            options: { cacheName: "images" },
+          },
+        ],
       },
       manifest: {
         name: "Light of Life Club Simulation",
@@ -53,27 +77,6 @@ export default defineConfig({
           },
         ],
       },
-      runtimeCaching: [
-        {
-          // Public notices (GET only). Use network-first for freshness with offline fallback.
-          urlPattern: new RegExp(
-            `^${API_BASE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/notices(/.*)?$`
-          ),
-          handler: "NetworkFirst",
-          options: {
-            cacheName: "api-notices",
-            networkTimeoutSeconds: 3,
-            expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 },
-            cacheableResponse: { statuses: [0, 200] },
-          },
-        },
-        {
-          // Static images from same origin
-          urlPattern: /.*\.(?:png|svg|jpg|jpeg|gif|webp)$/,
-          handler: "StaleWhileRevalidate",
-          options: { cacheName: "images" },
-        },
-      ],
     }),
   ],
   server: {
