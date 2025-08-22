@@ -15,7 +15,8 @@ applyTo: '**.tsx, **.ts, **.js, **.jsx, **.py'
 2. It will not be uploaded to any App Store (e.g., Google Play, Apple App Store). It will be shared for installation and running to only a certain group of users via direct link or other means.
 3. The app's main target device is mobile devices (Chrome browser in iPhone and Android), so the UI/UX should be optimized for mobile screens. However, it should also work well on desktop (Windows 10 or higher, Chrome browser) screens.
 4. Think hard for implementing codes.
-5. Test and validate the codes you suggested after code generation. Test for new features or critical parts of the code to ensure reliability and facilitate future changes.
+5. You can search online to utilize external resources or additional packages that fits my app project best.
+6. Test and validate the codes you suggested after code generation. Test for new features or critical parts of the code to ensure reliability and facilitate future changes.
 
 ## The guides for backend codes
 
