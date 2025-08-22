@@ -11,6 +11,7 @@
 2. Add error boundary or toast system instead of alert().
 3. Centralize id normalization in a small helper to DRY the mapping.
 4. 메모 기능 추가
+5. wire a “new version available” MUI Snackbar instead of a confirm dialog, plus add Workbox offline fallback page.
 
 # 배포 개선사항
 
