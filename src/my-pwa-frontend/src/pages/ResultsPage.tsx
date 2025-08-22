@@ -270,6 +270,16 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
                                 : parseFloat(String(rawVal));
                             const positive =
                               !isNaN(numericVal) && numericVal >= 0;
+                            // Force no decimals for '총 이익' column
+                            const rounded = Number.isFinite(numericVal)
+                              ? Math.round(numericVal)
+                              : numericVal;
+                            const formatted = Number.isFinite(rounded as number)
+                              ? (rounded as number).toLocaleString(undefined, {
+                                  minimumFractionDigits: 0,
+                                  maximumFractionDigits: 0,
+                                })
+                              : display;
                             display = (
                               <Box
                                 component="span"
@@ -280,7 +290,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
                                     : "error.main",
                                 }}
                               >
-                                {display}
+                                {formatted}
                               </Box>
                             );
                           }
