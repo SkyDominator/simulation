@@ -299,7 +299,11 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
 
   return (
     <>
-      <Container maxWidth="md" sx={{ py: 4 }}>
+      <Container
+        maxWidth={false}
+        disableGutters
+        sx={{ py: 2.5, px: { xs: 1, sm: 1.5, md: 2 } }}
+      >
         <Stack
           direction="row"
           alignItems="center"

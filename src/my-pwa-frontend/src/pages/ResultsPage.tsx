@@ -144,7 +144,13 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
   ]);
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: "1280px", mx: "auto" }}>
+    <Box
+      sx={{
+        px: { xs: 1, sm: 1.5, md: 2 },
+        py: { xs: 2, md: 3 },
+        width: "100%",
+      }}
+    >
       <Stack
         direction={{ xs: "column", md: "row" }}
         spacing={3}
@@ -220,9 +226,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
               </Box>
             </Stack>
           </Paper>
-
-          {/* Table */}
-          <Paper sx={{ p: { xs: 2, md: 3 } }}>
+          <Paper sx={{ p: { xs: 1.5, md: 2 } }}>
             {history.length === 0 ? (
               <Typography textAlign="center" color="text.secondary" py={6}>
                 히스토리가 없습니다.
