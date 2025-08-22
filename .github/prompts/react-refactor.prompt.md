@@ -39,3 +39,14 @@ Refactor the provided React code to improve its structure and readability while 
 ### 6. Type Safety & Props Integrity
 - Use **TypeScript (or PropTypes)** to enforce prop types and catch errors early.
 - Treat props as **immutable**, and avoid modifying them inside components to maintain predictable behavior.
+
+## Code Review
+
+After refactoring, you should review the result of refactoring. Ensure that the code is reviewed for:
+
+1. Produce exactly the same output as before in all features.
+2. Maintainability and extensibility.
+   - Ensure that the code is modular and easy to understand.
+3. Proper error handling.
+4. Performance optimizations and efficiency improvements.
+5. Clarity and readability of the code.
