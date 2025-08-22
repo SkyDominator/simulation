@@ -14,8 +14,10 @@ import {
 
 // Prefer Vite-provided env var, fall back to the current local backend URL
 const API_BASE_URL: string =
+  // (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
+  // "http://10.10.113.129:8000/api"; // 로컬 FastAPI 서버 주소
   (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
-  "http://10.10.113.129:8000/api"; // 로컬 FastAPI 서버 주소
+  "http://172.30.1.39:8000/api"; // 로컬 FastAPI 서버 주소
 
 export const api = {
   checkWhitelist: async (

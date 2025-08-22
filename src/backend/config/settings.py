@@ -24,10 +24,12 @@ class Settings:
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
                 "http://10.10.113.129:5173",
+                "http://172.30.1.39:5173",
                 # Vite preview defaults to 4173; include to allow preflight during preview
                 "http://localhost:4173",
                 "http://127.0.0.1:4173",
                 "http://10.10.113.129:4173",
+                "http://172.30.1.39:4173",
             ])
         if self.admin_emails is None:
             parsed = [e.strip().lower() for e in self.admin_emails_raw.split(',') if e.strip()]
