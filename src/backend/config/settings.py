@@ -10,8 +10,9 @@ from typing import List
 @dataclass(frozen=True)
 class Settings:
     supabase_url: str = os.getenv("SUPABASE_URL", "https://kihlqhomsychihwzwzuo.supabase.co")
-    supabase_anon_key: str = os.getenv("SUPABASE_KEY", "")
-    supabase_service_key: str = os.getenv("SUPABASE_SERVICE_KEY", "")  # prefer service key over hard-coded secret
+    # New key names (Supabase 2024+): Publishable (client) and Secret (server)
+    supabase_publishable_key: str = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
+    supabase_secret_key: str = os.getenv("SUPABASE_SECRET_KEY", "")  # server-only
     cors_origins: List[str] = None  # type: ignore
     admin_emails_raw: str = os.getenv("ADMIN_EMAILS", "")  # comma separated list
     admin_emails: List[str] = None  # type: ignore

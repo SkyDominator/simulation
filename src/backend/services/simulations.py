@@ -22,8 +22,12 @@ logger = logging.getLogger(__name__)
 # Supabase client factory (could be injected/mocked in tests)
 
 def get_supabase_client() -> Client:
-    service_key = settings.supabase_service_key or settings.supabase_anon_key
-    return create_client(settings.supabase_url, service_key)
+    # Prefer new Secret key (server-only). Fallback to legacy service/anon if not set.
+    key = (
+        settings.supabase_secret_key
+        or settings.supabase_publishable_key
+    )
+    return create_client(settings.supabase_url, key)
 
 class SimulationService:
     def __init__(self, client: Client | None = None) -> None:

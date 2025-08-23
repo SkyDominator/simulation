@@ -23,6 +23,17 @@ from config.settings import settings
 
 router = APIRouter()
 
+
+def _supabase_client():
+    """Create Supabase client preferring new Secret/Publishable keys.
+    Falls back to legacy envs when not provided.
+    """
+    key = (
+        settings.supabase_secret_key
+        or settings.supabase_publishable_key
+    )
+    return create_client(settings.supabase_url, key)
+
 # instantiate service lazily (could use dependency injection)
 _sim_service = SimulationService()
 
@@ -34,7 +45,7 @@ async def root():
 async def verify_user(request: UserCheckRequest):
     combined_string = f"{request.name}-{request.phone_number}"
     hashed_value = hashlib.sha256(combined_string.encode('utf-8')).hexdigest()
-    client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
+    client = _supabase_client()
     response = client.table('whitelist').select("user_hash").eq('user_hash', hashed_value).execute()
     if response.data:
         return {"is_whitelisted": True}
@@ -42,7 +53,7 @@ async def verify_user(request: UserCheckRequest):
 
 @router.get("/api/notices", response_model=NoticeListResponse)
 async def list_notices():
-    client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
+    client = _supabase_client()
     # Expect a table 'notices' with columns: id (uuid), title (text), content (text), pinned (bool), published (bool), created_at, updated_at
     resp = client.table('notices').select('*').eq('published', True).order('pinned', desc=True).order('created_at', desc=True).execute()
     notices = resp.data or []
@@ -50,7 +61,7 @@ async def list_notices():
 
 @router.get("/api/notices/{notice_id}", response_model=NoticeDetailResponse)
 async def get_notice(notice_id: str):
-    client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
+    client = _supabase_client()
     resp = client.table('notices').select('*').eq('id', notice_id).eq('published', True).limit(1).execute()
     if not resp.data:
         raise HTTPException(status_code=404, detail="Notice not found")
@@ -71,13 +82,13 @@ def _assert_admin(user_id: str, client) -> None:
 
 @router.get('/api/admin/me')
 async def admin_me(user_id: str = Depends(authenticate_jwt_token)):
-    client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
+    client = _supabase_client()
     _assert_admin(user_id, client)
     return {"is_admin": True, "success": True}
 
 @router.post('/api/admin/notices', response_model=NoticeCreateResponse)
 async def create_notice(req: NoticeCreateRequest, user_id: str = Depends(authenticate_jwt_token)):
-    client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
+    client = _supabase_client()
     _assert_admin(user_id, client)
     payload = {
         'title': req.title.strip(),
@@ -92,7 +103,7 @@ async def create_notice(req: NoticeCreateRequest, user_id: str = Depends(authent
 
 @router.patch('/api/admin/notices/{notice_id}', response_model=NoticeUpdateResponse)
 async def update_notice(notice_id: str, req: NoticeUpdateRequest, user_id: str = Depends(authenticate_jwt_token)):
-    client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
+    client = _supabase_client()
     _assert_admin(user_id, client)
     update_fields = {k: v for k, v in req.model_dump().items() if v is not None}
     if 'title' in update_fields:
@@ -108,7 +119,7 @@ async def update_notice(notice_id: str, req: NoticeUpdateRequest, user_id: str =
 
 @router.delete('/api/admin/notices/{notice_id}', response_model=NoticeDeleteResponse)
 async def delete_notice(notice_id: str, user_id: str = Depends(authenticate_jwt_token)):
-    client = create_client(settings.supabase_url, settings.supabase_service_key or settings.supabase_anon_key)
+    client = _supabase_client()
     _assert_admin(user_id, client)
     del_resp = client.table('notices').delete().eq('id', notice_id).execute()
     if not del_resp.data:
