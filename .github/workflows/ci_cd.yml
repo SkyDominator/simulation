@@ -1,0 +1,135 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: src/my-pwa-frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./src/my-pwa-frontend
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: ./src/my-pwa-frontend
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: ./src/my-pwa-frontend
+        env:
+          # Using placeholders for secrets in CI
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          VITE_API_BASE_URL: https://placeholder-replaced-in-deployment.com/api
+        run: npm run build
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: src/backend/requirements.txt
+
+      - name: Install backend dependencies
+        working-directory: ./src/backend
+        run: pip install -r requirements.txt
+
+      - name: Lint backend
+        working-directory: ./src/backend
+        run: |
+          pip install flake8
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Package frontend build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: src/my-pwa-frontend/dist/
+          retention-days: 7
+
+  create-release:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get previous tag
+        id: get_previous_tag
+        run: |
+          echo "PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo 'v0.0.0')" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Bump version
+        id: bump_version
+        run: |
+          PREVIOUS_TAG=${{ steps.get_previous_tag.outputs.PREVIOUS_TAG }}
+          PREVIOUS_VERSION=${PREVIOUS_TAG#v}
+          IFS='.' read -r -a version_parts <<< "$PREVIOUS_VERSION"
+
+          # Bump patch version
+          version_parts[2]=$((version_parts[2] + 1))
+
+          NEW_VERSION="${version_parts[0]}.${version_parts[1]}.${version_parts[2]}"
+          NEW_TAG="v$NEW_VERSION"
+
+          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.bump_version.outputs.NEW_TAG }}
+          release_name: Release ${{ steps.bump_version.outputs.NEW_TAG }}
+          draft: false
+          prerelease: false
+          body: |
+            Automated release ${{ steps.bump_version.outputs.NEW_TAG }}
+
+            Changes since ${{ steps.get_previous_tag.outputs.PREVIOUS_TAG }}:
+
+            ${{ github.event.head_commit.message }}
+
+      - name: Download frontend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend-dist
+
+      - name: Zip frontend artifacts
+        run: |
+          zip -r frontend-dist.zip frontend-dist
+
+      - name: Upload frontend zip to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./frontend-dist.zip
+          asset_name: frontend-dist.zip
+          asset_content_type: application/zip

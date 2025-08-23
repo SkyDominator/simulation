@@ -1,49 +1,137 @@
-# Partner Club Financial Simulation
+# Partners Club Financial Simulation PWA
 
-This project provides a financial simulation for the Partner Club system, implementing various investment plans and calculating returns over multiple rounds. **Now supports both single-plan and multi-plan simulations with comprehensive comparative analysis.**
+This project provides a financial simulation for the Partner Club system, implementing various investment plans and calculating returns over multiple rounds. **Now supports both single-plan and multi-plan simulations with comprehensive comparative analysis, accessible through a Progressive Web App (PWA).**
 
 ## Project Structure
 
 The code has been refactored following SOLID principles and best practices:
 
-- `src/python/`: Main project directory
+- `src/backend/`: FastAPI backend server for the PWA
+  - `api/`: API endpoints and routing
+  - `auth/`: JWT authentication
+  - `config/`: Backend configuration settings
+  - `models/`: Data schemas and models
+  - `services/`: Business logic and simulation services
+- `src/my-pwa-frontend/`: React frontend PWA
+  - `src/`: Frontend source code
+  - `public/`: Static assets and PWA manifest
+- `src/local-sim/`: Local simulation engines
+  - `general/`: General simulation module
+  - `individual/`: Individual simulation module
+- `src/python/`: Original simulation codebase
   - `config/`: Configuration and plan parameters
-  - `models/`: Data models for simulation results (supports multi-plan analysis)
+  - `models/`: Data models for simulation results
   - `services/`: Business logic services
-  - `utils/`: Utility functions including comprehensive reporting
-  - `init.py`: Main entry point for running simulations
+  - `utils/`: Utility functions including reporting
+- `deploy_option_a.ps1`: PowerShell deployment script for Cloudflare Tunnel
 
-## How to Run the Simulation
+## Development Setup
+
+### Prerequisites
+
+- Docker and Docker Compose
+- Node.js (LTS version)
+- Python 3.11+
+- Supabase account with project set up
+
+### Running Locally
+
+1. Clone the repository
+2. Set up environment variables:
+
+```
+# Backend (.env)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SECRET_KEY=your-supabase-secret-key
+SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+JWT_SECRET=your-jwt-secret
+
+# Frontend (.env.local)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+3. Start the development environment:
+
+```bash
+docker-compose up -d
+```
+
+4. Access the frontend at `http://localhost:5173`
+5. API endpoints are available at `http://localhost:8000`
+
+### Running the CLI Simulation
 
 1. Navigate to the project directory
-1. Install dependencies:
+2. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-1. Run the main script:
+3. Run the main script:
 
 ```bash
 python src/python/init.py
 ```
 
-1. Choose simulation type:
+4. Choose simulation type:
    - **Single plan**: Enter one plan (e.g., 'A')
    - **Multiple plans**: Enter comma-separated plans (e.g., 'A,B,C')
    - **All plans**: Enter 'all'
-1. Specify the number of simulation rounds
-1. View comprehensive results and export options
+5. Specify the number of simulation rounds
+6. View comprehensive results and export options
+
+## Deployment Options
+
+### Option A: Cloudflare Tunnel (Recommended)
+
+This option uses Cloudflare Tunnel to provide a secure HTTPS connection to your app running on a Windows PC, without opening ports in your firewall.
+
+1. Follow the steps in [cloudflare_tunnel_setup.md](./cloudflare_tunnel_setup.md)
+2. Run the deployment script:
+
+```powershell
+.\deploy_option_a.ps1 -DomainName "partnersclub.yourdomain.com"
+```
+
+For detailed steps, see the [Cloudflare Tunnel Setup Guide](./cloudflare_tunnel_setup.md).
+
+### Option B: Traditional Web Hosting
+
+Deploy the frontend to a static hosting service and the backend to a Python application hosting platform.
+
+1. Build the frontend:
+
+```bash
+cd src/my-pwa-frontend
+npm run build
+```
+
+2. Deploy the `/dist` directory to services like Netlify, Vercel, or GitHub Pages
+3. Deploy the backend to services like:
+   - Heroku
+   - DigitalOcean App Platform
+   - Railway
+   - Render
+
+### Option C: Self-hosting with Reverse Proxy
+
+For advanced users who want to self-host on a VPS or dedicated server:
+
+1. Set up a server with Nginx as a reverse proxy
+2. Configure SSL with Let's Encrypt
+3. Run the frontend and backend as systemd services
 
 ## Key Features
 
 ### Core Features
 
-
 ### Multi-Plan Simulation Features ✨
 
-
 ### Memo Feature
+
 User-defined memo support added (2025-08-19). Ensure the `simulations` table has a `memo TEXT` column. A migration script is provided in `src/backend/migrations/20250819_add_memo_column.sql`.
 
 ## Simulation Output
@@ -87,7 +175,7 @@ Current plans supported: A, B, C, D, K, P, R, F, E
 Each plan has different:
 
 - Payment structures
-- Revenue calculations  
+- Revenue calculations
 - Maximum investor counts
 - Bonus rates
 
@@ -154,14 +242,69 @@ The runtime application (FastAPI backend + React/Vite PWA frontend) is developed
 ### Services
 
 | Service  | Port | Description                 |
-|----------|------|-----------------------------|
+| -------- | ---- | --------------------------- |
 | backend  | 8000 | FastAPI (Uvicorn, reload)   |
 | frontend | 5173 | Vite dev server (React PWA) |
 
-### Prerequisites
+## PWA Features
 
-- Docker (Desktop or Engine)
-- VS Code + Dev Containers extension
+This application is a full Progressive Web App with:
+
+- Offline functionality for core features
+- Install prompts on compatible devices
+- Fast loading and smooth animations
+- Responsive design for all screen sizes
+
+### Installing the PWA
+
+#### On Android:
+
+1. Open the app in Chrome
+2. Tap the menu (three dots)
+3. Select "Install App" or "Add to Home Screen"
+
+#### On iOS:
+
+1. Open the app in Safari
+2. Tap the Share icon
+3. Select "Add to Home Screen"
+
+#### On Desktop:
+
+1. Open the app in Chrome/Edge
+2. Click the install icon in the address bar
+3. Follow the prompts to install
+
+## CI/CD Pipeline
+
+This project includes a GitHub Actions workflow for CI/CD:
+
+- Automatically builds and tests on push to main branch
+- Creates releases with version tags
+- Builds production artifacts for deployment
+
+To use CI/CD:
+
+1. Set up GitHub repository secrets:
+
+   - `SUPABASE_URL`
+   - `SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SECRET_KEY`
+   - `JWT_SECRET`
+
+2. Push to main branch to trigger the workflow
+
+## Database Structure
+
+The application uses Supabase with the following tables:
+
+- `simulations`: Stores simulation data and results
+- `whitelist`: Controls access to the application
+- `notices`: System notifications and announcements
+- `admins`: Administrative user information
+
+Row-Level Security (RLS) policies protect all tables to ensure data security.
+
 - Git (source of truth remains your cloned repo)
 
 ### Open in Dev Container
@@ -253,4 +396,3 @@ npm run build; npm run preview
 ```
 
 Open the preview URL in Chrome and choose “Install app”. Serve over HTTPS in production to unlock full PWA capabilities.
-
