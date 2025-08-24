@@ -13,6 +13,8 @@
       1. VITE_SUPABASE_URL
       2. VITE_SUPABASE_PUBLISHABLE_KEY
 
+<!-- 공인 IP주소: 220.86.9.30 -->
+
 # Deployment notes (your other Windows 11 notebook)
 
 Use the current Docker Compose to run both services, or build a static production bundle and serve via any static server (over HTTPS recommended).

@@ -162,3 +162,8 @@ async def delete_simulation(simulation_id: str, user_id: str = Depends(authentic
 @router.post("/api/simulation/delete", response_model=SimulationDeleteResponse)
 async def delete_simulation_post(request: SimulationDeleteRequest, user_id: str = Depends(authenticate_jwt_token)):
     return _sim_service.delete(request.simulation_id, user_id)
+
+# Add to src/backend/api/routes.py
+@router.get("/health", tags=["health"])
+async def health():
+    return {"status": "healthy"}

@@ -74,7 +74,7 @@ This guide walks through setting up a Cloudflare Tunnel to give your PWA app a s
 1. Run the tunnel with your configuration:
 
    ```powershell
-   cloudflared tunnel run --config cloudflared-config.yaml
+   cloudflared tunnel --config cloudflared-config.yaml run
    ```
 
 2. Keep this terminal window open to maintain the tunnel connection, or use the scheduled task in the deployment script
