@@ -22,7 +22,7 @@ class Settings:
         if self.cors_origins is None:
             object.__setattr__(self, "cors_origins", [
                 # Public domain from Cloudflare Tunnel
-                "https://partnersclub.example.com",  # Replace with your actual Cloudflare Tunnel domain
+                "https://simulation.lightoflifeclub.com",  # Replace with your actual Cloudflare Tunnel domain
                 # Local development & preview
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
