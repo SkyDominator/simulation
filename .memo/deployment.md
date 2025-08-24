@@ -12,6 +12,7 @@
    2. Frontend (Vite build-time, public)
       1. VITE_SUPABASE_URL
       2. VITE_SUPABASE_PUBLISHABLE_KEY
+3.
 
 <!-- 공인 IP주소: 220.86.9.30 -->
 
