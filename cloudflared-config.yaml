@@ -1,0 +1,9 @@
+tunnel: 3a97bb01-c92d-4678-957f-68b66061a0e3
+   credentials-file: C:\Users\USER\.cloudflared\3a97bb01-c92d-4678-957f-68b66061a0e3.json
+   ingress:
+     - hostname: simulation.lightoflifeclub.com
+       path: /api/
+       service: http://localhost:8000
+     - hostname: simulation.lightoflifeclub.com
+       service: http://localhost:4173
+     - service: http_status:404
