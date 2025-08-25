@@ -91,12 +91,37 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
   const [memoTarget, setMemoTarget] = useState<Plan | null>(null);
   const [signOutLoading, setSignOutLoading] = useState(false);
   // State for selected simulations
-  const [selectedSimulations, setSelectedSimulations] = useState<string[]>([]);
-  const [showSummaryReport, setShowSummaryReport] = useState(false);
+  const [selectedSimulations, setSelectedSimulations] = useState<string[]>(
+    () => {
+      // Try to load selected simulations from localStorage
+      try {
+        const saved = localStorage.getItem("ui.main.selectedSimulations");
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+  );
+  const [showSummaryReport, setShowSummaryReport] = useState(() => {
+    // Try to load report visibility state from localStorage
+    try {
+      return localStorage.getItem("ui.main.showSummaryReport") === "true";
+    } catch {
+      return false;
+    }
+  });
   const [summaryReportData, setSummaryReportData] = useState<Record<
     string,
     any
-  > | null>(null);
+  > | null>(() => {
+    // Try to load report data from localStorage
+    try {
+      const saved = localStorage.getItem("ui.main.summaryReportData");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   // draft stored inside MemoModal, keep minimal state here
   const [sortOrders, setSortOrders] = useState<SortSpec[]>(() => {
     const persisted = getJSON<unknown>(MAIN_SORT_KEY, DEFAULT_SORT_ORDERS);
@@ -107,6 +132,44 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
   useEffect(() => {
     setJSON(MAIN_SORT_KEY, sortOrders);
   }, [sortOrders]);
+
+  // Persist selected simulations when they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "ui.main.selectedSimulations",
+        JSON.stringify(selectedSimulations)
+      );
+    } catch {
+      /* Ignore storage errors */
+    }
+  }, [selectedSimulations]);
+
+  // Persist summary report visibility
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "ui.main.showSummaryReport",
+        String(showSummaryReport)
+      );
+    } catch {
+      /* Ignore storage errors */
+    }
+  }, [showSummaryReport]);
+
+  // Persist summary report data
+  useEffect(() => {
+    try {
+      if (summaryReportData) {
+        localStorage.setItem(
+          "ui.main.summaryReportData",
+          JSON.stringify(summaryReportData)
+        );
+      }
+    } catch {
+      /* Ignore storage errors */
+    }
+  }, [summaryReportData]);
 
   const toggleDir = (dir: "asc" | "desc"): "asc" | "desc" =>
     dir === "asc" ? "desc" : "asc";
@@ -720,7 +783,19 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
                   variant="outlined"
                   color="inherit"
                   size="small"
-                  onClick={() => setShowSummaryReport(false)}
+                  onClick={() => {
+                    setShowSummaryReport(false);
+                    // We don't clear the data so it can be shown again if needed
+                    // Just update localStorage to reflect the visibility change
+                    try {
+                      localStorage.setItem(
+                        "ui.main.showSummaryReport",
+                        "false"
+                      );
+                    } catch {
+                      /* Ignore storage errors */
+                    }
+                  }}
                 >
                   닫기
                 </Button>
