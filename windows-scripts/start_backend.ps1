@@ -1,12 +1,16 @@
 # Backend Startup Script
 $ErrorActionPreference = "Stop"
 
+# Find workspace root (parent of windows-scripts)
+$workspaceRoot = Split-Path -Parent $PSScriptRoot
+
 # Log file for debugging
-$logFile = "C:\Users\raykim\Documents\workspace\partnerclub\simulation\logs\backend_startup.log"
+$logFile = Join-Path -Path $workspaceRoot -ChildPath "logs\backend_startup.log"
 
 # Ensure log directory exists
-if (!(Test-Path "C:\Users\raykim\Documents\workspace\partnerclub\simulation\logs")) {
-    New-Item -ItemType Directory -Path "C:\Users\raykim\Documents\workspace\partnerclub\simulation\logs"
+$logDir = Join-Path -Path $workspaceRoot -ChildPath "logs"
+if (!(Test-Path $logDir)) {
+    New-Item -ItemType Directory -Path $logDir
 }
 
 # Function to log messages
@@ -23,7 +27,8 @@ try {
     Write-Log "Starting backend server..."
     
     # Change to the backend directory
-    Set-Location -Path "C:\Users\raykim\Documents\workspace\partnerclub\simulation\src\backend"
+    $backendPath = Join-Path -Path $workspaceRoot -ChildPath "src\backend"
+    Set-Location -Path $backendPath
     
     # Check if virtualenv exists and activate it if it does
     if (Test-Path "venv\Scripts\Activate.ps1" -PathType Leaf) {

@@ -1,8 +1,9 @@
 # Setup Task Scheduler script
 $ErrorActionPreference = "Stop"
 
-# Get current directory
+# Get current directory and workspace root
 $scriptPath = $PSScriptRoot
+$workspaceRoot = Split-Path -Parent $PSScriptRoot
 
 # Backend script path
 $backendScriptPath = Join-Path -Path $scriptPath -ChildPath "start_backend.ps1"

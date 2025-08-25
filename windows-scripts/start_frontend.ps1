@@ -1,12 +1,16 @@
 # Frontend Startup Script
 $ErrorActionPreference = "Stop"
 
+# Find workspace root (parent of windows-scripts)
+$workspaceRoot = Split-Path -Parent $PSScriptRoot
+
 # Log file for debugging
-$logFile = "C:\Users\raykim\Documents\workspace\partnerclub\simulation\logs\frontend_startup.log"
+$logFile = Join-Path -Path $workspaceRoot -ChildPath "logs\frontend_startup.log"
 
 # Ensure log directory exists
-if (!(Test-Path "C:\Users\raykim\Documents\workspace\partnerclub\simulation\logs")) {
-    New-Item -ItemType Directory -Path "C:\Users\raykim\Documents\workspace\partnerclub\simulation\logs"
+$logDir = Join-Path -Path $workspaceRoot -ChildPath "logs"
+if (!(Test-Path $logDir)) {
+    New-Item -ItemType Directory -Path $logDir
 }
 
 # Function to log messages
@@ -23,7 +27,8 @@ try {
     Write-Log "Starting frontend server..."
     
     # Change to the frontend directory
-    Set-Location -Path "C:\Users\raykim\Documents\workspace\partnerclub\simulation\src\my-pwa-frontend"
+    $frontendPath = Join-Path -Path $workspaceRoot -ChildPath "src\my-pwa-frontend"
+    Set-Location -Path $frontendPath
     
     # Check if Node.js is in PATH
     $nodePath = Get-Command npm -ErrorAction SilentlyContinue

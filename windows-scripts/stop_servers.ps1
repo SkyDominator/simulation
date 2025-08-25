@@ -1,12 +1,16 @@
 # Stop servers script
 $ErrorActionPreference = "Stop"
 
+# Find workspace root (parent of windows-scripts)
+$workspaceRoot = Split-Path -Parent $PSScriptRoot
+
 # Log file for debugging
-$logFile = "C:\Users\raykim\Documents\workspace\partnerclub\simulation\logs\stop_servers.log"
+$logFile = Join-Path -Path $workspaceRoot -ChildPath "logs\stop_servers.log"
 
 # Ensure log directory exists
-if (!(Test-Path "C:\Users\raykim\Documents\workspace\partnerclub\simulation\logs")) {
-    New-Item -ItemType Directory -Path "C:\Users\raykim\Documents\workspace\partnerclub\simulation\logs"
+$logDir = Join-Path -Path $workspaceRoot -ChildPath "logs"
+if (!(Test-Path $logDir)) {
+    New-Item -ItemType Directory -Path $logDir
 }
 
 # Function to log messages
@@ -23,7 +27,7 @@ try {
     Write-Log "Stopping servers..."
     
     # Stop backend
-    $backendPidFile = "C:\Users\raykim\Documents\workspace\partnerclub\simulation\logs\backend_startup.log.pid"
+    $backendPidFile = Join-Path -Path $workspaceRoot -ChildPath "logs\backend_startup.log.pid"
     if (Test-Path $backendPidFile) {
         $backendPid = Get-Content $backendPidFile
         Write-Log "Stopping backend process with PID: $backendPid"
@@ -38,7 +42,7 @@ try {
     }
     
     # Stop frontend
-    $frontendPidFile = "C:\Users\raykim\Documents\workspace\partnerclub\simulation\logs\frontend_startup.log.pid"
+    $frontendPidFile = Join-Path -Path $workspaceRoot -ChildPath "logs\frontend_startup.log.pid"
     if (Test-Path $frontendPidFile) {
         $frontendPid = Get-Content $frontendPidFile
         Write-Log "Stopping frontend process with PID: $frontendPid"
