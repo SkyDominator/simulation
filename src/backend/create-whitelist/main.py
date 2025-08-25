@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 users_to_add = [
     {"name": "김현영", "phone_number": "01031274918"},
     {"name": "신성애", "phone_number": "01030417102"},
+    {"name": "유광춘", "phone_number": "01096678299"},
 ]
 
 def export_to_csv(data_df: pd.DataFrame, directory: str = None) -> str:
