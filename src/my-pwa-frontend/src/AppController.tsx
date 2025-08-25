@@ -15,6 +15,8 @@ const AppController = () => {
   const [page, setPage] = useState<Page>(() =>
     getJSON<Page>("ui.page", "whitelist")
   );
+
+  // This key is used to force re-mount the WhitelistCheckPage component when going back from login
   const [editingPlan, setEditingPlan] = useState<Plan | null>(() =>
     getJSON<Plan | null>("ui.editingPlan", null)
   );
@@ -34,23 +36,23 @@ const AppController = () => {
 
   // We need a key to force WhitelistCheckPage to remount when going back from login
   const [whitelistKey, setWhitelistKey] = useState(0);
-  
+
   const whitelistOrLogin: Record<"whitelist" | "login", React.ReactElement> =
     useMemo(
       () => ({
         whitelist: (
-          <WhitelistCheckPage 
-            key={`whitelist-${whitelistKey}`} 
-            onVerified={() => setPage("login")} 
+          <WhitelistCheckPage
+            key={`whitelist-${whitelistKey}`}
+            onVerified={() => setPage("login")}
           />
         ),
         login: (
-          <LoginPage 
+          <LoginPage
             onBackToWhitelist={() => {
               setPage("whitelist");
               // Increment key to force remount of the WhitelistCheckPage component
-              setWhitelistKey(prevKey => prevKey + 1);
-            }} 
+              setWhitelistKey((prevKey) => prevKey + 1);
+            }}
           />
         ),
       }),

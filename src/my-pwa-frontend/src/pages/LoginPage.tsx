@@ -1,6 +1,14 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
-import { Box, Paper, Typography, Stack, Button, Alert } from "@mui/material";
+import {
+  Box,
+  Paper,
+  Typography,
+  Stack,
+  Button,
+  Alert,
+  IconButton,
+} from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 type OAuthProvider = "google" | "kakao";
@@ -42,22 +50,34 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
         p: 2,
       }}
     >
-      <Paper elevation={4} sx={{ p: 4, width: "100%", maxWidth: 420 }}>
+      <Paper
+        elevation={4}
+        sx={{ p: 4, width: "100%", maxWidth: 420, position: "relative" }}
+      >
         {onBackToWhitelist && (
-          <Box sx={{ mb: 2 }}>
-            <Button
-              startIcon={<ArrowBackIcon />}
+          <Box sx={{ position: "absolute", top: 16, left: 16 }}>
+            <IconButton
               onClick={onBackToWhitelist}
-              sx={{ color: "text.secondary" }}
+              color="primary"
               size="small"
+              aria-label="이전 단계로"
             >
-              인증 화면으로 돌아가기
-            </Button>
+              <ArrowBackIcon />
+            </IconButton>
           </Box>
         )}
-        <Typography variant="h5" fontWeight={700} textAlign="center" mb={3}>
-          로그인
-        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            pt: onBackToWhitelist ? 3 : 0,
+          }}
+        >
+          <Typography variant="h5" fontWeight={700} textAlign="center" mb={3}>
+            로그인
+          </Typography>
+        </Box>
         <Stack spacing={2.5}>
           {error && (
             <Alert severity="error" onClose={() => setError(null)}>
