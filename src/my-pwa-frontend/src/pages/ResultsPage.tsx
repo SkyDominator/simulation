@@ -46,7 +46,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
   );
 
   // Find the first row index where cumulative profit starts increasing toward positive
-  const firstProfitIncreaseIndex = React.useMemo(() => {
+  const maximumNegativeDeepIndex = React.useMemo(() => {
     if (!history.length) return -1;
 
     // Use the first element as the initial previous value
@@ -58,7 +58,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
       const currentValue = Number(history[i].cumulative_net_profit || 0);
       // Check if value is increasing AND higher than previous value
       if (!isNaN(currentValue) && currentValue > prevValue) {
-        return i; // Return the first index where profit starts to increase
+        return i - 1; // Return the index where the cumulative_net_profit is in its negative deep.
       }
       prevValue = currentValue;
     }
@@ -281,10 +281,10 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
                         key={idx}
                         hover
                         sx={{
-                          ...(idx === firstProfitIncreaseIndex && {
-                            backgroundColor: "rgba(46, 125, 50, 0.12)", // Light green background
+                          ...(idx === maximumNegativeDeepIndex && {
+                            backgroundColor: "rgba(255, 100, 100, 0.12)", // Light red background
                             "&:hover": {
-                              backgroundColor: "rgba(46, 125, 50, 0.2)", // Darker green on hover
+                              backgroundColor: "rgba(255, 100, 100, 0.2)", // Darker red on hover
                             },
                           }),
                         }}
@@ -338,7 +338,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
                             );
 
                             display =
-                              idx === firstProfitIncreaseIndex ? (
+                              idx === maximumNegativeDeepIndex ? (
                                 <Tooltip
                                   title="이 회차에서 총 이익이 처음으로 증가하기 시작합니다"
                                   arrow
