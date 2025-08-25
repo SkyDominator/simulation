@@ -9,7 +9,7 @@ from typing import List
 
 @dataclass(frozen=True)
 class Settings:
-    supabase_url: str = os.getenv("SUPABASE_URL", "https://kihlqhomsychihwzwzuo.supabase.co")
+    supabase_url: str = os.getenv("SUPABASE_URL", "")
     # New key names (Supabase 2024+): Publishable (client) and Secret (server)
     supabase_publishable_key: str = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
     supabase_secret_key: str = os.getenv("SUPABASE_SECRET_KEY", "")  # server-only
@@ -22,13 +22,13 @@ class Settings:
         if self.cors_origins is None:
             object.__setattr__(self, "cors_origins", [
                 # Public domain from Cloudflare Tunnel
-                "https://simulation.lightoflifeclub.com",  # Replace with your actual Cloudflare Tunnel domain
-                # Local development & preview
+                "https://simulation.lightoflifeclub.com",  
+                # Local development
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
                 "http://10.10.113.129:5173",
                 "http://172.30.1.39:5173",
-                # Vite preview defaults to 4173; include to allow preflight during preview
+                # Vite preview defaults to 4173
                 "http://localhost:4173",
                 "http://127.0.0.1:4173",
                 "http://10.10.113.129:4173",

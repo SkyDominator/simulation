@@ -5,9 +5,9 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // Helper to read env at build time for API base url pattern
 const API_BASE =
-  // process.env.VITE_API_BASE_URL || "http://10.10.113.129:8000/api";
-  // process.env.VITE_API_BASE_URL || "http://172.30.1.39:8000/api";
-  process.env.VITE_API_BASE_URL || "https://simulation.lightoflifeclub.com/api";
+  process.env.VITE_API_BASE_URL || "http://10.10.113.129:8000/api";
+// process.env.VITE_API_BASE_URL || "http://172.30.1.39:8000/api";
+// process.env.VITE_API_BASE_URL || "https://simulation.lightoflifeclub.com/api";
 
 export default defineConfig({
   plugins: [
