@@ -86,8 +86,8 @@ switch ($Action) {
             Write-Host "Backend server is NOT RUNNING" -ForegroundColor Red
         }
         
-        # Check frontend (port 5173)
-        $frontendProcess = Get-ProcessByPort -Port 5173
+        # Check frontend (port 4173)
+        $frontendProcess = Get-ProcessByPort -Port 4173
         if ($frontendProcess) {
             Write-Host "Frontend server is RUNNING" -ForegroundColor Green
             Write-Host "  Process ID: $($frontendProcess.Id)" -ForegroundColor Gray

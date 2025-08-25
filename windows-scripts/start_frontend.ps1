@@ -42,8 +42,8 @@ try {
     # & npm install
     
     # Start the frontend server
-    Write-Log "Launching Vite dev server..."
-    Start-Process -FilePath "npm" -ArgumentList "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173" -WindowStyle Normal -PassThru | Out-File -FilePath "$logFile.pid" -Encoding ascii
+    Write-Log "Launching Vite preview server..."
+    Start-Process -FilePath "npm" -ArgumentList "run", "preview" -WindowStyle Normal -PassThru | Out-File -FilePath "$logFile.pid" -Encoding ascii
     
     Write-Log "Frontend server started successfully"
 } catch {

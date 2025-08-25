@@ -74,19 +74,19 @@ try {
         Write-Log "No process found using port 8000"
     }
     
-    # Kill process on port 5173 (frontend)
-    $processPort5173 = Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue | Where-Object State -eq Listen
-    if ($processPort5173) {
-        $processId = $processPort5173.OwningProcess
-        Write-Log "Found process $processId using port 5173"
+    # Kill process on port 4173 (frontend)
+    $processPort4173 = Get-NetTCPConnection -LocalPort 4173 -ErrorAction SilentlyContinue | Where-Object State -eq Listen
+    if ($processPort4173) {
+        $processId = $processPort4173.OwningProcess
+        Write-Log "Found process $processId using port 4173"
         try {
             Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
-            Write-Log "Successfully killed process on port 5173"
+            Write-Log "Successfully killed process on port 4173"
         } catch {
-            Write-Log "Failed to kill process on port 5173: $_"
+            Write-Log "Failed to kill process on port 4173: $_"
         }
     } else {
-        Write-Log "No process found using port 5173"
+        Write-Log "No process found using port 4173"
     }
     
     Write-Log "Server stop complete"
