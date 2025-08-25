@@ -105,5 +105,36 @@ export interface AdminMeResponse {
   success: boolean;
 }
 
+// Consent related types
+export interface ConsentRecordRequest {
+  consent_type: string;
+  consent_version: string;
+  ip_address?: string;
+  user_agent?: string;
+}
+
+export interface ConsentRecordResponse {
+  id: string;
+  user_id: string;
+  consent_type: string;
+  consent_version: string;
+  consent_given_at: string;
+  message: string;
+  success: boolean;
+}
+
+export interface PrivacyPolicyResponse {
+  version: string;
+  last_updated: string;
+  content: string;
+  success: boolean;
+}
+
 // Define a type for the page navigation
-export type Page = "whitelist" | "login" | "main" | "plan-editor" | "results";
+export type Page =
+  | "whitelist"
+  | "login"
+  | "consent"
+  | "main"
+  | "plan-editor"
+  | "results";

@@ -10,6 +10,9 @@ import {
   type NoticeUpdateResponse,
   type NoticeDeleteResponse,
   type AdminMeResponse,
+  type ConsentRecordRequest,
+  type ConsentRecordResponse,
+  type PrivacyPolicyResponse,
 } from "../types/types";
 
 // Prefer Vite-provided env var, fall back to the current local backend URL
@@ -389,5 +392,67 @@ export const api = {
       throw new Error(msg);
     }
     return await response.json();
+  },
+
+  // Consent related API methods
+  getPrivacyPolicy: async (): Promise<PrivacyPolicyResponse> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/privacy-policy`);
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Privacy policy fetch error:", error);
+      throw error;
+    }
+  },
+
+  recordConsent: async (
+    data: ConsentRecordRequest,
+    token: string
+  ): Promise<ConsentRecordResponse> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/consents`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Record consent error:", error);
+      throw error;
+    }
+  },
+
+  getUserConsents: async (
+    token: string
+  ): Promise<{ consents: any[]; success: boolean }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/consents`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Get user consents error:", error);
+      throw error;
+    }
   },
 };

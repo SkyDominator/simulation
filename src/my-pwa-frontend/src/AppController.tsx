@@ -5,10 +5,15 @@ import LoginPage from "./pages/LoginPage";
 import MainPage from "./pages/MainPage";
 import PlanEditorPage from "./pages/PlanEditor";
 import ResultsPage from "./pages/ResultsPage";
+import ConsentPage from "./pages/ConsentPage";
 import { type Plan, type Page } from "./types/types";
 import { NoticeBoardModal } from "./components/NoticeBoardModal";
-import type { SimulationRunResponse } from "./types/types";
+import type {
+  SimulationRunResponse,
+  ConsentRecordRequest,
+} from "./types/types";
 import { getJSON, setJSON } from "./utils/persist";
+import { api } from "./services/api";
 
 const AppController = () => {
   // Restore last UI state if available; default to whitelist
@@ -23,11 +28,16 @@ const AppController = () => {
   const [noticeOpen, setNoticeOpen] = useState(() =>
     getJSON<boolean>("ui.noticeOpen", false)
   );
-  const { user } = useAuth();
+
+  const { user, session } = useAuth();
+
   const [simulationResult, setSimulationResult] =
     useState<SimulationRunResponse | null>(() =>
       getJSON<SimulationRunResponse | null>("ui.simulationResult", null)
     );
+
+  // Track whether consent has been recorded for this session
+  const [consentRecorded, setConsentRecorded] = useState(false);
 
   // 공지사항 열기
   const handleOpenNotice = () => {
@@ -37,27 +47,76 @@ const AppController = () => {
   // We need a key to force WhitelistCheckPage to remount when going back from login
   const [whitelistKey, setWhitelistKey] = useState(0);
 
-  const whitelistOrLogin: Record<"whitelist" | "login", React.ReactElement> =
-    useMemo(
-      () => ({
-        whitelist: (
-          <WhitelistCheckPage
-            key={`whitelist-${whitelistKey}`}
-            onVerified={() => setPage("login")}
-          />
-        ),
-        login: (
-          <LoginPage
-            onBackToWhitelist={() => {
-              setPage("whitelist");
-              // Increment key to force remount of the WhitelistCheckPage component
-              setWhitelistKey((prevKey) => prevKey + 1);
-            }}
-          />
-        ),
-      }),
-      [setPage, whitelistKey]
-    );
+  // Track whether the user has consented to data collection
+  const [consentGiven, setConsentGiven] = useState(() => {
+    return localStorage.getItem("privacy_consent") === "true";
+  });
+
+  // Record consent when user logs in successfully
+  useEffect(() => {
+    const recordConsent = async () => {
+      if (user && session?.access_token && consentGiven && !consentRecorded) {
+        try {
+          await api.recordConsent(
+            {
+              consent_type: "privacy_policy",
+              consent_version: "1.0",
+              user_agent: navigator.userAgent,
+            },
+            session.access_token
+          );
+          setConsentRecorded(true);
+        } catch (error) {
+          console.error("Failed to record consent:", error);
+        }
+      }
+    };
+
+    recordConsent();
+  }, [user, session, consentGiven, consentRecorded]);
+
+  const whitelistOrLogin: Record<
+    "whitelist" | "login" | "consent",
+    React.ReactElement
+  > = useMemo(
+    () => ({
+      whitelist: (
+        <WhitelistCheckPage
+          key={`whitelist-${whitelistKey}`}
+          onVerified={() => {
+            if (consentGiven) {
+              setPage("login");
+            } else {
+              setPage("consent");
+            }
+          }}
+        />
+      ),
+      consent: (
+        <ConsentPage
+          onAccept={() => {
+            localStorage.setItem("privacy_consent", "true");
+            setConsentGiven(true);
+            setPage("login");
+          }}
+          onDecline={() => {
+            setPage("whitelist");
+            setWhitelistKey((prevKey) => prevKey + 1);
+          }}
+        />
+      ),
+      login: (
+        <LoginPage
+          onBackToWhitelist={() => {
+            setPage("whitelist");
+            // Increment key to force remount of the WhitelistCheckPage component
+            setWhitelistKey((prevKey) => prevKey + 1);
+          }}
+        />
+      ),
+    }),
+    [setPage, whitelistKey, consentGiven]
+  );
 
   const mainPages: Record<
     "main" | "plan-editor" | "results",
@@ -82,10 +141,11 @@ const AppController = () => {
 
   const renderPage = useCallback(() => {
     if (!user) {
-      return page === "whitelist" || page === "login"
+      return page === "whitelist" || page === "login" || page === "consent"
         ? whitelistOrLogin[page]
         : whitelistOrLogin.whitelist;
     }
+
     if (page === "main" || page === "plan-editor" || page === "results") {
       return mainPages[page];
     }

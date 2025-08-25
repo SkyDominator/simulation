@@ -98,6 +98,22 @@ class NoticeCreateResponse(BaseModel):
 class NoticeUpdateRequest(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
+    
+# Consent related schemas
+class ConsentRecordRequest(BaseModel):
+    consent_type: str  # e.g., 'privacy_policy', 'terms_of_service'
+    consent_version: str  # e.g., '1.0'
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+
+class ConsentRecordResponse(BaseModel):
+    id: str
+    user_id: str
+    consent_type: str
+    consent_version: str
+    consent_given_at: str
+    message: str = "Consent recorded successfully"
+    success: bool = True
     pinned: Optional[bool] = None
     published: Optional[bool] = None
 

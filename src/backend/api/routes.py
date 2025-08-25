@@ -1,8 +1,9 @@
 """API route registrations separated from application setup."""
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import Dict
 import hashlib
+from datetime import datetime
 
 from auth.jwt import authenticate_jwt_token
 from services.simulations import SimulationService
@@ -16,7 +17,8 @@ from models.schemas import (
     NoticeListResponse, NoticeDetailResponse,
     NoticeCreateRequest, NoticeCreateResponse,
     NoticeUpdateRequest, NoticeUpdateResponse,
-    NoticeDeleteResponse
+    NoticeDeleteResponse,
+    ConsentRecordRequest, ConsentRecordResponse
 )
 from supabase import create_client
 from config.settings import settings
@@ -167,3 +169,98 @@ async def delete_simulation_post(request: SimulationDeleteRequest, user_id: str 
 @router.get("/health", tags=["health"])
 async def health():
     return {"status": "healthy"}
+
+# ------------------------------- Consent management routes -------------------------------
+@router.post("/api/consents", response_model=ConsentRecordResponse)
+async def record_consent(
+    request: ConsentRecordRequest, 
+    client_request: Request,
+    user_id: str = Depends(authenticate_jwt_token)
+):
+    """
+    Record a user's consent to data collection and privacy policy.
+    
+    This creates a permanent record of when and what the user consented to.
+    """
+    client = _supabase_client()
+    
+    # Get client IP if not provided (through headers or direct connection)
+    ip_address = request.ip_address
+    if not ip_address and client_request.client:
+        ip_address = client_request.client.host
+    
+    consent_data = {
+        "user_id": user_id,
+        "consent_type": request.consent_type,
+        "consent_version": request.consent_version,
+        "consent_given_at": datetime.now().isoformat(),
+        "ip_address": ip_address,
+        "user_agent": request.user_agent
+    }
+    
+    response = client.table('consent_records').insert(consent_data).execute()
+    
+    if not response.data:
+        raise HTTPException(status_code=500, detail="Failed to record consent")
+    
+    result = response.data[0]
+    return ConsentRecordResponse(
+        id=result["id"],
+        user_id=user_id,
+        consent_type=request.consent_type,
+        consent_version=request.consent_version,
+        consent_given_at=result["consent_given_at"]
+    )
+
+@router.get("/api/consents")
+async def get_user_consents(user_id: str = Depends(authenticate_jwt_token)):
+    """Get all consent records for the authenticated user."""
+    client = _supabase_client()
+    
+    response = client.table('consent_records').select("*").eq('user_id', user_id).execute()
+    
+    return {
+        "consents": response.data or [],
+        "success": True
+    }
+
+@router.get("/api/privacy-policy")
+async def get_privacy_policy():
+    """Get the current privacy policy document."""
+    # For simplicity, we're returning a static policy here
+    # In a production environment, you might want to store this in the database
+    # or fetch it from a CMS
+    return {
+        "version": "1.0",
+        "last_updated": "2025-08-25",
+        "content": """
+# 개인정보처리방침
+
+## 1. 수집하는 개인정보 항목
+
+본 애플리케이션은 다음과 같은 개인정보를 수집합니다:
+- 소셜 로그인 계정을 통한 이메일 주소
+- 소셜 로그인 계정 이름 또는 닉네임
+- 사용자 계정에 연결된 신원 확인 정보
+
+## 2. 개인정보의 수집 및 이용목적
+
+수집한 개인정보는 다음의 목적을 위해 활용됩니다:
+- 사용자 식별 및 본인 확인
+- 서비스 이용 기록 관리
+- 서비스 개선 및 맞춤형 서비스 제공
+
+## 3. 개인정보의 보유 및 이용기간
+
+개인정보는 사용자가 서비스를 이용하는 기간 동안에만 보유합니다. 사용자가 계정 삭제를 요청할 경우, 관련 개인정보는 지체 없이 파기됩니다.
+
+## 4. 개인정보의 제3자 제공
+
+본 애플리케이션은 사용자의 개인정보를 제3자에게 제공하지 않습니다.
+
+## 5. 사용자의 권리
+
+사용자는 언제든지 자신의 개인정보에 대해 접근, 수정, 삭제를 요청할 수 있습니다.
+        """,
+        "success": True
+    }
