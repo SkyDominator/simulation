@@ -24,6 +24,10 @@ import {
   Chip,
   Divider,
   LinearProgress,
+  Checkbox,
+  Alert,
+  AlertTitle,
+  Grid,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -86,6 +90,13 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
   const [memoModalOpen, setMemoModalOpen] = useState(false);
   const [memoTarget, setMemoTarget] = useState<Plan | null>(null);
   const [signOutLoading, setSignOutLoading] = useState(false);
+  // State for selected simulations
+  const [selectedSimulations, setSelectedSimulations] = useState<string[]>([]);
+  const [showSummaryReport, setShowSummaryReport] = useState(false);
+  const [summaryReportData, setSummaryReportData] = useState<Record<
+    string,
+    any
+  > | null>(null);
   // draft stored inside MemoModal, keep minimal state here
   const [sortOrders, setSortOrders] = useState<SortSpec[]>(() => {
     const persisted = getJSON<unknown>(MAIN_SORT_KEY, DEFAULT_SORT_ORDERS);
@@ -276,6 +287,119 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
     }
   };
 
+  // Validate if a simulation can be selected
+  const canSelectSimulation = (simulation: Plan): boolean => {
+    // If this simulation is already selected, allow toggling it off
+    if (selectedSimulations.includes(simulation.simulation_id)) {
+      return true;
+    }
+
+    // Check if we already have a simulation with the same plan type
+    const selectedPlanTypes = plans
+      .filter((p) => selectedSimulations.includes(p.simulation_id))
+      .map((p) => p.plan_id);
+
+    return !selectedPlanTypes.includes(simulation.plan_id);
+  };
+
+  // Handle checkbox selection
+  const handleSimulationSelection = (simulationId: string) => {
+    setSelectedSimulations((prev) => {
+      if (prev.includes(simulationId)) {
+        // Remove if already selected
+        return prev.filter((id) => id !== simulationId);
+      } else {
+        // Add if not already selected
+        return [...prev, simulationId];
+      }
+    });
+  };
+
+  // Generate summary report data
+  const generateSummaryReport = async () => {
+    if (!session || selectedSimulations.length === 0) return;
+
+    try {
+      // Create a placeholder for our report data
+      const reportData: Record<string, any> = {};
+      let totalRequiredFunds = 0;
+
+      // For each selected simulation
+      for (const simId of selectedSimulations) {
+        const plan = plans.find((p) => p.simulation_id === simId);
+        if (!plan) continue;
+
+        // Run the simulation to get the results
+        const result = await api.runSimulation(simId, session.access_token);
+
+        // Process the history data like ResultsPage does
+        const historyRaw = result.history || [];
+        let history = historyRaw.map((e) =>
+          e && typeof e === "object" ? (e as Record<string, unknown>) : {}
+        );
+
+        // Apply the same logic from ResultsPage to inject correct company_round and amount
+        const scheduled = result.scheduled_payment || {};
+        const base = result.company_round || 0; // This is the starting company round
+        history = history.map((row, idx) => {
+          const companyRound = base + idx; // First row = base, then increment
+          const newRow: Record<string, unknown> = {
+            ...row,
+            company_round: companyRound,
+          };
+
+          // Get amount from scheduled_payment (indexed by personal round idx+1)
+          const amt = scheduled[idx + 1];
+          if (amt !== undefined) newRow.amount = amt;
+
+          return newRow;
+        });
+
+        // Calculate the maximum negative deep index
+        let maxNegativeDeepIndex = -1;
+        let prevValue = Number(history[0]?.cumulative_net_profit || 0);
+
+        for (let i = 1; i < history.length; i++) {
+          const currentValue = Number(history[i]?.cumulative_net_profit || 0);
+          if (!isNaN(currentValue) && currentValue > prevValue) {
+            maxNegativeDeepIndex = i - 1;
+            break;
+          }
+          prevValue = currentValue;
+        }
+
+        // If we didn't find a point where profit starts increasing, use the last point
+        if (maxNegativeDeepIndex === -1 && history.length > 0) {
+          maxNegativeDeepIndex = history.length - 1;
+        }
+
+        // Extract needed data - store the full history up to maxNegativeDeepIndex
+        const planData = {
+          plan_id: plan.plan_id,
+          company_round: plan.company_round, // This is the base company round
+          simulation_rounds: plan.simulation_rounds,
+          history: history.slice(0, maxNegativeDeepIndex + 1),
+          requiredFunds:
+            history[maxNegativeDeepIndex]?.cumulative_net_profit || 0,
+        };
+
+        // Add the required funds to total
+        totalRequiredFunds += Number(planData.requiredFunds);
+
+        reportData[plan.plan_id] = planData;
+      }
+
+      // Add total required funds
+      reportData.totalRequiredFunds = totalRequiredFunds;
+
+      setSummaryReportData(reportData);
+      setShowSummaryReport(true);
+    } catch (error) {
+      console.error("Error generating summary report:", error);
+      alert("종합 결과 생성에 실패했습니다.");
+    }
+  };
+
   const handleConfirmDelete = async () => {
     if (!session || !targetPlan) return;
     try {
@@ -348,14 +472,24 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
             <Typography variant="h6" fontWeight={600}>
               내 시뮬레이션
             </Typography>
-            <Button
-              onClick={handleNewPlan}
-              variant="contained"
-              color="success"
-              startIcon={<AddIcon />}
-            >
-              새 시뮬레이션
-            </Button>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <Button
+                onClick={generateSummaryReport}
+                variant="contained"
+                color="primary"
+                disabled={selectedSimulations.length === 0}
+              >
+                종합 결과
+              </Button>
+              <Button
+                onClick={handleNewPlan}
+                variant="contained"
+                color="success"
+                startIcon={<AddIcon />}
+              >
+                새 시뮬레이션
+              </Button>
+            </Stack>
           </Stack>
           <Divider sx={{ mb: 2 }} />
           {loading && <LinearProgress sx={{ mb: 2 }} />}
@@ -370,6 +504,14 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
+                    <TableCell padding="checkbox">
+                      <Tooltip
+                        title="종합 결과를 위해 시뮬레이션을 선택하세요. 각 플랜 타입당 하나의 시뮬레이션만 선택 가능합니다."
+                        arrow
+                      >
+                        <span>선택</span>
+                      </Tooltip>
+                    </TableCell>
                     <TableCell sx={{ width: 40 }}>번호</TableCell>
                     <TableCell
                       onClick={(e: React.MouseEvent<HTMLTableCellElement>) =>
@@ -440,12 +582,41 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
                     const isRunning = runningId === plan.simulation_id;
                     const isDeleting = deletingId === plan.simulation_id;
                     const memoDisplay = plan.memo || "메모 없음";
+                    const isSelected = selectedSimulations.includes(
+                      plan.simulation_id
+                    );
+                    const canSelect = canSelectSimulation(plan);
                     const truncated =
                       memoDisplay.length > 20
                         ? `${memoDisplay.slice(0, 20)}…`
                         : memoDisplay;
                     return (
-                      <TableRow key={plan.simulation_id} hover>
+                      <TableRow
+                        key={plan.simulation_id}
+                        hover
+                        selected={isSelected}
+                      >
+                        <TableCell padding="checkbox">
+                          <Tooltip
+                            title={
+                              !canSelect && !isSelected
+                                ? "이미 동일한 플랜 타입의 시뮬레이션이 선택되었습니다"
+                                : ""
+                            }
+                            arrow
+                          >
+                            <span>
+                              <Checkbox
+                                color="primary"
+                                checked={isSelected}
+                                onChange={() =>
+                                  handleSimulationSelection(plan.simulation_id)
+                                }
+                                disabled={!canSelect && !isSelected}
+                              />
+                            </span>
+                          </Tooltip>
+                        </TableCell>
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell>{plan.plan_id} 플랜</TableCell>
                         <TableCell>{plan.company_round}</TableCell>
@@ -531,6 +702,230 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
                 </TableBody>
               </Table>
             </TableContainer>
+          )}
+
+          {/* Summary Report */}
+          {showSummaryReport && summaryReportData && (
+            <Paper elevation={3} sx={{ p: 2.5, mt: 3 }}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
+                <Typography variant="h6" fontWeight={600}>
+                  종합 결과 보고서
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  size="small"
+                  onClick={() => setShowSummaryReport(false)}
+                >
+                  닫기
+                </Button>
+              </Stack>
+              <Divider sx={{ mb: 2 }} />
+
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                  총 필요 준비금
+                </Typography>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    backgroundColor: "rgba(0, 0, 0, 0.02)",
+                    borderColor:
+                      Number(summaryReportData.totalRequiredFunds) >= 0
+                        ? "success.main"
+                        : "error.main",
+                    borderWidth: 2,
+                  }}
+                >
+                  <Typography
+                    variant="h5"
+                    fontWeight={700}
+                    align="center"
+                    sx={{
+                      color:
+                        Number(summaryReportData.totalRequiredFunds) >= 0
+                          ? "success.main"
+                          : "error.main",
+                    }}
+                  >
+                    {Number(
+                      summaryReportData.totalRequiredFunds
+                    ).toLocaleString()}{" "}
+                    원
+                  </Typography>
+                </Paper>
+              </Box>
+
+              <Grid container spacing={3}>
+                {Object.keys(summaryReportData)
+                  .filter((key) => key !== "totalRequiredFunds")
+                  .map((planId) => {
+                    const planData = summaryReportData[planId];
+                    const history = planData.history || [];
+
+                    return (
+                      <Grid item xs={12} md={6} key={planId}>
+                        <Paper
+                          elevation={2}
+                          sx={{
+                            p: 2,
+                            height: "100%",
+                            borderLeft: 4,
+                            borderColor:
+                              Number(planData.requiredFunds) >= 0
+                                ? "success.main"
+                                : "error.main",
+                          }}
+                        >
+                          <Stack spacing={1.5}>
+                            <Box sx={{ mb: 1 }}>
+                              <Typography variant="h6" fontWeight={600}>
+                                {planId} 플랜
+                              </Typography>
+                              <Stack
+                                direction="row"
+                                spacing={2}
+                                divider={
+                                  <Divider orientation="vertical" flexItem />
+                                }
+                              >
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  회사 회차: {planData.company_round}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  총 회차: {planData.simulation_rounds}
+                                </Typography>
+                              </Stack>
+                            </Box>
+
+                            <Divider />
+
+                            <Box>
+                              <Typography variant="subtitle2" gutterBottom>
+                                필요 준비금
+                              </Typography>
+                              <Typography
+                                variant="h6"
+                                fontWeight={600}
+                                sx={{
+                                  color:
+                                    Number(planData.requiredFunds) >= 0
+                                      ? "success.main"
+                                      : "error.main",
+                                }}
+                              >
+                                {Number(
+                                  planData.requiredFunds
+                                ).toLocaleString()}{" "}
+                                원
+                              </Typography>
+                            </Box>
+
+                            <Divider />
+
+                            <Box>
+                              <Typography variant="subtitle2" gutterBottom>
+                                회차별 데이터 (수익 증가 시점까지)
+                              </Typography>
+                              <Box
+                                sx={{
+                                  maxHeight: "180px",
+                                  overflowY: "auto",
+                                  mt: 1,
+                                }}
+                              >
+                                <Table
+                                  size="small"
+                                  sx={{ tableLayout: "fixed" }}
+                                >
+                                  <TableHead>
+                                    <TableRow>
+                                      <TableCell sx={{ width: "30%" }}>
+                                        회사 회차
+                                      </TableCell>
+                                      <TableCell align="right">
+                                        매출액
+                                      </TableCell>
+                                      <TableCell align="right">
+                                        누적 수익
+                                      </TableCell>
+                                    </TableRow>
+                                  </TableHead>
+                                  <TableBody>
+                                    {history.map(
+                                      (
+                                        item: Record<string, unknown>,
+                                        index: number
+                                      ) => (
+                                        <TableRow
+                                          key={index}
+                                          sx={{
+                                            backgroundColor:
+                                              index === history.length - 1
+                                                ? "rgba(0, 0, 0, 0.04)"
+                                                : "inherit",
+                                            "&:last-child td": {
+                                              fontWeight: "bold",
+                                            },
+                                          }}
+                                        >
+                                          <TableCell>
+                                            {item.company_round !== undefined
+                                              ? String(item.company_round)
+                                              : "-"}
+                                          </TableCell>
+                                          <TableCell align="right">
+                                            {item.amount !== undefined
+                                              ? Number(
+                                                  item.amount
+                                                ).toLocaleString()
+                                              : "-"}
+                                          </TableCell>
+                                          <TableCell
+                                            align="right"
+                                            sx={{
+                                              color:
+                                                Number(
+                                                  item.cumulative_net_profit ||
+                                                    0
+                                                ) >= 0
+                                                  ? "success.main"
+                                                  : "error.main",
+                                            }}
+                                          >
+                                            {item.cumulative_net_profit !==
+                                            undefined
+                                              ? Number(
+                                                  item.cumulative_net_profit
+                                                ).toLocaleString()
+                                              : "-"}
+                                          </TableCell>
+                                        </TableRow>
+                                      )
+                                    )}
+                                  </TableBody>
+                                </Table>
+                              </Box>
+                            </Box>
+                          </Stack>
+                        </Paper>
+                      </Grid>
+                    );
+                  })}
+              </Grid>
+            </Paper>
           )}
         </Paper>
       </Container>
