@@ -32,13 +32,29 @@ const AppController = () => {
     setNoticeOpen(true);
   };
 
+  // We need a key to force WhitelistCheckPage to remount when going back from login
+  const [whitelistKey, setWhitelistKey] = useState(0);
+  
   const whitelistOrLogin: Record<"whitelist" | "login", React.ReactElement> =
     useMemo(
       () => ({
-        whitelist: <WhitelistCheckPage onVerified={() => setPage("login")} />,
-        login: <LoginPage />,
+        whitelist: (
+          <WhitelistCheckPage 
+            key={`whitelist-${whitelistKey}`} 
+            onVerified={() => setPage("login")} 
+          />
+        ),
+        login: (
+          <LoginPage 
+            onBackToWhitelist={() => {
+              setPage("whitelist");
+              // Increment key to force remount of the WhitelistCheckPage component
+              setWhitelistKey(prevKey => prevKey + 1);
+            }} 
+          />
+        ),
       }),
-      [setPage]
+      [setPage, whitelistKey]
     );
 
   const mainPages: Record<

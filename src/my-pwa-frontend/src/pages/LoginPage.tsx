@@ -1,10 +1,15 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
 import { Box, Paper, Typography, Stack, Button, Alert } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 type OAuthProvider = "google" | "kakao";
 
-const LoginPage: React.FC = () => {
+interface LoginPageProps {
+  onBackToWhitelist?: () => void;
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(
     null
   );
@@ -38,6 +43,18 @@ const LoginPage: React.FC = () => {
       }}
     >
       <Paper elevation={4} sx={{ p: 4, width: "100%", maxWidth: 420 }}>
+        {onBackToWhitelist && (
+          <Box sx={{ mb: 2 }}>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={onBackToWhitelist}
+              sx={{ color: "text.secondary" }}
+              size="small"
+            >
+              인증 화면으로 돌아가기
+            </Button>
+          </Box>
+        )}
         <Typography variant="h5" fontWeight={700} textAlign="center" mb={3}>
           로그인
         </Typography>
