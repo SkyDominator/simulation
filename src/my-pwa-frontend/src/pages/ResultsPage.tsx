@@ -13,6 +13,7 @@ import {
   TableBody,
   TableContainer,
   Divider,
+  Tooltip,
 } from "@mui/material";
 
 // ==== Column configuration ====
@@ -43,6 +44,26 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
   let history: Array<Record<string, unknown>> = historyRaw.map((e) =>
     e && typeof e === "object" ? (e as Record<string, unknown>) : {}
   );
+
+  // Find the first row index where cumulative profit starts increasing toward positive
+  const firstProfitIncreaseIndex = React.useMemo(() => {
+    if (!history.length) return -1;
+
+    // Use the first element as the initial previous value
+    const firstValue = Number(history[0].cumulative_net_profit || 0);
+    let prevValue = firstValue;
+
+    // Start from index 1 since we're using the first element as reference
+    for (let i = 1; i < history.length; i++) {
+      const currentValue = Number(history[i].cumulative_net_profit || 0);
+      // Check if value is increasing AND higher than previous value
+      if (!isNaN(currentValue) && currentValue > prevValue) {
+        return i; // Return the first index where profit starts to increase
+      }
+      prevValue = currentValue;
+    }
+    return -1; // No increasing profit found
+  }, [history]);
 
   // Inject sequential company_round values and amount column.
   if (result) {
@@ -256,7 +277,18 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
                   </TableHead>
                   <TableBody>
                     {history.map((row, idx) => (
-                      <TableRow key={idx} hover>
+                      <TableRow
+                        key={idx}
+                        hover
+                        sx={{
+                          ...(idx === firstProfitIncreaseIndex && {
+                            backgroundColor: "rgba(46, 125, 50, 0.12)", // Light green background
+                            "&:hover": {
+                              backgroundColor: "rgba(46, 125, 50, 0.2)", // Darker green on hover
+                            },
+                          }),
+                        }}
+                      >
                         {columns.map((col) => {
                           const isNumeric = NUMERIC_COLUMNS.has(col);
                           const rawVal = row[col];
@@ -289,7 +321,9 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
                                   maximumFractionDigits: 0,
                                 })
                               : display;
-                            display = (
+
+                            // Apply tooltip to the cell if it's the first profit increase row
+                            const content = (
                               <Box
                                 component="span"
                                 sx={{
@@ -302,6 +336,19 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
                                 {formatted}
                               </Box>
                             );
+
+                            display =
+                              idx === firstProfitIncreaseIndex ? (
+                                <Tooltip
+                                  title="이 회차에서 총 이익이 처음으로 증가하기 시작합니다"
+                                  arrow
+                                  placement="top"
+                                >
+                                  {content}
+                                </Tooltip>
+                              ) : (
+                                content
+                              );
                           }
                           return (
                             <TableCell
