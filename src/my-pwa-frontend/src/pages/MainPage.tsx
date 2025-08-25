@@ -837,7 +837,8 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
 
                             <Box>
                               <Typography variant="subtitle2" gutterBottom>
-                                회차별 데이터 (수익 증가 시점까지)
+                                회차별 데이터 (순수하게 내 돈이 들어가는
+                                시점까지)
                               </Typography>
                               <Box
                                 sx={{
@@ -856,7 +857,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
                                         회사 회차
                                       </TableCell>
                                       <TableCell align="right">
-                                        매출액
+                                        회차 매출액
                                       </TableCell>
                                       <TableCell align="right">
                                         누적 수익
