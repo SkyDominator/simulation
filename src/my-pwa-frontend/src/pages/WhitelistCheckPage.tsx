@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 
 interface WhitelistCheckPageProps {
-  onVerified: (userHash: string, hasConsent: boolean) => void;
+  onVerified: (userHash: string) => void;
 }
 
 const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
@@ -62,22 +62,9 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
       const result = await api.checkWhitelist(name, digitsOnly);
 
       if (result.is_whitelisted && result.user_hash) {
-        // 2. Check if the user already consented using the server-provided user_hash
-        try {
-          const consentResult = await api.getUserConsents(result.user_hash);
-
-          // Check if there's any privacy policy consent
-          const hasPrivacyConsent = consentResult.consents.some(
-            (consent) => consent.consent_type === "privacy_policy"
-          );
-
-          // Pass the server-generated user hash and consent status to parent
-          onVerified(result.user_hash, hasPrivacyConsent);
-        } catch (consentError) {
-          console.error("Failed to check consent status:", consentError);
-          // If consent check fails, assume they haven't consented
-          onVerified(result.user_hash, false);
-        }
+        // Just pass the user hash to parent component
+        // Parent will handle consent checking via API
+        onVerified(result.user_hash);
       } else {
         setError(
           result.detail || "문제가 발생했습니다. 관리자에게 문의해주세요."
