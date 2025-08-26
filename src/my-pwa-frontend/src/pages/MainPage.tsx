@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "../components/Button"; // wrapper around MUI Button keeping prior API
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { MemoModal } from "../components/MemoModal";
+import { ContactModal } from "../components/ContactModal";
 import { useAuth } from "../context/useAuth";
 import { api } from "../services/api";
 import type { Plan, Page } from "../types/types";
@@ -33,6 +34,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import NoteAltIcon from "@mui/icons-material/NoteAlt";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AddIcon from "@mui/icons-material/Add";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { getJSON, setJSON } from "../utils/persist";
 
 // Types for sorting (module scope so they are available everywhere below)
@@ -88,6 +90,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
   const [memoModalOpen, setMemoModalOpen] = useState(false);
   const [memoTarget, setMemoTarget] = useState<Plan | null>(null);
   const [signOutLoading, setSignOutLoading] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
   // State for selected simulations
   const [selectedSimulations, setSelectedSimulations] = useState<string[]>(
     () => {
@@ -502,6 +505,14 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
                 공지사항
               </Button>
             )}
+            <Button
+              onClick={() => setContactModalOpen(true)}
+              variant="contained"
+              color="info"
+              startIcon={<HelpOutlineIcon />}
+            >
+              문의하기
+            </Button>
             <Button
               onClick={async () => {
                 if (signOutLoading) return;
@@ -1027,6 +1038,10 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
           setMemoTarget(null);
         }}
         onSave={handleSaveMemo}
+      />
+      <ContactModal
+        isOpen={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
       />
     </>
   );
