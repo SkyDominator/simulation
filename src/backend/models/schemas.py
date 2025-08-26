@@ -101,6 +101,7 @@ class NoticeUpdateRequest(BaseModel):
     
 # Consent related schemas
 class ConsentRecordRequest(BaseModel):
+    user_hash: str  # Hash from whitelist table
     consent_type: str  # e.g., 'privacy_policy', 'terms_of_service'
     consent_version: str  # e.g., '1.0'
     ip_address: Optional[str] = None
@@ -108,7 +109,7 @@ class ConsentRecordRequest(BaseModel):
 
 class ConsentRecordResponse(BaseModel):
     id: str
-    user_id: str
+    user_hash: str
     consent_type: str
     consent_version: str
     consent_given_at: str

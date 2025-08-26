@@ -8,10 +8,11 @@ import {
   Button,
   Stack,
   Alert,
+  CircularProgress,
 } from "@mui/material";
 
 interface WhitelistCheckPageProps {
-  onVerified: () => void;
+  onVerified: (userHash: string, hasConsent: boolean) => void;
 }
 
 const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
@@ -56,14 +57,30 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
     setError("");
 
     try {
+      // 1. Check if the user is in the whitelist - backend generates and returns the user_hash
       const digitsOnly = phone.replace(/\D/g, "");
       const result = await api.checkWhitelist(name, digitsOnly);
 
-      if (result.is_whitelisted) {
-        onVerified();
+      if (result.is_whitelisted && result.user_hash) {
+        // 2. Check if the user already consented using the server-provided user_hash
+        try {
+          const consentResult = await api.getUserConsents(result.user_hash);
+
+          // Check if there's any privacy policy consent
+          const hasPrivacyConsent = consentResult.consents.some(
+            (consent) => consent.consent_type === "privacy_policy"
+          );
+
+          // Pass the server-generated user hash and consent status to parent
+          onVerified(result.user_hash, hasPrivacyConsent);
+        } catch (consentError) {
+          console.error("Failed to check consent status:", consentError);
+          // If consent check fails, assume they haven't consented
+          onVerified(result.user_hash, false);
+        }
       } else {
         setError(
-          result.detail || "명단에 없는 사용자입니다. 관리자에게 문의해주세요."
+          result.detail || "문제가 발생했습니다. 관리자에게 문의해주세요."
         );
       }
     } catch (error) {

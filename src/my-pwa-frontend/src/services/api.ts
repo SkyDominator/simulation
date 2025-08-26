@@ -411,15 +411,22 @@ export const api = {
   },
 
   recordConsent: async (
-    data: ConsentRecordRequest,
-    token: string
+    user_hash: string,
+    consent_type: string = "privacy_policy",
+    consent_version: string = "1.0"
   ): Promise<ConsentRecordResponse> => {
     try {
+      const data = {
+        user_hash,
+        consent_type,
+        consent_version,
+        user_agent: navigator.userAgent,
+      };
+
       const response = await fetch(`${API_BASE_URL}/consents`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
       });
@@ -436,12 +443,12 @@ export const api = {
   },
 
   getUserConsents: async (
-    token: string
+    user_hash: string
   ): Promise<{ consents: any[]; success: boolean }> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/consents`, {
+      const response = await fetch(`${API_BASE_URL}/consents/${user_hash}`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 

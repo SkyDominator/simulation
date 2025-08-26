@@ -17,11 +17,16 @@ import { api } from "../services/api";
 import ReactMarkdown from "react-markdown";
 
 interface ConsentPageProps {
+  userHash: string;
   onAccept: () => void;
   onDecline: () => void;
 }
 
-const ConsentPage: React.FC<ConsentPageProps> = ({ onAccept, onDecline }) => {
+const ConsentPage: React.FC<ConsentPageProps> = ({
+  userHash,
+  onAccept,
+  onDecline,
+}) => {
   const [consentGiven, setConsentGiven] = useState(false);
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [policyContent, setPolicyContent] = useState("");
@@ -60,10 +65,12 @@ const ConsentPage: React.FC<ConsentPageProps> = ({ onAccept, onDecline }) => {
     setError("");
 
     try {
-      // Record consent will be done after login is successful
+      // Record consent with the backend using user_hash
+      await api.recordConsent(userHash, "privacy_policy", policyVersion);
+      // If successful, proceed to login
       onAccept();
     } catch (err) {
-      console.error("Error accepting consent:", err);
+      console.error("Error recording consent:", err);
       setError("동의 처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
       setLoading(false);
     }

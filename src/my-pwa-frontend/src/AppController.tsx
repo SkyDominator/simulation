@@ -36,8 +36,8 @@ const AppController = () => {
       getJSON<SimulationRunResponse | null>("ui.simulationResult", null)
     );
 
-  // Track whether consent has been recorded for this session
-  const [consentRecorded, setConsentRecorded] = useState(false);
+  // Track the current user's hash from whitelist check
+  const [userHash, setUserHash] = useState<string | null>(null);
 
   // 공지사항 열기
   const handleOpenNotice = () => {
@@ -47,33 +47,8 @@ const AppController = () => {
   // We need a key to force WhitelistCheckPage to remount when going back from login
   const [whitelistKey, setWhitelistKey] = useState(0);
 
-  // Track whether the user has consented to data collection
-  const [consentGiven, setConsentGiven] = useState(() => {
-    return localStorage.getItem("privacy_consent") === "true";
-  });
-
-  // Record consent when user logs in successfully
-  useEffect(() => {
-    const recordConsent = async () => {
-      if (user && session?.access_token && consentGiven && !consentRecorded) {
-        try {
-          await api.recordConsent(
-            {
-              consent_type: "privacy_policy",
-              consent_version: "1.0",
-              user_agent: navigator.userAgent,
-            },
-            session.access_token
-          );
-          setConsentRecorded(true);
-        } catch (error) {
-          console.error("Failed to record consent:", error);
-        }
-      }
-    };
-
-    recordConsent();
-  }, [user, session, consentGiven, consentRecorded]);
+  // No need for consent checking logic tied to login anymore
+  // We'll handle consent based on whitelist status, not login status
 
   const whitelistOrLogin: Record<
     "whitelist" | "login" | "consent",
@@ -83,10 +58,15 @@ const AppController = () => {
       whitelist: (
         <WhitelistCheckPage
           key={`whitelist-${whitelistKey}`}
-          onVerified={() => {
-            if (consentGiven) {
+          onVerified={(userHash, hasConsent) => {
+            // Store the user hash for consent processing
+            setUserHash(userHash);
+
+            if (hasConsent) {
+              // User already consented, go straight to login
               setPage("login");
             } else {
+              // User needs to consent first
               setPage("consent");
             }
           }}
@@ -94,12 +74,14 @@ const AppController = () => {
       ),
       consent: (
         <ConsentPage
+          userHash={userHash || ""}
           onAccept={() => {
-            localStorage.setItem("privacy_consent", "true");
-            setConsentGiven(true);
+            // Consent has been recorded in the backend, proceed to login
             setPage("login");
           }}
           onDecline={() => {
+            // User declined consent, go back to whitelist check
+            setUserHash(null);
             setPage("whitelist");
             setWhitelistKey((prevKey) => prevKey + 1);
           }}
@@ -108,6 +90,9 @@ const AppController = () => {
       login: (
         <LoginPage
           onBackToWhitelist={() => {
+            // Reset state and go back to whitelist check
+            setUserHash(null);
+            setConsentGiven(false);
             setPage("whitelist");
             // Increment key to force remount of the WhitelistCheckPage component
             setWhitelistKey((prevKey) => prevKey + 1);
@@ -115,7 +100,7 @@ const AppController = () => {
         />
       ),
     }),
-    [setPage, whitelistKey, consentGiven]
+    [setPage, whitelistKey, userHash]
   );
 
   const mainPages: Record<
@@ -166,12 +151,21 @@ const AppController = () => {
     setJSON("ui.simulationResult", simulationResult);
   }, [simulationResult]);
 
-  // When auth status changes: do not forcibly override page; only normalize if page is not allowed
+  // When auth status changes: handle user login/logout flow
   useEffect(() => {
     if (user) {
-      // If user navigated to main-section before auth, keep it; otherwise if on whitelist/login keep as-is
-      // No action to avoid jumping to main unexpectedly
+      // User has logged in
+      // Allow staying on the current page if already on a protected page
+
+      // If on login or consent page but already logged in, move to main
+      if (page === "login" || page === "consent") {
+        setPage("main");
+      }
     } else {
+      // User logged out
+      // Reset consent state when logged out
+      setUserHash(null);
+
       // If logged out while on a protected page, send to whitelist
       if (page === "main" || page === "plan-editor" || page === "results") {
         setPage("whitelist");

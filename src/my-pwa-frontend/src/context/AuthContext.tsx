@@ -57,7 +57,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (
           k.includes("auth-token") ||
           k.startsWith("sb-") ||
-          k.startsWith("ui.")
+          k.startsWith("ui.") ||
+          k === "privacy_consent_temp"
         ) {
           try {
             localStorage.removeItem(k);

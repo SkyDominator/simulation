@@ -43,6 +43,7 @@ export interface WhitelistCheckResponse {
   message: string;
   is_whitelisted: boolean;
   detail?: string;
+  user_hash?: string;
 }
 
 // Response from POST /api/simulation/create
@@ -107,6 +108,7 @@ export interface AdminMeResponse {
 
 // Consent related types
 export interface ConsentRecordRequest {
+  user_hash: string;
   consent_type: string;
   consent_version: string;
   ip_address?: string;
@@ -115,7 +117,7 @@ export interface ConsentRecordRequest {
 
 export interface ConsentRecordResponse {
   id: string;
-  user_id: string;
+  user_hash: string;
   consent_type: string;
   consent_version: string;
   consent_given_at: string;

@@ -50,8 +50,9 @@ async def verify_user(request: UserCheckRequest):
     client = _supabase_client()
     response = client.table('whitelist').select("user_hash").eq('user_hash', hashed_value).execute()
     if response.data:
-        return {"is_whitelisted": True}
-    return {"is_whitelisted": False, "detail": "User not in whitelist"}
+        # Return the user_hash in the response for use in consent verification
+        return {"is_whitelisted": True, "user_hash": hashed_value}
+    return {"is_whitelisted": False, "detail": "가입 허용 명단에 없는 사용자입니다."}
 
 @router.get("/api/notices", response_model=NoticeListResponse)
 async def list_notices():
@@ -173,24 +174,29 @@ async def health():
 # ------------------------------- Consent management routes -------------------------------
 @router.post("/api/consents", response_model=ConsentRecordResponse)
 async def record_consent(
-    request: ConsentRecordRequest, 
-    client_request: Request,
-    user_id: str = Depends(authenticate_jwt_token)
+    request: ConsentRecordRequest,
+    client_request: Request = None
 ):
     """
     Record a user's consent to data collection and privacy policy.
     
     This creates a permanent record of when and what the user consented to.
+    Links the consent to the user's hash from the whitelist.
     """
     client = _supabase_client()
     
+    # Verify user_hash exists in whitelist first
+    whitelist_check = client.table('whitelist').select("user_hash").eq('user_hash', request.user_hash).execute()
+    if not whitelist_check.data:
+        raise HTTPException(status_code=404, detail="User not found in whitelist")
+    
     # Get client IP if not provided (through headers or direct connection)
     ip_address = request.ip_address
-    if not ip_address and client_request.client:
+    if not ip_address and client_request and client_request.client:
         ip_address = client_request.client.host
     
     consent_data = {
-        "user_id": user_id,
+        "user_hash": request.user_hash,
         "consent_type": request.consent_type,
         "consent_version": request.consent_version,
         "consent_given_at": datetime.now().isoformat(),
@@ -198,7 +204,8 @@ async def record_consent(
         "user_agent": request.user_agent
     }
     
-    response = client.table('consent_records').insert(consent_data).execute()
+    # Use upsert to handle case where consent already exists for this user_hash
+    response = client.table('consent_records').upsert(consent_data).execute()
     
     if not response.data:
         raise HTTPException(status_code=500, detail="Failed to record consent")
@@ -206,18 +213,27 @@ async def record_consent(
     result = response.data[0]
     return ConsentRecordResponse(
         id=result["id"],
-        user_id=user_id,
+        user_hash=request.user_hash,
         consent_type=request.consent_type,
         consent_version=request.consent_version,
         consent_given_at=result["consent_given_at"]
     )
 
-@router.get("/api/consents")
-async def get_user_consents(user_id: str = Depends(authenticate_jwt_token)):
-    """Get all consent records for the authenticated user."""
+@router.get("/api/consents/{user_hash}")
+async def get_user_consents(user_hash: str):
+    """
+    Get all consent records for a whitelisted user by their user_hash.
+    No authentication required since this is used pre-login.
+    """
     client = _supabase_client()
     
-    response = client.table('consent_records').select("*").eq('user_id', user_id).execute()
+    # First verify the user_hash exists in whitelist
+    whitelist_check = client.table('whitelist').select("user_hash").eq('user_hash', user_hash).execute()
+    if not whitelist_check.data:
+        raise HTTPException(status_code=404, detail="User not found in whitelist")
+    
+    # Then get consent records
+    response = client.table('consent_records').select("*").eq('user_hash', user_hash).execute()
     
     return {
         "consents": response.data or [],

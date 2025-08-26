@@ -39,6 +39,10 @@ Follow the general guidelines below when writing React, TypeScript, and JavaScri
 - Use **TypeScript (or PropTypes)** to enforce prop types and catch errors early.
 - Treat props as **immutable**, and avoid modifying them inside components to maintain predictable behavior.
 
+### 7. State Management
+- Simplify the state management as much as possible. Minimize the use of the local host storage. Use backend API calls to manage state and persist data.
+- For the existing data in backend, use backend API calls to get the data. Do not re-create the same data in the frontend side.
+
 ## PWA UI/UX Design Guide for this React App
 
 *This is a guide to creating user-friendly Progressive Web Apps with a native look and feel, leveraging modern design principles and React tooling.*
