@@ -706,3 +706,10 @@ We've successfully implemented the consent flow for collecting user information.
    - Request deletion of their account
 
 This implementation provides a secure and privacy-conscious way to handle user data, while complying with privacy regulations by clearly informing users and obtaining explicit consent for data collection.
+
+
+# 그 외
+
+1. 메모장 밖에 화면 누르면 메모 화면 꺼지는 현상 수정
+2. 현재 회사 회차 입력하는 단계를 step에 추가.
+3. 현재 회사 회차를 가지고 현재 회사 회차 이후의 종합 결과만 보여주는 별도 보고서 화면 추가 (토글 버튼으로 1회차부터, 현재 회차부터)
