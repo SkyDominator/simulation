@@ -39,6 +39,9 @@ const AppController = () => {
   // Track the current user's hash from whitelist check
   const [userHash, setUserHash] = useState<string | null>(null);
 
+  // Track whether the user has given consent
+  const [consentGiven, setConsentGiven] = useState<boolean>(false);
+
   // 공지사항 열기
   const handleOpenNotice = () => {
     setNoticeOpen(true);
@@ -77,11 +80,13 @@ const AppController = () => {
           userHash={userHash || ""}
           onAccept={() => {
             // Consent has been recorded in the backend, proceed to login
+            setConsentGiven(true);
             setPage("login");
           }}
           onDecline={() => {
             // User declined consent, go back to whitelist check
             setUserHash(null);
+            setConsentGiven(false);
             setPage("whitelist");
             setWhitelistKey((prevKey) => prevKey + 1);
           }}
@@ -100,7 +105,7 @@ const AppController = () => {
         />
       ),
     }),
-    [setPage, whitelistKey, userHash]
+    [setPage, whitelistKey, userHash, consentGiven, setConsentGiven]
   );
 
   const mainPages: Record<
