@@ -14,44 +14,7 @@ import {
   Divider,
 } from "@mui/material";
 import { api } from "../services/api";
-// Note: You'll need to install react-markdown with: npm install react-markdown
-// For now, let's create a simple component to handle markdown
-const SimpleMarkdown: React.FC<{ children: string }> = ({ children }) => {
-  // Simple implementation that just splits by newlines and adds proper elements
-  return (
-    <div className="markdown">
-      {children.split("\n").map((line, i) => {
-        if (line.startsWith("# ")) {
-          return (
-            <Typography key={i} variant="h4">
-              {line.substring(2)}
-            </Typography>
-          );
-        } else if (line.startsWith("## ")) {
-          return (
-            <Typography key={i} variant="h5">
-              {line.substring(3)}
-            </Typography>
-          );
-        } else if (line.startsWith("### ")) {
-          return (
-            <Typography key={i} variant="h6">
-              {line.substring(4)}
-            </Typography>
-          );
-        } else if (line.trim() === "") {
-          return <Box key={i} sx={{ height: "1em" }} />;
-        } else {
-          return (
-            <Typography key={i} variant="body1" paragraph>
-              {line}
-            </Typography>
-          );
-        }
-      })}
-    </div>
-  );
-};
+import ReactMarkdown from "react-markdown";
 
 interface ConsentPageProps {
   onAccept: () => void;
@@ -208,7 +171,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({ onAccept, onDecline }) => {
             {policyLoading ? (
               <CircularProgress />
             ) : (
-              <SimpleMarkdown>{policyContent}</SimpleMarkdown>
+              <ReactMarkdown>{policyContent}</ReactMarkdown>
             )}
           </Box>
           <Button
