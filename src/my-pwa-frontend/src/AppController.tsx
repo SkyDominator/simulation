@@ -37,10 +37,14 @@ const AppController = () => {
     );
 
   // Track the current user's hash from whitelist check
-  const [userHash, setUserHash] = useState<string | null>(null);
+  const [userHash, setUserHash] = useState<string | null>(() =>
+    getJSON<string | null>("ui.userHash", null)
+  );
 
-  // Track whether the user has given consent
-  const [consentGiven, setConsentGiven] = useState<boolean>(false);
+  // Track if consent has been given
+  const [consentGiven, setConsentGiven] = useState<boolean>(() =>
+    getJSON<boolean>("ui.consentGiven", false)
+  );
 
   // 공지사항 열기
   const handleOpenNotice = () => {
@@ -64,6 +68,7 @@ const AppController = () => {
           onVerified={(userHash, hasConsent) => {
             // Store the user hash for consent processing
             setUserHash(userHash);
+            setConsentGiven(hasConsent);
 
             if (hasConsent) {
               // User already consented, go straight to login
@@ -105,7 +110,7 @@ const AppController = () => {
         />
       ),
     }),
-    [setPage, whitelistKey, userHash, consentGiven, setConsentGiven]
+    [setPage, whitelistKey, userHash]
   );
 
   const mainPages: Record<
@@ -131,6 +136,11 @@ const AppController = () => {
 
   const renderPage = useCallback(() => {
     if (!user) {
+      // Force consent page if userHash exists but consent not given
+      if (userHash && !consentGiven && page === "login") {
+        return whitelistOrLogin.consent;
+      }
+
       return page === "whitelist" || page === "login" || page === "consent"
         ? whitelistOrLogin[page]
         : whitelistOrLogin.whitelist;
@@ -140,7 +150,7 @@ const AppController = () => {
       return mainPages[page];
     }
     return mainPages.main;
-  }, [user, page, whitelistOrLogin, mainPages]);
+  }, [user, page, whitelistOrLogin, mainPages, userHash, consentGiven]);
 
   // Persist UI state whenever it changes
   useEffect(() => {
@@ -152,6 +162,12 @@ const AppController = () => {
   useEffect(() => {
     setJSON("ui.noticeOpen", noticeOpen);
   }, [noticeOpen]);
+  useEffect(() => {
+    setJSON("ui.consentGiven", consentGiven);
+  }, [consentGiven]);
+  useEffect(() => {
+    setJSON("ui.userHash", userHash);
+  }, [userHash]);
   useEffect(() => {
     setJSON("ui.simulationResult", simulationResult);
   }, [simulationResult]);
