@@ -25,22 +25,17 @@ const AppController = () => {
     getJSON<boolean>("ui.noticeOpen", false)
   );
 
-  const { user, session } = useAuth();
+  const { user } = useAuth();
 
   const [simulationResult, setSimulationResult] =
     useState<SimulationRunResponse | null>(() =>
       getJSON<SimulationRunResponse | null>("ui.simulationResult", null)
     );
 
-  // Track the current user's hash from whitelist check
-  const [userHash, setUserHash] = useState<string | null>(() =>
-    getJSON<string | null>("ui.userHash", null)
-  );
+  // Track the current user's hash from whitelist check - NOT stored in localStorage
+  const [userHash, setUserHash] = useState<string | null>(null);
 
-  // Track if consent has been given
-  const [consentGiven, setConsentGiven] = useState<boolean>(() =>
-    getJSON<boolean>("ui.consentGiven", false)
-  );
+  // Don't track consent locally - always check with backend
 
   // 공지사항 열기
   const handleOpenNotice = () => {
@@ -50,9 +45,6 @@ const AppController = () => {
   // We need a key to force WhitelistCheckPage to remount when going back from login
   const [whitelistKey, setWhitelistKey] = useState(0);
 
-  // No need for consent checking logic tied to login anymore
-  // We'll handle consent based on whitelist status, not login status
-
   const whitelistOrLogin: Record<
     "whitelist" | "login" | "consent",
     React.ReactElement
@@ -61,11 +53,11 @@ const AppController = () => {
       whitelist: (
         <WhitelistCheckPage
           key={`whitelist-${whitelistKey}`}
-          onVerified={(userHash, hasConsent) => {
-            // Store the user hash for consent processing
+          onVerified={async (userHash, hasConsent) => {
+            // Store the user hash for consent processing, but don't cache in localStorage
             setUserHash(userHash);
-            setConsentGiven(hasConsent);
 
+            // Always verify consent status from backend
             if (hasConsent) {
               // User already consented, go straight to login
               setPage("login");
@@ -80,14 +72,12 @@ const AppController = () => {
         <ConsentPage
           userHash={userHash || ""}
           onAccept={() => {
-            // Consent has been recorded in the backend, proceed to login
-            setConsentGiven(true);
+            // Consent has been recorded in the backend by ConsentPage, proceed to login
             setPage("login");
           }}
           onDecline={() => {
             // User declined consent, go back to whitelist check
             setUserHash(null);
-            setConsentGiven(false);
             setPage("whitelist");
             setWhitelistKey((prevKey) => prevKey + 1);
           }}
@@ -96,9 +86,8 @@ const AppController = () => {
       login: (
         <LoginPage
           onBackToWhitelist={() => {
-            // Reset state and go back to whitelist check
+            // Reset user hash and go back to whitelist check
             setUserHash(null);
-            setConsentGiven(false);
             setPage("whitelist");
             // Increment key to force remount of the WhitelistCheckPage component
             setWhitelistKey((prevKey) => prevKey + 1);
@@ -132,12 +121,7 @@ const AppController = () => {
 
   const renderPage = useCallback(() => {
     if (!user) {
-      // If user is whitelisted but hasn't given consent, force the consent page
-      // This ensures they can't bypass consent by going directly to login
-      if (userHash && !consentGiven && page !== "whitelist") {
-        return whitelistOrLogin.consent;
-      }
-
+      // Render the appropriate authentication page
       return page === "whitelist" || page === "login" || page === "consent"
         ? whitelistOrLogin[page]
         : whitelistOrLogin.whitelist;
@@ -147,9 +131,9 @@ const AppController = () => {
       return mainPages[page];
     }
     return mainPages.main;
-  }, [user, page, whitelistOrLogin, mainPages, userHash, consentGiven]);
+  }, [user, page, whitelistOrLogin, mainPages]);
 
-  // Persist UI state whenever it changes
+  // Persist UI state whenever it changes - but NOT userHash or consent status
   useEffect(() => {
     setJSON("ui.page", page);
   }, [page]);
@@ -159,12 +143,6 @@ const AppController = () => {
   useEffect(() => {
     setJSON("ui.noticeOpen", noticeOpen);
   }, [noticeOpen]);
-  useEffect(() => {
-    setJSON("ui.consentGiven", consentGiven);
-  }, [consentGiven]);
-  useEffect(() => {
-    setJSON("ui.userHash", userHash);
-  }, [userHash]);
   useEffect(() => {
     setJSON("ui.simulationResult", simulationResult);
   }, [simulationResult]);
@@ -181,11 +159,8 @@ const AppController = () => {
       }
     } else {
       // User logged out
-      // Reset consent state when logged out
-      setUserHash(null);
-      setConsentGiven(false);
-
       // If logged out while on a protected page, send to whitelist
+      // Don't reset userHash here - it's independent of auth status
       if (page === "main" || page === "plan-editor" || page === "results") {
         setPage("whitelist");
       }
@@ -193,6 +168,7 @@ const AppController = () => {
   }, [user, page]);
 
   // Restore state on app/tab visibility changes (helps iOS/Android/PC when app is backgrounded and returns)
+  // No longer restoring userHash or consentGiven from localStorage
   useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -206,18 +182,11 @@ const AppController = () => {
           "ui.simulationResult",
           simulationResult
         );
-        const savedUserHash = getJSON<string | null>("ui.userHash", userHash);
-        const savedConsentGiven = getJSON<boolean>(
-          "ui.consentGiven",
-          consentGiven
-        );
 
         // Apply only if differs to avoid loops
         if (savedPage && savedPage !== page) setPage(savedPage);
         if (savedNotice !== noticeOpen) setNoticeOpen(savedNotice);
-        if (savedUserHash !== userHash) setUserHash(savedUserHash);
-        if (savedConsentGiven !== consentGiven)
-          setConsentGiven(savedConsentGiven);
+
         // For objects, shallow compare by JSON string length to avoid heavy ops
         const toJSONLen = (v: unknown) => {
           try {
@@ -238,7 +207,7 @@ const AppController = () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("focus", onVisibility);
     };
-  }, [page, editingPlan, noticeOpen, simulationResult, userHash, consentGiven]);
+  }, [page, editingPlan, noticeOpen, simulationResult]);
 
   return (
     <div className="min-h-screen bg-gray-50">

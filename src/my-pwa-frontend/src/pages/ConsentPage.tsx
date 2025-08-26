@@ -27,7 +27,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
   onAccept,
   onDecline,
 }) => {
-  const [consentGiven, setConsentGiven] = useState(false);
+  const [checkboxChecked, setCheckboxChecked] = useState(false);
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [policyContent, setPolicyContent] = useState("");
   const [policyVersion, setPolicyVersion] = useState("1.0");
@@ -56,7 +56,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
   }, []);
 
   const handleAccept = async () => {
-    if (!consentGiven) {
+    if (!checkboxChecked) {
       setError("개인정보 수집 및 이용에 동의해야 계속할 수 있습니다.");
       return;
     }
@@ -140,8 +140,8 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
         <FormControlLabel
           control={
             <Checkbox
-              checked={consentGiven}
-              onChange={(e) => setConsentGiven(e.target.checked)}
+              checked={checkboxChecked}
+              onChange={(e) => setCheckboxChecked(e.target.checked)}
             />
           }
           label="개인정보 수집 및 이용에 동의합니다."
@@ -154,7 +154,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
           </Button>
           <Button
             variant="contained"
-            disabled={!consentGiven || loading}
+            disabled={!checkboxChecked || loading}
             onClick={handleAccept}
             fullWidth
           >

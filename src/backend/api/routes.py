@@ -212,11 +212,12 @@ async def record_consent(
     
     result = response.data[0]
     return ConsentRecordResponse(
-        id=result["id"],
         user_hash=request.user_hash,
         consent_type=request.consent_type,
         consent_version=request.consent_version,
-        consent_given_at=result["consent_given_at"]
+        consent_given_at=result["consent_given_at"],
+        ip_address=result["ip_address"],
+        user_agent=result["user_agent"]
     )
 
 @router.get("/api/consents/{user_hash}")

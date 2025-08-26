@@ -108,15 +108,12 @@ class ConsentRecordRequest(BaseModel):
     user_agent: Optional[str] = None
 
 class ConsentRecordResponse(BaseModel):
-    id: str
     user_hash: str
     consent_type: str
     consent_version: str
     consent_given_at: str
-    message: str = "Consent recorded successfully"
-    success: bool = True
-    pinned: Optional[bool] = None
-    published: Optional[bool] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
 
 class NoticeUpdateResponse(BaseModel):
     id: str

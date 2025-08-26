@@ -116,13 +116,12 @@ export interface ConsentRecordRequest {
 }
 
 export interface ConsentRecordResponse {
-  id: string;
   user_hash: string;
   consent_type: string;
   consent_version: string;
   consent_given_at: string;
-  message: string;
-  success: boolean;
+  ip_address?: string;
+  user_agent?: string;
 }
 
 export interface PrivacyPolicyResponse {
