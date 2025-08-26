@@ -8,12 +8,8 @@ import ResultsPage from "./pages/ResultsPage";
 import ConsentPage from "./pages/ConsentPage";
 import { type Plan, type Page } from "./types/types";
 import { NoticeBoardModal } from "./components/NoticeBoardModal";
-import type {
-  SimulationRunResponse,
-  ConsentRecordRequest,
-} from "./types/types";
+import type { SimulationRunResponse } from "./types/types";
 import { getJSON, setJSON } from "./utils/persist";
-import { api } from "./services/api";
 
 const AppController = () => {
   // Restore last UI state if available; default to whitelist
@@ -136,8 +132,9 @@ const AppController = () => {
 
   const renderPage = useCallback(() => {
     if (!user) {
-      // Force consent page if userHash exists but consent not given
-      if (userHash && !consentGiven && page === "login") {
+      // If user is whitelisted but hasn't given consent, force the consent page
+      // This ensures they can't bypass consent by going directly to login
+      if (userHash && !consentGiven && page !== "whitelist") {
         return whitelistOrLogin.consent;
       }
 
@@ -186,6 +183,7 @@ const AppController = () => {
       // User logged out
       // Reset consent state when logged out
       setUserHash(null);
+      setConsentGiven(false);
 
       // If logged out while on a protected page, send to whitelist
       if (page === "main" || page === "plan-editor" || page === "results") {
@@ -208,9 +206,18 @@ const AppController = () => {
           "ui.simulationResult",
           simulationResult
         );
+        const savedUserHash = getJSON<string | null>("ui.userHash", userHash);
+        const savedConsentGiven = getJSON<boolean>(
+          "ui.consentGiven",
+          consentGiven
+        );
+
         // Apply only if differs to avoid loops
         if (savedPage && savedPage !== page) setPage(savedPage);
         if (savedNotice !== noticeOpen) setNoticeOpen(savedNotice);
+        if (savedUserHash !== userHash) setUserHash(savedUserHash);
+        if (savedConsentGiven !== consentGiven)
+          setConsentGiven(savedConsentGiven);
         // For objects, shallow compare by JSON string length to avoid heavy ops
         const toJSONLen = (v: unknown) => {
           try {
@@ -231,7 +238,7 @@ const AppController = () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("focus", onVisibility);
     };
-  }, [page, editingPlan, noticeOpen, simulationResult]);
+  }, [page, editingPlan, noticeOpen, simulationResult, userHash, consentGiven]);
 
   return (
     <div className="min-h-screen bg-gray-50">
