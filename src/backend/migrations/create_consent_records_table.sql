@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.consent_records (
 );
 
 -- Create an index on user_id for faster lookups
-CREATE INDEX IF NOT EXISTS consent_records_user_id_idx ON public.consent_records (user_id);
+-- CREATE INDEX IF NOT EXISTS consent_records_user_id_idx ON public.consent_records (user_id);
 
 -- Set up Row Level Security (RLS) policies
 ALTER TABLE public.consent_records ENABLE ROW LEVEL SECURITY;
