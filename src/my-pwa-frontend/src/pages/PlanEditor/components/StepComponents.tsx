@@ -392,7 +392,7 @@ export const StartingCompanyRoundSelector: React.FC<
   CompanyRoundSelectorProps
 > = ({ companyRound, onChange }) => (
   <div>
-    <h2 className="text-xl font-bold mb-4">2. 시작 회사 회차 선택</h2>
+    <h2 className="text-xl font-bold mb-4">2. 가입한 회사 회차 선택</h2>
     <Input
       type="number"
       value={companyRound === 0 ? "" : companyRound}

@@ -32,11 +32,10 @@ import Divider from "@mui/material/Divider";
 
 const steps = [
   "플랜 타입",
-  "회사 회차",
-  "시작 회사 회차",
+  "가입한 회사 회차",
   "현재 회사 회차",
-  "총 회차",
-  "투자 & 매출",
+  "시뮬레이션 총 회차",
+  "회차 매출액 입력",
 ];
 
 const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
