@@ -12,7 +12,8 @@ interface PlanEditorPageProps {
 }
 import {
   PlanTypeSelector,
-  CompanyRoundSelector,
+  StartingCompanyRoundSelector,
+  CurrentCompanyRoundSelector,
   SimulationRoundsSelector,
   InvestmentEditor,
 } from "./components";
@@ -29,7 +30,14 @@ import StepLabel from "@mui/material/StepLabel";
 import Stack from "@mui/material/Stack";
 import Divider from "@mui/material/Divider";
 
-const steps = ["플랜 타입", "회사 회차", "총 회차", "투자 & 매출"];
+const steps = [
+  "플랜 타입",
+  "회사 회차",
+  "시작 회사 회차",
+  "현재 회사 회차",
+  "총 회차",
+  "투자 & 매출",
+];
 
 const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   setPage,
@@ -47,7 +55,8 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   const initialPlan: Plan = persistedPlan || {
     simulation_id: editingPlan?.simulation_id || "",
     plan_id: basePlanType,
-    company_round: editingPlan?.company_round || 1,
+    starting_company_round: editingPlan?.starting_company_round || 1,
+    current_company_round: editingPlan?.current_company_round || 1,
     simulation_rounds: editingPlan?.simulation_rounds ?? defaultSimRounds,
     investments:
       editingPlan?.investments ||
@@ -161,7 +170,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   };
 
   const handleNext = () => {
-    if (step === 3) {
+    if (step === 4) {
       const { min, max } = getPlanLimits(plan.plan_id);
 
       if (
@@ -170,7 +179,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         return;
       }
 
-      // Force update investments when going from step 3 to 4
+      // Force update investments when going from step 4 to 5
       const newInvestments = generateInvestments(
         plan.simulation_rounds,
         plan.plan_id,
@@ -214,7 +223,8 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
           session.access_token,
           plan.simulation_id,
           plan.plan_id,
-          plan.company_round,
+          plan.starting_company_round,
+          plan.current_company_round,
           plan.simulation_rounds,
           scheduled_payment,
           sales_achievement_rates
@@ -224,7 +234,8 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         const createResponse = await api.createSimulation(
           session.access_token,
           plan.plan_id,
-          plan.company_round,
+          plan.starting_company_round,
+          plan.current_company_round,
           plan.simulation_rounds,
           scheduled_payment,
           sales_achievement_rates
@@ -290,12 +301,23 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         );
       case 2:
         return (
-          <CompanyRoundSelector
-            companyRound={plan.company_round}
-            onChange={(value) => setPlan({ ...plan, company_round: value })}
+          <StartingCompanyRoundSelector
+            companyRound={plan.starting_company_round}
+            onChange={(value) =>
+              setPlan({ ...plan, starting_company_round: value })
+            }
           />
         );
       case 3:
+        return (
+          <CurrentCompanyRoundSelector
+            companyRound={plan.current_company_round}
+            onChange={(value) =>
+              setPlan({ ...plan, current_company_round: value })
+            }
+          />
+        );
+      case 4:
         return (
           <SimulationRoundsSelector
             simulationRounds={plan.simulation_rounds}
@@ -303,11 +325,11 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
             onChange={(value) => setPlan({ ...plan, simulation_rounds: value })}
           />
         );
-      case 4:
+      case 5:
         return (
           <InvestmentEditor
             investments={plan.investments || []}
-            companyRound={plan.company_round}
+            startingCompanyRound={plan.starting_company_round}
             planType={plan.plan_id}
             onInvestmentChange={handleInvestmentChange}
             salesAchievementRates={plan.sales_achievement_rates || {}}
@@ -402,7 +424,8 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
             setPlan({
               simulation_id: "",
               plan_id: "A",
-              company_round: 1,
+              starting_company_round: 1,
+              current_company_round: 1,
               simulation_rounds: nextDefault,
               investments: generateInvestments(nextDefault, "A", []),
               sales_achievement_rates: {},

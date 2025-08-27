@@ -166,7 +166,8 @@ export const api = {
   createSimulation: async (
     token: string,
     plan_id: string,
-    company_round: number = 1,
+    starting_company_round: number = 1,
+    current_company_round: number = 1,
     simulation_rounds: number,
     scheduled_payment: Record<string, number>,
     sales_achievement_rates?: Record<string, number>
@@ -179,7 +180,8 @@ export const api = {
       },
       body: JSON.stringify({
         plan_id,
-        company_round,
+        starting_company_round,
+        current_company_round,
         simulation_rounds,
         scheduled_payment,
         sales_achievement_rates,
@@ -206,7 +208,8 @@ export const api = {
     token: string,
     simulation_id: string,
     plan_id: string,
-    company_round: number,
+    starting_company_round: number,
+    current_company_round: number,
     simulation_rounds: number,
     scheduled_payment: Record<string, number>,
     sales_achievement_rates?: Record<string, number>
@@ -227,7 +230,8 @@ export const api = {
         body: JSON.stringify({
           plan_id,
           simulation_rounds,
-          company_round,
+          starting_company_round,
+          current_company_round,
           scheduled_payment,
           sales_achievement_rates,
         }),

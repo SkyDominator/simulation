@@ -1,13 +1,15 @@
-import { 
+import {
   PlanTypeSelector,
-  CompanyRoundSelector,
+  StartingCompanyRoundSelector,
+  CurrentCompanyRoundSelector,
   SimulationRoundsSelector,
-  InvestmentEditor
-} from './StepComponents';
+  InvestmentEditor,
+} from "./StepComponents";
 
 export {
   PlanTypeSelector,
-  CompanyRoundSelector,
+  StartingCompanyRoundSelector,
+  CurrentCompanyRoundSelector,
   SimulationRoundsSelector,
-  InvestmentEditor
+  InvestmentEditor,
 };

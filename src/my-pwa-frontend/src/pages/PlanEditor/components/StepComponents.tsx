@@ -44,7 +44,7 @@ interface SimulationRoundsSelectorProps {
 
 interface InvestmentEditorProps {
   investments: Investment[];
-  companyRound: number;
+  startingCompanyRound: number;
   planType: string;
   onInvestmentChange: (round: number, amount: string) => void;
   salesAchievementRates: Record<string, number>;
@@ -388,12 +388,29 @@ export const PlanTypeSelector: React.FC<PlanTypeSelectorProps> = ({
   );
 };
 
-export const CompanyRoundSelector: React.FC<CompanyRoundSelectorProps> = ({
-  companyRound,
-  onChange,
-}) => (
+export const StartingCompanyRoundSelector: React.FC<
+  CompanyRoundSelectorProps
+> = ({ companyRound, onChange }) => (
   <div>
-    <h2 className="text-xl font-bold mb-4">2. 회사 회차 선택</h2>
+    <h2 className="text-xl font-bold mb-4">2. 시작 회사 회차 선택</h2>
+    <Input
+      type="number"
+      value={companyRound === 0 ? "" : companyRound}
+      placeholder="회차를 입력하세요 (예: 1)"
+      onChange={(e) => {
+        // Ensure it's parsed as an integer
+        const value = parseInt(e.target.value, 10) || 0;
+        onChange(value);
+      }}
+    />
+  </div>
+);
+
+export const CurrentCompanyRoundSelector: React.FC<
+  CompanyRoundSelectorProps
+> = ({ companyRound, onChange }) => (
+  <div>
+    <h2 className="text-xl font-bold mb-4">3. 현재 회사 회차 선택</h2>
     <Input
       type="number"
       value={companyRound === 0 ? "" : companyRound}
@@ -413,7 +430,7 @@ export const SimulationRoundsSelector: React.FC<
   const { min, max } = getPlanLimits(planType);
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">3. 시뮬레이션 총 회차 수 선택</h2>
+      <h2 className="text-xl font-bold mb-4">4. 시뮬레이션 총 회차 수 선택</h2>
       <p className="text-sm mb-2">
         최소: {min}, 최대: {max}
       </p>
@@ -434,7 +451,7 @@ export const SimulationRoundsSelector: React.FC<
 
 export const InvestmentEditor: React.FC<InvestmentEditorProps> = ({
   investments,
-  companyRound,
+  startingCompanyRound,
   planType,
   onInvestmentChange,
   salesAchievementRates,
@@ -442,12 +459,12 @@ export const InvestmentEditor: React.FC<InvestmentEditorProps> = ({
 }) => (
   <div>
     <h2 className="text-xl font-bold mb-4">
-      4. 회차별 매출액 및 매출 달성율 입력
+      5. 회차별 매출액 및 매출 달성율 입력
     </h2>
     <div className="max-h-96 overflow-y-auto">
       <InvestmentTable
         investments={investments}
-        companyRound={companyRound}
+        startingCompanyRound={startingCompanyRound}
         planType={planType}
         onInvestmentChange={onInvestmentChange}
         salesAchievementRates={salesAchievementRates}
@@ -460,7 +477,7 @@ export const InvestmentEditor: React.FC<InvestmentEditorProps> = ({
 // Separated table to allow hooks usage
 const InvestmentTable: React.FC<InvestmentEditorProps> = ({
   investments,
-  companyRound,
+  startingCompanyRound,
   planType,
   onInvestmentChange,
   salesAchievementRates,
@@ -507,7 +524,7 @@ const InvestmentTable: React.FC<InvestmentEditorProps> = ({
               const showRate = inv.round >= 4; // Hide sales rate for rounds 1-3
               return (
                 <TableRow key={inv.round} hover>
-                  <TableCell>{companyRound + index}</TableCell>
+                  <TableCell>{startingCompanyRound + index}</TableCell>
                   <TableCell>{inv.round}</TableCell>
                   <TableCell>
                     <FormattedAmountInput
