@@ -109,6 +109,8 @@ class FinancialSimulationService:
         Args:
             plan_id (str): The plan identifier to use for the simulation
             scheduled_payment (Optional[Dict[int, int]]): Custom scheduled payment dict
+            sales_achievement_rates (Optional[Dict[int, float]]): Custom sales achievement rates
+            starting_company_round (int): The starting company round
         """
         if plan_id not in PLAN_PARAMETERS:
             logger.error(f"Invalid plan: {plan_id}")

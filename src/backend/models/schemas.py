@@ -9,7 +9,8 @@ class UserCheckRequest(BaseModel):
 
 class SimulationCreateRequest(BaseModel):
     plan_id: str
-    company_round: int
+    starting_company_round: int
+    current_company_round: int
     simulation_rounds: int
     scheduled_payment: Dict[str, int]
     # Per company round sales achievement rates provided by user (percentage 50-100)
@@ -27,7 +28,8 @@ class SimulationRunRequest(BaseModel):
 class SimulationRunResponse(BaseModel):
     simulation_id: str
     plan_id: str
-    company_round: int
+    starting_company_round: int
+    current_company_round: int
     simulation_rounds: int
     scheduled_payment: Dict[str, int]
     # Echo back sales achievement rates actually used (percent form) for transparency
@@ -46,7 +48,8 @@ class SimulationDeleteResponse(BaseModel):
 
 class SimulationUpdateRequest(BaseModel):
     plan_id: str
-    company_round: int
+    starting_company_round: int
+    current_company_round: int
     simulation_rounds: int
     scheduled_payment: Dict[str, int]
     sales_achievement_rates: Dict[str, int] | None = None
@@ -133,7 +136,8 @@ class SimulationRow(BaseModel):
     id: str
     user_id: str
     plan_id: str
-    company_round: int
+    starting_company_round: int
+    current_company_round: int
     simulation_rounds: int
     investments: List[InvestmentItem] = []
     # New normalized column: mapping of round(str)->percent (50-100)

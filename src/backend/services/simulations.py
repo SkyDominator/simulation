@@ -42,7 +42,8 @@ class SimulationService:
         plan_data = {
             "user_id": user_id,
             "plan_id": req.plan_id,
-            "company_round": req.company_round,
+            "starting_company_round": req.starting_company_round,
+            "current_company_round": req.current_company_round,
             "simulation_rounds": req.simulation_rounds,
             "investments": investments,
             "sales_achievement_rates": req.sales_achievement_rates,
@@ -71,7 +72,8 @@ class SimulationService:
             return SimulationRunResponse(
                 simulation_id=row.id,
                 plan_id=row.plan_id,
-                company_round=row.company_round,
+                starting_company_round=row.starting_company_round,
+                current_company_round=row.current_company_round,
                 simulation_rounds=row.simulation_rounds,
                 scheduled_payment=sched_map,
                 sales_achievement_rates=row.sales_achievement_rates,
@@ -90,7 +92,8 @@ class SimulationService:
         return SimulationRunResponse(
             simulation_id=row.id,
             plan_id=row.plan_id,
-            company_round=row.company_round,
+            starting_company_round=row.starting_company_round,
+            current_company_round=row.current_company_round,
             simulation_rounds=row.simulation_rounds,
             scheduled_payment=sched_map,
             sales_achievement_rates=row.sales_achievement_rates,
@@ -108,7 +111,8 @@ class SimulationService:
         investments = [{"round": int(r), "amount": amt} for r, amt in req.scheduled_payment.items()]
         payload = {
             "plan_id": req.plan_id,
-            "company_round": req.company_round,
+            "starting_company_round": req.starting_company_round,
+            "current_company_round": req.current_company_round,
             "simulation_rounds": req.simulation_rounds,
             "investments": investments,
             "sales_achievement_rates": req.sales_achievement_rates,
@@ -136,7 +140,7 @@ class SimulationService:
         )
 
     def list_for_user(self, user_id: str):  # return raw supabase rows for now
-        resp = self.client.table('simulations').select("id, company_round, investments, sales_achievement_rates, simulation_rounds, created_at, updated_at, plan_id, memo").eq('user_id', user_id).execute()
+        resp = self.client.table('simulations').select("id, starting_company_round, current_company_round, investments, sales_achievement_rates, simulation_rounds, created_at, updated_at, plan_id, memo").eq('user_id', user_id).execute()
         if not resp.data:
             raise HTTPException(status_code=404, detail="No simulations found for this user")
         return resp.data
