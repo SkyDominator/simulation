@@ -169,7 +169,19 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   };
 
   const handleNext = () => {
-    if (step === 4) {
+    if (step === 3) {
+      // Validate current_company_round is >= starting_company_round
+      if (plan.current_company_round < plan.starting_company_round) {
+        setValidationData({
+          value: plan.current_company_round,
+          min: plan.starting_company_round,
+          max: 100, // Some reasonable max value
+          field: "current_company_round",
+        });
+        setValidationModalOpen(true);
+        return;
+      }
+    } else if (step === 4) {
       const { min, max } = getPlanLimits(plan.plan_id);
 
       if (
@@ -311,6 +323,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         return (
           <CurrentCompanyRoundSelector
             companyRound={plan.current_company_round}
+            startingCompanyRound={plan.starting_company_round}
             onChange={(value) =>
               setPlan({ ...plan, current_company_round: value })
             }
@@ -376,7 +389,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
             <span />
           )}
           <Stack direction="row" spacing={2}>
-            {step < 4 && (
+            {step < 5 && (
               <Button
                 onClick={handleNext}
                 className="bg-blue-600 hover:bg-blue-700"
@@ -384,7 +397,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
                 다음 단계
               </Button>
             )}
-            {step === 4 && (
+            {step === 5 && (
               <Button
                 onClick={handleSaveClick}
                 className="bg-green-600 hover:bg-green-700"

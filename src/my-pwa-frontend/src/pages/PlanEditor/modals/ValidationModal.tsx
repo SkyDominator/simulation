@@ -20,10 +20,20 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   onConfirm,
   validationData,
 }) => {
-  const message =
-    validationData && validationData.value < validationData.min
-      ? `값이 최소 ${validationData?.min}보다 작습니다. ${validationData?.min}으로 설정하시겠습니까?`
-      : `값이 최대 ${validationData?.max}보다 큽니다. ${validationData?.max}로 설정하시겠습니까?`;
+  let message = "";
+
+  if (!validationData) {
+    message = "유효하지 않은 값입니다.";
+  } else if (
+    validationData.field === "current_company_round" &&
+    validationData.value < validationData.min
+  ) {
+    message = `현재 회차는 가입한 회차(${validationData.min})보다 작을 수 없습니다. ${validationData.min}으로 설정하시겠습니까?`;
+  } else if (validationData.value < validationData.min) {
+    message = `값이 최소 ${validationData?.min}보다 작습니다. ${validationData?.min}으로 설정하시겠습니까?`;
+  } else {
+    message = `값이 최대 ${validationData?.max}보다 큽니다. ${validationData?.max}로 설정하시겠습니까?`;
+  }
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ fontWeight: 600 }}>입력값 경고</DialogTitle>

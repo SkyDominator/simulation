@@ -407,14 +407,17 @@ export const StartingCompanyRoundSelector: React.FC<
 );
 
 export const CurrentCompanyRoundSelector: React.FC<
-  CompanyRoundSelectorProps
-> = ({ companyRound, onChange }) => (
+  CompanyRoundSelectorProps & { startingCompanyRound: number }
+> = ({ companyRound, onChange, startingCompanyRound }) => (
   <div>
     <h2 className="text-xl font-bold mb-4">3. 현재 회사 회차 선택</h2>
+    <p className="text-sm mb-2">
+      최소: {startingCompanyRound} (가입한 회차 이상이어야 합니다)
+    </p>
     <Input
       type="number"
       value={companyRound === 0 ? "" : companyRound}
-      placeholder="회차를 입력하세요 (예: 1)"
+      placeholder={`회차를 입력하세요 (최소: ${startingCompanyRound})`}
       onChange={(e) => {
         // Ensure it's parsed as an integer
         const value = parseInt(e.target.value, 10) || 0;
