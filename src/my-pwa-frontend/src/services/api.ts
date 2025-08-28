@@ -10,7 +10,6 @@ import {
   type NoticeUpdateResponse,
   type NoticeDeleteResponse,
   type AdminMeResponse,
-  type ConsentRecordRequest,
   type ConsentRecordResponse,
   type PrivacyPolicyResponse,
 } from "../types/types";
