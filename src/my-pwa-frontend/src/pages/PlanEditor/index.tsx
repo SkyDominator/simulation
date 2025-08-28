@@ -18,6 +18,8 @@ import {
   InvestmentEditor,
 } from "./components";
 import { ConfirmationModal, ValidationModal } from "./modals";
+import StartingRoundValidationModal from "./modals/StartingRoundValidationModal";
+import CurrentRoundValidationModal from "./modals/CurrentRoundValidationModal";
 import { getPlanLimits, generateInvestments } from "./utils/investmentUtils";
 import { validateNumericValue } from "./utils/validationUtils";
 import Container from "@mui/material/Container";
@@ -74,7 +76,9 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
     null
   );
 
-  // (Investment validation modal removed)
+  // Separate modal states for steps 2 and 3
+  const [isStartingRoundModalOpen, setStartingRoundModalOpen] = useState(false);
+  const [isCurrentRoundModalOpen, setCurrentRoundModalOpen] = useState(false);
 
   // Track mount status to avoid state updates after unmount
   const isMountedRef = useRef(true);
@@ -168,6 +172,50 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
     setConfirmModalOpen(true);
   };
 
+  // Handler for starting round validation confirmation
+  const handleStartingRoundConfirm = () => {
+    const MIN_STARTING_ROUND = 1;
+    const MAX_STARTING_ROUND = 100;
+
+    // Determine correction based on current value
+    let newValue: number;
+    if (
+      plan.starting_company_round < MIN_STARTING_ROUND ||
+      plan.starting_company_round === 0
+    ) {
+      newValue = MIN_STARTING_ROUND;
+    } else if (plan.starting_company_round > MAX_STARTING_ROUND) {
+      newValue = MAX_STARTING_ROUND;
+    } else {
+      newValue = plan.starting_company_round; // No change needed
+    }
+
+    setPlan((prev) => ({ ...prev, starting_company_round: newValue }));
+    setStartingRoundModalOpen(false);
+  };
+
+  // Handler for current round validation confirmation
+  const handleCurrentRoundConfirm = () => {
+    const MIN_CURRENT_ROUND = plan.starting_company_round;
+    const MAX_CURRENT_ROUND = 100;
+
+    // Determine correction based on current value
+    let newValue: number;
+    if (
+      plan.current_company_round < MIN_CURRENT_ROUND ||
+      plan.current_company_round === 0
+    ) {
+      newValue = MIN_CURRENT_ROUND;
+    } else if (plan.current_company_round > MAX_CURRENT_ROUND) {
+      newValue = MAX_CURRENT_ROUND;
+    } else {
+      newValue = plan.current_company_round; // No change needed
+    }
+
+    setPlan((prev) => ({ ...prev, current_company_round: newValue }));
+    setCurrentRoundModalOpen(false);
+  };
+
   const handleNext = () => {
     if (step === 2) {
       // Validate starting_company_round
@@ -175,13 +223,11 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
       const MAX_STARTING_ROUND = 100;
 
       if (
-        !handleValidation(
-          plan.starting_company_round,
-          MIN_STARTING_ROUND,
-          MAX_STARTING_ROUND,
-          "starting_company_round"
-        )
+        plan.starting_company_round < MIN_STARTING_ROUND ||
+        plan.starting_company_round > MAX_STARTING_ROUND ||
+        plan.starting_company_round === 0
       ) {
+        setStartingRoundModalOpen(true);
         return;
       }
     } else if (step === 3) {
@@ -190,13 +236,11 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
       const MAX_CURRENT_ROUND = 100;
 
       if (
-        !handleValidation(
-          plan.current_company_round,
-          MIN_CURRENT_ROUND,
-          MAX_CURRENT_ROUND,
-          "current_company_round"
-        )
+        plan.current_company_round < MIN_CURRENT_ROUND ||
+        plan.current_company_round > MAX_CURRENT_ROUND ||
+        plan.current_company_round === 0
       ) {
+        setCurrentRoundModalOpen(true);
         return;
       }
     } else if (step === 4) {
@@ -223,8 +267,9 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   const handleBack = () => {
     // Close all modals when going back
     setConfirmModalOpen(false);
-    // removed investment validation modal state
     setValidationModalOpen(false);
+    setStartingRoundModalOpen(false);
+    setCurrentRoundModalOpen(false);
 
     // Go back one step
     setStep((s) => s - 1);
@@ -431,6 +476,8 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
           onClick={() => {
             setConfirmModalOpen(false);
             setValidationModalOpen(false);
+            setStartingRoundModalOpen(false);
+            setCurrentRoundModalOpen(false);
             // Clear any persisted draft and step so next open is fresh
             try {
               localStorage.removeItem("ui.planEditor.step");
@@ -483,6 +530,31 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         onClose={() => setValidationModalOpen(false)}
         onConfirm={handleValidationConfirm}
         validationData={validationData}
+      />
+
+      {/* Custom validation modals for steps 2 and 3 */}
+      <StartingRoundValidationModal
+        isOpen={isStartingRoundModalOpen}
+        onClose={() => {
+          // Just close the modal and do not advance to the next step
+          setStartingRoundModalOpen(false);
+        }}
+        onConfirm={handleStartingRoundConfirm}
+        value={plan.starting_company_round}
+        min={1}
+        max={100}
+      />
+
+      <CurrentRoundValidationModal
+        isOpen={isCurrentRoundModalOpen}
+        onClose={() => {
+          // Just close the modal and do not advance to the next step
+          setCurrentRoundModalOpen(false);
+        }}
+        onConfirm={handleCurrentRoundConfirm}
+        value={plan.current_company_round}
+        startingCompanyRound={plan.starting_company_round}
+        max={100}
       />
 
       {/* InvestmentValidationModal removed (auto-correction in inputs) */}

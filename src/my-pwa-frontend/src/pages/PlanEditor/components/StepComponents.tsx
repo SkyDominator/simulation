@@ -400,14 +400,7 @@ export const StartingCompanyRoundSelector: React.FC<
     onChange(value);
   };
 
-  const handleBlur = () => {
-    // When input loses focus, validate and auto-correct if needed
-    if (companyRound < MIN_ROUND) {
-      onChange(MIN_ROUND);
-    } else if (companyRound > MAX_ROUND) {
-      onChange(MAX_ROUND);
-    }
-  };
+  // No onBlur handler - validation will be handled by modal
 
   return (
     <div>
@@ -420,7 +413,6 @@ export const StartingCompanyRoundSelector: React.FC<
         value={companyRound === 0 ? "" : companyRound}
         placeholder={`회차를 입력하세요 (최소: ${MIN_ROUND}, 최대: ${MAX_ROUND})`}
         onChange={handleChange}
-        onBlur={handleBlur}
       />
     </div>
   );
@@ -438,14 +430,7 @@ export const CurrentCompanyRoundSelector: React.FC<
     onChange(value);
   };
 
-  const handleBlur = () => {
-    // When input loses focus, validate and auto-correct if needed
-    if (companyRound < MIN_ROUND) {
-      onChange(MIN_ROUND);
-    } else if (companyRound > MAX_ROUND) {
-      onChange(MAX_ROUND);
-    }
-  };
+  // No onBlur handler - validation will be handled by modal
 
   return (
     <div>
@@ -458,7 +443,6 @@ export const CurrentCompanyRoundSelector: React.FC<
         value={companyRound === 0 ? "" : companyRound}
         placeholder={`회차를 입력하세요 (최소: ${MIN_ROUND}, 최대: ${MAX_ROUND})`}
         onChange={handleChange}
-        onBlur={handleBlur}
       />
     </div>
   );
