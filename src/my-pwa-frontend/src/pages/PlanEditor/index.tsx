@@ -20,7 +20,11 @@ import {
 import { ConfirmationModal, ValidationModal } from "./modals";
 import StartingRoundValidationModal from "./modals/StartingRoundValidationModal";
 import CurrentRoundValidationModal from "./modals/CurrentRoundValidationModal";
-import { getPlanLimits, generateInvestments } from "./utils/investmentUtils";
+import {
+  getPlanLimits,
+  generateInvestments,
+  getDefaultInvestmentAmount,
+} from "./utils/investmentUtils";
 import { validateNumericValue } from "./utils/validationUtils";
 import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
@@ -53,21 +57,45 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   const basePlanType = editingPlan?.plan_id || "A";
   const defaultSimRounds = getDefaultSimulationRounds(basePlanType);
   const persistedPlan = getJSON<Plan | null>("ui.planEditor.plan", null);
-  const initialPlan: Plan = persistedPlan || {
-    simulation_id: editingPlan?.simulation_id || "",
-    plan_id: basePlanType,
-    starting_company_round: editingPlan?.starting_company_round || 1,
-    current_company_round: editingPlan?.current_company_round || 1,
-    simulation_rounds: editingPlan?.simulation_rounds ?? defaultSimRounds,
-    investments:
-      editingPlan?.investments ||
-      generateInvestments(
-        editingPlan?.simulation_rounds ?? defaultSimRounds,
-        basePlanType,
-        editingPlan?.investments || []
-      ),
-    sales_achievement_rates: editingPlan?.sales_achievement_rates || {},
-  };
+
+  // Initialize the plan differently based on the scenario
+  let initialPlan: Plan;
+
+  if (persistedPlan) {
+    // Scenario 3: User is returning to a locally cached plan
+    initialPlan = persistedPlan;
+  } else if (editingPlan) {
+    // Scenario 2: User is editing an existing plan
+    initialPlan = {
+      simulation_id: editingPlan.simulation_id,
+      plan_id: editingPlan.plan_id,
+      starting_company_round: editingPlan.starting_company_round,
+      current_company_round: editingPlan.current_company_round,
+      simulation_rounds: editingPlan.simulation_rounds,
+      investments: editingPlan.investments || [],
+      sales_achievement_rates: editingPlan.sales_achievement_rates || {},
+    };
+  } else {
+    // Scenario 1: User is creating a new plan
+    // Generate investments with default values
+    const newInvestments = Array.from({ length: defaultSimRounds }, (_, i) => {
+      const round = i + 1;
+      // Get the default amount for this plan type and round
+      const defaultAmount = getDefaultInvestmentAmount(basePlanType, round);
+      // Return an investment with the default amount
+      return { round, amount: defaultAmount };
+    });
+
+    initialPlan = {
+      simulation_id: "",
+      plan_id: basePlanType,
+      starting_company_round: 1,
+      current_company_round: 1,
+      simulation_rounds: defaultSimRounds,
+      investments: newInvestments,
+      sales_achievement_rates: {},
+    };
+  }
   const [plan, setPlan] = useState<Plan>(initialPlan);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -253,11 +281,28 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
       }
 
       // Force update investments when going from step 4 to 5
-      const newInvestments = generateInvestments(
-        plan.simulation_rounds,
-        plan.plan_id,
-        plan.investments
+      // Preserve existing user-entered values but add new ones if simulation_rounds increased
+      const newInvestments = Array.from(
+        { length: plan.simulation_rounds },
+        (_, i) => {
+          const round = i + 1;
+          // Look for existing investment for this round
+          const existing = plan.investments?.find((inv) => inv.round === round);
+
+          if (existing) {
+            // Keep the user's existing value
+            return existing;
+          } else {
+            // Create new investment with default value
+            const defaultAmount = getDefaultInvestmentAmount(
+              plan.plan_id,
+              round
+            );
+            return { round, amount: defaultAmount };
+          }
+        }
       );
+
       setPlan((prevPlan) => ({ ...prevPlan, investments: newInvestments }));
     }
 
@@ -359,15 +404,69 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
                 const prevDefault = getDefaultSimulationRounds(prev.plan_id);
                 const nextDefault = getDefaultSimulationRounds(value);
                 const userUnmodified = prev.simulation_rounds === prevDefault;
+
+                // Calculate new investments based on the new plan type
+                let newInvestments;
+                if (userUnmodified) {
+                  // If user hasn't modified simulation rounds, generate all new investments
+                  newInvestments = Array.from(
+                    { length: nextDefault },
+                    (_, i) => {
+                      const round = i + 1;
+                      // Get default amount for the new plan type
+                      const defaultAmount = getDefaultInvestmentAmount(
+                        value,
+                        round
+                      );
+                      return { round, amount: defaultAmount };
+                    }
+                  );
+                } else {
+                  // If rounds are modified, preserve rounds count but update amounts
+                  newInvestments = Array.from(
+                    { length: prev.simulation_rounds },
+                    (_, i) => {
+                      const round = i + 1;
+                      // Get default amount for the new plan type
+                      const defaultAmount = getDefaultInvestmentAmount(
+                        value,
+                        round
+                      );
+
+                      // Find existing investment to check if user modified it
+                      const existing = prev.investments?.find(
+                        (inv) => inv.round === round
+                      );
+
+                      // Keep existing investment if it exists and is not a default value from previous plan
+                      if (existing) {
+                        // Check if previous value was default
+                        const prevDefaultAmount = getDefaultInvestmentAmount(
+                          prev.plan_id,
+                          round
+                        );
+                        const wasDefault =
+                          existing.amount === prevDefaultAmount;
+
+                        // If it was default, use the new default; otherwise keep user's value
+                        return {
+                          round,
+                          amount: wasDefault ? defaultAmount : existing.amount,
+                        };
+                      }
+
+                      return { round, amount: defaultAmount };
+                    }
+                  );
+                }
+
                 return {
                   ...prev,
                   plan_id: value,
                   simulation_rounds: userUnmodified
                     ? nextDefault
                     : prev.simulation_rounds,
-                  investments: userUnmodified
-                    ? generateInvestments(nextDefault, value, prev.investments)
-                    : prev.investments,
+                  investments: newInvestments,
                 };
               });
             }}
