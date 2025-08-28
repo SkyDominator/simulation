@@ -169,16 +169,34 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   };
 
   const handleNext = () => {
-    if (step === 3) {
+    if (step === 2) {
+      // Validate starting_company_round
+      const MIN_STARTING_ROUND = 1;
+      const MAX_STARTING_ROUND = 100;
+
+      if (
+        !handleValidation(
+          plan.starting_company_round,
+          MIN_STARTING_ROUND,
+          MAX_STARTING_ROUND,
+          "starting_company_round"
+        )
+      ) {
+        return;
+      }
+    } else if (step === 3) {
       // Validate current_company_round is >= starting_company_round
-      if (plan.current_company_round < plan.starting_company_round) {
-        setValidationData({
-          value: plan.current_company_round,
-          min: plan.starting_company_round,
-          max: 100, // Some reasonable max value
-          field: "current_company_round",
-        });
-        setValidationModalOpen(true);
+      const MIN_CURRENT_ROUND = plan.starting_company_round;
+      const MAX_CURRENT_ROUND = 100;
+
+      if (
+        !handleValidation(
+          plan.current_company_round,
+          MIN_CURRENT_ROUND,
+          MAX_CURRENT_ROUND,
+          "current_company_round"
+        )
+      ) {
         return;
       }
     } else if (step === 4) {

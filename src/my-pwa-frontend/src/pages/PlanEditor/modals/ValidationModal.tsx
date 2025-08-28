@@ -25,14 +25,39 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   if (!validationData) {
     message = "유효하지 않은 값입니다.";
   } else if (
+    validationData.field === "starting_company_round" &&
+    validationData.value < validationData.min
+  ) {
+    message = `가입한 회사 회차는 최소 ${validationData.min}보다 작을 수 없습니다. ${validationData.min}으로 설정하시겠습니까?`;
+  } else if (
+    validationData.field === "starting_company_round" &&
+    validationData.value > validationData.max
+  ) {
+    message = `가입한 회사 회차는 최대 ${validationData.max}보다 클 수 없습니다. ${validationData.max}로 설정하시겠습니까?`;
+  } else if (
     validationData.field === "current_company_round" &&
     validationData.value < validationData.min
   ) {
     message = `현재 회차는 가입한 회차(${validationData.min})보다 작을 수 없습니다. ${validationData.min}으로 설정하시겠습니까?`;
+  } else if (
+    validationData.field === "current_company_round" &&
+    validationData.value > validationData.max
+  ) {
+    message = `현재 회차는 최대 ${validationData.max}보다 클 수 없습니다. ${validationData.max}로 설정하시겠습니까?`;
+  } else if (
+    validationData.field === "simulation_rounds" &&
+    validationData.value < validationData.min
+  ) {
+    message = `총 회차 수는 최소 ${validationData.min}보다 작을 수 없습니다. ${validationData.min}으로 설정하시겠습니까?`;
+  } else if (
+    validationData.field === "simulation_rounds" &&
+    validationData.value > validationData.max
+  ) {
+    message = `총 회차 수는 최대 ${validationData.max}보다 클 수 없습니다. ${validationData.max}로 설정하시겠습니까?`;
   } else if (validationData.value < validationData.min) {
-    message = `값이 최소 ${validationData?.min}보다 작습니다. ${validationData?.min}으로 설정하시겠습니까?`;
+    message = `값이 최소 ${validationData.min}보다 작습니다. ${validationData.min}으로 설정하시겠습니까?`;
   } else {
-    message = `값이 최대 ${validationData?.max}보다 큽니다. ${validationData?.max}로 설정하시겠습니까?`;
+    message = `값이 최대 ${validationData.max}보다 큽니다. ${validationData.max}로 설정하시겠습니까?`;
   }
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="xs" fullWidth>

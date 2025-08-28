@@ -390,42 +390,79 @@ export const PlanTypeSelector: React.FC<PlanTypeSelectorProps> = ({
 
 export const StartingCompanyRoundSelector: React.FC<
   CompanyRoundSelectorProps
-> = ({ companyRound, onChange }) => (
-  <div>
-    <h2 className="text-xl font-bold mb-4">2. 가입한 회사 회차 선택</h2>
-    <Input
-      type="number"
-      value={companyRound === 0 ? "" : companyRound}
-      placeholder="회차를 입력하세요 (예: 1)"
-      onChange={(e) => {
-        // Ensure it's parsed as an integer
-        const value = parseInt(e.target.value, 10) || 0;
-        onChange(value);
-      }}
-    />
-  </div>
-);
+> = ({ companyRound, onChange }) => {
+  const MIN_ROUND = 1;
+  const MAX_ROUND = 100;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Ensure it's parsed as an integer
+    const value = parseInt(e.target.value, 10) || 0;
+    onChange(value);
+  };
+
+  const handleBlur = () => {
+    // When input loses focus, validate and auto-correct if needed
+    if (companyRound < MIN_ROUND) {
+      onChange(MIN_ROUND);
+    } else if (companyRound > MAX_ROUND) {
+      onChange(MAX_ROUND);
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold mb-4">2. 가입한 회사 회차 선택</h2>
+      <p className="text-sm mb-2">
+        최소: {MIN_ROUND}, 최대: {MAX_ROUND}
+      </p>
+      <Input
+        type="number"
+        value={companyRound === 0 ? "" : companyRound}
+        placeholder={`회차를 입력하세요 (최소: ${MIN_ROUND}, 최대: ${MAX_ROUND})`}
+        onChange={handleChange}
+        onBlur={handleBlur}
+      />
+    </div>
+  );
+};
 
 export const CurrentCompanyRoundSelector: React.FC<
   CompanyRoundSelectorProps & { startingCompanyRound: number }
-> = ({ companyRound, onChange, startingCompanyRound }) => (
-  <div>
-    <h2 className="text-xl font-bold mb-4">3. 현재 회사 회차 선택</h2>
-    <p className="text-sm mb-2">
-      최소: {startingCompanyRound} (가입한 회차 이상이어야 합니다)
-    </p>
-    <Input
-      type="number"
-      value={companyRound === 0 ? "" : companyRound}
-      placeholder={`회차를 입력하세요 (최소: ${startingCompanyRound})`}
-      onChange={(e) => {
-        // Ensure it's parsed as an integer
-        const value = parseInt(e.target.value, 10) || 0;
-        onChange(value);
-      }}
-    />
-  </div>
-);
+> = ({ companyRound, onChange, startingCompanyRound }) => {
+  const MIN_ROUND = startingCompanyRound;
+  const MAX_ROUND = 100;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Ensure it's parsed as an integer
+    const value = parseInt(e.target.value, 10) || 0;
+    onChange(value);
+  };
+
+  const handleBlur = () => {
+    // When input loses focus, validate and auto-correct if needed
+    if (companyRound < MIN_ROUND) {
+      onChange(MIN_ROUND);
+    } else if (companyRound > MAX_ROUND) {
+      onChange(MAX_ROUND);
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold mb-4">3. 현재 회사 회차 선택</h2>
+      <p className="text-sm mb-2">
+        최소: {MIN_ROUND} (가입한 회차 이상이어야 합니다), 최대: {MAX_ROUND}
+      </p>
+      <Input
+        type="number"
+        value={companyRound === 0 ? "" : companyRound}
+        placeholder={`회차를 입력하세요 (최소: ${MIN_ROUND}, 최대: ${MAX_ROUND})`}
+        onChange={handleChange}
+        onBlur={handleBlur}
+      />
+    </div>
+  );
+};
 
 export const SimulationRoundsSelector: React.FC<
   SimulationRoundsSelectorProps
