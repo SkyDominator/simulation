@@ -69,7 +69,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
   if (result) {
     const scheduled = result.scheduled_payment || {};
     const salesRates = result.sales_achievement_rates || {};
-    const base = result.company_round || 0;
+    const base = result.starting_company_round || 0;
     history = history.map((row, idx) => {
       const companyRound = base + idx; // first row = base, then increment
       const newRow: Record<string, unknown> = {

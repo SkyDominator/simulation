@@ -8,7 +8,6 @@ import {
   Button,
   Stack,
   Alert,
-  CircularProgress,
 } from "@mui/material";
 
 interface WhitelistCheckPageProps {

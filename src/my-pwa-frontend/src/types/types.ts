@@ -16,22 +16,11 @@ export interface Investment {
   amount: number;
 }
 
-export interface SimulationResults {
-  input: {
-    plan_type: string;
-    max_rounds: number;
-    starting_company_round: number;
-    current_company_round: number;
-    scheduled_payment: Record<string, number>;
-  };
-  output: unknown; // You can define a more specific type based on your actual response structure
-}
-
 // Response from POST /api/simulation/run
 export interface SimulationRunResponse {
   simulation_id: string;
   plan_id: string;
-  starting_company_round: number; // renamed from company_round
+  starting_company_round: number;
   current_company_round: number; // added new field
   simulation_rounds: number; // added to mirror backend SimulationResponse
   scheduled_payment: Record<string, number>; // added to mirror backend SimulationResponse

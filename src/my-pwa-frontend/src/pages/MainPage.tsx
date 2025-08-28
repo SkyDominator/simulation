@@ -38,7 +38,11 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { getJSON, setJSON } from "../utils/persist";
 
 // Types for sorting (module scope so they are available everywhere below)
-type SortKey = "plan_id" | "company_round" | "simulation_rounds" | "created_at";
+type SortKey =
+  | "plan_id"
+  | "starting_company_round"
+  | "simulation_rounds"
+  | "created_at";
 interface SortSpec {
   key: SortKey;
   dir: "asc" | "desc";
@@ -48,7 +52,7 @@ interface SortSpec {
 const MAIN_SORT_KEY = "ui.main.sortOrders" as const;
 const VALID_SORT_KEYS = [
   "plan_id",
-  "company_round",
+  "starting_company_round",
   "simulation_rounds",
   "created_at",
 ] as const;
@@ -220,9 +224,9 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
             av = a.plan_id || "";
             bv = b.plan_id || "";
             break;
-          case "company_round":
-            av = a.company_round;
-            bv = b.company_round;
+          case "starting_company_round":
+            av = a.starting_company_round;
+            bv = b.starting_company_round;
             break;
           case "simulation_rounds":
             av = a.simulation_rounds;
@@ -404,7 +408,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
 
         // Apply the same logic from ResultsPage to inject correct company_round and amount
         const scheduled = result.scheduled_payment || {};
-        const base = result.company_round || 0; // This is the starting company round
+        const base = result.starting_company_round || 0; // This is the starting company round
         history = history.map((row, idx) => {
           const companyRound = base + idx; // First row = base, then increment
           const newRow: Record<string, unknown> = {
@@ -440,7 +444,8 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
         // Extract needed data - store the full history up to maxNegativeDeepIndex
         const planData = {
           plan_id: plan.plan_id,
-          company_round: plan.company_round, // This is the base company round
+          starting_company_round: plan.starting_company_round, // This is the base company round
+          current_company_round: plan.current_company_round, // This is the current company round
           simulation_rounds: plan.simulation_rounds,
           history: history.slice(0, maxNegativeDeepIndex + 1),
           requiredFunds:
@@ -602,7 +607,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
                     </TableCell>
                     <TableCell
                       onClick={(e: React.MouseEvent<HTMLTableCellElement>) =>
-                        handleHeaderClick("company_round", e)
+                        handleHeaderClick("starting_company_round", e)
                       }
                       sx={{ cursor: "pointer", userSelect: "none" }}
                     >
@@ -611,7 +616,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
                         arrow
                       >
                         <Box display="inline-flex" alignItems="center">
-                          회사 회차 {sortIndicator("company_round")}
+                          시작 회차 {sortIndicator("starting_company_round")}
                         </Box>
                       </Tooltip>
                     </TableCell>
@@ -691,7 +696,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
                         </TableCell>
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell>{plan.plan_id} 플랜</TableCell>
-                        <TableCell>{plan.company_round}</TableCell>
+                        <TableCell>{plan.starting_company_round}</TableCell>
                         <TableCell>{plan.simulation_rounds}</TableCell>
                         <TableCell>
                           {plan.created_at &&
@@ -883,7 +888,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
                                   variant="body2"
                                   color="text.secondary"
                                 >
-                                  회사 회차: {planData.company_round}
+                                  시작 회차: {planData.starting_company_round}
                                 </Typography>
                                 <Typography
                                   variant="body2"

@@ -33,7 +33,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           플랜 타입: <strong>{plan.plan_id}</strong>
         </Typography>
         <Typography variant="body2">
-          회사 회차: <strong>{plan.company_round}</strong>
+          시작 회차: <strong>{plan.starting_company_round}</strong>
         </Typography>
         <Typography variant="body2">
           총 시뮬레이션 회차: <strong>{plan.simulation_rounds}</strong>
