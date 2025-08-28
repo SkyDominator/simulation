@@ -1,77 +1,30 @@
-import React, { useState, useEffect } from "react";
-import { Button } from "../components/Button"; // wrapper around MUI Button keeping prior API
+import React from "react";
+import { Button } from "../components/Button";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { MemoModal } from "../components/MemoModal";
 import { ContactModal } from "../components/ContactModal";
 import { useAuth } from "../context/useAuth";
 import { api } from "../services/api";
-import type { Plan, Page } from "../types/types";
-import type { SimulationRunResponse } from "../types/types";
-// MUI imports for redesigned layout
-import {
-  Container,
-  Paper,
-  Typography,
-  Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Tooltip,
-  Stack,
-  Chip,
-  Divider,
-  LinearProgress,
-  Checkbox,
-  Grid,
-} from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import DeleteIcon from "@mui/icons-material/Delete";
-import NoteAltIcon from "@mui/icons-material/NoteAlt";
+import type { Plan, Page, SimulationRunResponse } from "../types/types";
+import { Container, Paper, Typography, Stack, Divider } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AddIcon from "@mui/icons-material/Add";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
-import { getJSON, setJSON } from "../utils/persist";
 
-// Types for sorting (module scope so they are available everywhere below)
-type SortKey =
-  | "plan_id"
-  | "starting_company_round"
-  | "simulation_rounds"
-  | "created_at";
-interface SortSpec {
-  key: SortKey;
-  dir: "asc" | "desc";
-}
+// Import the extracted components
+import SimulationTable, {
+  type SortSpec,
+} from "../components/MainPage/SimulationTable";
+import SummaryReport from "../components/MainPage/SummaryReport";
 
-// Stable keys and validator for persisted sort state
-const MAIN_SORT_KEY = "ui.main.sortOrders" as const;
-const VALID_SORT_KEYS = [
-  "plan_id",
-  "starting_company_round",
-  "simulation_rounds",
-  "created_at",
-] as const;
-const DEFAULT_SORT_ORDERS: SortSpec[] = [{ key: "created_at", dir: "desc" }];
-
-function isSortSpecArray(val: unknown): val is SortSpec[] {
-  if (!Array.isArray(val)) return false;
-  return val.every((item) => {
-    if (typeof item !== "object" || item === null) return false;
-    const o = item as Record<string, unknown>;
-    const key = o.key;
-    const dir = o.dir;
-    return (
-      typeof key === "string" &&
-      (VALID_SORT_KEYS as readonly string[]).includes(key) &&
-      (dir === "asc" || dir === "desc")
-    );
-  });
-}
+// Import custom hooks
+import {
+  useSortState,
+  useSelectedSimulations,
+  useSummaryReportState,
+  type SummaryReportData,
+} from "../hooks/useMainPageState";
+import { useSimulationActions } from "../hooks/useSimulationActions";
 
 interface MainPageProps {
   setPage: (page: Page) => void;
@@ -81,138 +34,84 @@ interface MainPageProps {
   setSimulationResult: (result: SimulationRunResponse | null) => void;
 }
 
-const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
-  const { setPage, setEditingPlan, openNotice, setSimulationResult } = props;
+const MainPage: React.FC<MainPageProps> = ({
+  setPage,
+  setEditingPlan,
+  openNotice,
+  setSimulationResult,
+}) => {
   const { user, session, signOut } = useAuth();
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [runningId, setRunningId] = useState<string>("");
-  const [deletingId, setDeletingId] = useState<string>("");
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [targetPlan, setTargetPlan] = useState<Plan | null>(null);
-  const [targetOrdinal, setTargetOrdinal] = useState<number | null>(null);
-  const [memoModalOpen, setMemoModalOpen] = useState(false);
-  const [memoTarget, setMemoTarget] = useState<Plan | null>(null);
-  const [signOutLoading, setSignOutLoading] = useState(false);
-  const [contactModalOpen, setContactModalOpen] = useState(false);
-  // State for selected simulations
-  const [selectedSimulations, setSelectedSimulations] = useState<string[]>(
-    () => {
-      // Try to load selected simulations from localStorage
-      try {
-        const saved = localStorage.getItem("ui.main.selectedSimulations");
-        return saved ? JSON.parse(saved) : [];
-      } catch {
-        return [];
-      }
-    }
-  );
-  const [showSummaryReport, setShowSummaryReport] = useState(() => {
-    // Try to load report visibility state from localStorage
+  const [plans, setPlans] = React.useState<Plan[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [signOutLoading, setSignOutLoading] = React.useState(false);
+  const [contactModalOpen, setContactModalOpen] = React.useState(false);
+
+  // Use custom hooks for state management
+  const { sortOrders, handleHeaderClick } = useSortState();
+  const { selectedSimulations, setSelectedSimulations } =
+    useSelectedSimulations();
+  const {
+    showSummaryReport,
+    setShowSummaryReport,
+    summaryReportData,
+    setSummaryReportData,
+  } = useSummaryReportState();
+
+  // Load simulations data
+  const refreshPlans = React.useCallback(async () => {
+    if (!session) return;
     try {
-      return localStorage.getItem("ui.main.showSummaryReport") === "true";
-    } catch {
-      return false;
+      const data = await api.getSimulations(session.access_token);
+      setPlans(data);
+    } catch (error) {
+      console.error("Error refreshing plans:", error);
     }
-  });
-  const [summaryReportData, setSummaryReportData] = useState<Record<
-    string,
-    any
-  > | null>(() => {
-    // Try to load report data from localStorage
-    try {
-      const saved = localStorage.getItem("ui.main.summaryReportData");
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-  // draft stored inside MemoModal, keep minimal state here
-  const [sortOrders, setSortOrders] = useState<SortSpec[]>(() => {
-    const persisted = getJSON<unknown>(MAIN_SORT_KEY, DEFAULT_SORT_ORDERS);
-    return isSortSpecArray(persisted) ? persisted : DEFAULT_SORT_ORDERS;
-  });
+  }, [session]);
 
-  // Persist sort order on change
-  useEffect(() => {
-    setJSON(MAIN_SORT_KEY, sortOrders);
-  }, [sortOrders]);
+  // Use the simulation actions hook
+  const {
+    runningId,
+    deletingId,
+    confirmOpen,
+    targetPlan,
+    targetOrdinal,
+    memoModalOpen,
+    memoTarget,
+    setConfirmOpen,
+    setTargetOrdinal,
+    setMemoModalOpen,
+    setMemoTarget,
+    handleViewResults: viewResults,
+    openDeleteConfirm,
+    openMemo,
+    handleSaveMemo: saveMemo,
+    handleConfirmDelete,
+  } = useSimulationActions(session, refreshPlans);
 
-  // Persist selected simulations when they change
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "ui.main.selectedSimulations",
-        JSON.stringify(selectedSimulations)
-      );
-    } catch {
-      /* Ignore storage errors */
-    }
-  }, [selectedSimulations]);
-
-  // Persist summary report visibility
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "ui.main.showSummaryReport",
-        String(showSummaryReport)
-      );
-    } catch {
-      /* Ignore storage errors */
-    }
-  }, [showSummaryReport]);
-
-  // Persist summary report data
-  useEffect(() => {
-    try {
-      if (summaryReportData) {
-        localStorage.setItem(
-          "ui.main.summaryReportData",
-          JSON.stringify(summaryReportData)
-        );
-      }
-    } catch {
-      /* Ignore storage errors */
-    }
-  }, [summaryReportData]);
-
-  const toggleDir = (dir: "asc" | "desc"): "asc" | "desc" =>
-    dir === "asc" ? "desc" : "asc";
-
-  const handleHeaderClick = (
-    key: SortKey,
-    e: React.MouseEvent<HTMLTableHeaderCellElement>
-  ) => {
-    const isMulti = e.shiftKey; // shift-click adds to multi sort
-    setSortOrders((prev: SortSpec[]) => {
-      // find existing
-      const existingIndex = prev.findIndex((s: SortSpec) => s.key === key);
-      if (!isMulti) {
-        // single column mode
-        if (existingIndex === 0 && prev.length === 1) {
-          // toggle primary
-          const cur = prev[0];
-          return [{ key, dir: toggleDir(cur.dir) }];
-        }
-        // set as new primary ascending
-        return [{ key, dir: "asc" }];
-      } else {
-        // multi-column mode
-        if (existingIndex === -1) {
-          // append new with asc
-          return [...prev, { key, dir: "asc" }];
-        }
-        // toggle direction in place
-        const next: SortSpec[] = [...prev];
-        next[existingIndex] = {
-          ...next[existingIndex],
-          dir: toggleDir(next[existingIndex].dir),
-        };
-        return next;
-      }
-    });
+  // Handle view results with proper navigation
+  const handleViewResults = (plan: Plan) => {
+    viewResults(plan, setSimulationResult, () => setPage("results"));
   };
 
+  // Handle memo saving with plans update
+  const handleSaveMemo = (text: string | null) => {
+    saveMemo(text, setPlans);
+  };
+
+  // Generate the sortIndicator for the table headers
+  const sortIndicator = (key: SortSpec["key"]) => {
+    const idx = sortOrders.findIndex((s: SortSpec) => s.key === key);
+    if (idx === -1) return null;
+    const arrow = sortOrders[idx].dir === "asc" ? "▲" : "▼";
+    return (
+      <span className="ml-1 text-[10px] font-semibold text-gray-600">
+        {idx + 1}
+        {arrow}
+      </span>
+    );
+  };
+
+  // Sort plans based on sortOrders
   const sortedPlans = React.useMemo(() => {
     const copy = [...plans];
     copy.sort((a, b) => {
@@ -247,20 +146,8 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
     return copy;
   }, [plans, sortOrders]);
 
-  const sortIndicator = (key: SortKey) => {
-    const idx = sortOrders.findIndex((s: SortSpec) => s.key === key);
-    if (idx === -1) return null;
-    const arrow = sortOrders[idx].dir === "asc" ? "▲" : "▼";
-    return (
-      <span className="ml-1 text-[10px] font-semibold text-gray-600">
-        {idx + 1}
-        {arrow}
-      </span>
-    );
-  };
-
   // 시뮬레이션 데이터 로드
-  useEffect(() => {
+  React.useEffect(() => {
     const loadPlans = async () => {
       if (!user || !session) return;
 
@@ -279,16 +166,6 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
     loadPlans();
   }, [user, session]);
 
-  const refreshPlans = async () => {
-    if (!session) return;
-    try {
-      const data = await api.getSimulations(session.access_token);
-      setPlans(data);
-    } catch (error) {
-      console.error("Error refreshing plans:", error);
-    }
-  };
-
   const handleNewPlan = () => {
     // Ensure any old PlanEditor draft/step is cleared before creating new
     try {
@@ -299,60 +176,6 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
     }
     setEditingPlan(null); // 새 플랜이므로 기존 데이터 없음
     setPage("plan-editor");
-  };
-
-  // Run simulation for a specific plan and navigate to results
-  const handleViewResults = async (plan: Plan) => {
-    if (!session) return;
-    const simId = plan.simulation_id;
-
-    try {
-      setRunningId(simId);
-      const data = await api.runSimulation(simId, session.access_token);
-      setSimulationResult(data);
-      setPage("results");
-    } catch (e) {
-      console.error("Run simulation error:", e);
-      alert("시뮬레이션 실행에 실패했습니다.");
-    } finally {
-      setRunningId("");
-    }
-  };
-
-  const openDeleteConfirm = (plan: Plan, ordinal?: number) => {
-    setTargetPlan(plan);
-    setTargetOrdinal(ordinal ?? null);
-    setConfirmOpen(true);
-  };
-
-  const openMemo = (plan: Plan) => {
-    setMemoTarget(plan);
-    setMemoModalOpen(true);
-  };
-
-  const handleSaveMemo = async (text: string | null) => {
-    if (!session || !memoTarget) return;
-    try {
-      await api.updateSimulationMemo(
-        session.access_token,
-        memoTarget.simulation_id,
-        text
-      );
-      // optimistic update local state
-      setPlans((prev: Plan[]) =>
-        prev.map((p: Plan) =>
-          p.simulation_id === memoTarget.simulation_id
-            ? { ...p, memo: text || null }
-            : p
-        )
-      );
-      setMemoTarget((prev: Plan | null) =>
-        prev ? { ...prev, memo: text || null } : prev
-      );
-    } catch (e) {
-      console.error("Memo save error:", e);
-      alert("메모 저장에 실패했습니다.");
-    }
   };
 
   // Validate if a simulation can be selected
@@ -389,7 +212,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
 
     try {
       // Create a placeholder for our report data
-      const reportData: Record<string, any> = {};
+      const reportData: Record<string, unknown> = {};
       let totalRequiredFunds = 0;
 
       // For each selected simulation
@@ -444,8 +267,8 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
         // Extract needed data - store the full history up to maxNegativeDeepIndex
         const planData = {
           plan_id: plan.plan_id,
-          starting_company_round: plan.starting_company_round, // This is the base company round
-          current_company_round: plan.current_company_round, // This is the current company round
+          starting_company_round: plan.starting_company_round,
+          current_company_round: plan.current_company_round,
           simulation_rounds: plan.simulation_rounds,
           history: history.slice(0, maxNegativeDeepIndex + 1),
           requiredFunds:
@@ -461,7 +284,7 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
       // Add total required funds
       reportData.totalRequiredFunds = totalRequiredFunds;
 
-      setSummaryReportData(reportData);
+      setSummaryReportData(reportData as SummaryReportData);
       setShowSummaryReport(true);
     } catch (error) {
       console.error("Error generating summary report:", error);
@@ -469,23 +292,9 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
     }
   };
 
-  const handleConfirmDelete = async () => {
-    if (!session || !targetPlan) return;
-    try {
-      setDeletingId(targetPlan.simulation_id);
-      await api.deleteSimulation(
-        targetPlan.simulation_id,
-        session.access_token
-      );
-      setConfirmOpen(false);
-      setTargetPlan(null);
-      await refreshPlans();
-    } catch (e) {
-      console.error("Delete simulation error:", e);
-      alert("삭제에 실패했습니다.");
-    } finally {
-      setDeletingId("");
-    }
+  const handleEditPlan = (plan: Plan) => {
+    setEditingPlan(plan);
+    setPage("plan-editor");
   };
 
   return (
@@ -501,9 +310,6 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
           justifyContent="space-between"
           mb={4}
         >
-          {/* <Typography variant="h4" fontWeight={700}>
-            시뮬레이션
-          </Typography> */}
           <Stack direction="row" spacing={1}>
             {openNotice && (
               <Button onClick={openNotice} variant="contained" color="warning">
@@ -569,456 +375,45 @@ const MainPage: React.FC<MainPageProps> = (props: MainPageProps) => {
             </Stack>
           </Stack>
           <Divider sx={{ mb: 2 }} />
-          {loading && <LinearProgress sx={{ mb: 2 }} />}
-          {!loading && plans.length === 0 && (
-            <Box py={4} textAlign="center" color="text.secondary">
-              아직 생성된 플랜이 없습니다. '새 시뮬레이션' 버튼을 눌러
-              시작하세요.
-            </Box>
-          )}
-          {!loading && plans.length > 0 && (
-            <TableContainer component={Paper} variant="outlined">
-              <Table size="small" stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    <TableCell padding="checkbox">
-                      <Tooltip
-                        title="종합 결과를 위해 시뮬레이션을 선택하세요. 각 플랜 타입당 하나의 시뮬레이션만 선택 가능합니다."
-                        arrow
-                      >
-                        <span>선택</span>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell sx={{ width: 40 }}>번호</TableCell>
-                    <TableCell
-                      onClick={(e: React.MouseEvent<HTMLTableCellElement>) =>
-                        handleHeaderClick("plan_id", e)
-                      }
-                      sx={{ cursor: "pointer", userSelect: "none" }}
-                    >
-                      <Tooltip
-                        title="Click to sort. Shift+Click for secondary sort"
-                        arrow
-                      >
-                        <Box display="inline-flex" alignItems="center">
-                          플랜 타입 {sortIndicator("plan_id")}
-                        </Box>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell
-                      onClick={(e: React.MouseEvent<HTMLTableCellElement>) =>
-                        handleHeaderClick("starting_company_round", e)
-                      }
-                      sx={{ cursor: "pointer", userSelect: "none" }}
-                    >
-                      <Tooltip
-                        title="Click to sort. Shift+Click for secondary sort"
-                        arrow
-                      >
-                        <Box display="inline-flex" alignItems="center">
-                          시작 회차 {sortIndicator("starting_company_round")}
-                        </Box>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell
-                      onClick={(e: React.MouseEvent<HTMLTableCellElement>) =>
-                        handleHeaderClick("simulation_rounds", e)
-                      }
-                      sx={{ cursor: "pointer", userSelect: "none" }}
-                    >
-                      <Tooltip
-                        title="Click to sort. Shift+Click for secondary sort"
-                        arrow
-                      >
-                        <Box display="inline-flex" alignItems="center">
-                          총 회차 {sortIndicator("simulation_rounds")}
-                        </Box>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell
-                      onClick={(e: React.MouseEvent<HTMLTableCellElement>) =>
-                        handleHeaderClick("created_at", e)
-                      }
-                      sx={{ cursor: "pointer", userSelect: "none" }}
-                    >
-                      <Tooltip
-                        title="Click to sort. Shift+Click for secondary sort"
-                        arrow
-                      >
-                        <Box display="inline-flex" alignItems="center">
-                          생성일 {sortIndicator("created_at")}
-                        </Box>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell>메모</TableCell>
-                    <TableCell align="right">액션</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {sortedPlans.map((plan: Plan, idx: number) => {
-                    const isRunning = runningId === plan.simulation_id;
-                    const isDeleting = deletingId === plan.simulation_id;
-                    const memoDisplay = plan.memo || "메모 없음";
-                    const isSelected = selectedSimulations.includes(
-                      plan.simulation_id
-                    );
-                    const canSelect = canSelectSimulation(plan);
-                    const truncated =
-                      memoDisplay.length > 20
-                        ? `${memoDisplay.slice(0, 20)}…`
-                        : memoDisplay;
-                    return (
-                      <TableRow
-                        key={plan.simulation_id}
-                        hover
-                        selected={isSelected}
-                      >
-                        <TableCell padding="checkbox">
-                          <Tooltip
-                            title={
-                              !canSelect && !isSelected
-                                ? "이미 동일한 플랜 타입의 시뮬레이션이 선택되었습니다"
-                                : ""
-                            }
-                            arrow
-                          >
-                            <span>
-                              <Checkbox
-                                color="primary"
-                                checked={isSelected}
-                                onChange={() =>
-                                  handleSimulationSelection(plan.simulation_id)
-                                }
-                                disabled={!canSelect && !isSelected}
-                              />
-                            </span>
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>{idx + 1}</TableCell>
-                        <TableCell>{plan.plan_id} 플랜</TableCell>
-                        <TableCell>{plan.starting_company_round}</TableCell>
-                        <TableCell>{plan.simulation_rounds}</TableCell>
-                        <TableCell>
-                          {plan.created_at &&
-                            new Date(plan.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell sx={{ maxWidth: 220 }}>
-                          <Tooltip
-                            title={memoDisplay}
-                            arrow
-                            disableHoverListener={memoDisplay === "메모 없음"}
-                          >
-                            <Chip
-                              icon={<NoteAltIcon />}
-                              label={truncated}
-                              size="small"
-                              onClick={() => openMemo(plan)}
-                              variant={plan.memo ? "filled" : "outlined"}
-                              color={plan.memo ? "primary" : "default"}
-                              sx={{ maxWidth: 200 }}
-                            />
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            justifyContent="flex-end"
-                          >
-                            <Tooltip title="편집" arrow>
-                              <span>
-                                <IconButton
-                                  color="primary"
-                                  size="small"
-                                  onClick={() => {
-                                    setEditingPlan(plan);
-                                    setPage("plan-editor");
-                                  }}
-                                >
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                            <Tooltip
-                              title={isRunning ? "실행 중" : "결과 보기"}
-                              arrow
-                            >
-                              <span>
-                                <IconButton
-                                  color="success"
-                                  size="small"
-                                  onClick={() => handleViewResults(plan)}
-                                  disabled={isRunning}
-                                >
-                                  <PlayArrowIcon fontSize="small" />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                            <Tooltip
-                              title={isDeleting ? "삭제 중" : "삭제"}
-                              arrow
-                            >
-                              <span>
-                                <IconButton
-                                  color="error"
-                                  size="small"
-                                  onClick={() =>
-                                    openDeleteConfirm(plan, idx + 1)
-                                  }
-                                  disabled={isDeleting}
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                          </Stack>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
 
-          {/* Summary Report */}
-          {showSummaryReport && summaryReportData && (
-            <Paper elevation={3} sx={{ p: 2.5, mt: 3 }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-              >
-                <Typography variant="h6" fontWeight={600}>
-                  종합 결과 보고서
-                </Typography>
-                <Button
-                  variant="outlined"
-                  color="inherit"
-                  size="small"
-                  onClick={() => {
-                    setShowSummaryReport(false);
-                    // We don't clear the data so it can be shown again if needed
-                    // Just update localStorage to reflect the visibility change
-                    try {
-                      localStorage.setItem(
-                        "ui.main.showSummaryReport",
-                        "false"
-                      );
-                    } catch {
-                      /* Ignore storage errors */
-                    }
-                  }}
-                >
-                  닫기
-                </Button>
-              </Stack>
-              <Divider sx={{ mb: 2 }} />
+          {/* Simulation table component */}
+          <SimulationTable
+            plans={plans}
+            loading={loading}
+            sortedPlans={sortedPlans}
+            sortOrders={sortOrders}
+            handleHeaderClick={handleHeaderClick}
+            sortIndicator={sortIndicator}
+            runningId={runningId}
+            deletingId={deletingId}
+            selectedSimulations={selectedSimulations}
+            canSelectSimulation={canSelectSimulation}
+            handleSimulationSelection={handleSimulationSelection}
+            openMemo={openMemo}
+            openDeleteConfirm={openDeleteConfirm}
+            handleViewResults={handleViewResults}
+            onEditPlan={handleEditPlan}
+          />
 
-              <Box sx={{ mb: 4 }}>
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                  총 필요 준비금
-                </Typography>
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 2,
-                    backgroundColor: "rgba(0, 0, 0, 0.02)",
-                    borderColor:
-                      Number(summaryReportData.totalRequiredFunds) >= 0
-                        ? "success.main"
-                        : "error.main",
-                    borderWidth: 2,
-                  }}
-                >
-                  <Typography
-                    variant="h5"
-                    fontWeight={700}
-                    align="center"
-                    sx={{
-                      color:
-                        Number(summaryReportData.totalRequiredFunds) >= 0
-                          ? "success.main"
-                          : "error.main",
-                    }}
-                  >
-                    {Number(
-                      summaryReportData.totalRequiredFunds
-                    ).toLocaleString()}{" "}
-                    원
-                  </Typography>
-                </Paper>
-              </Box>
-
-              <Grid container spacing={3}>
-                {Object.keys(summaryReportData)
-                  .filter((key) => key !== "totalRequiredFunds")
-                  .map((planId) => {
-                    const planData = summaryReportData[planId];
-                    const history = planData.history || [];
-
-                    return (
-                      <Grid item xs={12} md={6} key={planId}>
-                        <Paper
-                          elevation={2}
-                          sx={{
-                            p: 2,
-                            height: "100%",
-                            borderLeft: 4,
-                            borderColor:
-                              Number(planData.requiredFunds) >= 0
-                                ? "success.main"
-                                : "error.main",
-                          }}
-                        >
-                          <Stack spacing={1.5}>
-                            <Box sx={{ mb: 1 }}>
-                              <Typography variant="h6" fontWeight={600}>
-                                {planId} 플랜
-                              </Typography>
-                              <Stack
-                                direction="row"
-                                spacing={2}
-                                divider={
-                                  <Divider orientation="vertical" flexItem />
-                                }
-                              >
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  시작 회차: {planData.starting_company_round}
-                                </Typography>
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  총 회차: {planData.simulation_rounds}
-                                </Typography>
-                              </Stack>
-                            </Box>
-
-                            <Divider />
-
-                            <Box>
-                              <Typography variant="subtitle2" gutterBottom>
-                                필요 준비금
-                              </Typography>
-                              <Typography
-                                variant="h6"
-                                fontWeight={600}
-                                sx={{
-                                  color:
-                                    Number(planData.requiredFunds) >= 0
-                                      ? "success.main"
-                                      : "error.main",
-                                }}
-                              >
-                                {Number(
-                                  planData.requiredFunds
-                                ).toLocaleString()}{" "}
-                                원
-                              </Typography>
-                            </Box>
-
-                            <Divider />
-
-                            <Box>
-                              <Typography variant="subtitle2" gutterBottom>
-                                회차별 데이터 (순수하게 내 돈이 들어가는
-                                시점까지)
-                              </Typography>
-                              <Box
-                                sx={{
-                                  maxHeight: "180px",
-                                  overflowY: "auto",
-                                  mt: 1,
-                                }}
-                              >
-                                <Table
-                                  size="small"
-                                  sx={{ tableLayout: "fixed" }}
-                                >
-                                  <TableHead>
-                                    <TableRow>
-                                      <TableCell sx={{ width: "30%" }}>
-                                        회사 회차
-                                      </TableCell>
-                                      <TableCell align="right">
-                                        회차 매출액
-                                      </TableCell>
-                                      <TableCell align="right">
-                                        누적 수익
-                                      </TableCell>
-                                    </TableRow>
-                                  </TableHead>
-                                  <TableBody>
-                                    {history.map(
-                                      (
-                                        item: Record<string, unknown>,
-                                        index: number
-                                      ) => (
-                                        <TableRow
-                                          key={index}
-                                          sx={{
-                                            backgroundColor:
-                                              index === history.length - 1
-                                                ? "rgba(0, 0, 0, 0.04)"
-                                                : "inherit",
-                                            "&:last-child td": {
-                                              fontWeight: "bold",
-                                            },
-                                          }}
-                                        >
-                                          <TableCell>
-                                            {item.company_round !== undefined
-                                              ? String(item.company_round)
-                                              : "-"}
-                                          </TableCell>
-                                          <TableCell align="right">
-                                            {item.amount !== undefined
-                                              ? Number(
-                                                  item.amount
-                                                ).toLocaleString()
-                                              : "-"}
-                                          </TableCell>
-                                          <TableCell
-                                            align="right"
-                                            sx={{
-                                              color:
-                                                Number(
-                                                  item.cumulative_net_profit ||
-                                                    0
-                                                ) >= 0
-                                                  ? "success.main"
-                                                  : "error.main",
-                                            }}
-                                          >
-                                            {item.cumulative_net_profit !==
-                                            undefined
-                                              ? Number(
-                                                  item.cumulative_net_profit
-                                                ).toLocaleString()
-                                              : "-"}
-                                          </TableCell>
-                                        </TableRow>
-                                      )
-                                    )}
-                                  </TableBody>
-                                </Table>
-                              </Box>
-                            </Box>
-                          </Stack>
-                        </Paper>
-                      </Grid>
-                    );
-                  })}
-              </Grid>
-            </Paper>
-          )}
+          {/* Summary Report component */}
+          <SummaryReport
+            showSummaryReport={showSummaryReport}
+            summaryReportData={summaryReportData}
+            onClose={() => {
+              setShowSummaryReport(false);
+              // We don't clear the data so it can be shown again if needed
+              // Just update localStorage to reflect the visibility change
+              try {
+                localStorage.setItem("ui.main.showSummaryReport", "false");
+              } catch {
+                /* Ignore storage errors */
+              }
+            }}
+          />
         </Paper>
       </Container>
+
+      {/* Modals */}
       <DeleteConfirmModal
         isOpen={confirmOpen}
         onCancel={() => {
