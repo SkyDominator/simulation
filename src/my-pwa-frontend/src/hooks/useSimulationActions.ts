@@ -1,5 +1,5 @@
 import React from "react";
-import type { Plan } from "../types/types";
+import type { Plan, SimulationRunResponse } from "../types/types";
 import { api } from "../services/api";
 
 export const useSimulationActions = (
@@ -17,7 +17,7 @@ export const useSimulationActions = (
   // Run simulation and navigate to results
   const handleViewResults = async (
     plan: Plan,
-    setSimulationResult: (result: unknown) => void,
+    setSimulationResult: (result: SimulationRunResponse | null) => void,
     navigateToResults: () => void
   ) => {
     if (!session) return;

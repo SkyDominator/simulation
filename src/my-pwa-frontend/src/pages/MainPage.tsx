@@ -90,7 +90,11 @@ const MainPage: React.FC<MainPageProps> = ({
 
   // Handle view results with proper navigation
   const handleViewResults = (plan: Plan) => {
-    viewResults(plan, setSimulationResult, () => setPage("results"));
+    viewResults(
+      plan,
+      (result: SimulationRunResponse | null) => setSimulationResult(result),
+      () => setPage("results")
+    );
   };
 
   // Handle memo saving with plans update
