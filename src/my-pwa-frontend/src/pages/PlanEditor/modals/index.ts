@@ -1,4 +1,4 @@
 import ConfirmationModal from "./ConfirmationModal";
-import ValidationModal from "./ValidationModal";
+import SimulationRoundValidationModal from "./ValidationModal";
 
-export { ConfirmationModal, ValidationModal };
+export { ConfirmationModal, SimulationRoundValidationModal as ValidationModal };

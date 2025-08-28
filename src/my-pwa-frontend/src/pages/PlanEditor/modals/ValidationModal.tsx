@@ -7,43 +7,20 @@ import DialogActions from "@mui/material/DialogActions";
 import Typography from "@mui/material/Typography";
 import type { ValidationData } from "../types/index";
 
-interface ValidationModalProps {
+interface SimulationRoundValidationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
   validationData: ValidationData | null;
 }
 
-const ValidationModal: React.FC<ValidationModalProps> = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  validationData,
-}) => {
+const SimulationRoundValidationModal: React.FC<
+  SimulationRoundValidationModalProps
+> = ({ isOpen, onClose, onConfirm, validationData }) => {
   let message = "";
 
   if (!validationData) {
     message = "유효하지 않은 값입니다.";
-  } else if (
-    validationData.field === "starting_company_round" &&
-    validationData.value < validationData.min
-  ) {
-    message = `가입한 회사 회차는 최소 ${validationData.min}보다 작을 수 없습니다. ${validationData.min}으로 설정하시겠습니까?`;
-  } else if (
-    validationData.field === "starting_company_round" &&
-    validationData.value > validationData.max
-  ) {
-    message = `가입한 회사 회차는 최대 ${validationData.max}보다 클 수 없습니다. ${validationData.max}로 설정하시겠습니까?`;
-  } else if (
-    validationData.field === "current_company_round" &&
-    validationData.value < validationData.min
-  ) {
-    message = `현재 회차는 가입한 회차(${validationData.min})보다 작을 수 없습니다. ${validationData.min}으로 설정하시겠습니까?`;
-  } else if (
-    validationData.field === "current_company_round" &&
-    validationData.value > validationData.max
-  ) {
-    message = `현재 회차는 최대 ${validationData.max}보다 클 수 없습니다. ${validationData.max}로 설정하시겠습니까?`;
   } else if (
     validationData.field === "simulation_rounds" &&
     validationData.value < validationData.min
@@ -77,4 +54,4 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   );
 };
 
-export default ValidationModal;
+export default SimulationRoundValidationModal;
