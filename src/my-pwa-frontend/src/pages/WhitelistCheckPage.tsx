@@ -128,7 +128,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
               style={{ width: 80, height: 80 }}
             />
             <Typography variant="h5" sx={{ mt: 2, fontWeight: "bold" }}>
-              파트너스 클럽 시뮬레이션
+              생명빛 클럽 시뮬레이션
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 1 }}>
               서비스를 이용하시려면 이름과 전화번호를 입력해주세요
@@ -157,7 +157,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
             fullWidth
             value={phone}
             onChange={handlePhoneChange}
-            placeholder="010-0000-0000"
+            placeholder="010-1234-5678"
             disabled={loading}
             InputProps={{
               inputMode: "tel",
