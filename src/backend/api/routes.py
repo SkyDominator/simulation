@@ -49,8 +49,8 @@ async def root():
 async def verify_user(request: UserCheckRequest):
     combined_string = f"{request.name}-{request.phone_number}"
     hashed_value = hashlib.sha256(combined_string.encode('utf-8')).hexdigest()
-    _otp_service = OTPService(db_client=_supabase_client())
-    response = _otp_service.db_client.table('whitelist').select("user_hash").eq('user_hash', hashed_value).execute()
+    client = _supabase_client()
+    response = client.table('whitelist').select("user_hash").eq('user_hash', hashed_value).execute()
     if response.data:
         # Return the user_hash in the response for use in consent verification
         return {"is_whitelisted": True, "user_hash": hashed_value}
@@ -88,6 +88,7 @@ async def send_otp(request: OTPSendRequest, client_request: Request):
 @router.post("/api/otp/verify", response_model=OTPVerifyResponse)
 async def verify_otp(request: OTPVerifyRequest, client_request: Request):
     """Verify OTP code for a phone number."""
+    _otp_service = OTPService(db_client=_supabase_client())
     result = _otp_service.verify_otp(
         request.phone_number,
         request.otp_code,
