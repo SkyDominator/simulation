@@ -151,3 +151,25 @@ from typing import Iterable
 
 def scheduled_payment_from_investments(investments: Iterable[InvestmentItem]) -> Dict[str, int]:
     return {str(item.round): int(item.amount) for item in investments}
+
+# OTP related models
+class OTPSendRequest(BaseModel):
+    name: str
+    phone_number: str
+    
+class OTPVerifyRequest(BaseModel):
+    phone_number: str
+    otp_code: str
+    user_hash: Optional[str] = None  # Original hash from whitelist check if available
+
+class OTPSendResponse(BaseModel):
+    success: bool
+    message: str
+    expires_in_seconds: Optional[int] = None
+    user_hash: Optional[str] = None  # Return user_hash on successful whitelist check
+
+class OTPVerifyResponse(BaseModel):
+    success: bool
+    message: str
+    user_hash: Optional[str] = None
+    remaining_attempts: Optional[int] = None

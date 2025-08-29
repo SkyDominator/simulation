@@ -38,6 +38,20 @@ export interface WhitelistCheckResponse {
   user_hash?: string;
 }
 
+export interface OTPSendResponse {
+  success: boolean;
+  message: string;
+  expires_in_seconds?: number;
+  user_hash?: string;
+}
+
+export interface OTPVerifyResponse {
+  success: boolean;
+  message: string;
+  user_hash?: string;
+  remaining_attempts?: number;
+}
+
 // Response from POST /api/simulation/create
 export interface SimulationCreateResponse {
   simulation_id: string;

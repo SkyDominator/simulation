@@ -16,6 +16,18 @@ class Settings:
     cors_origins: List[str] = None  # type: ignore
     admin_emails_raw: str = os.getenv("ADMIN_EMAILS", "")  # comma separated list
     admin_emails: List[str] = None  # type: ignore
+    
+    # OTP settings
+    otp_secret_key: str = os.getenv("OTP_SECRET_KEY", "your-development-secret-key-replace-in-production")
+    otp_validity_minutes: int = int(os.getenv("OTP_VALIDITY_MINUTES", "5"))
+    otp_max_attempts: int = int(os.getenv("OTP_MAX_ATTEMPTS", "3"))
+    otp_resend_limit_per_15min: int = int(os.getenv("OTP_RESEND_LIMIT_PER_15MIN", "3"))
+    otp_resend_limit_per_day: int = int(os.getenv("OTP_RESEND_LIMIT_PER_DAY", "10"))
+
+    # NHN Cloud settings
+    nhn_cloud_appkey: str = os.getenv("NHN_CLOUD_APPKEY", "")
+    nhn_cloud_secret_key: str = os.getenv("NHN_CLOUD_SECRET_KEY", "")
+    nhn_cloud_sender_number: str = os.getenv("NHN_CLOUD_SENDER_NUMBER", "")
 
     def __post_init__(self):  # type: ignore[override]
         # object is frozen; use object.__setattr__

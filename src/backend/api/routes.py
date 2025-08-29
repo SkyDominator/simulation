@@ -18,7 +18,8 @@ from models.schemas import (
     NoticeCreateRequest, NoticeCreateResponse,
     NoticeUpdateRequest, NoticeUpdateResponse,
     NoticeDeleteResponse,
-    ConsentRecordRequest, ConsentRecordResponse
+    ConsentRecordRequest, ConsentRecordResponse,
+    OTPSendRequest, OTPVerifyRequest, OTPSendResponse, OTPVerifyResponse
 )
 from supabase import create_client
 from config.settings import settings
@@ -36,8 +37,10 @@ def _supabase_client():
     )
     return create_client(settings.supabase_url, key)
 
-# instantiate service lazily (could use dependency injection)
+# instantiate services lazily (could use dependency injection)
 _sim_service = SimulationService()
+from services.otp.otp_service import OTPService
+_otp_service = OTPService()
 
 @router.get("/")
 async def root():
@@ -53,6 +56,52 @@ async def verify_user(request: UserCheckRequest):
         # Return the user_hash in the response for use in consent verification
         return {"is_whitelisted": True, "user_hash": hashed_value}
     return {"is_whitelisted": False, "detail": "가입 허용 명단에 없는 사용자입니다."}
+
+@router.post("/api/otp/send", response_model=OTPSendResponse)
+async def send_otp(request: OTPSendRequest, client_request: Request):
+    """Send OTP to the provided phone number after whitelist check."""
+    # First perform the whitelist check
+    normalized_phone = request.phone_number.replace(" ", "").replace("-", "")
+    
+    # Hash the name and phone number for whitelist check
+    combined_string = f"{request.name}-{normalized_phone}"
+    hashed_value = hashlib.sha256(combined_string.encode('utf-8')).hexdigest()
+    
+    # Check if user is whitelisted
+    client = _supabase_client()
+    response = client.table('whitelist').select("user_hash").eq('user_hash', hashed_value).execute()
+    
+    if not response.data:
+        return {"success": False, "message": "가입 허용 명단에 없는 사용자입니다."}
+    
+    # User is whitelisted, proceed with OTP
+    result = _otp_service.request_otp(
+        normalized_phone, 
+        client_ip=str(client_request.client.host),
+        user_agent=client_request.headers.get("user-agent")
+    )
+    
+    # Include the user_hash in success response for later verification
+    if result["success"]:
+        result["user_hash"] = hashed_value
+        
+    return result
+
+@router.post("/api/otp/verify", response_model=OTPVerifyResponse)
+async def verify_otp(request: OTPVerifyRequest, client_request: Request):
+    """Verify OTP code for a phone number."""
+    result = _otp_service.verify_otp(
+        request.phone_number,
+        request.otp_code,
+        client_ip=str(client_request.client.host)
+    )
+    
+    # If original name+phone hash is provided in the request, include it in the response
+    if request.user_hash and result["success"]:
+        # This ensures the frontend gets back the original hash that was verified
+        result["user_hash"] = request.user_hash
+    
+    return result
 
 @router.get("/api/notices", response_model=NoticeListResponse)
 async def list_notices():
@@ -281,3 +330,58 @@ async def get_privacy_policy():
         """,
         "success": True
     }
+    
+# ------------------------------- OTP Verification Routes -------------------------------
+
+# src/backend/api/routes.py
+from ..services.otp.otp_service import OTPService
+from models.schemas import OTPSendRequest, OTPVerifyRequest, OTPSendResponse, OTPVerifyResponse, WhitelistCheckRequest
+
+# Instantiate the service
+_otp_service = OTPService()
+
+@router.post("/api/otp/send", response_model=OTPSendResponse)
+async def send_otp(request: OTPSendRequest, client_request: Request):
+    """Send OTP to the provided phone number after whitelist check."""
+    # First perform the whitelist check
+    normalized_phone = request.phone_number.replace(" ", "").replace("-", "")
+    
+    # Hash the name and phone number for whitelist check
+    combined_string = f"{request.name}-{normalized_phone}"
+    hashed_value = hashlib.sha256(combined_string.encode('utf-8')).hexdigest()
+    
+    # Check if user is whitelisted
+    client = _supabase_client()
+    response = client.table('whitelist').select("user_hash").eq('user_hash', hashed_value).execute()
+    
+    if not response.data:
+        return {"success": False, "message": "가입 허용 명단에 없는 사용자입니다."}
+    
+    # User is whitelisted, proceed with OTP
+    result = _otp_service.request_otp(
+        normalized_phone, 
+        client_ip=str(client_request.client.host),
+        user_agent=client_request.headers.get("user-agent")
+    )
+    
+    # Include the user_hash in success response for later verification
+    if result["success"]:
+        result["user_hash"] = hashed_value
+        
+    return result
+
+@router.post("/api/otp/verify", response_model=OTPVerifyResponse)
+async def verify_otp(request: OTPVerifyRequest, client_request: Request):
+    """Verify OTP code for a phone number."""
+    result = _otp_service.verify_otp(
+        request.phone_number,
+        request.otp_code,
+        client_ip=str(client_request.client.host)
+    )
+    
+    # If original name+phone hash is provided in the request, include it in the response
+    if request.user_hash and result["success"]:
+        # This ensures the frontend gets back the original hash that was verified
+        result["user_hash"] = request.user_hash
+    
+    return result

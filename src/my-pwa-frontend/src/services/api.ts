@@ -12,6 +12,8 @@ import {
   type AdminMeResponse,
   type ConsentRecordResponse,
   type PrivacyPolicyResponse,
+  type OTPSendResponse,
+  type OTPVerifyResponse,
 } from "../types/types";
 
 // Prefer Vite-provided env var, fall back to the current local backend URL
@@ -463,6 +465,62 @@ export const api = {
     } catch (error) {
       console.error("Get user consents error:", error);
       throw error;
+    }
+  },
+
+  sendOtp: async (
+    name: string,
+    phone_number: string
+  ): Promise<OTPSendResponse> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/otp/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, phone_number }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("OTP send error:", error);
+      return { success: false, message: String(error) };
+    }
+  },
+
+  verifyOtp: async (
+    phone_number: string,
+    otp_code: string,
+    user_hash?: string
+  ): Promise<OTPVerifyResponse> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/otp/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone_number,
+          otp_code,
+          user_hash,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("OTP verification error:", error);
+      return {
+        success: false,
+        message: String(error),
+      };
     }
   },
 };
