@@ -10,7 +10,7 @@ from services.otp.nhn_cloud_sms import NHNCloudSMSClient
 logger = logging.getLogger(__name__)
 
 class OTPService:
-    def __init__(self, db_client=None):
+    def __init__(self, db_client):
         """Initialize OTP service with database client."""
         # Use provided DB client or get from settings
         
