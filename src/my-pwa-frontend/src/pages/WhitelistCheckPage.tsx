@@ -131,7 +131,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
               생명빛 클럽 시뮬레이션
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 1 }}>
-              서비스를 이용하시려면 이름과 전화번호를 입력해주세요
+              이름과 전화번호를 입력하고 인증번호 받기 버튼을 눌러주세요.
             </Typography>
           </Box>
 

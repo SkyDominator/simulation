@@ -6,6 +6,7 @@ from typing import Dict, Any, Optional, Tuple
 from config.settings import settings
 from services.otp.utils import generate_otp, hash_otp, verify_otp_hash, normalize_phone, calculate_expiry
 from services.otp.nhn_cloud_sms import NHNCloudSMSClient
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -184,10 +185,6 @@ class OTPService:
                 .eq("id", otp_record["id"]) \
                 .execute()
                 
-            # Generate user_hash for consistency with existing system
-            # This creates a hash of the phone number alone, which can be used
-            # to check the whitelist table or consent records
-            import hashlib
             user_hash = hashlib.sha256(normalized_phone.encode('utf-8')).hexdigest()
                 
             return {

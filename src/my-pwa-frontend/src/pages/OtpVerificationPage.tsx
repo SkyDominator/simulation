@@ -30,15 +30,6 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [initialSent, setInitialSent] = useState(false);
-
-  // Auto-send OTP when component mounts
-  useEffect(() => {
-    if (!initialSent) {
-      handleSendOtp();
-      setInitialSent(true);
-    }
-  }, [initialSent]);
 
   // Countdown timer
   useEffect(() => {
