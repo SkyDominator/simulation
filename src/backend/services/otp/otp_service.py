@@ -13,8 +13,8 @@ class OTPService:
     def __init__(self, db_client=None):
         """Initialize OTP service with database client."""
         # Use provided DB client or get from settings
-        from config.settings import get_supabase_client
-        self.db_client = db_client or get_supabase_client()
+        
+        self.db_client = db_client
         self.sms_client = NHNCloudSMSClient()
     
     def _check_rate_limits(self, phone: str, client_ip: Optional[str] = None) -> Tuple[bool, str]:
