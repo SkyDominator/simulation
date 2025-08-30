@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Tuple
 
-from ...config import settings
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
