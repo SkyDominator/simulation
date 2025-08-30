@@ -1,6 +1,19 @@
 from solapi import SolapiMessageService
 from solapi.model import RequestMessage
+
+import sys
+import os
+
+# Add the src/backend directory to the Python path
+backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if backend_path not in sys.path:
+    sys.path.insert(0, backend_path)
+
+print(sys.path)
+
 from config.settings import settings
+
+    
 # API 키와 API Secret을 설정합니다
 message_service = SolapiMessageService(
     api_key=settings.solapi_api_key, api_secret=settings.solapi_api_secret
