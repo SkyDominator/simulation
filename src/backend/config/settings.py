@@ -14,8 +14,6 @@ class Settings:
     supabase_publishable_key: str = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
     supabase_secret_key: str = os.getenv("SUPABASE_SECRET_KEY", "")  # server-only
     cors_origins: List[str] = None  # type: ignore
-    admin_emails_raw: str = os.getenv("ADMIN_EMAILS", "")  # comma separated list
-    admin_emails: List[str] = None  # type: ignore
     
     # OTP settings
     otp_secret_key: str = os.getenv("OTP_SECRET_KEY", "your-development-secret-key-replace-in-production")
@@ -46,8 +44,5 @@ class Settings:
                 "http://10.10.113.129:4173",
                 "http://172.30.1.39:4173",
             ])
-        if self.admin_emails is None:
-            parsed = [e.strip().lower() for e in self.admin_emails_raw.split(',') if e.strip()]
-            object.__setattr__(self, 'admin_emails', parsed)
 
 settings = Settings()
