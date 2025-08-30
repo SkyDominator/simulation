@@ -128,7 +128,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
               style={{ width: 80, height: 80 }}
             />
             <Typography variant="h5" sx={{ mt: 2, fontWeight: "bold" }}>
-              생명빛 클럽 시뮬레이션
+              OTP 인증
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 1 }}>
               이름과 전화번호를 입력하고 인증번호 받기 버튼을 눌러주세요.

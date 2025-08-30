@@ -6,4 +6,6 @@ ingress:
     service: http://localhost:8000
   - hostname: simulation.lightoflifeclub.com
     service: http://localhost:4173
+  - hostname: simulation.lightoflifeclub.com
+    service: http://localhost:5173
   - service: http_status:404
