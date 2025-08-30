@@ -72,10 +72,10 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
     setError("");
 
     try {
-      const result = await api.verifyOtp(phone, otpCode, userHash);
+      const result = await api.verifyOtp(phone, otpCode);
 
-      if (result.success && result.user_hash) {
-        onVerified(result.user_hash);
+      if (result.success) {
+        onVerified(userHash);
       } else {
         setError(result.message);
       }

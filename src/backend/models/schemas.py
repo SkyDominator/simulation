@@ -160,7 +160,6 @@ class OTPSendRequest(BaseModel):
 class OTPVerifyRequest(BaseModel):
     phone_number: str
     otp_code: str
-    user_hash: Optional[str] = None  # Original hash from whitelist check if available
 
 class OTPSendResponse(BaseModel):
     success: bool
@@ -171,5 +170,4 @@ class OTPSendResponse(BaseModel):
 class OTPVerifyResponse(BaseModel):
     success: bool
     message: str
-    user_hash: Optional[str] = None
     remaining_attempts: Optional[int] = None

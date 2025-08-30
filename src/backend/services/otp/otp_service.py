@@ -185,12 +185,9 @@ class OTPService:
                 .eq("id", otp_record["id"]) \
                 .execute()
                 
-            user_hash = hashlib.sha256(normalized_phone.encode('utf-8')).hexdigest()
-                
             return {
                 "success": True,
                 "message": "인증에 성공했습니다.",
-                "user_hash": user_hash
             }
         else:
             # Increment attempts counter

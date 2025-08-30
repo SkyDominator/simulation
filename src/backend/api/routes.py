@@ -94,12 +94,6 @@ async def verify_otp(request: OTPVerifyRequest, client_request: Request):
         request.otp_code,
         client_ip=str(client_request.client.host)
     )
-    
-    # If original name+phone hash is provided in the request, include it in the response
-    if request.user_hash and result["success"]:
-        # This ensures the frontend gets back the original hash that was verified
-        result["user_hash"] = request.user_hash
-    
     return result
 
 @router.get("/api/notices", response_model=NoticeListResponse)
