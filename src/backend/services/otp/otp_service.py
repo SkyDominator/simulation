@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional, Tuple
 
 from config.settings import settings
 from services.otp.utils import generate_otp, hash_otp, verify_otp_hash, normalize_phone, calculate_expiry
-from services.otp.nhn_cloud_sms import NHNCloudSMSClient
+from services.otp.solapi_sms import SolapiSMSClient
 import hashlib
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class OTPService:
         # Use provided DB client or get from settings
         
         self.db_client = db_client
-        self.sms_client = NHNCloudSMSClient()
+        self.sms_client = SolapiSMSClient()
     
     def _check_rate_limits(self, phone: str, client_ip: Optional[str] = None) -> Tuple[bool, str]:
         """

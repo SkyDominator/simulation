@@ -22,10 +22,16 @@ class Settings:
     otp_resend_limit_per_15min: int = int(os.getenv("OTP_RESEND_LIMIT_PER_15MIN", "3"))
     otp_resend_limit_per_day: int = int(os.getenv("OTP_RESEND_LIMIT_PER_DAY", "10"))
 
-    # NHN Cloud settings
+    # SMS Provider settings
+    # NHN Cloud settings (legacy)
     nhn_cloud_appkey: str = os.getenv("NHN_CLOUD_APPKEY", "")
     nhn_cloud_secret_key: str = os.getenv("NHN_CLOUD_SECRET_KEY", "")
     nhn_cloud_sender_number: str = os.getenv("NHN_CLOUD_SENDER_NUMBER", "")
+    
+    # Solapi settings
+    solapi_api_key: str = os.getenv("SOLAPI_API_KEY", "")
+    solapi_api_secret: str = os.getenv("SOLAPI_API_SECRET", "")
+    solapi_sender_number: str = os.getenv("SOLAPI_SENDER_NUMBER", "")
 
     def __post_init__(self):  # type: ignore[override]
         # object is frozen; use object.__setattr__
