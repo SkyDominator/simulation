@@ -48,7 +48,6 @@ export interface OTPSendResponse {
 export interface OTPVerifyResponse {
   success: boolean;
   message: string;
-  user_hash?: string;
   remaining_attempts?: number;
 }
 

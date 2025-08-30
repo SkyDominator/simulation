@@ -65,8 +65,9 @@ class OTPService:
         Returns:
             Dict with success flag and message
         """
-        # Normalize phone number
-        normalized_phone = normalize_phone(phone)
+        # Normalize phone number is not needed for solapi: `01012345678`` format is required.
+        # normalized_phone = normalize_phone(phone)
+        normalized_phone = phone
         
         # Check rate limits
         allowed, reason = self._check_rate_limits(normalized_phone, client_ip)
@@ -142,7 +143,8 @@ class OTPService:
             Dict with verification results
         """
         # Normalize phone
-        normalized_phone = normalize_phone(phone)
+        # normalized_phone = normalize_phone(phone)
+        normalized_phone = phone.replace(" ", "").replace("-", "")
         
         # Get the latest unused OTP for this phone that hasn't expired
         now = datetime.now().isoformat()
