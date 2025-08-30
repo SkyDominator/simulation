@@ -3,7 +3,9 @@ import logging
 import json
 from typing import Dict, Any
 from config.settings import settings
-from solapi import message
+from solapi import SolapiMessageService
+from solapi.model import RequestMessage
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +21,10 @@ class SolapiSMSClient:
         self.api_key = settings.solapi_api_key
         self.api_secret = settings.solapi_api_secret
         self.sender_number = settings.solapi_sender_number
-        
+        self.message_service = SolapiMessageService(
+            api_key=self.api_key, api_secret=self.api_secret
+        )
+
     def send_sms(self, recipient: str, message_text: str) -> Dict[str, Any]:
         """
         Send SMS to a recipient using Solapi API.
@@ -34,28 +39,37 @@ class SolapiSMSClient:
         try:
             # Format the recipient number (ensure no '+' prefix)
             recipient_clean = recipient.lstrip('+')
-            
-            # Prepare the message payload
-            params = {
-                'to': recipient_clean,
-                'from': self.sender_number,
-                'text': message_text
-            }
-            
-            # Send the message using the Solapi library
-            # If API_KEY and API_SECRET are set in env vars, they're used automatically
-            # Otherwise pass them explicitly
-            response = message.send_one(params, self.api_key, self.api_secret)
+
+            message = RequestMessage(
+                from_=str(self.sender_number),
+                to=recipient_clean,
+                text=message_text
+            )
+
+            response = self.message_service.send(message)
+            # print(f"Group ID: {response.group_info.group_id}")
+            # print(f"요청한 메시지 개수: {response.group_info.count.total}")
+            # print(f"성공한 메시지 개수: {response.group_info.count.registered_success}")
+            # print(f"실패한 메시지 개수: {response.group_info.count.registered_failed}")
             
             # Check if the message was sent successfully
-            if response.get('statusCode') == '2000':  # Success code from Solapi
+            if response.group_info.count.registered_success == 1:  # Success code from Solapi
                 return {
                     "success": True,
-                    "provider_msg_id": response.get("messageId"),
+                    "provider_msg_id": response.message_list[0].message_id if response.message_list else None,
                     "response": response
                 }
             else:
-                error = f"{response.get('statusCode')}: {response.get('statusMessage', 'Unknown error')}"
+                failed_message = response.failed_message_list[0] if response.failed_message_list else None
+                if failed_message:
+                    error = f"{failed_message.message_id}:  {failed_message.status_code}: {failed_message.status_message}"
+                else:
+                    message = response.message_list[0] if response.message_list else None
+                    if message:
+                        error = f"{message.message_id}:  {message.status_code}: {message.status_message}"
+                    else:
+                        error = "Unknown error"
+                        
                 logger.error(f"Solapi SMS API error: {error}")
                 return {
                     "success": False,

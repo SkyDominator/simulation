@@ -1,38 +1,25 @@
-#!/usr/bin/env python
-"""
-Test script for verifying Solapi SMS integration.
-"""
-import os
-import sys
-import logging
-from dotenv import load_dotenv
+from solapi import SolapiMessageService
+from solapi.model import RequestMessage
 
-# Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# API 키와 API Secret을 설정합니다
+message_service = SolapiMessageService(
+    api_key="YOUR_API_KEY", api_secret="YOUR_API_SECRET"
+)
 
-# Load environment variables from .env file
-load_dotenv()
+# 단일 메시지 모델을 생성합니다
+message = RequestMessage(
+    from_="발신번호",  # 발신번호 (등록된 발신번호만 사용 가능, 01000000000 형식으로 입력해주셔야 합니다! (-)제외)
+    to="수신번호",  # 수신번호(01000000000 형식으로 입력해주셔야 합니다! (-)제외)
+    text="안녕하세요! SOLAPI Python SDK를 사용한 SMS 발송 예제입니다.",
+)
 
-from services.otp.solapi_sms import SolapiSMSClient
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-def test_solapi_sms():
-    """Test sending an SMS using the Solapi client."""
-    client = SolapiSMSClient()
-    
-    # Replace with a valid phone number for testing
-    recipient = input("Enter a phone number to test (e.g., 01012345678): ")
-    
-    result = client.send_sms(recipient, "[테스트] 솔라피 SMS 통합 테스트 메시지입니다.")
-    
-    if result["success"]:
-        logger.info(f"Success! Message ID: {result.get('provider_msg_id')}")
-    else:
-        logger.error(f"Failed to send SMS: {result.get('error')}")
-        logger.debug(f"Full response: {result.get('response')}")
-
-if __name__ == "__main__":
-    logger.info("Testing Solapi SMS integration...")
-    test_solapi_sms()
+# 메시지를 발송합니다
+try:
+    response = message_service.send(message)
+    print("메시지 발송 성공!")
+    print(f"Group ID: {response.group_info.group_id}")
+    print(f"요청한 메시지 개수: {response.group_info.count.total}")
+    print(f"성공한 메시지 개수: {response.group_info.count.registered_success}")
+    print(f"실패한 메시지 개수: {response.group_info.count.registered_failed}")
+except Exception as e:
+    print(f"메시지 발송 실패: {str(e)}")
