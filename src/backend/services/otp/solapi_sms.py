@@ -56,7 +56,7 @@ class SolapiSMSClient:
             if response.group_info.count.registered_success == 1:  # Success code from Solapi
                 return {
                     "success": True,
-                    "provider_msg_id": response.message_list[0].message_id if response.message_list else None,
+                    "provider_msg_id": response.group_info.group_id,
                     "response": response
                 }
             else:
@@ -64,12 +64,8 @@ class SolapiSMSClient:
                 if failed_message:
                     error = f"{failed_message.message_id}:  {failed_message.status_code}: {failed_message.status_message}"
                 else:
-                    message = response.message_list[0] if response.message_list else None
-                    if message:
-                        error = f"{message.message_id}:  {message.status_code}: {message.status_message}"
-                    else:
-                        error = "Unknown error"
-                        
+                    error = f"{response.group_info.group_id}: Unknown error"
+
                 logger.error(f"Solapi SMS API error: {error}")
                 return {
                     "success": False,
