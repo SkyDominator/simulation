@@ -123,12 +123,12 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
         <Stack spacing={3}>
           <Box textAlign="center">
             <img
-              src="/icons/icon-192.png"
+              src="/icons/icon-384.png"
               alt="Logo"
-              style={{ width: 80, height: 80 }}
+              style={{ width: 100, height: 100 }}
             />
             <Typography variant="h5" sx={{ mt: 2, fontWeight: "bold" }}>
-              OTP 인증
+              환영합니다!
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 1 }}>
               이름과 전화번호를 입력하고 인증번호 받기 버튼을 눌러주세요.
