@@ -7,5 +7,5 @@
    1. OTP를 최초 접속 한 번만 하는 것으로 변경
    2. OTP-동의-로그인 플로우 재정리
    3. time-left indicator UI 추가
-   4. provider_msg_id DB에 저장하는 로직 추가
+   4. ~~provider_msg_id DB에 저장하는 로직 추가~~
    5. 플로우 정리 후 더 가격이 싼 (NHN Cloud) 기반으로 변경
