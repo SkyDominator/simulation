@@ -10,7 +10,8 @@ import { type Plan, type Page } from "./types/types";
 import { NoticeBoardModal } from "./components/NoticeBoardModal";
 import type { SimulationRunResponse } from "./types/types";
 import { getJSON, setJSON } from "./utils/persist";
-import { api } from "./services/api";
+// api import no longer needed here
+import { useConsentFlow } from "./hooks/useConsentFlow";
 
 const AppController = () => {
   // Restore last UI state if available; default to whitelist
@@ -112,37 +113,8 @@ const AppController = () => {
     [editingPlan, simulationResult, setPage]
   );
 
-  // Helper function to check consent status - separate from render
-  const checkConsentStatus = useCallback(async () => {
-    if (!userHash) return;
-
-    try {
-      const response = await api.getUserConsents(userHash);
-      const hasConsent = response.consents.some(
-        (consent: { consent_type: string }) =>
-          consent.consent_type === "privacy_policy"
-      );
-
-      if (hasConsent && page !== "login") {
-        // User already consented, go to login
-        setPage("login");
-      } else if (!hasConsent && page !== "consent") {
-        // No consent record found, go to consent page
-        setPage("consent");
-      }
-    } catch (error) {
-      console.error("Failed to verify consent:", error);
-      // On error, safer to direct to consent page
-      if (page !== "consent") setPage("consent");
-    }
-  }, [userHash, page]);
-
-  // Effect to check consent status when userHash changes
-  useEffect(() => {
-    if (!user && userHash) {
-      checkConsentStatus();
-    }
-  }, [user, userHash, checkConsentStatus]);
+  // Keep consent-driven page flow in a dedicated hook
+  useConsentFlow(user, userHash, page, setPage);
 
   // Synchronous render function for React
   const renderPage = useCallback(() => {

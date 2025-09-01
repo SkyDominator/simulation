@@ -108,3 +108,5 @@ export const ContactModal: React.FC<ContactModalProps> = ({
     </Dialog>
   );
 };
+
+export default React.memo(ContactModal);

@@ -1,8 +1,8 @@
 import React from "react";
 import { Button } from "../components/Button";
-import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
-import { MemoModal } from "../components/MemoModal";
-import { ContactModal } from "../components/ContactModal";
+import DeleteConfirmModal from "../components/DeleteConfirmModal";
+import MemoModal from "../components/MemoModal";
+import ContactModal from "../components/ContactModal";
 import { useAuth } from "../context/useAuth";
 import { api } from "../services/api";
 import type { Plan, Page, SimulationRunResponse } from "../types/types";
@@ -25,6 +25,10 @@ import {
   type SummaryReportData,
 } from "../hooks/useMainPageState";
 import { useSimulationActions } from "../hooks/useSimulationActions";
+import {
+  injectDerivedHistory,
+  findMaxNegativeDeepIndex,
+} from "../utils/simulation";
 
 interface MainPageProps {
   setPage: (page: Page) => void;
@@ -228,42 +232,8 @@ const MainPage: React.FC<MainPageProps> = ({
         const result = await api.runSimulation(simId, session.access_token);
 
         // Process the history data like ResultsPage does
-        const historyRaw = result.history || [];
-        let history = historyRaw.map((e) =>
-          e && typeof e === "object" ? (e as Record<string, unknown>) : {}
-        );
-
-        // Apply the same logic from ResultsPage to inject correct company_round and amount
-        const scheduled = result.scheduled_payment || {};
-        const base = result.starting_company_round || 0; // This is the starting company round
-        history = history.map((row, idx) => {
-          const companyRound = base + idx; // First row = base, then increment
-          const newRow: Record<string, unknown> = {
-            ...row,
-            company_round: companyRound,
-          };
-
-          // Get amount from scheduled_payment (indexed by personal round idx+1)
-          const amt = scheduled[idx + 1];
-          if (amt !== undefined) newRow.amount = amt;
-
-          return newRow;
-        });
-
-        // Calculate the maximum negative deep index
-        let maxNegativeDeepIndex = -1;
-        let prevValue = Number(history[0]?.cumulative_net_profit || 0);
-
-        for (let i = 1; i < history.length; i++) {
-          const currentValue = Number(history[i]?.cumulative_net_profit || 0);
-          if (!isNaN(currentValue) && currentValue > prevValue) {
-            maxNegativeDeepIndex = i - 1;
-            break;
-          }
-          prevValue = currentValue;
-        }
-
-        // If we didn't find a point where profit starts increasing, use the last point
+        const history = injectDerivedHistory(result);
+        let maxNegativeDeepIndex = findMaxNegativeDeepIndex(history);
         if (maxNegativeDeepIndex === -1 && history.length > 0) {
           maxNegativeDeepIndex = history.length - 1;
         }

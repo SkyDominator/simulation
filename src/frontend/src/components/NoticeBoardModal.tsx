@@ -19,7 +19,7 @@ import TextField from "@mui/material/TextField";
 import Switch from "@mui/material/Switch";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import useAuth from "../context/useAuth";
-import { DeleteConfirmModal } from "./DeleteConfirmModal";
+import DeleteConfirmModal from "./DeleteConfirmModal";
 import { getJSON, setJSON } from "../utils/persist";
 
 interface NoticeBoardModalProps {

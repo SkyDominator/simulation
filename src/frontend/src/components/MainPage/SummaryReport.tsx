@@ -233,4 +233,4 @@ const SummaryReport: React.FC<SummaryReportProps> = ({
   );
 };
 
-export default SummaryReport;
+export default React.memo(SummaryReport);

@@ -1,6 +1,10 @@
 import React from "react";
 import type { SimulationRunResponse, Page } from "../types/types";
 import {
+  injectDerivedHistory,
+  findMaxNegativeDeepIndex,
+} from "../utils/simulation";
+import {
   Box,
   Typography,
   Paper,
@@ -55,50 +59,19 @@ interface ResultsPageProps {
 }
 
 const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
-  const historyRaw = (result?.history ?? []) as unknown[];
-  let history: Array<Record<string, unknown>> = historyRaw.map((e) =>
-    e && typeof e === "object" ? (e as Record<string, unknown>) : {}
+  // Build enriched history with derived fields (stable across renders)
+  const history: Array<Record<string, unknown>> = React.useMemo(
+    () => (result ? injectDerivedHistory(result) : []),
+    [result]
   );
 
   // Find the first row index where cumulative profit starts increasing toward positive
-  const maximumNegativeDeepIndex = React.useMemo(() => {
-    if (!history.length) return -1;
+  const maximumNegativeDeepIndex = React.useMemo(
+    () => findMaxNegativeDeepIndex(history),
+    [history]
+  );
 
-    // Use the first element as the initial previous value
-    const firstValue = Number(history[0].cumulative_net_profit || 0);
-    let prevValue = firstValue;
-
-    // Start from index 1 since we're using the first element as reference
-    for (let i = 1; i < history.length; i++) {
-      const currentValue = Number(history[i].cumulative_net_profit || 0);
-      // Check if value is increasing AND higher than previous value
-      if (!isNaN(currentValue) && currentValue > prevValue) {
-        return i - 1; // Return the index where the cumulative_net_profit is in its negative deep.
-      }
-      prevValue = currentValue;
-    }
-    return -1; // No increasing profit found
-  }, [history]);
-
-  // Inject sequential company_round values and amount column.
-  if (result) {
-    const scheduled = result.scheduled_payment || {};
-    const salesRates = result.sales_achievement_rates || {};
-    const base = result.starting_company_round || 0;
-    history = history.map((row, idx) => {
-      const companyRound = base + idx; // first row = base, then increment
-      const newRow: Record<string, unknown> = {
-        ...row,
-        company_round: companyRound,
-      };
-      const amt = scheduled[idx + 1];
-      if (amt !== undefined) newRow.amount = amt;
-      // sales achievement rate mapped by personal round (idx+1) fallback 100
-      const rate = salesRates[(idx + 1).toString()];
-      newRow.sales_achievement_rate = rate !== undefined ? rate : 100;
-      return newRow;
-    });
-  }
+  // history is already injected by injectDerivedHistory
 
   const formatValue = (val: unknown): string => {
     if (val === null || val === undefined) return "";

@@ -268,4 +268,4 @@ const SimulationTable: React.FC<SimulationTableProps> = ({
   );
 };
 
-export default SimulationTable;
+export default React.memo(SimulationTable);

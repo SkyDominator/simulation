@@ -91,3 +91,5 @@ export const MemoModal: React.FC<MemoModalProps> = ({
     </Dialog>
   );
 };
+
+export default React.memo(MemoModal);

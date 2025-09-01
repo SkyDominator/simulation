@@ -65,3 +65,5 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
     </Dialog>
   );
 };
+
+export default React.memo(DeleteConfirmModal);
