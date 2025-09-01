@@ -28,7 +28,7 @@
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:5173",
-      "webRoot": "${workspaceFolder}/src/my-pwa-frontend",
+      "webRoot": "${workspaceFolder}/src/frontend",
       "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
       "sourceMaps": true,
       "trace": true,

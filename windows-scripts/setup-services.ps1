@@ -30,7 +30,7 @@ $cloudflaredPath = "cloudflared"  # Assuming cloudflared is in PATH
 
 # Working directories and arguments
 $backendDir = Join-Path -Path $workspaceRoot -ChildPath "src\backend"
-$frontendDir = Join-Path -Path $workspaceRoot -ChildPath "src\my-pwa-frontend"
+$frontendDir = Join-Path -Path $workspaceRoot -ChildPath "src\frontend"
 $cloudflaredConfigPath = Join-Path -Path $workspaceRoot -ChildPath "cloudflared-config.yaml"
 
 # Log files

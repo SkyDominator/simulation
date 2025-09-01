@@ -8,7 +8,7 @@ __pycache__/
 .venv/
 src/backend/backend-venv/
 src/backend/venv/
-src/my-pwa-frontend/node_modules/
+src/frontend/node_modules/
 .env
 
 

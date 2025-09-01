@@ -30,11 +30,11 @@ services:
 
   frontend:
     build:
-      context: ./src/my-pwa-frontend
+      context: ./src/frontend
       dockerfile: Dockerfile
     environment:
       VITE_HOST: 0.0.0.0
-    working_dir: /app/src/my-pwa-frontend
+    working_dir: /app/src/frontend
     volumes:
       - workspace:/app
     secrets:

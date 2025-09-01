@@ -19,18 +19,18 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: src/my-pwa-frontend/package-lock.json
+          cache-dependency-path: src/frontend/package-lock.json
 
       - name: Install frontend dependencies
-        working-directory: ./src/my-pwa-frontend
+        working-directory: ./src/frontend
         run: npm ci
 
       - name: Lint frontend
-        working-directory: ./src/my-pwa-frontend
+        working-directory: ./src/frontend
         run: npm run lint
 
       - name: Build frontend
-        working-directory: ./src/my-pwa-frontend
+        working-directory: ./src/frontend
         env:
           # Using placeholders for secrets in CI
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -59,7 +59,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
-          path: src/my-pwa-frontend/dist/
+          path: src/frontend/dist/
           retention-days: 7
 
   create-release:
