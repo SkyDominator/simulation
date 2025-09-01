@@ -16,6 +16,19 @@ import {
   Tooltip,
 } from "@mui/material";
 
+// Column header display labels map (module scope, stable)
+const columnLabelMap: Record<string, string> = {
+  company_round: "회사 회차",
+  investor_count: "아바타 개수",
+  cumulative_net_profit: "총 이익",
+  amount: "회차 매출액",
+  net_profit_after_tax: "회차 이익(세후)",
+  total_payment: "총 매출액",
+  total_revenue_after_tax: "수당(세후)",
+  total_revenue_before_tax: "수당(세전)",
+  sales_achievement_rate: "매출 달성율",
+};
+
 // ==== Column configuration ====
 // Reorder columns by editing this array. Only keys present in history will be shown.
 // You can add/remove keys freely; unknown keys are ignored.
@@ -113,45 +126,43 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
     ) as string[];
   }, [history]);
 
-  const columnLabelMap: Record<string, string> = {
-    company_round: "회사 회차",
-    investor_count: "아바타 개수",
-    cumulative_net_profit: "총 이익",
-    amount: "회차 매출액",
-    net_profit_after_tax: "회차 이익(세후)",
-    total_payment: "총 매출액",
-    total_revenue_after_tax: "수당(세후)",
-    total_revenue_before_tax: "수당(세전)",
-    sales_achievement_rate: "매출 달성율",
-  };
-
   const headerLabel = (key: string) =>
     columnLabelMap[key] ??
     key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   // columns computed above
   // Compute dynamic widths (in ch) based on header + cell content lengths
-  const columnCharWidths: Record<string, number> = {};
-  for (const col of columns) {
-    columnCharWidths[col] = headerLabel(col).length; // start with header length
-  }
-  history.forEach((row) => {
-    columns.forEach((col) => {
-      const raw = formatValue(row[col]);
-      const len = raw.length;
-      if (len > columnCharWidths[col]) columnCharWidths[col] = len;
-    });
-  });
-  // Build style map (add a small buffer). Use minWidth so columns can still expand if needed.
-  const colStyles: Record<string, React.CSSProperties> = {};
-  const WIDE_COLS = new Set(["company_round", "investor_count", "amount"]);
-  columns.forEach((col) => {
-    let ch = Math.min(Math.max(columnCharWidths[col] + 2, 6), 80); // clamp
-    if (WIDE_COLS.has(col)) {
-      ch = Math.min(ch + 6, 90); // give extra breathing room for key columns
+  const columnCharWidths = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    const computeHeaderLabel = (key: string) =>
+      columnLabelMap[key] ??
+      key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    for (const col of columns) {
+      map[col] = computeHeaderLabel(col).length; // start with header length
     }
-    colStyles[col] = { minWidth: `${ch}ch` };
-  });
+    for (const row of history) {
+      for (const col of columns) {
+        const raw = formatValue(row[col]);
+        const len = raw.length;
+        if (len > map[col]) map[col] = len;
+      }
+    }
+    return map;
+  }, [columns, history]);
+
+  // Build style map (add a small buffer). Use minWidth so columns can still expand if needed.
+  const colStyles = React.useMemo(() => {
+    const styles: Record<string, React.CSSProperties> = {};
+    const WIDE_COLS = new Set(["company_round", "investor_count", "amount"]);
+    for (const col of columns) {
+      let ch = Math.min(Math.max((columnCharWidths[col] ?? 0) + 2, 6), 80); // clamp
+      if (WIDE_COLS.has(col)) {
+        ch = Math.min(ch + 6, 90); // give extra breathing room for key columns
+      }
+      styles[col] = { minWidth: `${ch}ch` };
+    }
+    return styles;
+  }, [columns, columnCharWidths]);
 
   // Define numeric columns for right alignment
   const NUMERIC_COLUMNS = new Set([

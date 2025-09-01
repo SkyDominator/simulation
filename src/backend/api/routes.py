@@ -1,7 +1,6 @@
 """API route registrations separated from application setup."""
 from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request
-from typing import Dict
 import hashlib
 from datetime import datetime
 

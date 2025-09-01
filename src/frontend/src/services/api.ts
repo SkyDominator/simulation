@@ -23,7 +23,7 @@ export const API_BASE_URL: string =
   (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
   "https://simulation.lightoflifeclub.com/api";
 
-const url = (path: string) =>
+const url = (path: string): string =>
   `${API_BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
 
 export const api = {
@@ -440,7 +440,7 @@ export const api = {
 
   getUserConsents: async (
     user_hash: string
-  ): Promise<{ consents: any[]; success: boolean }> => {
+  ): Promise<{ consents: ConsentRecordResponse[]; success: boolean }> => {
     try {
       const response = await fetch(url(`/consents/${user_hash}`), {
         headers: {
