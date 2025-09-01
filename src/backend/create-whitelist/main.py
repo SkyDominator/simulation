@@ -8,74 +8,71 @@ from tkinter import Tk, filedialog
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# 여기에 허용할 사용자 정보를 추가하세요.
-users_to_add = [
-    {"name": "김현영", "phone_number": "01031274918"},
-    {"name": "신성애", "phone_number": "01030417102"},
-    {"name": "유광춘", "phone_number": "01096678299"},
-    {"name": "이채은", "phone_number": "01029837228"},
-    {"name": "이진숙", "phone_number": "01029837228"},
-    {"name": "김미숙", "phone_number": "01024203166"},
-    {"name": "이운한", "phone_number": "01052345740"},
-    {"name": "유한영", "phone_number": "01071883166"},
-    {"name": "유재이", "phone_number": "01049073166"},
-    {"name": "유평이", "phone_number": "01038163166"},
-    {"name": "김혜슬", "phone_number": "01074737538"},
-    {"name": "최순애", "phone_number": "01063218684"},
-    {"name": "장국자", "phone_number": "01095729381"},
-    {"name": "김양순", "phone_number": "01044405443"},
-    {"name": "박혜숙", "phone_number": "01084508678"},
-    {"name": "이종원", "phone_number": "01055139316"},
-    {"name": "강정연", "phone_number": "01093815412"},
-    {"name": "정연범", "phone_number": "01033031352"},
-    {"name": "채문자", "phone_number": "01023647790"},
-    {"name": "차미미", "phone_number": "01086439904"},
-    {"name": "김남순", "phone_number": "01044525244"},
-    {"name": "차주미", "phone_number": "01073208367"},
-    {"name": "장신자", "phone_number": "01054718622"},
-    {"name": "이영란", "phone_number": "01036742620"},
-    {"name": "신성애", "phone_number": "01030417102"},
-    {"name": "김난영", "phone_number": "01032128633"},
-    {"name": "김인희", "phone_number": "01037646877"},
-    {"name": "김현영", "phone_number": "01031274918"},
-    {"name": "김경선", "phone_number": "01059683926"}, # JIN JING XIAN(김경선)
-    {"name": "최정아", "phone_number": "01062433376"},
-    {"name": "정오현", "phone_number": "01042977179"},
-    {"name": "박병숙", "phone_number": "01025894223"},
-    {"name": "최지영", "phone_number": "01034204707"},
-    {"name": "류시혁", "phone_number": "01050245460"}, #류시혁(정미현)
-    {"name": "최영아", "phone_number": "01077014918"},
-    {"name": "김규화", "phone_number": "01057595689"},
-    {"name": "전현아", "phone_number": "01022394598"},
-    {"name": "안경복", "phone_number": "01075827583"},
-    {"name": "김규자", "phone_number": "01034982347"},
-    {"name": "이행자", "phone_number": "01027236246"},
-    {"name": "최순화", "phone_number": "01082866003"},
-    {"name": "전계희", "phone_number": "01087251203"},
-    {"name": "채애숙", "phone_number": "01072146891"},
-    {"name": "백제현", "phone_number": "01055321267"},
-    {"name": "오정숙", "phone_number": "01037586868"},
-    {"name": "박복자", "phone_number": "01050666307"},
-    {"name": "손영자", "phone_number": "01080779299"},
-    {"name": "이명희", "phone_number": "01066707418"},
-    {"name": "이홍배", "phone_number": "01063177583"},
-    {"name": "장영우", "phone_number": "01022132685"},
-    {"name": "정진리", "phone_number": "01041027175"},
-    {"name": "송정례", "phone_number": "01084183719"},
-    {"name": "황미순", "phone_number": "01054938291"},
-    {"name": "류선", "phone_number": "01033615560"},
-    {"name": "유영희", "phone_number": "01030375373"},
-    {"name": "곽노순", "phone_number": "01075681194"},
-    {"name": "백미현", "phone_number": "01077536993"},
-    {"name": "김원태", "phone_number": "01073384918"},
-    {"name": "차윤미", "phone_number": "01041805659"},
-    {"name": "정연임", "phone_number": "01024178002"},
-    {"name": "남효현", "phone_number": "01039550669"},
-    {"name": "김은혜", "phone_number": "01050030936"},
-    {"name": "박경원", "phone_number": "01077700665"},
-]
+def load_users_from_csv(csv_path: str) -> list:
+    """
+    Load users from CSV file with name and phone_number columns.
+    
+    Args:
+        csv_path: Path to the CSV file
+        
+    Returns:
+        List of user dictionaries with name and phone_number
+    """
+    try:
+        df = pd.read_csv(csv_path)
+        
+        if 'name' not in df.columns or 'phone_number' not in df.columns:
+            raise ValueError("CSV file must contain 'name' and 'phone_number' columns")
+        
+        users = []
+        for _, row in df.iterrows():
+            # Add "0" to the beginning of phone number if it doesn't start with "0"
+            phone_number = str(row['phone_number']).strip()
+            if not phone_number.startswith('0'):
+                phone_number = '0' + phone_number
+            
+            users.append({
+                "name": str(row['name']).strip(),
+                "phone_number": phone_number
+            })
+        
+        logger.info(f"Loaded {len(users)} users from CSV file")
+        return users
+        
+    except Exception as e:
+        logger.error(f"Error loading CSV file: {str(e)}")
+        raise
 
-def export_to_csv(data_df: pd.DataFrame, directory: str = None) -> str:
+def select_csv_file() -> str | None:
+    """
+    Open file dialog to select CSV file.
+    
+    Returns:
+        Path to selected CSV file or None if cancelled
+    """
+    try:
+        root = Tk()
+        root.withdraw()
+        
+        file_path = filedialog.askopenfilename(
+            title="Select CSV file with user data",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+        )
+        
+        root.destroy()
+        
+        if file_path:
+            logger.info(f"Selected CSV file: {file_path}")
+            return file_path
+        else:
+            logger.info("CSV file selection cancelled by user")
+            return None
+            
+    except Exception as e:
+        logger.error(f"Error selecting CSV file: {str(e)}")
+        raise
+
+def export_to_csv(data_df: pd.DataFrame, directory: str | None = None) -> str | None:
     """
     Export DataFrame to a CSV file in the specified directory.
     
@@ -113,6 +110,21 @@ def export_to_csv(data_df: pd.DataFrame, directory: str = None) -> str:
     except Exception as e:
         logger.error(f"Error exporting CSV: {str(e)}")
         return None
+
+# Main execution
+if __name__ == "__main__":
+    # Select CSV file
+    csv_path = select_csv_file()
+    if not csv_path:
+        print("No CSV file selected. Exiting.")
+        exit(1)
+    
+    # Load users from CSV
+    try:
+        users_to_add = load_users_from_csv(csv_path)
+    except Exception as e:
+        print(f"Error loading CSV file: {e}")
+        exit(1)
 
 # Initialize a list to store all user data including hashes
 users_data = []
