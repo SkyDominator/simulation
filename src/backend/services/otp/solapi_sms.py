@@ -47,10 +47,6 @@ class SolapiSMSClient:
             )
 
             response = self.message_service.send(message)
-            # print(f"Group ID: {response.group_info.group_id}")
-            # print(f"요청한 메시지 개수: {response.group_info.count.total}")
-            # print(f"성공한 메시지 개수: {response.group_info.count.registered_success}")
-            # print(f"실패한 메시지 개수: {response.group_info.count.registered_failed}")
             
             # Check if the message was sent successfully
             if response.group_info.count.registered_success == 1:  # Success code from Solapi

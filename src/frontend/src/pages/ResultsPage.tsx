@@ -20,7 +20,7 @@ import {
   Tooltip,
 } from "@mui/material";
 
-// Column header display labels map (module scope, stable)
+// Column header display labels
 const columnLabelMap: Record<string, string> = {
   company_round: "회사 회차",
   investor_count: "아바타 개수",
@@ -33,10 +33,7 @@ const columnLabelMap: Record<string, string> = {
   sales_achievement_rate: "매출 달성율",
 };
 
-// ==== Column configuration ====
-// Reorder columns by editing this array. Only keys present in history will be shown.
-// You can add/remove keys freely; unknown keys are ignored.
-// Preferred display order for known keys
+// Column configuration: reorder by editing this array (unknown keys are ignored)
 const COLUMN_ORDER: readonly string[] = [
   "company_round",
   "investor_count",
@@ -49,8 +46,7 @@ const COLUMN_ORDER: readonly string[] = [
   "sales_achievement_rate",
 ];
 
-// If true, any history fields not listed in COLUMN_ORDER will be appended (alphabetically)
-// Whether to append any unlisted keys discovered in data
+// Append unlisted keys discovered in data (alphabetically)
 const SHOW_UNLISTED_COLUMNS = true as const;
 
 interface ResultsPageProps {
@@ -59,19 +55,17 @@ interface ResultsPageProps {
 }
 
 const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
-  // Build enriched history with derived fields (stable across renders)
+  // Enriched history with derived fields
   const history: Array<Record<string, unknown>> = React.useMemo(
     () => (result ? injectDerivedHistory(result) : []),
     [result]
   );
 
-  // Find the first row index where cumulative profit starts increasing toward positive
+  // First index where cumulative profit starts increasing toward positive
   const maximumNegativeDeepIndex = React.useMemo(
     () => findMaxNegativeDeepIndex(history),
     [history]
   );
-
-  // history is already injected by injectDerivedHistory
 
   const formatValue = (val: unknown): string => {
     if (val === null || val === undefined) return "";
@@ -84,7 +78,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
     }
   };
 
-  // Build table columns from history entries: prefer common fields first
+  // Build columns from history entries: prefer COLUMN_ORDER
   const columns = React.useMemo(() => {
     const set = new Set<string>();
     for (const row of history) {
@@ -103,7 +97,6 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
     columnLabelMap[key] ??
     key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-  // columns computed above
   // Compute dynamic widths (in ch) based on header + cell content lengths
   const columnCharWidths = React.useMemo(() => {
     const map: Record<string, number> = {};
@@ -123,7 +116,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
     return map;
   }, [columns, history]);
 
-  // Build style map (add a small buffer). Use minWidth so columns can still expand if needed.
+  // Build style map; use minWidth so columns can still expand if needed
   const colStyles = React.useMemo(() => {
     const styles: Record<string, React.CSSProperties> = {};
     const WIDE_COLS = new Set(["company_round", "investor_count", "amount"]);
@@ -137,7 +130,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
     return styles;
   }, [columns, columnCharWidths]);
 
-  // Define numeric columns for right alignment
+  // Numeric columns for right alignment
   const NUMERIC_COLUMNS = new Set([
     "company_round",
     "investor_count",
@@ -192,7 +185,6 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
         </Paper>
       ) : (
         <Stack spacing={4}>
-          {/* Summary */}
           <Paper sx={{ p: 3 }}>
             <Stack
               direction={{ xs: "column", sm: "row" }}

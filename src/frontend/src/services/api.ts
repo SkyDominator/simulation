@@ -16,10 +16,8 @@ import {
   type OTPVerifyResponse,
 } from "../types/types";
 
-// Prefer Vite-provided env var, fall back to the current local backend URL
+// Prefer Vite-provided env var; fall back to the deployed backend URL
 export const API_BASE_URL: string =
-  //   (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
-  //   "http://10.10.113.129:8000/api"; // 회사 로컬 PC 주소
   (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
   "https://simulation.lightoflifeclub.com/api";
 
@@ -330,7 +328,7 @@ export const api = {
         const err = await response.json();
         msg = err?.detail || msg;
       } catch {
-        /* ignore parse error */
+        void 0; // no-op
       }
       throw new Error(msg);
     }
@@ -361,7 +359,7 @@ export const api = {
         const err = await response.json();
         msg = err?.detail || msg;
       } catch {
-        /* ignore parse error */
+        void 0; // no-op
       }
       throw new Error(msg);
     }
@@ -382,7 +380,7 @@ export const api = {
         const err = await response.json();
         msg = err?.detail || msg;
       } catch {
-        /* ignore parse error */
+        void 0; // no-op
       }
 
       throw new Error(msg);

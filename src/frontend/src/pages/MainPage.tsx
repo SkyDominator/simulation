@@ -11,13 +11,13 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import AddIcon from "@mui/icons-material/Add";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 
-// Import the extracted components
+// Extracted components
 import SimulationTable, {
   type SortSpec,
 } from "../components/MainPage/SimulationTable";
 import SummaryReport from "../components/MainPage/SummaryReport";
 
-// Import custom hooks
+// Custom hooks
 import {
   useSortState,
   useSelectedSimulations,
@@ -61,7 +61,7 @@ const MainPage: React.FC<MainPageProps> = ({
     setSummaryReportData,
   } = useSummaryReportState();
 
-  // Load simulations data
+  // Load simulations
   const refreshPlans = React.useCallback(async () => {
     if (!session) return;
     try {
@@ -72,7 +72,7 @@ const MainPage: React.FC<MainPageProps> = ({
     }
   }, [session]);
 
-  // Use the simulation actions hook
+  // Simulation actions
   const {
     runningId,
     deletingId,
@@ -92,7 +92,7 @@ const MainPage: React.FC<MainPageProps> = ({
     handleConfirmDelete,
   } = useSimulationActions(session, refreshPlans);
 
-  // Handle view results with proper navigation
+  // View results and navigate
   const handleViewResults = (plan: Plan) => {
     viewResults(
       plan,
@@ -101,12 +101,12 @@ const MainPage: React.FC<MainPageProps> = ({
     );
   };
 
-  // Handle memo saving with plans update
+  // Save memo and update plans
   const handleSaveMemo = (text: string | null) => {
     saveMemo(text, setPlans);
   };
 
-  // Generate the sortIndicator for the table headers
+  // Sort indicator for table headers
   const sortIndicator = (key: SortSpec["key"]) => {
     const idx = sortOrders.findIndex((s: SortSpec) => s.key === key);
     if (idx === -1) return null;
@@ -175,7 +175,7 @@ const MainPage: React.FC<MainPageProps> = ({
   }, [user, session]);
 
   const handleNewPlan = () => {
-    // Ensure any old PlanEditor draft/step is cleared before creating new
+    // Clear any old PlanEditor draft/step before creating new
     try {
       localStorage.removeItem("ui.planEditor.step");
       localStorage.removeItem("ui.planEditor.plan");
@@ -186,7 +186,7 @@ const MainPage: React.FC<MainPageProps> = ({
     setPage("plan-editor");
   };
 
-  // Validate if a simulation can be selected
+  // Validate if a simulation can be selected (limit to one per plan type)
   const canSelectSimulation = (simulation: Plan): boolean => {
     // If this simulation is already selected, allow toggling it off
     if (selectedSimulations.includes(simulation.simulation_id)) {
@@ -201,7 +201,7 @@ const MainPage: React.FC<MainPageProps> = ({
     return !selectedPlanTypes.includes(simulation.plan_id);
   };
 
-  // Handle checkbox selection
+  // Toggle selection for a simulation
   const handleSimulationSelection = (simulationId: string) => {
     setSelectedSimulations((prev) => {
       if (prev.includes(simulationId)) {
@@ -231,7 +231,7 @@ const MainPage: React.FC<MainPageProps> = ({
         // Run the simulation to get the results
         const result = await api.runSimulation(simId, session.access_token);
 
-        // Process the history data like ResultsPage does
+        // Process history like ResultsPage
         const history = injectDerivedHistory(result);
         let maxNegativeDeepIndex = findMaxNegativeDeepIndex(history);
         if (maxNegativeDeepIndex === -1 && history.length > 0) {
@@ -350,7 +350,6 @@ const MainPage: React.FC<MainPageProps> = ({
           </Stack>
           <Divider sx={{ mb: 2 }} />
 
-          {/* Simulation table component */}
           <SimulationTable
             plans={plans}
             loading={loading}
@@ -369,14 +368,11 @@ const MainPage: React.FC<MainPageProps> = ({
             onEditPlan={handleEditPlan}
           />
 
-          {/* Summary Report component */}
           <SummaryReport
             showSummaryReport={showSummaryReport}
             summaryReportData={summaryReportData}
             onClose={() => {
-              setShowSummaryReport(false);
-              // We don't clear the data so it can be shown again if needed
-              // Just update localStorage to reflect the visibility change
+              setShowSummaryReport(false); // keep data; only update visibility flag
               try {
                 localStorage.setItem("ui.main.showSummaryReport", "false");
               } catch {
@@ -387,7 +383,6 @@ const MainPage: React.FC<MainPageProps> = ({
         </Paper>
       </Container>
 
-      {/* Modals */}
       <DeleteConfirmModal
         isOpen={confirmOpen}
         onCancel={() => {
