@@ -40,6 +40,14 @@
         "--disable-extensions",
       ],
       "port": 9222
+    },
+    {
+        "name": "Python: Single File Debug",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
     }
   ],
   "compounds": [
