@@ -17,11 +17,14 @@ import {
 } from "../types/types";
 
 // Prefer Vite-provided env var, fall back to the current local backend URL
-const API_BASE_URL: string =
+export const API_BASE_URL: string =
   //   (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
   //   "http://10.10.113.129:8000/api"; // 회사 로컬 PC 주소
   (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
   "https://simulation.lightoflifeclub.com/api";
+
+const url = (path: string) =>
+  `${API_BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
 
 export const api = {
   checkWhitelist: async (
@@ -29,7 +32,7 @@ export const api = {
     phone_number: string
   ): Promise<WhitelistCheckResponse> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/verify-user`, {
+      const response = await fetch(url("/verify-user"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -52,15 +55,12 @@ export const api = {
     simulation_id: string,
     token: string
   ): Promise<{ simulation_id: string; message: string; success: boolean }> => {
-    const response = await fetch(
-      `${API_BASE_URL}/simulations/${simulation_id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await fetch(url(`/simulations/${simulation_id}`), {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     if (!response.ok) {
       try {
@@ -82,7 +82,7 @@ export const api = {
     simulation_id: string,
     token: string
   ): Promise<SimulationRunResponse> => {
-    const response = await fetch(`${API_BASE_URL}/simulation/run`, {
+    const response = await fetch(url("/simulation/run"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -109,7 +109,7 @@ export const api = {
 
   getSimulations: async (token: string): Promise<Plan[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/simulations`, {
+      const response = await fetch(url("/simulations"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -140,14 +140,11 @@ export const api = {
     token: string
   ): Promise<Plan> => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/simulations/${simulationId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(url(`/simulations/${simulationId}`), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
@@ -173,7 +170,7 @@ export const api = {
     scheduled_payment: Record<string, number>,
     sales_achievement_rates?: Record<string, number>
   ): Promise<SimulationCreateResponse> => {
-    const response = await fetch(`${API_BASE_URL}/simulation/create`, {
+    const response = await fetch(url("/simulation/create"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -220,24 +217,21 @@ export const api = {
     message: string;
     success: boolean;
   }> => {
-    const response = await fetch(
-      `${API_BASE_URL}/simulations/${simulation_id}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          plan_id,
-          simulation_rounds,
-          starting_company_round,
-          current_company_round,
-          scheduled_payment,
-          sales_achievement_rates,
-        }),
-      }
-    );
+    const response = await fetch(url(`/simulations/${simulation_id}`), {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        plan_id,
+        simulation_rounds,
+        starting_company_round,
+        current_company_round,
+        scheduled_payment,
+        sales_achievement_rates,
+      }),
+    });
 
     if (!response.ok) {
       try {
@@ -260,17 +254,14 @@ export const api = {
     simulation_id: string,
     memo: string | null
   ): Promise<SimulationMemoUpdateResponse> => {
-    const response = await fetch(
-      `${API_BASE_URL}/simulations/${simulation_id}/memo`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ memo }),
-      }
-    );
+    const response = await fetch(url(`/simulations/${simulation_id}/memo`), {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ memo }),
+    });
     if (!response.ok) {
       try {
         const err = await response.json();
@@ -288,7 +279,7 @@ export const api = {
 
   // Admin self-check
   adminMe: async (token: string): Promise<AdminMeResponse> => {
-    const response = await fetch(`${API_BASE_URL}/admin/me`, {
+    const response = await fetch(url("/admin/me"), {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) {
@@ -300,12 +291,12 @@ export const api = {
 
   // Notices (public - no auth required to read)
   listNotices: async (): Promise<NoticeListResponse> => {
-    const response = await fetch(`${API_BASE_URL}/notices`);
+    const response = await fetch(url("/notices"));
     if (!response.ok) throw new Error(`API error: ${response.status}`);
     return await response.json();
   },
   getNotice: async (notice_id: string): Promise<NoticeDetailResponse> => {
-    const response = await fetch(`${API_BASE_URL}/notices/${notice_id}`);
+    const response = await fetch(url(`/notices/${notice_id}`));
     if (!response.ok) throw new Error(`API error: ${response.status}`);
     return await response.json();
   },
@@ -320,7 +311,7 @@ export const api = {
       published?: boolean;
     }
   ): Promise<NoticeCreateResponse> => {
-    const response = await fetch(`${API_BASE_URL}/admin/notices`, {
+    const response = await fetch(url("/admin/notices"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -356,7 +347,7 @@ export const api = {
       published?: boolean;
     }
   ): Promise<NoticeUpdateResponse> => {
-    const response = await fetch(`${API_BASE_URL}/admin/notices/${notice_id}`, {
+    const response = await fetch(url(`/admin/notices/${notice_id}`), {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -381,7 +372,7 @@ export const api = {
     token: string,
     notice_id: string
   ): Promise<NoticeDeleteResponse> => {
-    const response = await fetch(`${API_BASE_URL}/admin/notices/${notice_id}`, {
+    const response = await fetch(url(`/admin/notices/${notice_id}`), {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -402,7 +393,7 @@ export const api = {
   // Consent related API methods
   getPrivacyPolicy: async (): Promise<PrivacyPolicyResponse> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/privacy-policy`);
+      const response = await fetch(url("/privacy-policy"));
 
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
@@ -428,7 +419,7 @@ export const api = {
         user_agent: navigator.userAgent,
       };
 
-      const response = await fetch(`${API_BASE_URL}/consents`, {
+      const response = await fetch(url("/consents"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -451,7 +442,7 @@ export const api = {
     user_hash: string
   ): Promise<{ consents: any[]; success: boolean }> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/consents/${user_hash}`, {
+      const response = await fetch(url(`/consents/${user_hash}`), {
         headers: {
           "Content-Type": "application/json",
         },
@@ -473,7 +464,7 @@ export const api = {
     phone_number: string
   ): Promise<OTPSendResponse> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/otp/send`, {
+      const response = await fetch(url("/otp/send"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -498,7 +489,7 @@ export const api = {
     user_hash?: string
   ): Promise<OTPVerifyResponse> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/otp/verify`, {
+      const response = await fetch(url("/otp/verify"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

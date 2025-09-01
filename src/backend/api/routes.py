@@ -180,7 +180,6 @@ async def get_simulation_details(simulation_id: str, user_id: str = Depends(auth
     client = _sim_service.client
     response = client.table('simulations').select("*").eq('id', simulation_id).eq('user_id', user_id).execute()
     if not response.data:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail=f"Simulation with ID {simulation_id} not found")
     return response.data[0]
 
@@ -208,10 +207,7 @@ async def delete_simulation(simulation_id: str, user_id: str = Depends(authentic
 async def delete_simulation_post(request: SimulationDeleteRequest, user_id: str = Depends(authenticate_jwt_token)):
     return _sim_service.delete(request.simulation_id, user_id)
 
-# Add to src/backend/api/routes.py
-@router.get("/health", tags=["health"])
-async def health():
-    return {"status": "healthy"}
+# Health endpoint is defined in main.py; avoid duplicate route here.
 
 # ------------------------------- Consent management routes -------------------------------
 @router.post("/api/consents", response_model=ConsentRecordResponse)

@@ -19,7 +19,8 @@ import {
 // ==== Column configuration ====
 // Reorder columns by editing this array. Only keys present in history will be shown.
 // You can add/remove keys freely; unknown keys are ignored.
-const COLUMN_ORDER: string[] = [
+// Preferred display order for known keys
+const COLUMN_ORDER: readonly string[] = [
   "company_round",
   "investor_count",
   "amount",
@@ -32,7 +33,8 @@ const COLUMN_ORDER: string[] = [
 ];
 
 // If true, any history fields not listed in COLUMN_ORDER will be appended (alphabetically)
-const SHOW_UNLISTED_COLUMNS = true;
+// Whether to append any unlisted keys discovered in data
+const SHOW_UNLISTED_COLUMNS = true as const;
 
 interface ResultsPageProps {
   setPage: (page: Page) => void;
@@ -97,7 +99,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
   };
 
   // Build table columns from history entries: prefer common fields first
-  const collectColumns = (): string[] => {
+  const columns = React.useMemo(() => {
     const set = new Set<string>();
     for (const row of history) {
       Object.keys(row).forEach((k) => set.add(k));
@@ -106,10 +108,10 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
     const rest = Array.from(set)
       .filter((k) => !presentOrdered.includes(k))
       .sort();
-    return SHOW_UNLISTED_COLUMNS
-      ? [...presentOrdered, ...rest]
-      : presentOrdered;
-  };
+    return (
+      SHOW_UNLISTED_COLUMNS ? [...presentOrdered, ...rest] : presentOrdered
+    ) as string[];
+  }, [history]);
 
   const columnLabelMap: Record<string, string> = {
     company_round: "회사 회차",
@@ -127,7 +129,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
     columnLabelMap[key] ??
     key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-  const columns = collectColumns();
+  // columns computed above
   // Compute dynamic widths (in ch) based on header + cell content lengths
   const columnCharWidths: Record<string, number> = {};
   for (const col of columns) {
