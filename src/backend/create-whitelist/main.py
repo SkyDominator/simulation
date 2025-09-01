@@ -72,6 +72,7 @@ users_to_add = [
     {"name": "정연임", "phone_number": "01024178002"},
     {"name": "남효현", "phone_number": "01039550669"},
     {"name": "김은혜", "phone_number": "01050030936"},
+    {"name": "박경원", "phone_number": "01077700665"},
 ]
 
 def export_to_csv(data_df: pd.DataFrame, directory: str = None) -> str:
