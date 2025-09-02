@@ -53,7 +53,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
       } else {
         setError(result.message);
       }
-    } catch (err) {
+    } catch {
       setError(
         "서비스에 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
       );
@@ -79,7 +79,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
       } else {
         setError(result.message);
       }
-    } catch (err) {
+    } catch {
       setError(
         "서비스에 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
       );
