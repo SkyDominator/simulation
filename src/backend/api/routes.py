@@ -357,9 +357,21 @@ async def get_privacy_policy(version: str | None = None, locale: str | None = No
             "success": True,
             "source": "static-file",
         }
+    except FileNotFoundError as e:
+        settings.logger.error(f"Privacy policy file not found: {e}")
+        raise HTTPException(
+            status_code=404,
+            detail="Privacy policy document not found. Please contact support."
+        )
+    except PermissionError as e:
+        settings.logger.error(f"Permission denied accessing privacy policy: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to access privacy policy. Please try again later."
+        )
     except Exception as e:
-        settings.logger.error(f"Failed to load privacy policy: {e}")
-        return {
-            "success": False,
-        }
-    
+        settings.logger.error(f"Unexpected error loading privacy policy: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while loading the privacy policy. Please try again later."
+        )
