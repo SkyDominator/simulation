@@ -27,7 +27,7 @@ try {
     Write-Log "Starting frontend server..."
     
     # Change to the frontend directory
-    $frontendPath = Join-Path -Path $workspaceRoot -ChildPath "src\my-pwa-frontend"
+    $frontendPath = Join-Path -Path $workspaceRoot -ChildPath "src\frontend"
     Set-Location -Path $frontendPath
     
     # Check if Node.js is in PATH

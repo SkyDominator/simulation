@@ -7,7 +7,7 @@ applyTo: '**.tsx, **.ts, **.js, **.jsx, **.py'
 * Backend: Python, FastAPI, Supabase
     * Backend source path: `./src/backend`
 * Frontend: React, TypeScript, Vite
-    * Frontend source path: `./src/my-pwa-frontend/src`
+    * Frontend source path: `./src/frontend/src`
 
 ## App user environment
 

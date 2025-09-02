@@ -17,14 +17,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    # Health router (lightweight, no deps)
-    health_router = APIRouter()
-
-    @health_router.get("/health", tags=["health"], include_in_schema=False)
-    def health() -> dict[str, str]:  # simple liveness
-        return {"status": "ok"}
-
-    app.include_router(health_router)
+    
     app.include_router(api_router)
     return app
 

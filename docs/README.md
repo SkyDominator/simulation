@@ -12,7 +12,7 @@ The code has been refactored following SOLID principles and best practices:
   - `config/`: Backend configuration settings
   - `models/`: Data schemas and models
   - `services/`: Business logic and simulation services
-- `src/my-pwa-frontend/`: React frontend PWA
+- `src/frontend/`: React frontend PWA
   - `src/`: Frontend source code
   - `public/`: Static assets and PWA manifest
 - `src/local-sim/`: Local simulation engines
@@ -105,7 +105,7 @@ Deploy the frontend to a static hosting service and the backend to a Python appl
 1. Build the frontend:
 
 ```bash
-cd src/my-pwa-frontend
+cd src/frontend
 npm run build
 ```
 
@@ -333,7 +333,7 @@ Use VS Code debug configuration: `Backend: FastAPI (launch)`.
 Open a terminal (inside dev container root) and run:
 
 ```bash
-cd src/my-pwa-frontend
+cd src/frontend
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
@@ -356,7 +356,7 @@ docker compose build backend
 Frontend (Node): modify `package.json` then inside container:
 
 ```bash
-cd src/my-pwa-frontend
+cd src/frontend
 npm install
 ```
 
@@ -391,7 +391,7 @@ docker compose down
 The frontend is PWA-enabled (offline app shell + safe runtime caching for public notices). To preview and test installation locally:
 
 ```powershell
-cd src\my-pwa-frontend
+cd src\frontend
 npm run build; npm run preview
 ```
 

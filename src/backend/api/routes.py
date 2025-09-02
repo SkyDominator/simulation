@@ -1,7 +1,6 @@
 """API route registrations separated from application setup."""
 from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request
-from typing import Dict
 import hashlib
 from datetime import datetime
 
@@ -24,6 +23,7 @@ from models.schemas import (
 )
 from supabase import create_client
 from config.settings import settings
+from time import perf_counter
 
 router = APIRouter()
 
@@ -180,7 +180,6 @@ async def get_simulation_details(simulation_id: str, user_id: str = Depends(auth
     client = _sim_service.client
     response = client.table('simulations').select("*").eq('id', simulation_id).eq('user_id', user_id).execute()
     if not response.data:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail=f"Simulation with ID {simulation_id} not found")
     return response.data[0]
 
@@ -208,10 +207,34 @@ async def delete_simulation(simulation_id: str, user_id: str = Depends(authentic
 async def delete_simulation_post(request: SimulationDeleteRequest, user_id: str = Depends(authenticate_jwt_token)):
     return _sim_service.delete(request.simulation_id, user_id)
 
-# Add to src/backend/api/routes.py
-@router.get("/health", tags=["health"])
+
+@router.get("/api/health")
 async def health():
-    return {"status": "healthy"}
+    """Readiness probe with dependency checks (e.g., Supabase)."""
+    supabase_ok = False
+    latency_ms = None
+    error_msg = None
+    try:
+        start = perf_counter()
+        client = _supabase_client()
+        client.table("notices").select("id").limit(1).execute()
+        latency_ms = round((perf_counter() - start) * 1000, 2)
+        supabase_ok = True
+    except Exception as exc:
+        error_msg = str(exc)
+
+    status = "ok" if supabase_ok else "degraded"
+    return {
+        "status": status,
+        "services": {
+            "supabase": {
+                "ok": supabase_ok,
+                "latency_ms": latency_ms,
+                "error": error_msg,
+            }
+        },
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
 
 # ------------------------------- Consent management routes -------------------------------
 @router.post("/api/consents", response_model=ConsentRecordResponse)

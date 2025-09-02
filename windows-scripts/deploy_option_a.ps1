@@ -20,7 +20,7 @@ $BACKEND_PORT = 8000 # FastAPI port
 
 # Paths
 $REPO_ROOT = $PSScriptRoot # Current directory of this script
-$FRONTEND_DIR = Join-Path -Path $REPO_ROOT -ChildPath "src\my-pwa-frontend"
+$FRONTEND_DIR = Join-Path -Path $REPO_ROOT -ChildPath "src\frontend"
 $BACKEND_DIR = Join-Path -Path $REPO_ROOT -ChildPath "src\backend"
 
 # Functions
