@@ -59,6 +59,10 @@ node_modules/
 src/frontend/node_modules/
 src/frontend/.vscode/*
 !src/frontend/.vscode/extensions.json
+src/frontend/.vite/
+
+# Ignore Vite cache folders anywhere (safety for future packages)
+**/.vite/
 
 # Docker
 .dockerignore
