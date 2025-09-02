@@ -388,9 +388,18 @@ export const api = {
   },
 
   // Consent related API methods
-  getPrivacyPolicy: async (): Promise<PrivacyPolicyResponse> => {
+  getPrivacyPolicy: async (params?: {
+    version?: string;
+    locale?: string;
+  }): Promise<PrivacyPolicyResponse> => {
     try {
-      const response = await fetch(url("/privacy-policy"));
+      const qs = new URLSearchParams();
+      if (params?.version) qs.set("version", params.version);
+      if (params?.locale) qs.set("locale", params.locale);
+      const path = qs.toString()
+        ? `/privacy-policy?${qs.toString()}`
+        : "/privacy-policy";
+      const response = await fetch(url(path));
 
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);

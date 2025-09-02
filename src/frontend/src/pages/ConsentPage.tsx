@@ -40,7 +40,8 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
   useEffect(() => {
     const fetchPrivacyPolicy = async () => {
       try {
-        const response = await api.getPrivacyPolicy();
+        const userLocale = navigator.language || "ko-KR";
+        const response = await api.getPrivacyPolicy({ locale: userLocale });
         setPolicyContent(response.content);
         setPolicyVersion(response.version);
       } catch (err) {

@@ -134,6 +134,9 @@ export interface PrivacyPolicyResponse {
   last_updated: string;
   content: string;
   success: boolean;
+  // Optional metadata from backend indicating where the policy was loaded from
+  source?: "db" | "static-file";
+  locale?: string;
 }
 
 // Define a type for the page navigation
