@@ -102,7 +102,7 @@ export const useSelectedSimulations = () => {
         JSON.stringify(selectedSimulations)
       );
     } catch {
-      /* Ignore storage errors */
+      void 0; // no-op
     }
   }, [selectedSimulations]);
 
@@ -152,7 +152,7 @@ export const useSummaryReportState = () => {
         String(showSummaryReport)
       );
     } catch {
-      /* Ignore storage errors */
+      void 0; // no-op
     }
   }, [showSummaryReport]);
 
@@ -166,7 +166,7 @@ export const useSummaryReportState = () => {
         );
       }
     } catch {
-      /* Ignore storage errors */
+      void 0; // no-op
     }
   }, [summaryReportData]);
 

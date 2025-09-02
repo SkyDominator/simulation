@@ -29,7 +29,7 @@ const LandscapeEnforcer: React.FC<{ children: React.ReactNode }> = ({
       orientation
         .lock("landscape")
         .catch(() => {
-          /* ignore */
+          void 0; // no-op
         })
         .finally(() => setLockTried(true));
     }

@@ -58,14 +58,14 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   const defaultSimRounds = getDefaultSimulationRounds(basePlanType);
   const persistedPlan = getJSON<Plan | null>("ui.planEditor.plan", null);
 
-  // Initialize the plan differently based on the scenario
+  // Initialize plan based on scenario
   let initialPlan: Plan;
 
   if (persistedPlan) {
-    // Scenario 3: User is returning to a locally cached plan
+    // Returning to a locally cached plan
     initialPlan = persistedPlan;
   } else if (editingPlan) {
-    // Scenario 2: User is editing an existing plan
+    // Editing an existing plan
     initialPlan = {
       simulation_id: editingPlan.simulation_id,
       plan_id: editingPlan.plan_id,
@@ -76,11 +76,10 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
       sales_achievement_rates: editingPlan.sales_achievement_rates || {},
     };
   } else {
-    // Scenario 1: User is creating a new plan
-    // Generate investments with default values
+    // Creating a new plan; generate default investments
     const newInvestments = Array.from({ length: defaultSimRounds }, (_, i) => {
       const round = i + 1;
-      // Get the default amount for this plan type and round
+      // Default amount for this plan type and round
       const defaultAmount = getDefaultInvestmentAmount(basePlanType, round);
       // Return an investment with the default amount
       return { round, amount: defaultAmount };
@@ -108,7 +107,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   const [isStartingRoundModalOpen, setStartingRoundModalOpen] = useState(false);
   const [isCurrentRoundModalOpen, setCurrentRoundModalOpen] = useState(false);
 
-  // Track mount status to avoid state updates after unmount
+  // Track mount status to avoid updates after unmount
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -127,7 +126,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
     setJSON("ui.planEditor.plan", plan);
   }, [plan]);
 
-  // Attempt restore when returning to visible state
+  // Restore when returning to visible state
   useEffect(() => {
     const restore = () => {
       const s = getJSON<number>("ui.planEditor.step", step);
@@ -152,7 +151,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
 
   // Handlers
   const handleInvestmentChange = (round: number, amount: string) => {
-    // Ensure amount is parsed as an integer
+    // Parse amount as integer
     const parsedAmount = amount === "" ? 0 : parseInt(amount, 10);
     const newInvestments = (plan.investments || []).map((inv) =>
       inv.round === round ? { ...inv, amount: parsedAmount } : inv
@@ -200,7 +199,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
     setConfirmModalOpen(true);
   };
 
-  // Handler for starting round validation confirmation
+  // Confirm starting round validation
   const handleStartingRoundConfirm = () => {
     const MIN_STARTING_ROUND = 1;
     const MAX_STARTING_ROUND = 100;
@@ -222,7 +221,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
     setStartingRoundModalOpen(false);
   };
 
-  // Handler for current round validation confirmation
+  // Confirm current round validation
   const handleCurrentRoundConfirm = () => {
     const MIN_CURRENT_ROUND = plan.starting_company_round;
     const MAX_CURRENT_ROUND = 100;
@@ -259,7 +258,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         return;
       }
     } else if (step === 3) {
-      // Validate current_company_round is >= starting_company_round
+      // Validate current_company_round >= starting_company_round
       const MIN_CURRENT_ROUND = plan.starting_company_round;
       const MAX_CURRENT_ROUND = 100;
 
@@ -280,8 +279,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         return;
       }
 
-      // Force update investments when going from step 4 to 5
-      // Preserve existing user-entered values but add new ones if simulation_rounds increased
+      // Update investments when going from step 4->5; preserve user values
       const newInvestments = Array.from(
         { length: plan.simulation_rounds },
         (_, i) => {
@@ -389,7 +387,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         alert("시뮬레이션 요청에 실패했습니다.");
       }
     } finally {
-      // do nothing
+      void 0; // no-op
     }
   };
 
@@ -631,11 +629,10 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         validationData={validationData}
       />
 
-      {/* Custom validation modals for steps 2 and 3 */}
+      {/* Validation modals for steps 2 and 3 */}
       <StartingRoundValidationModal
         isOpen={isStartingRoundModalOpen}
         onClose={() => {
-          // Just close the modal and do not advance to the next step
           setStartingRoundModalOpen(false);
         }}
         onConfirm={handleStartingRoundConfirm}
@@ -647,7 +644,6 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
       <CurrentRoundValidationModal
         isOpen={isCurrentRoundModalOpen}
         onClose={() => {
-          // Just close the modal and do not advance to the next step
           setCurrentRoundModalOpen(false);
         }}
         onConfirm={handleCurrentRoundConfirm}

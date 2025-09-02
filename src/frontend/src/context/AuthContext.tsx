@@ -42,12 +42,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signOut = async () => {
     try {
-      // Step 1: local sign out (clears this device)
+      // Local sign out; then global as a safeguard
       await supabase.auth.signOut({ scope: "local" });
-      // Step 2: redundant global sign out (revokes refresh token if still present)
       await supabase.auth.signOut({ scope: "global" });
     } catch (e) {
-      // swallow; we'll still attempt manual clear
       console.warn("Supabase signOut error (will fallback clear):", e);
     }
 
@@ -63,13 +61,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           try {
             localStorage.removeItem(k);
           } catch {
-            /* noop */
+            void 0; // no-op
           }
         }
       });
       sessionStorage.clear();
     } catch {
-      /* ignore storage errors */
+      void 0; // no-op
     }
 
     setSession(null);
@@ -90,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }, 30);
       }
     } catch {
-      /* ignore */
+      void 0; // no-op
     }
   };
 
