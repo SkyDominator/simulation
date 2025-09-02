@@ -21,8 +21,7 @@ export const API_BASE_URL: string =
   (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
   "https://simulation.lightoflifeclub.com/api";
 
-const url = (path: string): string =>
-  `${API_BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+  new URL(path, API_BASE_URL).toString();
 
 export const api = {
   checkWhitelist: async (
