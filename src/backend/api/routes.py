@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request
 import hashlib
 from datetime import datetime
+from pathlib import Path
 
 from auth.jwt import authenticate_jwt_token
 from services.simulations import SimulationService
@@ -342,52 +343,23 @@ async def get_privacy_policy(version: str | None = None, locale: str | None = No
         # Swallow DB errors and fall back to static below
         pass
 
-    # Static fallback
-    return {
-        "version": "1.1",
-        "last_updated": "2025-09-02",
-        "content": """
-# 개인정보처리방침
-
-## 1. 수집하는 개인정보 항목
-
-본 애플리케이션은 다음과 같은 개인정보를 수집합니다:
-- 소셜 로그인 계정을 통한 이메일 주소
-- 소셜 로그인 계정 이름 또는 닉네임
-- 사용자 계정에 연결된 신원 확인 정보
-
-## 2. 개인정보의 수집 및 이용목적
-
-수집한 개인정보는 다음의 목적을 위해 활용됩니다:
-- 사용자 식별 및 본인 확인
-- 서비스 이용 기록 관리
-- 서비스 개선 및 맞춤형 서비스 제공
-
-## 3. 개인정보의 보유 및 이용기간
-
-개인정보는 사용자가 서비스를 이용하는 기간 동안에만 보유합니다. 사용자가 계정 삭제를 요청할 경우, 관련 개인정보는 지체 없이 파기됩니다.
-
-## 4. 개인정보의 제3자 제공
-
-본 애플리케이션은 사용자의 개인정보를 제3자에게 제공하지 않습니다.
-
-## 5. 사용자의 권리
-
-사용자는 언제든지 자신의 개인정보에 대해 접근, 수정, 삭제를 요청할 수 있습니다.
-
-## 6. 관리자 접근 및 이용자 요청에 따른 데이터 수정
-
-본 애플리케이션은 원활한 고객 지원과 서비스 품질 유지를 위해, 다음의 조건에서 일부 관리자 계정의 제한적 접근을 허용합니다:
-
-- 접근 대상: 이용자의 시뮬레이션 데이터 전반(플랜, 입력값, 실행 결과 포함)
-- 접근/수정 조건: "이용자의 명시적 요청"이 있는 경우에 한함
-- 이용 목적: 오류 수정, 요청 기반 데이터 복구·정정, 기술 지원
-- 법적 근거: 이용자의 동의(요청) 및 정당한 이익(서비스 개선)
-- 기록 관리: 관리자 접근 및 수정 이력(담당자, 시간, 변경 내용)을 내부적으로 기록·보관합니다.
-- 제3자 제공 아님: 위 접근은 내부 권한 범위 내에서만 수행되며, 제3자에게 제공되지 않습니다.
-
-이용자는 언제든지 이러한 접근·수정에 대한 내역 확인을 요청할 수 있으며, 필요 시 접근 제한을 요청할 수 있습니다.
-        """,
-        "success": True,
-        "source": "static",
-    }
+    # Static file fallback (docs/privacy-policy-ko.md)
+    try:
+        project_root = Path(__file__).resolve().parents[3]
+        md_path = project_root / "docs" / "privacy-policy-ko.md"
+        content = md_path.read_text(encoding="utf-8")
+        # Derive last_updated from file mtime
+        last_updated = datetime.utcfromtimestamp(md_path.stat().st_mtime).date().isoformat()
+        return {
+            "version": "1.1",
+            "last_updated": last_updated,
+            "content": content,
+            "success": True,
+            "source": "static-file",
+        }
+    except Exception as e:
+        settings.logger.error(f"Failed to load privacy policy: {e}")
+        return {
+            "success": False,
+        }
+    
