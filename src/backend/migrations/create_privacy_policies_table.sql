@@ -22,8 +22,9 @@ create unique index if not exists privacy_policies_version_locale_uidx
 
 -- Trigger to update updated_at automatically (Postgres function assumed present in Supabase)
 -- If not present, you can create it:
--- create or replace function set_updated_at()
--- returns trigger as $$ begin new.updated_at = now(); return new; end; $$ language plpgsql;
+create or replace function set_updated_at()
+returns trigger as $$ begin new.updated_at = now(); return new; end; $$ language plpgsql;
+
 do $$ begin
   create trigger privacy_policies_set_updated_at
   before update on privacy_policies
