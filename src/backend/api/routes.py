@@ -2,7 +2,7 @@
 from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from auth.jwt import authenticate_jwt_token
@@ -349,7 +349,7 @@ async def get_privacy_policy(version: str | None = None, locale: str | None = No
         md_path = project_root / "docs" / "privacy-policy-ko.md"
         content = md_path.read_text(encoding="utf-8")
         # Derive last_updated from file mtime
-        last_updated = datetime.utcfromtimestamp(md_path.stat().st_mtime).date().isoformat()
+        last_updated = datetime.fromtimestamp(md_path.stat().st_mtime, tz=timezone.utc).date().isoformat()
         return {
             "version": "1.1",
             "last_updated": last_updated,
