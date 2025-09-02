@@ -16,9 +16,9 @@ create table if not exists privacy_policies (
 create unique index if not exists privacy_policies_version_locale_uidx
   on privacy_policies (version, locale);
 
--- Helpful lookup indexes
-create index if not exists privacy_policies_published_locale_idx
-  on privacy_policies (published, locale, effective_date desc, updated_at desc);
+-- -- Helpful lookup indexes
+-- create index if not exists privacy_policies_published_locale_idx
+--   on privacy_policies (published, locale, effective_date desc, updated_at desc);
 
 -- Trigger to update updated_at automatically (Postgres function assumed present in Supabase)
 -- If not present, you can create it:
