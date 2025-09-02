@@ -307,14 +307,45 @@ async def get_user_consents(user_hash: str):
     }
 
 @router.get("/api/privacy-policy")
-async def get_privacy_policy():
-    """Get the current privacy policy document."""
-    # For simplicity, we're returning a static policy here
-    # In a production environment, you might want to store this in the database
-    # or fetch it from a CMS
+async def get_privacy_policy(version: str | None = None, locale: str | None = None):
+    """Get the current privacy policy document.
+
+    Tries DB (privacy_policies) first with optional version/locale; falls back to static content.
+    """
+    DEFAULT_LOCALE = (locale or "ko-KR").strip() or "ko-KR"
+    client = _supabase_client()
+
+    try:
+        query = client.table("privacy_policies").select("version, locale, content, last_updated, effective_date")
+        if version:
+            query = query.eq("version", version).eq("locale", DEFAULT_LOCALE).limit(1)
+        else:
+            query = (
+                query
+                .eq("published", True)
+                .eq("locale", DEFAULT_LOCALE)
+                .order("effective_date", desc=True)
+                .order("updated_at", desc=True)
+                .limit(1)
+            )
+        resp = query.execute()
+        if resp.data:
+            row = resp.data[0]
+            return {
+                "version": row.get("version"),
+                "last_updated": row.get("last_updated") or row.get("effective_date"),
+                "content": row.get("content", ""),
+                "success": True,
+                "source": "db",
+            }
+    except Exception:
+        # Swallow DB errors and fall back to static below
+        pass
+
+    # Static fallback
     return {
-    "version": "1.1",
-    "last_updated": "2025-09-02",
+        "version": "1.1",
+        "last_updated": "2025-09-02",
         "content": """
 # 개인정보처리방침
 
@@ -357,5 +388,6 @@ async def get_privacy_policy():
 
 이용자는 언제든지 이러한 접근·수정에 대한 내역 확인을 요청할 수 있으며, 필요 시 접근 제한을 요청할 수 있습니다.
         """,
-        "success": True
+        "success": True,
+        "source": "static",
     }
