@@ -16,6 +16,8 @@ import {
 import { api } from "../services/api";
 import ReactMarkdown from "react-markdown";
 
+// Consent gate: fetch privacy policy, require acknowledgement, and record consent
+
 interface ConsentPageProps {
   userHash: string;
   onAccept: () => void;
@@ -35,7 +37,6 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
   const [policyLoading, setPolicyLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch privacy policy when component mounts
   useEffect(() => {
     const fetchPrivacyPolicy = async () => {
       try {
@@ -65,9 +66,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
     setError("");
 
     try {
-      // Record consent with the backend using user_hash
       await api.recordConsent(userHash, "privacy_policy", policyVersion);
-      // If successful, proceed to login
       onAccept();
     } catch (err) {
       console.error("Error recording consent:", err);
@@ -163,7 +162,6 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
         </Stack>
       </Paper>
 
-      {/* Privacy Policy Dialog */}
       <Dialog
         open={privacyPolicyOpen}
         onClose={() => setPrivacyPolicyOpen(false)}
