@@ -180,13 +180,17 @@ async def delete_notice(notice_id: str, user_id: str = Depends(authenticate_jwt_
 async def create_privacy_policy(req: PrivacyPolicyCreateRequest, user_id: str = Depends(authenticate_jwt_token)):
     client = _supabase_client()
     _assert_admin(user_id, client)
+    # Normalize date fields to ISO strings for JSON serialization
+    effective_iso = req.effective_date.isoformat() if req.effective_date else None
+    last_updated_date = req.last_updated or req.effective_date or datetime.now(timezone.utc).date()
+    last_updated_iso = last_updated_date.isoformat()
     payload = {
         'version': req.version.strip(),
         'content': req.content,
         'locale': (req.locale or 'ko-KR').strip() or 'ko-KR',
         'published': bool(req.published),
-        'effective_date': req.effective_date,
-        'last_updated': req.last_updated or req.effective_date or datetime.now(timezone.utc).date().isoformat(),
+        'effective_date': effective_iso,
+        'last_updated': last_updated_iso,
         'created_by': user_id,
     }
     try:
@@ -209,6 +213,18 @@ async def update_privacy_policy(policy_id: str, req: PrivacyPolicyUpdateRequest,
     if 'content' in update_fields and update_fields['content'] is not None:
         # leave as-is; content may include leading/trailing whitespace intentionally
         pass
+    # Normalize any date fields to ISO strings
+    if 'effective_date' in update_fields and update_fields['effective_date'] is not None:
+        try:
+            update_fields['effective_date'] = update_fields['effective_date'].isoformat()
+        except AttributeError:
+            # if already a string, leave it
+            pass
+    if 'last_updated' in update_fields and update_fields['last_updated'] is not None:
+        try:
+            update_fields['last_updated'] = update_fields['last_updated'].isoformat()
+        except AttributeError:
+            pass
     if not update_fields:
         raise HTTPException(status_code=400, detail='No fields to update')
     try:
