@@ -45,26 +45,61 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
     setMessage("");
   }, [version, locale, effectiveDate, lastUpdated, content]);
 
-  // Redirect non-admin users away from this page
+  // Determine admin privileges (admins get full editor; non-admins see read-only latest published policy)
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   useEffect(() => {
+    let cancelled = false;
     if (!token) {
-      setPage("main");
+      setIsAdmin(false);
       return;
     }
-    let cancelled = false;
     api
       .adminMe(token)
       .then((res) => {
-        if (cancelled) return;
-        if (!res.is_admin) setPage("main");
+        if (!cancelled) setIsAdmin(!!res.is_admin);
       })
       .catch(() => {
-        if (!cancelled) setPage("main");
+        if (!cancelled) setIsAdmin(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [token, setPage]);
+  }, [token]);
+
+  // For non-admins: fetch the latest published privacy policy (read-only)
+  const [publicPolicy, setPublicPolicy] = useState<{
+    version: string;
+    last_updated?: string;
+    content: string;
+  } | null>(null);
+  const [publicLoading, setPublicLoading] = useState<boolean>(true);
+  const [publicError, setPublicError] = useState<string>("");
+  useEffect(() => {
+    if (isAdmin) return; // admins use the editor flow
+    let cancelled = false;
+    setPublicLoading(true);
+    setPublicError("");
+    api
+      .getPrivacyPolicy()
+      .then((res) => {
+        if (cancelled) return;
+        setPublicPolicy({
+          version: res.version,
+          last_updated: res.last_updated,
+          content: res.content,
+        });
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setPublicError(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        if (!cancelled) setPublicLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin]);
 
   const createOrUpdate = async () => {
     if (!token) return;
@@ -117,6 +152,60 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
     }
   };
 
+  // Non-admin read-only rendering
+  if (!isAdmin) {
+    return (
+      <Box sx={{ p: { xs: 1.5, md: 3 }, maxWidth: 1000, mx: "auto" }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ mb: 2 }}
+        >
+          <Typography variant="h6" fontWeight={700}>
+            개인정보처리방침
+          </Typography>
+          <Button variant="text" onClick={() => setPage("main")}>
+            돌아가기
+          </Button>
+        </Stack>
+
+        <Paper sx={{ p: 2 }}>
+          {publicError && <Alert severity="error">{publicError}</Alert>}
+          {publicLoading ? (
+            <Typography color="text.secondary">불러오는 중...</Typography>
+          ) : publicPolicy ? (
+            <Stack spacing={2}>
+              <Typography variant="body2" color="text.secondary">
+                버전 {publicPolicy.version}
+                {publicPolicy.last_updated
+                  ? ` · 업데이트: ${new Date(
+                      publicPolicy.last_updated
+                    ).toLocaleDateString()}`
+                  : ""}
+              </Typography>
+              <Divider />
+              <Box
+                sx={{
+                  p: 2,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  bgcolor: "background.paper",
+                }}
+              >
+                <ReactMarkdown>{publicPolicy.content}</ReactMarkdown>
+              </Box>
+            </Stack>
+          ) : (
+            <Alert severity="info">게시된 개인정보처리방침이 없습니다.</Alert>
+          )}
+        </Paper>
+      </Box>
+    );
+  }
+
+  // Admin full editor rendering
   return (
     <Box sx={{ p: { xs: 1.5, md: 3 }, maxWidth: 1000, mx: "auto" }}>
       <Stack
