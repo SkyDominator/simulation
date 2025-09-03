@@ -13,9 +13,9 @@
 
 
 
-7. CI/CD 구현
-8. windows 서비스 형태로 구현
-9.  OTP
+1. CI/CD 구현
+2. windows 서비스 형태로 구현
+3.  OTP
    1. OTP를 최초 접속 한 번만 하는 것으로 변경
    2. OTP-동의-로그인 플로우 재정리
    3. time-left indicator UI 추가
@@ -23,6 +23,8 @@
    5. 플로우 정리 후 더 가격이 싼 (NHN Cloud) 기반으로 변경
    6. 이미 OTP 인증된 상태에서 로그아웃하면 다시 로그인 화면으로 돌아가도록 수정
     * 전체 연동 플로우를 재점검해야함.
-10. for frontend:
+    * 전화번호 입력 > whitelist 체크(key: user_hash) > OTP 인증 (code_hash) > consent 체크(key: user_hash) > 로그인 (key: id (auth.user.id, public.profiles.id))
+    * 전화번호 입력 > whitelist 체크(key: user_hash) > OTP 인증 (code_hash) > consent 체크(key: id (auth.user.id, public.profiles.id)) > 로그인 (key: id (auth.user.id, public.profiles.id))
+4.  for frontend:
     1.  useEffect에서 클린업을 사용해 unmount한 컴포넌트가 setState를 호출하고 memory leak를 일으키는 일을 방지하고 있는지 프론트엔드 코드 전체 점검 필요.
         1.  This is a "cleanup pattern" for effects with async side effects. It prevents stale closures or updates on unmounted components.
