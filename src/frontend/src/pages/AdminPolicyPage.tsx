@@ -45,6 +45,27 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
     setMessage("");
   }, [version, locale, effectiveDate, lastUpdated, content]);
 
+  // Redirect non-admin users away from this page
+  useEffect(() => {
+    if (!token) {
+      setPage("main");
+      return;
+    }
+    let cancelled = false;
+    api
+      .adminMe(token)
+      .then((res) => {
+        if (cancelled) return;
+        if (!res.is_admin) setPage("main");
+      })
+      .catch(() => {
+        if (!cancelled) setPage("main");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, setPage]);
+
   const createOrUpdate = async () => {
     if (!token) return;
     try {

@@ -46,10 +46,12 @@ const MainPage: React.FC<MainPageProps> = ({
   setSimulationResult,
 }) => {
   const { user, session, signOut } = useAuth();
+  const token = session?.access_token ?? null;
   const [plans, setPlans] = React.useState<Plan[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [signOutLoading, setSignOutLoading] = React.useState(false);
   const [contactModalOpen, setContactModalOpen] = React.useState(false);
+  const [isAdmin, setIsAdmin] = React.useState(false);
 
   // Use custom hooks for state management
   const { sortOrders, handleHeaderClick } = useSortState();
@@ -175,6 +177,26 @@ const MainPage: React.FC<MainPageProps> = ({
     loadPlans();
   }, [user, session]);
 
+  // Role-gated: determine admin once we have a token
+  React.useEffect(() => {
+    if (!token) {
+      setIsAdmin(false);
+      return;
+    }
+    let cancelled = false;
+    api
+      .adminMe(token)
+      .then((res) => {
+        if (!cancelled) setIsAdmin(!!res.is_admin);
+      })
+      .catch(() => {
+        if (!cancelled) setIsAdmin(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
   const handleNewPlan = () => {
     // Clear any old PlanEditor draft/step before creating new
     try {
@@ -291,14 +313,16 @@ const MainPage: React.FC<MainPageProps> = ({
                 공지사항
               </Button>
             )}
-            <Button
-              onClick={() => setPage("admin-policy")}
-              variant="outlined"
-              color="secondary"
-              startIcon={<PolicyIcon />}
-            >
-              정책관리
-            </Button>
+            {isAdmin && (
+              <Button
+                onClick={() => setPage("admin-policy")}
+                variant="outlined"
+                color="secondary"
+                startIcon={<PolicyIcon />}
+              >
+                정책관리
+              </Button>
+            )}
             <Button
               onClick={() => setContactModalOpen(true)}
               variant="contained"
