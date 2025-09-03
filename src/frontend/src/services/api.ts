@@ -402,7 +402,6 @@ export const api = {
       version: string;
       content: string;
       locale?: string;
-      published?: boolean;
       effective_date?: string; // YYYY-MM-DD
       last_updated?: string; // YYYY-MM-DD
     }
@@ -435,7 +434,6 @@ export const api = {
       version?: string;
       content?: string;
       locale?: string;
-      published?: boolean;
       effective_date?: string; // YYYY-MM-DD
       last_updated?: string; // YYYY-MM-DD
     }

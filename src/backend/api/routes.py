@@ -181,6 +181,9 @@ async def delete_notice(notice_id: str, user_id: str = Depends(authenticate_jwt_
 async def create_privacy_policy(req: PrivacyPolicyCreateRequest, user_id: str = Depends(authenticate_jwt_token)):
     client = _supabase_client()
     _assert_admin(user_id, client)
+    # Enforce centralized publishing via publish endpoint only
+    if req.published:
+        raise HTTPException(status_code=400, detail="Publishing must be done via the publish endpoint")
     # Normalize date fields to ISO strings for JSON serialization
     effective_iso = req.effective_date.isoformat() if req.effective_date else None
     last_updated_date = req.last_updated or req.effective_date or datetime.now(timezone.utc).date()
@@ -189,7 +192,7 @@ async def create_privacy_policy(req: PrivacyPolicyCreateRequest, user_id: str = 
         'version': req.version.strip(),
         'content': req.content,
         'locale': (req.locale or 'ko-KR').strip() or 'ko-KR',
-        'published': bool(req.published),
+        'published': False,  # new policies are created as unpublished
         'effective_date': effective_iso,
         'last_updated': last_updated_iso,
         'created_by': user_id,
@@ -207,6 +210,9 @@ async def update_privacy_policy(policy_id: str, req: PrivacyPolicyUpdateRequest,
     client = _supabase_client()
     _assert_admin(user_id, client)
     update_fields = {k: v for k, v in req.model_dump().items() if v is not None}
+    # Enforce centralized publishing via publish endpoint only
+    if 'published' in update_fields:
+        raise HTTPException(status_code=400, detail='Publishing state cannot be changed here; use the publish endpoint')
     if 'version' in update_fields:
         update_fields['version'] = str(update_fields['version']).strip()
     if 'locale' in update_fields and update_fields['locale']:
@@ -250,10 +256,17 @@ async def delete_privacy_policy(policy_id: str, user_id: str = Depends(authentic
 
 @router.post('/api/admin/privacy-policies/{policy_id}/publish', response_model=PrivacyPolicyPublishResponse)
 async def publish_privacy_policy(policy_id: str, user_id: str = Depends(authenticate_jwt_token)):
-    """Mark a policy as published; leaves others unchanged. Caller must manage versions."""
+    """Publish the specified policy and unpublish all others so only one is active at a time."""
     client = _supabase_client()
     _assert_admin(user_id, client)
     try:
+        # Unpublish all other policies first
+        try:
+            client.table('privacy_policies').update({'published': False}).neq('id', policy_id).eq('published', True).execute()
+        except Exception:
+            # Continue even if this fails; we still attempt to publish the target policy
+            pass
+        # Publish this policy
         upd = client.table('privacy_policies').update({'published': True}).eq('id', policy_id).execute()
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to publish policy: {e}")

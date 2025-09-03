@@ -151,7 +151,6 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
           version: version.trim(),
           content,
           locale: locale.trim() || "ko-KR",
-          published: false,
           effective_date: effectiveDate || undefined,
           last_updated: lastUpdated || undefined,
         });
@@ -275,14 +274,27 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
                   label="정책 선택"
                   value={policyId || ""}
                   onChange={async (e) => {
-                    const id = String(e.target.value || "");
-                    setPolicyId(id || null);
-                    if (!id) return;
+                    const id = String(e.target.value ?? "");
+                    if (id === "") {
+                      // New policy flow (reset fields)
+                      setPolicyId(null);
+                      setVersion("");
+                      setLocale("ko-KR");
+                      setEffectiveDate("");
+                      setLastUpdated("");
+                      setContent(
+                        "# 개인정보처리방침\n\n여기에 내용을 작성하세요."
+                      );
+                      setMessage("");
+                      setError("");
+                      return;
+                    }
                     if (!token) return;
                     try {
                       setBusy(true);
                       const res = await api.getPrivacyPolicyAdmin(token, id);
                       const p = res.policy;
+                      setPolicyId(id);
                       setVersion(p.version || "");
                       setLocale(p.locale || "ko-KR");
                       setContent(p.content || "");
@@ -301,27 +313,13 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
                   </MenuItem>
                   {policies.map((p) => (
                     <MenuItem key={p.id} value={p.id}>
-                      {p.version} · {p.locale}
-                      {p.published ? " (게시됨)" : ""}
+                      {"버전: " + p.version + " / "}
+                      {"로케일: " + p.locale + " / "}
+                      {"게시 여부: " + (p.published ? "O" : "X")}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
-              <Button
-                onClick={() => {
-                  setPolicyId(null);
-                  setVersion("");
-                  setLocale("ko-KR");
-                  setEffectiveDate("");
-                  setLastUpdated("");
-                  setContent("# 개인정보처리방침\n\n여기에 내용을 작성하세요.");
-                  setMessage("");
-                  setError("");
-                }}
-                variant="outlined"
-              >
-                새 정책
-              </Button>
             </Stack>
             {policiesError && <Alert severity="error">{policiesError}</Alert>}
           </Stack>
