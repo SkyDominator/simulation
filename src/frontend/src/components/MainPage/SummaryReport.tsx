@@ -164,9 +164,7 @@ const SummaryReport: React.FC<SummaryReportProps> = ({
                         <Table size="small" sx={{ tableLayout: "fixed" }}>
                           <TableHead>
                             <TableRow>
-                              <TableCell sx={{ width: "30%" }}>
-                                회사 회차
-                              </TableCell>
+                              <TableCell sx={{ width: "30%" }}>회차</TableCell>
                               <TableCell align="right">회차 매출액</TableCell>
                               <TableCell align="right">누적 수익</TableCell>
                             </TableRow>

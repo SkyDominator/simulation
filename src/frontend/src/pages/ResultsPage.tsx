@@ -22,7 +22,7 @@ import {
 
 // Column header display labels
 const columnLabelMap: Record<string, string> = {
-  company_round: "회사 회차",
+  company_round: "회차",
   investor_count: "아바타 개수",
   cumulative_net_profit: "총 이익",
   amount: "회차 매출액",

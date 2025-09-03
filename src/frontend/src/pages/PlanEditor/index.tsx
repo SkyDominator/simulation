@@ -38,8 +38,8 @@ import Divider from "@mui/material/Divider";
 
 const steps = [
   "플랜 타입",
-  "가입한 회사 회차",
-  "현재 회사 회차",
+  "가입한 회차",
+  "현재 회차",
   "시뮬레이션 총 회차",
   "회차 매출액 입력",
 ];
