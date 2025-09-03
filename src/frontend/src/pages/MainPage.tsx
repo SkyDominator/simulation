@@ -322,7 +322,7 @@ const MainPage: React.FC<MainPageProps> = ({
               onClick={() => setPage("admin-policy")}
               variant="outlined"
               color="secondary"
-              startIcon={<PolicyIcon />}
+              // startIcon={<PolicyIcon />}
             >
               개인 정보 보호 정책
             </Button>

@@ -253,7 +253,7 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
         sx={{ mb: 2 }}
       >
         <Typography variant="h6" fontWeight={700}>
-          개인정보처리방침 관리
+          개인 정보 처리 방침 관리
         </Typography>
         <Button variant="text" onClick={() => setPage("main")}>
           돌아가기
