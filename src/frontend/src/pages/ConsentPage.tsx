@@ -70,6 +70,11 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
 
     try {
       await api.recordConsent(userHash, "privacy_policy", policyVersion);
+      try {
+        sessionStorage.setItem("onboarding.consentVersion", policyVersion);
+      } catch {
+        /* no-op */
+      }
       onAccept();
     } catch (err) {
       console.error("Error recording consent:", err);

@@ -43,6 +43,60 @@ Follow the general guidelines below when writing React, TypeScript, and JavaScri
 - Simplify the state management as much as possible. Minimize the use of the local host storage. Use backend API calls to manage state and persist data.
 - For the existing data in backend, use backend API calls to get the data. Do not re-create the same data in the frontend side.
 
+### 8. Security
+- Strictly follow the [security principles](#security-principles) described below.
+
+## Security principles { #security-principles }
+
+## 1. Prevent Cross-Site Scripting (XSS)
+- Never trust user input — React escapes JSX, but dangerous sinks exist.
+- Avoid `dangerouslySetInnerHTML`. If necessary → sanitize with **DOMPurify**.
+- Validate & escape all external input (APIs, query params, localStorage, etc.).
+
+## 2. Safe State & Props Management
+- Don’t store sensitive data (tokens, passwords) in React state, props, or localStorage.
+- Use **httpOnly secure cookies** for tokens.
+- Assume `.env` variables in the frontend are exposed — don’t put secrets there.
+
+## 3. Secure API Interaction
+- Always use **HTTPS**.
+- Protect against **CSRF** (tokens or SameSite cookies).
+- Validate backend responses before rendering.
+
+## 4. Authentication & Authorization
+- Enforce auth **server-side** — frontend checks are cosmetic only.
+- Use short-lived JWTs + refresh tokens (rotate securely).
+- Keep only minimal session state on the client.
+
+## 5. Avoid Leaking Sensitive Data
+- Don’t log sensitive info in console or error boundaries.
+- Minimize data exposure in API responses (watch Redux/React Query caches).
+
+## 6. Dependency & Build Security
+- Keep dependencies updated (`npm audit`).
+- Use **SRI** for CDN-loaded scripts.
+- Lock dependency versions with `package-lock.json` / `yarn.lock`.
+
+## 7. Content Security Policy (CSP)
+- Set strict CSP headers:
+  - Block inline scripts (`'unsafe-inline'`).
+  - Whitelist trusted sources for scripts/styles/images.
+
+## 8. Avoid Insecure Patterns
+- Don’t embed secrets (API keys, DB creds) in frontend code — use backend proxy.
+- Avoid `eval`, `Function()`, or dynamic script execution.
+- Don’t attach inline event handlers in HTML.
+
+## 9. Clickjacking Protection
+- Configure server headers:
+  - `X-Frame-Options: DENY`
+  - `Content-Security-Policy: frame-ancestors 'none';`
+
+## 10. Error Handling & Monitoring
+- Use React **Error Boundaries**, but don’t expose stack traces to users.
+- Monitor with tools like Sentry or Datadog.
+
+
 ## PWA UI/UX Design Guide for this React App
 
 *This is a guide to creating user-friendly Progressive Web Apps with a native look and feel, leveraging modern design principles and React tooling.*

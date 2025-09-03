@@ -22,9 +22,15 @@
    4. ~~provider_msg_id DB에 저장하는 로직 추가~~
    5. 플로우 정리 후 더 가격이 싼 (NHN Cloud) 기반으로 변경
    6. 이미 OTP 인증된 상태에서 로그아웃하면 다시 로그인 화면으로 돌아가도록 수정
-    * 전체 연동 플로우를 재점검해야함.
-    * 전화번호 입력 > whitelist 체크(key: user_hash) > OTP 인증 (code_hash) > consent 체크(key: user_hash) > 로그인 (key: id (auth.user.id, public.profiles.id))
-    * 전화번호 입력 > whitelist 체크(key: user_hash) > OTP 인증 (code_hash) > consent 체크(key: id (auth.user.id, public.profiles.id)) > 로그인 (key: id (auth.user.id, public.profiles.id))
+    7. Re-consent on policy version bump (compare consent_version).
+        1. Onboarding gating: After session is present, call api.getOnboardingStatus(session.access_token) and:
+If consent_version missing/outdated → route to consent.
+Else continue to main; optionally show a “Complete onboarding” banner if flags are false.
+    8. UI hints/guard rails (e.g., show “Complete onboarding” if missing).
+    9.  Optional server-side enforcement before protected operations (e.g., block simulation run if consent missing).
+
 4.  for frontend:
     1.  useEffect에서 클린업을 사용해 unmount한 컴포넌트가 setState를 호출하고 memory leak를 일으키는 일을 방지하고 있는지 프론트엔드 코드 전체 점검 필요.
         1.  This is a "cleanup pattern" for effects with async side effects. It prevents stale closures or updates on unmounted components.
+5. Security. Run security check on my codes and DB schema. Which data can be stored in the DB as plain text and which should be encrypted? 
+6. Security. When and how a login session is expired(destroyed?) It is crucial because since a login session survives it no longer requires white list check and OTP authentication.

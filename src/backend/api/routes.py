@@ -25,6 +25,8 @@ from models.schemas import (
     PrivacyPolicyUpdateRequest, PrivacyPolicyUpdateResponse,
     PrivacyPolicyPublishResponse,
     PrivacyPolicyListResponse, PrivacyPolicyDetailResponse,
+    OnboardingLinkRequest, OnboardingLinkResponse,
+    OnboardingStatusResponse,
 )
 from supabase import create_client
 from config.settings import settings
@@ -500,3 +502,46 @@ async def get_privacy_policy(version: str | None = None, locale: str | None = No
             status_code=500,
             detail="An error occurred while loading the privacy policy. Please try again later."
         )
+
+# ------------------------------- Onboarding/link endpoints -------------------------------
+@router.post("/api/onboarding/link", response_model=OnboardingLinkResponse)
+async def link_onboarding(req: OnboardingLinkRequest, user_id: str = Depends(authenticate_jwt_token)):
+    """Persist onboarding flags for the authenticated user_id (idempotent)."""
+    client = _supabase_client()
+
+    payload = {
+        "user_id": user_id,
+        "whitelist_passed": bool(req.whitelist_passed),
+        "otp_verified": bool(req.otp_verified),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if req.consent_version:
+        payload["consent_version"] = req.consent_version
+
+    try:
+        res = client.table('user_onboarding').upsert(payload, on_conflict='user_id').execute()
+        if not res.data:
+            raise HTTPException(status_code=500, detail='Failed to link onboarding info')
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Onboarding link failed: {e}")
+
+    return OnboardingLinkResponse(user_id=user_id, linked=True, message='Onboarding linked', success=True)
+
+@router.get("/api/onboarding/status", response_model=OnboardingStatusResponse)
+async def get_onboarding_status(user_id: str = Depends(authenticate_jwt_token)):
+    """Return onboarding completion flags for current user."""
+    client = _supabase_client()
+    try:
+        res = client.table('user_onboarding').select('*').eq('user_id', user_id).limit(1).execute()
+        if res.data:
+            row = res.data[0]
+            return {
+                "user_id": user_id,
+                "whitelist_passed": bool(row.get('whitelist_passed')),
+                "otp_verified": bool(row.get('otp_verified')),
+                "consent_version": row.get('consent_version'),
+                "success": True,
+            }
+    except Exception:
+        pass
+    return {"user_id": user_id, "success": True}

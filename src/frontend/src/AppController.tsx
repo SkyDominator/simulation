@@ -13,6 +13,7 @@ import type { SimulationRunResponse } from "./types/types";
 import { getJSON, setJSON } from "./utils/persist";
 // api import no longer needed here
 import { useConsentFlow } from "./hooks/useConsentFlow";
+import { api } from "./services/api";
 
 const AppController = () => {
   // Restore last UI state if available; default to whitelist
@@ -28,7 +29,7 @@ const AppController = () => {
     getJSON<boolean>("ui.noticeOpen", false)
   );
 
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   const [simulationResult, setSimulationResult] =
     useState<SimulationRunResponse | null>(() =>
@@ -36,7 +37,13 @@ const AppController = () => {
     );
 
   // Track the current user's hash from whitelist check - NOT stored in localStorage
-  const [userHash, setUserHash] = useState<string | null>(null);
+  const [userHash, setUserHash] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem("onboarding.userHash");
+    } catch {
+      return null;
+    }
+  });
 
   // Don't track consent locally - always check with backend
 
@@ -56,9 +63,9 @@ const AppController = () => {
       whitelist: (
         <WhitelistCheckPage
           key={`whitelist-${whitelistKey}`}
-          onVerified={(userHash) => {
+          onVerified={(info: { userHash: string; phone: string }) => {
             // Store the user hash for consent processing, but don't cache in localStorage
-            setUserHash(userHash);
+            setUserHash(info.userHash);
             // The consent check will be triggered by the useEffect when userHash changes
           }}
         />
@@ -162,22 +169,55 @@ const AppController = () => {
   // When auth status changes: handle user login/logout flow
   useEffect(() => {
     if (user) {
-      // User has logged in
-      // Allow staying on the current page if already on a protected page
-
       // If on login or consent page but already logged in, move to main
       if (page === "login" || page === "consent") {
         setPage("main");
       }
     } else {
-      // User logged out
-      // If logged out while on a protected page, send to whitelist
-      // Don't reset userHash here - it's independent of auth status
+      // Logged out -> go to login instead of whitelist per new requirement
       if (page === "main" || page === "plan-editor" || page === "results") {
-        setPage("whitelist");
+        setPage("login");
       }
     }
   }, [user, page]);
+
+  // After user logs in, link onboarding with pre-auth identifiers (idempotent)
+  useEffect(() => {
+    // no-op placeholder to keep dependencies explicit
+  }, [user, userHash]);
+
+  // When we have a session token, perform the actual link call once.
+  useEffect(() => {
+    const doLink = async () => {
+      try {
+        if (!user || !session) return;
+        const consentVersion = (() => {
+          try {
+            return (
+              sessionStorage.getItem("onboarding.consentVersion") || undefined
+            );
+          } catch {
+            return undefined;
+          }
+        })();
+        await api.linkOnboarding(session.access_token, {
+          whitelist_passed: true,
+          otp_verified: true,
+          consent_version: consentVersion,
+        });
+        // Clear temp onboarding context once linked
+        try {
+          sessionStorage.removeItem("onboarding.userHash");
+          sessionStorage.removeItem("onboarding.consentVersion");
+        } catch {
+          /* no-op */
+        }
+      } catch {
+        /* no-op: linking is best-effort */
+      }
+    };
+    doLink();
+  }, [user, session]);
 
   // Restore state on app/tab visibility changes (helps iOS/Android/PC when app is backgrounded and returns)
   // No longer restoring userHash or consentGiven from localStorage

@@ -226,3 +226,22 @@ class PrivacyPolicyListResponse(BaseModel):
 class PrivacyPolicyDetailResponse(BaseModel):
     policy: PrivacyPolicy
     success: bool = True
+
+# ----------------------- Onboarding/linking -----------------------
+class OnboardingLinkRequest(BaseModel):
+    whitelist_passed: bool = True
+    otp_verified: bool = True
+    consent_version: Optional[str] = None
+
+class OnboardingLinkResponse(BaseModel):
+    user_id: str
+    linked: bool
+    message: str
+    success: bool = True
+
+class OnboardingStatusResponse(BaseModel):
+    user_id: Optional[str] = None
+    whitelist_passed: bool = False
+    otp_verified: bool = False
+    consent_version: Optional[str] = None
+    success: bool = True
