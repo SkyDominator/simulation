@@ -1,6 +1,5 @@
 import {
   type Plan,
-  type WhitelistCheckResponse,
   type SimulationCreateResponse,
   type SimulationRunResponse,
   type SimulationMemoUpdateResponse,
@@ -18,36 +17,18 @@ import {
 
 // Prefer Vite-provided env var; fall back to the deployed backend URL
 export const API_BASE_URL: string =
+  // (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
+  // "https://simulation.lightoflifeclub.com/api";
   (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
-  "https://simulation.lightoflifeclub.com/api";
+  "http://localhost:8000/api";
 
-const url = (path: string) => new URL(path, API_BASE_URL).toString();
+const url = (path: string) => {
+  const base = API_BASE_URL.replace(/\/+$/, "");
+  const rel = path.replace(/^\/+/, "");
+  return `${base}/${rel}`;
+};
 
 export const api = {
-  checkWhitelist: async (
-    name: string,
-    phone_number: string
-  ): Promise<WhitelistCheckResponse> => {
-    try {
-      const response = await fetch(url("/verify-user"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, phone_number }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Whitelist check error:", error);
-      return { success: false, message: String(error), is_whitelisted: false };
-    }
-  },
-
   deleteSimulation: async (
     simulation_id: string,
     token: string
