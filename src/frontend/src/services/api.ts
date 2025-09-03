@@ -412,6 +412,117 @@ export const api = {
     }
   },
 
+  // ---------------- Admin Privacy Policies ----------------
+  createPrivacyPolicy: async (
+    token: string,
+    payload: {
+      version: string;
+      content: string;
+      locale?: string;
+      published?: boolean;
+      effective_date?: string; // YYYY-MM-DD
+      last_updated?: string; // YYYY-MM-DD
+    }
+  ): Promise<{ id: string; message: string; success: boolean }> => {
+    const response = await fetch(url("/admin/privacy-policies"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        void 0;
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
+  updatePrivacyPolicy: async (
+    token: string,
+    policy_id: string,
+    payload: {
+      version?: string;
+      content?: string;
+      locale?: string;
+      published?: boolean;
+      effective_date?: string; // YYYY-MM-DD
+      last_updated?: string; // YYYY-MM-DD
+    }
+  ): Promise<{ id: string; message: string; success: boolean }> => {
+    const response = await fetch(url(`/admin/privacy-policies/${policy_id}`), {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        void 0;
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
+  publishPrivacyPolicy: async (
+    token: string,
+    policy_id: string
+  ): Promise<{ id: string; message: string; success: boolean }> => {
+    const response = await fetch(
+      url(`/admin/privacy-policies/${policy_id}/publish`),
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        void 0;
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
+  deletePrivacyPolicy: async (
+    token: string,
+    policy_id: string
+  ): Promise<{ id: string; message: string; success: boolean }> => {
+    const response = await fetch(url(`/admin/privacy-policies/${policy_id}`), {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        void 0;
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
   recordConsent: async (
     user_hash: string,
     consent_type: string = "privacy_policy",

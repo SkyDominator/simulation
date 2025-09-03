@@ -10,6 +10,7 @@ import { Container, Paper, Typography, Stack, Divider } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AddIcon from "@mui/icons-material/Add";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import PolicyIcon from "@mui/icons-material/Gavel";
 
 // Extracted components
 import SimulationTable, {
@@ -290,6 +291,14 @@ const MainPage: React.FC<MainPageProps> = ({
                 공지사항
               </Button>
             )}
+            <Button
+              onClick={() => setPage("admin-policy")}
+              variant="outlined"
+              color="secondary"
+              startIcon={<PolicyIcon />}
+            >
+              정책관리
+            </Button>
             <Button
               onClick={() => setContactModalOpen(true)}
               variant="contained"

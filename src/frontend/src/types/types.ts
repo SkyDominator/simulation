@@ -146,4 +146,5 @@ export type Page =
   | "consent"
   | "main"
   | "plan-editor"
-  | "results";
+  | "results"
+  | "admin-policy";
