@@ -166,14 +166,9 @@ const AppController = () => {
     setJSON("ui.simulationResult", simulationResult);
   }, [simulationResult]);
 
-  // When auth status changes: handle user login/logout flow
+  // When auth status changes: handle logout redirection only
   useEffect(() => {
-    if (user) {
-      // If on login or consent page but already logged in, move to main
-      if (page === "login" || page === "consent") {
-        setPage("main");
-      }
-    } else {
+    if (!user) {
       // Logged out -> go to login instead of whitelist per new requirement
       if (page === "main" || page === "plan-editor" || page === "results") {
         setPage("login");
@@ -218,6 +213,39 @@ const AppController = () => {
     };
     doLink();
   }, [user, session]);
+
+  // Onboarding gating: after session present, check consent_version vs current policy
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (!user || !session) return;
+      try {
+        const [status, policy] = await Promise.all([
+          api.getOnboardingStatus(session.access_token),
+          api.getPrivacyPolicy(),
+        ]);
+        if (cancelled) return;
+        const needsConsent =
+          !status.consent_version || status.consent_version !== policy.version;
+        if (needsConsent) {
+          if (page !== "consent") setPage("consent");
+          return;
+        }
+        // Consent is up-to-date; if we are on pre-auth pages, go to main
+        if (page === "login" || page === "consent" || page === "whitelist") {
+          setPage("main");
+        }
+      } catch {
+        if (cancelled) return;
+        // Be conservative: request consent on errors
+        if (page !== "consent") setPage("consent");
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, session, page]);
 
   // Restore state on app/tab visibility changes (helps iOS/Android/PC when app is backgrounded and returns)
   // No longer restoring userHash or consentGiven from localStorage
