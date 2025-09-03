@@ -24,6 +24,7 @@ from models.schemas import (
     PrivacyPolicyCreateRequest, PrivacyPolicyCreateResponse,
     PrivacyPolicyUpdateRequest, PrivacyPolicyUpdateResponse,
     PrivacyPolicyPublishResponse,
+    PrivacyPolicyListResponse, PrivacyPolicyDetailResponse,
 )
 from supabase import create_client
 from config.settings import settings
@@ -259,6 +260,29 @@ async def publish_privacy_policy(policy_id: str, user_id: str = Depends(authenti
     if not upd.data:
         raise HTTPException(status_code=404, detail='Policy not found')
     return PrivacyPolicyPublishResponse(id=policy_id, message='Policy published', success=True)
+
+@router.get('/api/admin/privacy-policies', response_model=PrivacyPolicyListResponse)
+async def list_privacy_policies(user_id: str = Depends(authenticate_jwt_token)):
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    resp = (
+        client
+        .table('privacy_policies')
+        .select('*')
+        .order('effective_date', desc=True)
+        .order('updated_at', desc=True)
+        .execute()
+    )
+    return {"policies": resp.data or [], "success": True}
+
+@router.get('/api/admin/privacy-policies/{policy_id}', response_model=PrivacyPolicyDetailResponse)
+async def get_privacy_policy_admin(policy_id: str, user_id: str = Depends(authenticate_jwt_token)):
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    resp = client.table('privacy_policies').select('*').eq('id', policy_id).limit(1).execute()
+    if not resp.data:
+        raise HTTPException(status_code=404, detail='Policy not found')
+    return {"policy": resp.data[0], "success": True}
 
 @router.get("/api/simulations")
 async def get_simulations(user_id: str = Depends(authenticate_jwt_token)):

@@ -204,3 +204,25 @@ class PrivacyPolicyPublishResponse(BaseModel):
     id: str
     message: str
     success: bool
+
+# Admin listing/detail
+class PrivacyPolicy(BaseModel):
+    id: str
+    version: str
+    content: str
+    locale: str
+    published: bool
+    effective_date: Optional[str] = None
+    last_updated: Optional[str] = None
+    created_by: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    model_config = ConfigDict(extra='allow')
+
+class PrivacyPolicyListResponse(BaseModel):
+    policies: List[PrivacyPolicy]
+    success: bool = True
+
+class PrivacyPolicyDetailResponse(BaseModel):
+    policy: PrivacyPolicy
+    success: bool = True

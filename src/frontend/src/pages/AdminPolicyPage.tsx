@@ -8,6 +8,10 @@ import {
   Paper,
   Divider,
   Alert,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import ReactMarkdown from "react-markdown";
 import { api } from "../services/api";
@@ -34,6 +38,11 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>("");
   const [message, setMessage] = useState<string>("");
+  const [policies, setPolicies] = useState<
+    { id: string; version: string; locale: string; published: boolean }[]
+  >([]);
+  const [policiesLoading, setPoliciesLoading] = useState(false);
+  const [policiesError, setPoliciesError] = useState<string>("");
 
   const canSave = useMemo(
     () => version.trim().length > 0 && content.trim().length > 0,
@@ -65,6 +74,36 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
       cancelled = true;
     };
   }, [token]);
+
+  // Load list of policies for admin selector
+  useEffect(() => {
+    if (!isAdmin || !token) return;
+    let cancelled = false;
+    setPoliciesLoading(true);
+    setPoliciesError("");
+    api
+      .listPrivacyPolicies(token)
+      .then((res) => {
+        if (cancelled) return;
+        const items = (res.policies || []).map((p) => ({
+          id: p.id,
+          version: p.version,
+          locale: p.locale,
+          published: !!p.published,
+        }));
+        setPolicies(items);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setPoliciesError(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        if (!cancelled) setPoliciesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, token]);
 
   // For non-admins: fetch the latest published privacy policy (read-only)
   const [publicPolicy, setPublicPolicy] = useState<{
@@ -226,6 +265,66 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
         <Stack spacing={2}>
           {error && <Alert severity="error">{error}</Alert>}
           {message && <Alert severity="success">{message}</Alert>}
+          <Stack spacing={1}>
+            <Typography variant="subtitle2">저장된 정책 불러오기</Typography>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+              <FormControl fullWidth>
+                <InputLabel id="policy-select-label">정책 선택</InputLabel>
+                <Select
+                  labelId="policy-select-label"
+                  label="정책 선택"
+                  value={policyId || ""}
+                  onChange={async (e) => {
+                    const id = String(e.target.value || "");
+                    setPolicyId(id || null);
+                    if (!id) return;
+                    if (!token) return;
+                    try {
+                      setBusy(true);
+                      const res = await api.getPrivacyPolicyAdmin(token, id);
+                      const p = res.policy;
+                      setVersion(p.version || "");
+                      setLocale(p.locale || "ko-KR");
+                      setContent(p.content || "");
+                      setEffectiveDate(p.effective_date || "");
+                      setLastUpdated(p.last_updated || "");
+                    } catch (e: unknown) {
+                      setError(e instanceof Error ? e.message : String(e));
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                  disabled={policiesLoading}
+                >
+                  <MenuItem value="">
+                    <em>선택 안 함 (새로 만들기)</em>
+                  </MenuItem>
+                  {policies.map((p) => (
+                    <MenuItem key={p.id} value={p.id}>
+                      {p.version} · {p.locale}
+                      {p.published ? " (게시됨)" : ""}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Button
+                onClick={() => {
+                  setPolicyId(null);
+                  setVersion("");
+                  setLocale("ko-KR");
+                  setEffectiveDate("");
+                  setLastUpdated("");
+                  setContent("# 개인정보처리방침\n\n여기에 내용을 작성하세요.");
+                  setMessage("");
+                  setError("");
+                }}
+                variant="outlined"
+              >
+                새 정책
+              </Button>
+            </Stack>
+            {policiesError && <Alert severity="error">{policiesError}</Alert>}
+          </Stack>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="버전"

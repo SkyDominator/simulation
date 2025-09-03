@@ -13,6 +13,8 @@ import {
   type PrivacyPolicyResponse,
   type OTPSendResponse,
   type OTPVerifyResponse,
+  type AdminPrivacyPolicyListResponse,
+  type AdminPrivacyPolicyDetailResponse,
 } from "../types/types";
 
 // Prefer Vite-provided env var; fall back to the deployed backend URL
@@ -477,6 +479,45 @@ export const api = {
         msg = err?.detail || msg;
       } catch {
         void 0;
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
+  listPrivacyPolicies: async (
+    token: string
+  ): Promise<AdminPrivacyPolicyListResponse> => {
+    const response = await fetch(url("/admin/privacy-policies"), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        /* no-op */
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
+  getPrivacyPolicyAdmin: async (
+    token: string,
+    policy_id: string
+  ): Promise<AdminPrivacyPolicyDetailResponse> => {
+    const response = await fetch(url(`/admin/privacy-policies/${policy_id}`), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        /* no-op */
       }
       throw new Error(msg);
     }

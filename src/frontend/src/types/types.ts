@@ -139,6 +139,30 @@ export interface PrivacyPolicyResponse {
   locale?: string;
 }
 
+// Admin privacy policy types
+export interface AdminPrivacyPolicy {
+  id: string;
+  version: string;
+  content: string;
+  locale: string;
+  published: boolean;
+  effective_date?: string;
+  last_updated?: string;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AdminPrivacyPolicyListResponse {
+  policies: AdminPrivacyPolicy[];
+  success: boolean;
+}
+
+export interface AdminPrivacyPolicyDetailResponse {
+  policy: AdminPrivacyPolicy;
+  success: boolean;
+}
+
 // Define a type for the page navigation
 export type Page =
   | "whitelist"
