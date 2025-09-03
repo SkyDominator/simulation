@@ -6,16 +6,8 @@
 4. admin 모드 구현 (admin이 플랜 시뮬레이션 생성, 수정 가능한 모드)
 5. ~~policy를 md 문서로 관리~~
 6. policy 변경 시 모든 유저 로그아웃 시키고 다시 동의받게 하는 것
-    1. : If you want to surface the policy version/date in the UI, I can add a small line under the dialog title.
 
-    Stub admin endpoints reusing your admin checks.
-
-    Next, I can add admin endpoints to create/update/publish policies (mirroring your Notices admin guard), plus a tiny seeding script if you want.
-
-    Great! Now, I'd like to add the following features you mentioned:
-
-    2. Surface the policy version/date in the UI, and add a small line under the dialog title.
-    3.  Add admin CRUD endpoints for policies (create/update/publish) like Notices admin. But, the two privileges should be separated.
+    1.  Add admin CRUD endpoints for policies (create/update/publish) like Notices admin. But, the two privileges should be separated. reusing your admin checks
 
     So this is a task of adding authority level management. Fpr instance, An "owner" level admin account is allowed to edit notices and policy, but "operator" level admin account is only allowed to edit notices but not policy.   
 

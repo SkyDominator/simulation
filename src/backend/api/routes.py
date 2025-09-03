@@ -20,7 +20,10 @@ from models.schemas import (
     NoticeUpdateRequest, NoticeUpdateResponse,
     NoticeDeleteResponse,
     ConsentRecordRequest, ConsentRecordResponse,
-    OTPSendRequest, OTPVerifyRequest, OTPSendResponse, OTPVerifyResponse
+    OTPSendRequest, OTPVerifyRequest, OTPSendResponse, OTPVerifyResponse,
+    PrivacyPolicyCreateRequest, PrivacyPolicyCreateResponse,
+    PrivacyPolicyUpdateRequest, PrivacyPolicyUpdateResponse,
+    PrivacyPolicyPublishResponse,
 )
 from supabase import create_client
 from config.settings import settings
@@ -172,6 +175,75 @@ async def delete_notice(notice_id: str, user_id: str = Depends(authenticate_jwt_
         raise HTTPException(status_code=404, detail='Notice not found')
     return NoticeDeleteResponse(id=notice_id, message='Notice deleted', success=True)
 
+# ----------------------- Admin (protected) Privacy Policy CRUD -----------------------
+@router.post('/api/admin/privacy-policies', response_model=PrivacyPolicyCreateResponse)
+async def create_privacy_policy(req: PrivacyPolicyCreateRequest, user_id: str = Depends(authenticate_jwt_token)):
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    payload = {
+        'version': req.version.strip(),
+        'content': req.content,
+        'locale': (req.locale or 'ko-KR').strip() or 'ko-KR',
+        'published': bool(req.published),
+        'effective_date': req.effective_date,
+        'last_updated': req.last_updated or req.effective_date or datetime.now(timezone.utc).date().isoformat(),
+        'created_by': user_id,
+    }
+    try:
+        ins = client.table('privacy_policies').insert(payload).execute()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to create policy: {e}")
+    if not ins.data:
+        raise HTTPException(status_code=500, detail='Failed to create policy')
+    return PrivacyPolicyCreateResponse(id=ins.data[0]['id'], message='Policy created', success=True)
+
+@router.patch('/api/admin/privacy-policies/{policy_id}', response_model=PrivacyPolicyUpdateResponse)
+async def update_privacy_policy(policy_id: str, req: PrivacyPolicyUpdateRequest, user_id: str = Depends(authenticate_jwt_token)):
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    update_fields = {k: v for k, v in req.model_dump().items() if v is not None}
+    if 'version' in update_fields:
+        update_fields['version'] = str(update_fields['version']).strip()
+    if 'locale' in update_fields and update_fields['locale']:
+        update_fields['locale'] = str(update_fields['locale']).strip() or 'ko-KR'
+    if 'content' in update_fields and update_fields['content'] is not None:
+        # leave as-is; content may include leading/trailing whitespace intentionally
+        pass
+    if not update_fields:
+        raise HTTPException(status_code=400, detail='No fields to update')
+    try:
+        upd = client.table('privacy_policies').update(update_fields).eq('id', policy_id).execute()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to update policy: {e}")
+    if not upd.data:
+        raise HTTPException(status_code=404, detail='Policy not found')
+    return PrivacyPolicyUpdateResponse(id=policy_id, message='Policy updated', success=True)
+
+@router.delete('/api/admin/privacy-policies/{policy_id}', response_model=PrivacyPolicyUpdateResponse)
+async def delete_privacy_policy(policy_id: str, user_id: str = Depends(authenticate_jwt_token)):
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    try:
+        del_resp = client.table('privacy_policies').delete().eq('id', policy_id).execute()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to delete policy: {e}")
+    if not del_resp.data:
+        raise HTTPException(status_code=404, detail='Policy not found')
+    return PrivacyPolicyUpdateResponse(id=policy_id, message='Policy deleted', success=True)
+
+@router.post('/api/admin/privacy-policies/{policy_id}/publish', response_model=PrivacyPolicyPublishResponse)
+async def publish_privacy_policy(policy_id: str, user_id: str = Depends(authenticate_jwt_token)):
+    """Mark a policy as published; leaves others unchanged. Caller must manage versions."""
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    try:
+        upd = client.table('privacy_policies').update({'published': True}).eq('id', policy_id).execute()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to publish policy: {e}")
+    if not upd.data:
+        raise HTTPException(status_code=404, detail='Policy not found')
+    return PrivacyPolicyPublishResponse(id=policy_id, message='Policy published', success=True)
+
 @router.get("/api/simulations")
 async def get_simulations(user_id: str = Depends(authenticate_jwt_token)):
     return _sim_service.list_for_user(user_id)
@@ -234,7 +306,7 @@ async def health():
                 "error": error_msg,
             }
         },
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     }
 
 # ------------------------------- Consent management routes -------------------------------

@@ -1,6 +1,7 @@
 """Pydantic models and domain schemas."""
 from __future__ import annotations
 from typing import List, Dict, Any, Optional
+from datetime import date
 from pydantic import BaseModel, ConfigDict
 
 class UserCheckRequest(BaseModel):
@@ -171,3 +172,35 @@ class OTPVerifyResponse(BaseModel):
     success: bool
     message: str
     remaining_attempts: Optional[int] = None
+
+# ----------------------- Privacy Policy (Admin) -----------------------
+class PrivacyPolicyCreateRequest(BaseModel):
+    version: str
+    content: str
+    locale: str = "ko-KR"
+    published: bool = False
+    effective_date: Optional[date] = None
+    last_updated: Optional[date] = None
+
+class PrivacyPolicyCreateResponse(BaseModel):
+    id: str
+    message: str
+    success: bool
+
+class PrivacyPolicyUpdateRequest(BaseModel):
+    version: Optional[str] = None
+    content: Optional[str] = None
+    locale: Optional[str] = None
+    published: Optional[bool] = None
+    effective_date: Optional[date] = None
+    last_updated: Optional[date] = None
+
+class PrivacyPolicyUpdateResponse(BaseModel):
+    id: str
+    message: str
+    success: bool
+
+class PrivacyPolicyPublishResponse(BaseModel):
+    id: str
+    message: str
+    success: bool
