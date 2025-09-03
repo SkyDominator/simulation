@@ -69,12 +69,6 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
         // Store hash for OTP verification
         setUserHash(result.user_hash);
         setShowOtpVerification(true);
-        try {
-          // Persist onboarding context across OAuth redirect
-          sessionStorage.setItem("onboarding.userHash", result.user_hash);
-        } catch {
-          /* no-op */
-        }
       } else {
         setError(result.message || "가입 허용 명단에 없는 사용자입니다.");
       }
