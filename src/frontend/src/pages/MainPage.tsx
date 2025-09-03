@@ -195,7 +195,7 @@ const MainPage: React.FC<MainPageProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, setIsAdmin]);
 
   const handleNewPlan = () => {
     // Clear any old PlanEditor draft/step before creating new

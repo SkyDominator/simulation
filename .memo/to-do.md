@@ -21,3 +21,6 @@
    3. time-left indicator UI 추가
    4. ~~provider_msg_id DB에 저장하는 로직 추가~~
    5. 플로우 정리 후 더 가격이 싼 (NHN Cloud) 기반으로 변경
+10. for frontend:
+    1.  useEffect에서 클린업을 사용해 unmount한 컴포넌트가 setState를 호출하고 memory leak를 일으키는 일을 방지하고 있는지 프론트엔드 코드 전체 점검 필요.
+        1.  This is a "cleanup pattern" for effects with async side effects. It prevents stale closures or updates on unmounted components.
