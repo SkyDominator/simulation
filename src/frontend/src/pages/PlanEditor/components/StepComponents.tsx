@@ -404,7 +404,7 @@ export const StartingCompanyRoundSelector: React.FC<
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">2. 가입한 회사 회차 선택</h2>
+      <h2 className="text-xl font-bold mb-4">2. 가입한 회차 선택</h2>
       <p className="text-sm mb-2">
         최소: {MIN_ROUND}, 최대: {MAX_ROUND}
       </p>
@@ -434,7 +434,7 @@ export const CurrentCompanyRoundSelector: React.FC<
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">3. 현재 회사 회차 선택</h2>
+      <h2 className="text-xl font-bold mb-4">3. 현재 회차 선택</h2>
       <p className="text-sm mb-2">
         최소: {MIN_ROUND} (가입한 회차 이상이어야 합니다), 최대: {MAX_ROUND}
       </p>

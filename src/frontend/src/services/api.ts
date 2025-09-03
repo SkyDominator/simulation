@@ -1,6 +1,5 @@
 import {
   type Plan,
-  type WhitelistCheckResponse,
   type SimulationCreateResponse,
   type SimulationRunResponse,
   type SimulationMemoUpdateResponse,
@@ -14,40 +13,24 @@ import {
   type PrivacyPolicyResponse,
   type OTPSendResponse,
   type OTPVerifyResponse,
+  type AdminPrivacyPolicyListResponse,
+  type AdminPrivacyPolicyDetailResponse,
 } from "../types/types";
 
 // Prefer Vite-provided env var; fall back to the deployed backend URL
 export const API_BASE_URL: string =
+  // (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
+  // "https://simulation.lightoflifeclub.com/api";
   (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
-  "https://simulation.lightoflifeclub.com/api";
+  "http://localhost:8000/api";
 
-const url = (path: string) => new URL(path, API_BASE_URL).toString();
+const url = (path: string) => {
+  const base = API_BASE_URL.replace(/\/+$/, "");
+  const rel = path.replace(/^\/+/, "");
+  return `${base}/${rel}`;
+};
 
 export const api = {
-  checkWhitelist: async (
-    name: string,
-    phone_number: string
-  ): Promise<WhitelistCheckResponse> => {
-    try {
-      const response = await fetch(url("/verify-user"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, phone_number }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Whitelist check error:", error);
-      return { success: false, message: String(error), is_whitelisted: false };
-    }
-  },
-
   deleteSimulation: async (
     simulation_id: string,
     token: string
@@ -388,9 +371,18 @@ export const api = {
   },
 
   // Consent related API methods
-  getPrivacyPolicy: async (): Promise<PrivacyPolicyResponse> => {
+  getPrivacyPolicy: async (params?: {
+    version?: string;
+    locale?: string;
+  }): Promise<PrivacyPolicyResponse> => {
     try {
-      const response = await fetch(url("/privacy-policy"));
+      const qs = new URLSearchParams();
+      if (params?.version) qs.set("version", params.version);
+      if (params?.locale) qs.set("locale", params.locale);
+      const path = qs.toString()
+        ? `/privacy-policy?${qs.toString()}`
+        : "/privacy-policy";
+      const response = await fetch(url(path));
 
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
@@ -401,6 +393,154 @@ export const api = {
       console.error("Privacy policy fetch error:", error);
       throw error;
     }
+  },
+
+  // ---------------- Admin Privacy Policies ----------------
+  createPrivacyPolicy: async (
+    token: string,
+    payload: {
+      version: string;
+      content: string;
+      locale?: string;
+      effective_date?: string; // YYYY-MM-DD
+      last_updated?: string; // YYYY-MM-DD
+    }
+  ): Promise<{ id: string; message: string; success: boolean }> => {
+    const response = await fetch(url("/admin/privacy-policies"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        void 0;
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
+  updatePrivacyPolicy: async (
+    token: string,
+    policy_id: string,
+    payload: {
+      version?: string;
+      content?: string;
+      locale?: string;
+      effective_date?: string; // YYYY-MM-DD
+      last_updated?: string; // YYYY-MM-DD
+    }
+  ): Promise<{ id: string; message: string; success: boolean }> => {
+    const response = await fetch(url(`/admin/privacy-policies/${policy_id}`), {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        void 0;
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
+  publishPrivacyPolicy: async (
+    token: string,
+    policy_id: string
+  ): Promise<{ id: string; message: string; success: boolean }> => {
+    const response = await fetch(
+      url(`/admin/privacy-policies/${policy_id}/publish`),
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        void 0;
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
+  listPrivacyPolicies: async (
+    token: string
+  ): Promise<AdminPrivacyPolicyListResponse> => {
+    const response = await fetch(url("/admin/privacy-policies"), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        /* no-op */
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
+  getPrivacyPolicyAdmin: async (
+    token: string,
+    policy_id: string
+  ): Promise<AdminPrivacyPolicyDetailResponse> => {
+    const response = await fetch(url(`/admin/privacy-policies/${policy_id}`), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        /* no-op */
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
+  deletePrivacyPolicy: async (
+    token: string,
+    policy_id: string
+  ): Promise<{ id: string; message: string; success: boolean }> => {
+    const response = await fetch(url(`/admin/privacy-policies/${policy_id}`), {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        void 0;
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
   },
 
   recordConsent: async (

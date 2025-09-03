@@ -3,6 +3,7 @@
 Loads environment variables and exposes settings via a dataclass-like object.
 """
 from __future__ import annotations
+import logging
 import os
 from dataclasses import dataclass
 from typing import List
@@ -32,6 +33,10 @@ class Settings:
     solapi_api_key: str = os.getenv("SOLAPI_API_KEY", "")
     solapi_api_secret: str = os.getenv("SOLAPI_API_SECRET", "")
     solapi_sender_number: str = os.getenv("SOLAPI_SENDER_NUMBER", "")
+    
+    # Add logger  
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
 
     def __post_init__(self):  # type: ignore[override]
         # object is frozen; use object.__setattr__

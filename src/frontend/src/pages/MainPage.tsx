@@ -10,6 +10,7 @@ import { Container, Paper, Typography, Stack, Divider } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AddIcon from "@mui/icons-material/Add";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import PolicyIcon from "@mui/icons-material/Gavel";
 
 // Extracted components
 import SimulationTable, {
@@ -174,6 +175,8 @@ const MainPage: React.FC<MainPageProps> = ({
     loadPlans();
   }, [user, session]);
 
+  // (Policy button now visible to all; admin-gated logic moved to page component)
+
   const handleNewPlan = () => {
     // Clear any old PlanEditor draft/step before creating new
     try {
@@ -314,6 +317,14 @@ const MainPage: React.FC<MainPageProps> = ({
             >
               <LogoutIcon sx={{ mr: 0.5 }} fontSize="small" />{" "}
               {signOutLoading ? "로그아웃 중..." : "로그아웃"}
+            </Button>
+            <Button
+              onClick={() => setPage("admin-policy")}
+              variant="outlined"
+              color="secondary"
+              // startIcon={<PolicyIcon />}
+            >
+              개인 정보 보호 정책
             </Button>
           </Stack>
         </Stack>

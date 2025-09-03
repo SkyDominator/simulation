@@ -2,7 +2,8 @@
 from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
+from pathlib import Path
 
 from auth.jwt import authenticate_jwt_token
 from services.simulations import SimulationService
@@ -19,7 +20,11 @@ from models.schemas import (
     NoticeUpdateRequest, NoticeUpdateResponse,
     NoticeDeleteResponse,
     ConsentRecordRequest, ConsentRecordResponse,
-    OTPSendRequest, OTPVerifyRequest, OTPSendResponse, OTPVerifyResponse
+    OTPSendRequest, OTPVerifyRequest, OTPSendResponse, OTPVerifyResponse,
+    PrivacyPolicyCreateRequest, PrivacyPolicyCreateResponse,
+    PrivacyPolicyUpdateRequest, PrivacyPolicyUpdateResponse,
+    PrivacyPolicyPublishResponse,
+    PrivacyPolicyListResponse, PrivacyPolicyDetailResponse,
 )
 from supabase import create_client
 from config.settings import settings
@@ -171,6 +176,127 @@ async def delete_notice(notice_id: str, user_id: str = Depends(authenticate_jwt_
         raise HTTPException(status_code=404, detail='Notice not found')
     return NoticeDeleteResponse(id=notice_id, message='Notice deleted', success=True)
 
+# ----------------------- Admin (protected) Privacy Policy CRUD -----------------------
+@router.post('/api/admin/privacy-policies', response_model=PrivacyPolicyCreateResponse)
+async def create_privacy_policy(req: PrivacyPolicyCreateRequest, user_id: str = Depends(authenticate_jwt_token)):
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    # Enforce centralized publishing via publish endpoint only
+    if req.published:
+        raise HTTPException(status_code=400, detail="Publishing must be done via the publish endpoint")
+    # Normalize date fields to ISO strings for JSON serialization
+    effective_iso = req.effective_date.isoformat() if req.effective_date else None
+    last_updated_date = req.last_updated or req.effective_date or datetime.now(timezone.utc).date()
+    last_updated_iso = last_updated_date.isoformat()
+    payload = {
+        'version': req.version.strip(),
+        'content': req.content,
+        'locale': (req.locale or 'ko-KR').strip() or 'ko-KR',
+        'published': False,  # new policies are created as unpublished
+        'effective_date': effective_iso,
+        'last_updated': last_updated_iso,
+        'created_by': user_id,
+    }
+    try:
+        ins = client.table('privacy_policies').insert(payload).execute()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to create policy: {e}")
+    if not ins.data:
+        raise HTTPException(status_code=500, detail='Failed to create policy')
+    return PrivacyPolicyCreateResponse(id=ins.data[0]['id'], message='Policy created', success=True)
+
+@router.patch('/api/admin/privacy-policies/{policy_id}', response_model=PrivacyPolicyUpdateResponse)
+async def update_privacy_policy(policy_id: str, req: PrivacyPolicyUpdateRequest, user_id: str = Depends(authenticate_jwt_token)):
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    update_fields = {k: v for k, v in req.model_dump().items() if v is not None}
+    # Enforce centralized publishing via publish endpoint only
+    if 'published' in update_fields:
+        raise HTTPException(status_code=400, detail='Publishing state cannot be changed here; use the publish endpoint')
+    if 'version' in update_fields:
+        update_fields['version'] = str(update_fields['version']).strip()
+    if 'locale' in update_fields and update_fields['locale']:
+        update_fields['locale'] = str(update_fields['locale']).strip() or 'ko-KR'
+    if 'content' in update_fields and update_fields['content'] is not None:
+        # leave as-is; content may include leading/trailing whitespace intentionally
+        pass
+    # Normalize any date fields to ISO strings
+    if 'effective_date' in update_fields and update_fields['effective_date'] is not None:
+        try:
+            update_fields['effective_date'] = update_fields['effective_date'].isoformat()
+        except AttributeError:
+            # if already a string, leave it
+            pass
+    if 'last_updated' in update_fields and update_fields['last_updated'] is not None:
+        try:
+            update_fields['last_updated'] = update_fields['last_updated'].isoformat()
+        except AttributeError:
+            pass
+    if not update_fields:
+        raise HTTPException(status_code=400, detail='No fields to update')
+    try:
+        upd = client.table('privacy_policies').update(update_fields).eq('id', policy_id).execute()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to update policy: {e}")
+    if not upd.data:
+        raise HTTPException(status_code=404, detail='Policy not found')
+    return PrivacyPolicyUpdateResponse(id=policy_id, message='Policy updated', success=True)
+
+@router.delete('/api/admin/privacy-policies/{policy_id}', response_model=PrivacyPolicyUpdateResponse)
+async def delete_privacy_policy(policy_id: str, user_id: str = Depends(authenticate_jwt_token)):
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    try:
+        del_resp = client.table('privacy_policies').delete().eq('id', policy_id).execute()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to delete policy: {e}")
+    if not del_resp.data:
+        raise HTTPException(status_code=404, detail='Policy not found')
+    return PrivacyPolicyUpdateResponse(id=policy_id, message='Policy deleted', success=True)
+
+@router.post('/api/admin/privacy-policies/{policy_id}/publish', response_model=PrivacyPolicyPublishResponse)
+async def publish_privacy_policy(policy_id: str, user_id: str = Depends(authenticate_jwt_token)):
+    """Publish the specified policy and unpublish all others so only one is active at a time."""
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    try:
+        # Unpublish all other policies first
+        try:
+            client.table('privacy_policies').update({'published': False}).neq('id', policy_id).eq('published', True).execute()
+        except Exception:
+            # Continue even if this fails; we still attempt to publish the target policy
+            pass
+        # Publish this policy
+        upd = client.table('privacy_policies').update({'published': True}).eq('id', policy_id).execute()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to publish policy: {e}")
+    if not upd.data:
+        raise HTTPException(status_code=404, detail='Policy not found')
+    return PrivacyPolicyPublishResponse(id=policy_id, message='Policy published', success=True)
+
+@router.get('/api/admin/privacy-policies', response_model=PrivacyPolicyListResponse)
+async def list_privacy_policies(user_id: str = Depends(authenticate_jwt_token)):
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    resp = (
+        client
+        .table('privacy_policies')
+        .select('*')
+        .order('effective_date', desc=True)
+        .order('updated_at', desc=True)
+        .execute()
+    )
+    return {"policies": resp.data or [], "success": True}
+
+@router.get('/api/admin/privacy-policies/{policy_id}', response_model=PrivacyPolicyDetailResponse)
+async def get_privacy_policy_admin(policy_id: str, user_id: str = Depends(authenticate_jwt_token)):
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    resp = client.table('privacy_policies').select('*').eq('id', policy_id).limit(1).execute()
+    if not resp.data:
+        raise HTTPException(status_code=404, detail='Policy not found')
+    return {"policy": resp.data[0], "success": True}
+
 @router.get("/api/simulations")
 async def get_simulations(user_id: str = Depends(authenticate_jwt_token)):
     return _sim_service.list_for_user(user_id)
@@ -233,7 +359,7 @@ async def health():
                 "error": error_msg,
             }
         },
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     }
 
 # ------------------------------- Consent management routes -------------------------------
@@ -307,42 +433,70 @@ async def get_user_consents(user_hash: str):
     }
 
 @router.get("/api/privacy-policy")
-async def get_privacy_policy():
-    """Get the current privacy policy document."""
-    # For simplicity, we're returning a static policy here
-    # In a production environment, you might want to store this in the database
-    # or fetch it from a CMS
-    return {
-        "version": "1.0",
-        "last_updated": "2025-08-25",
-        "content": """
-# 개인정보처리방침
+async def get_privacy_policy(version: str | None = None, locale: str | None = None):
+    """Get the current privacy policy document.
 
-## 1. 수집하는 개인정보 항목
+    Tries DB (privacy_policies) first with optional version/locale; falls back to static content.
+    """
+    DEFAULT_LOCALE = (locale or "ko-KR").strip() or "ko-KR"
+    client = _supabase_client()
 
-본 애플리케이션은 다음과 같은 개인정보를 수집합니다:
-- 소셜 로그인 계정을 통한 이메일 주소
-- 소셜 로그인 계정 이름 또는 닉네임
-- 사용자 계정에 연결된 신원 확인 정보
+    try:
+        query = client.table("privacy_policies").select("version, locale, content, last_updated, effective_date")
+        if version:
+            query = query.eq("version", version).eq("locale", DEFAULT_LOCALE).limit(1)
+        else:
+            query = (
+                query
+                .eq("published", True)
+                .eq("locale", DEFAULT_LOCALE)
+                .order("effective_date", desc=True)
+                .order("updated_at", desc=True)
+                .limit(1)
+            )
+        resp = query.execute()
+        if resp.data:
+            row = resp.data[0]
+            return {
+                "version": row.get("version"),
+                "last_updated": row.get("last_updated") or row.get("effective_date"),
+                "content": row.get("content", ""),
+                "success": True,
+                "source": "db",
+            }
+    except Exception:
+        # Swallow DB errors and fall back to static below
+        pass
 
-## 2. 개인정보의 수집 및 이용목적
-
-수집한 개인정보는 다음의 목적을 위해 활용됩니다:
-- 사용자 식별 및 본인 확인
-- 서비스 이용 기록 관리
-- 서비스 개선 및 맞춤형 서비스 제공
-
-## 3. 개인정보의 보유 및 이용기간
-
-개인정보는 사용자가 서비스를 이용하는 기간 동안에만 보유합니다. 사용자가 계정 삭제를 요청할 경우, 관련 개인정보는 지체 없이 파기됩니다.
-
-## 4. 개인정보의 제3자 제공
-
-본 애플리케이션은 사용자의 개인정보를 제3자에게 제공하지 않습니다.
-
-## 5. 사용자의 권리
-
-사용자는 언제든지 자신의 개인정보에 대해 접근, 수정, 삭제를 요청할 수 있습니다.
-        """,
-        "success": True
-    }
+    # Static file fallback (docs/privacy-policy-ko.md)
+    try:
+        project_root = Path(__file__).resolve().parents[3]
+        md_path = project_root / "docs" / "privacy-policy-ko.md"
+        content = md_path.read_text(encoding="utf-8")
+        # Derive last_updated from file mtime
+        last_updated = datetime.fromtimestamp(md_path.stat().st_mtime, tz=timezone.utc).date().isoformat()
+        return {
+            "version": "1.1",
+            "last_updated": last_updated,
+            "content": content,
+            "success": True,
+            "source": "static-file",
+        }
+    except FileNotFoundError as e:
+        settings.logger.error(f"Privacy policy file not found: {e}")
+        raise HTTPException(
+            status_code=404,
+            detail="Privacy policy document not found. Please contact support."
+        )
+    except PermissionError as e:
+        settings.logger.error(f"Permission denied accessing privacy policy: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to access privacy policy. Please try again later."
+        )
+    except Exception as e:
+        settings.logger.error(f"Unexpected error loading privacy policy: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while loading the privacy policy. Please try again later."
+        )

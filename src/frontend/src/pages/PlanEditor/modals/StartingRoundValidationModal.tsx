@@ -21,18 +21,16 @@ const StartingRoundValidationModal: React.FC<
   let message = "";
 
   if (value < min) {
-    message = `가입한 회사 회차는 최소 ${min}보다 작을 수 없습니다. ${min}로 설정하시겠습니까?`;
+    message = `가입한 회차는 최소 ${min}보다 작을 수 없습니다. ${min}로 설정하시겠습니까?`;
   } else if (value > max) {
-    message = `가입한 회사 회차는 최대 ${max}보다 클 수 없습니다. ${max}로 설정하시겠습니까?`;
+    message = `가입한 회차는 최대 ${max}보다 클 수 없습니다. ${max}로 설정하시겠습니까?`;
   } else if (value === 0) {
-    message = `가입한 회사 회차는 0일 수 없습니다. ${min}로 설정하시겠습니까?`;
+    message = `가입한 회차는 0일 수 없습니다. ${min}로 설정하시겠습니까?`;
   }
 
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ fontWeight: 600 }}>
-        가입한 회사 회차 값 오류
-      </DialogTitle>
+      <DialogTitle sx={{ fontWeight: 600 }}>가입한 회차 값 오류</DialogTitle>
       <DialogContent dividers>
         <Typography variant="body2">{message}</Typography>
       </DialogContent>

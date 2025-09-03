@@ -6,6 +6,7 @@ import MainPage from "./pages/MainPage";
 import PlanEditorPage from "./pages/PlanEditor";
 import ResultsPage from "./pages/ResultsPage";
 import ConsentPage from "./pages/ConsentPage";
+import AdminPolicyPage from "./pages/AdminPolicyPage";
 import { type Plan, type Page } from "./types/types";
 import { NoticeBoardModal } from "./components/NoticeBoardModal";
 import type { SimulationRunResponse } from "./types/types";
@@ -93,7 +94,7 @@ const AppController = () => {
   );
 
   const mainPages: Record<
-    "main" | "plan-editor" | "results",
+    "main" | "plan-editor" | "results" | "admin-policy",
     React.ReactElement
   > = useMemo(
     () => ({
@@ -109,6 +110,7 @@ const AppController = () => {
         <PlanEditorPage setPage={setPage} editingPlan={editingPlan} />
       ),
       results: <ResultsPage setPage={setPage} result={simulationResult} />,
+      "admin-policy": <AdminPolicyPage setPage={setPage} />,
     }),
     [editingPlan, simulationResult, setPage]
   );
@@ -132,7 +134,12 @@ const AppController = () => {
     }
 
     // User is authenticated, show appropriate main page
-    if (page === "main" || page === "plan-editor" || page === "results") {
+    if (
+      page === "main" ||
+      page === "plan-editor" ||
+      page === "results" ||
+      page === "admin-policy"
+    ) {
       return mainPages[page];
     }
     return mainPages.main;
