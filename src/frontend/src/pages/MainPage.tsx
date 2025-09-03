@@ -313,16 +313,6 @@ const MainPage: React.FC<MainPageProps> = ({
                 공지사항
               </Button>
             )}
-            {isAdmin && (
-              <Button
-                onClick={() => setPage("admin-policy")}
-                variant="outlined"
-                color="secondary"
-                startIcon={<PolicyIcon />}
-              >
-                정책관리
-              </Button>
-            )}
             <Button
               onClick={() => setContactModalOpen(true)}
               variant="contained"
@@ -348,6 +338,16 @@ const MainPage: React.FC<MainPageProps> = ({
               <LogoutIcon sx={{ mr: 0.5 }} fontSize="small" />{" "}
               {signOutLoading ? "로그아웃 중..." : "로그아웃"}
             </Button>
+            {isAdmin && (
+              <Button
+                onClick={() => setPage("admin-policy")}
+                variant="outlined"
+                color="secondary"
+                startIcon={<PolicyIcon />}
+              >
+                개인 정보 보호 정책
+              </Button>
+            )}
           </Stack>
         </Stack>
 
