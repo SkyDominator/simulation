@@ -33,6 +33,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [policyContent, setPolicyContent] = useState("");
   const [policyVersion, setPolicyVersion] = useState("1.0");
+  const [policyLastUpdated, setPolicyLastUpdated] = useState("");
   const [loading, setLoading] = useState(false);
   const [policyLoading, setPolicyLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,6 +45,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
         const response = await api.getPrivacyPolicy({ locale: userLocale });
         setPolicyContent(response.content);
         setPolicyVersion(response.version);
+        if (response.last_updated) setPolicyLastUpdated(response.last_updated);
       } catch (err) {
         console.error("Failed to load privacy policy:", err);
         setPolicyContent(
@@ -171,7 +173,15 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
       >
         <Box sx={{ p: 4 }}>
           <Typography variant="h5" gutterBottom>
-            개인정보처리방침 (버전 {policyVersion})
+            개인정보처리방침
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            버전 {policyVersion}
+            {policyLastUpdated
+              ? ` · 업데이트: ${new Date(
+                  policyLastUpdated
+                ).toLocaleDateString()}`
+              : ""}
           </Typography>
           <Box sx={{ my: 3, maxHeight: "60vh", overflow: "auto", p: 1 }}>
             {policyLoading ? (
