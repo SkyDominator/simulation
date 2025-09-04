@@ -30,9 +30,11 @@ Else continue to main; optionally show a “Complete onboarding” banner if fla
     9.  Optional server-side enforcement before protected operations (e.g., block simulation run if consent missing).
     10. Restore-session check: On visibility/focus, call supabase.auth.getSession() and only consider redirecting to whitelist after a short debounce if session is truly absent.
 
+
 1.  for frontend:
     1.  useEffect에서 클린업을 사용해 unmount한 컴포넌트가 setState를 호출하고 memory leak를 일으키는 일을 방지하고 있는지 프론트엔드 코드 전체 점검 필요.
         1.  This is a "cleanup pattern" for effects with async side effects. It prevents stale closures or updates on unmounted components.
 2. Security. Replace sessionStorage bridge with an OAuth state param + backend ephemeral store for maximum safety. That requires a small backend addition to stash state keyed by the OAuth state value.
 3. Security. Run security check on my codes and DB schema. Which data can be stored in the DB as plain text and which should be encrypted? 
 4. Security. When and how a login session is expired(destroyed?) It is crucial because since a login session survives it no longer requires white list check and OTP authentication.
+5. Flickering issue due to re-rendering. (TBD)
