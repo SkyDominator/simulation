@@ -4,9 +4,13 @@
 * Find "all" relevant files.
 * Explore causes of explicit/potential bugs, security or performance issues (if possible).
 
+# The research question
+
+Explain the full architecture of my application (`/src/backend/**` and `/src/frontend/**`). Include analysis of explicit and potential UX flows (including edge cases).
+
 # The outcome of research
 
-* Create a file named `research-report.md` in the `.memo/CE/` directory to return your research results.
+* Create a `/.memo/CE/research-report.md` file to report your research.
 * The report should include the followings:
     * A summary of findings
     * The details of findings
@@ -14,5 +18,5 @@
         * The list of relevant files (with paths)
             * Per file, the list of classes, components, interfaces, and functions (with line numbers)
         * The relationship between different files and components
-    * 
-    * Potential issues identified
+    * The explicit or potential bugs, security issues, and performance bottlenecks
+        * The references to the exact source code file paths and the line numbers
