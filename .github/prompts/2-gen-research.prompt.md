@@ -18,7 +18,7 @@ Explain the full architecture of my application (`/src/backend/**` and `/src/fro
         * The list of relevant files (with paths)
             * Per file, the list of classes, components, interfaces, and functions (with line numbers)
         * The relationship between different files and components
-    * The explicit or potential bugs, security issues, and performance bottlenecks (when compared to the 2025 best practices given the environment described in `/.github/instructions/global.instructions.md` )
+    * The explicit or potential bugs, security issues, and performance bottlenecks (when compared to the 2025 best practices given the environment described in `/.github/instructions/global.instructions.md` and `/.github/instructions/simulation.instructions.md` )
         * The references to the exact source code file paths and the line numbers
 
 # The examples for references
