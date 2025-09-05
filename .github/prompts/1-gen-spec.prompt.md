@@ -1,6 +1,6 @@
 ---
-mode: edit
-model: Claude Opus 4.1 (Preview)
+mode: agent
+tools: ['codebase', 'usages', 'problems', 'fetch', 'searchResults', 'githubRepo', 'editFiles', 'search', 'context7', 'pylance mcp server', 'getPythonEnvironmentInfo', 'getPythonExecutableCommand']
 ---
 
 # The guideline for generating a software specification document
