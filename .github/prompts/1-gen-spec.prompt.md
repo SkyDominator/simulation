@@ -1,3 +1,8 @@
+---
+mode: edit
+model: Claude Opus 4.1 (Preview)
+---
+
 # The guideline for generating a software specification document
 
 This guide will introduce the steps to generate a Software Specification Document (SSD) of my application from the app source codes. I know, it is a kind of a reverse engineering for creating a SSD. Follow the steps below to generate the SSD for my app.
