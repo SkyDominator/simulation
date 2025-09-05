@@ -10,7 +10,7 @@ Explain the full architecture of my application (`/src/backend/**` and `/src/fro
 
 # The outcome of research
 
-* Create a `/.memo/CE/research-report.md` file to report your research.
+* Create a `/.memo/CE/research-report.md` file to report your research results.
 * The report should include the followings:
     * A summary of findings
     * The details of findings
@@ -20,3 +20,10 @@ Explain the full architecture of my application (`/src/backend/**` and `/src/fro
         * The relationship between different files and components
     * The explicit or potential bugs, security issues, and performance bottlenecks
         * The references to the exact source code file paths and the line numbers
+
+# The examples for references
+
+Refer to the following example reports for guidance on the structure and content of your research report:
+
+- `/.memo/CE/example1-research.md`
+- `/.memo/CE/example2-research.md`
