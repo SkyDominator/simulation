@@ -7,24 +7,30 @@
 5. ~~policy를 md 문서로 관리~~
 6. policy 변경 시 모든 유저 로그아웃 시키고 다시 동의받게 하는 것
 
-    1.  Add admin CRUD endpoints for policies (create/update/publish) like Notices admin. But, the two privileges should be separated. reusing your admin checks
+   1. Add admin CRUD endpoints for policies (create/update/publish) like Notices admin. But, the two privileges should be separated. reusing your admin checks
 
-    So this is a task of adding authority level management. Fpr instance, An "owner" level admin account is allowed to edit notices and policy, but "operator" level admin account is only allowed to edit notices but not policy.   
+   So this is a task of adding authority level management. Fpr instance, An "owner" level admin account is allowed to edit notices and policy, but "operator" level admin account is only allowed to edit notices but not policy.
+
+7. CI/CD 구현
+8. windows 서비스 형태로 구현
+9. OTP
+10. OTP를 최초 접속 한 번만 하는 것으로 변경
+11. OTP-동의-로그인 플로우 재정리
+12. time-left indicator UI 추가
+13. ~~provider_msg_id DB에 저장하는 로직 추가~~
+14. 플로우 정리 후 더 가격이 싼 (NHN Cloud) 기반으로 변경
+15. 이미 OTP 인증된 상태에서 로그아웃하면 다시 로그인 화면으로 돌아가도록 수정
 
 
-
-1. CI/CD 구현
-2. windows 서비스 형태로 구현
-3.  OTP
-   1. OTP를 최초 접속 한 번만 하는 것으로 변경
-   2. OTP-동의-로그인 플로우 재정리
-   3. time-left indicator UI 추가
-   4. ~~provider_msg_id DB에 저장하는 로직 추가~~
-   5. 플로우 정리 후 더 가격이 싼 (NHN Cloud) 기반으로 변경
-   6. 이미 OTP 인증된 상태에서 로그아웃하면 다시 로그인 화면으로 돌아가도록 수정
     * 전체 연동 플로우를 재점검해야함.
     * 전화번호 입력 > whitelist 체크(key: user_hash) > OTP 인증 (code_hash) > consent 체크(key: user_hash) > 로그인 (key: id (auth.user.id, public.profiles.id))
     * 전화번호 입력 > whitelist 체크(key: user_hash) > OTP 인증 (code_hash) > consent 체크(key: id (auth.user.id, public.profiles.id)) > 로그인 (key: id (auth.user.id, public.profiles.id))
+
 4.  for frontend:
     1.  useEffect에서 클린업을 사용해 unmount한 컴포넌트가 setState를 호출하고 memory leak를 일으키는 일을 방지하고 있는지 프론트엔드 코드 전체 점검 필요.
         1.  This is a "cleanup pattern" for effects with async side effects. It prevents stale closures or updates on unmounted components.
+
+관리 기능:
+
+1. 누가 언제부터 접속해서 어디까지 있었는가 등 사용자 행동 데이터
+2. 사용자 행동 데이터 추적에 따른 약관 업데이트
