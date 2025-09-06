@@ -1,12 +1,12 @@
 # The purpose of research
 
-- Understand how the application works.
+- Fully understand the application and how it works.
 - Find "all" relevant files.
-- Explore causes of explicit/potential bugs, security or performance issues (if possible).
+- Explore causes of explicit/potential bugs, security or performance issues.
 
 # The research question
 
-Explain the full architecture of my application (`/src/backend/**` and `/src/frontend/**`). Include analysis of explicit and potential UX flows (including edge cases).
+Explain the full architecture of my application (`/src/backend/**` and `/src/frontend/**`). Include analysis of all explicit and potential UX flows (including edge cases).
 
 # The outcome of research
 
@@ -19,6 +19,10 @@ Explain the full architecture of my application (`/src/backend/**` and `/src/fro
       - Per file, the list of classes, components, interfaces, and functions (with line numbers)
     - The relationship between different files and components and APIs
     - The data flow inside the application
+  - All possible UX flows
+    - Refer to spec file to identify planned UX flows.
+    - For each planned UX flow, describe the actual UX flow (with edge cases)
+    - Identify any unplanned/unprecedented UX flows. Consider edge cases.
   - The explicit or potential bugs, security issues, and performance bottlenecks (when compared to the 2025 best practices under the environment described in `/.github/instructions/global.instructions.md` and `/.github/instructions/simulation.instructions.md` )
     - The references to the exact source code file paths and the line numbers
 
