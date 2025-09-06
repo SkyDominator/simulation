@@ -20,7 +20,7 @@ Explain the full architecture of my application (`/src/backend/**` and `/src/fro
     - The relationship between different files and components and APIs
     - The data flow inside the application
   - All possible UX flows
-    - Refer to spec file to identify planned UX flows.
+    - Refer to spec file `/.memo/CE/specs/myapp_SSD.md` to identify planned UX flows.
     - For each planned UX flow, describe the actual UX flow (with edge cases)
     - Identify any unplanned/unprecedented UX flows. Consider edge cases.
   - The explicit or potential bugs, security issues, and performance bottlenecks (when compared to the 2025 best practices under the environment described in `/.github/instructions/global.instructions.md` and `/.github/instructions/simulation.instructions.md` )
