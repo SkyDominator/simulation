@@ -23,8 +23,7 @@ import {
 export const API_BASE_URL: string =
   // (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
   // "https://simulation.lightoflifeclub.com/api";
-  (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
-  "http://localhost:8000/api";
+  "http://172.29.50.33:8000/api";
 
 const url = (path: string) => {
   const base = API_BASE_URL.replace(/\/+$/, "");
