@@ -438,30 +438,13 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 
 ---
 
-## 17. Glossary
+## 17. Security & Performance Appendix
 
-- Supabase: Backend-as-a-Service providing Postgres, Auth, Storage, and APIs.
-- JWKS: JSON Web Key Set for verifying JWT signatures.
-- OTP: One-time password sent via SMS.
-- PWA: Progressive Web App supporting installability and service worker caching.
-
----
-
-## 18. Appendices
-
-- Health probe: /api/health returns status='ok' when Supabase reachable; latency in ms.
-- Error handling: Backend returns structured HTTP errors with detail; frontend surfaces messages.
-- Known caveats: consent_records schema must include user_hash to match implementation; ensure DB migrations align with API.
-
----
-
-## 19. Security & Performance Appendix
-
-### 19.1 Scope & Objectives
+### 17.1 Scope & Objectives
 
 This appendix formalizes (a) threat model, (b) security controls, (c) service level objectives (SLOs), (d) rate limits, (e) logging & monitoring, (f) data retention. It reflects 2025 best practice for a small internal PWA (60–100 users; peak 30–60) using Supabase + FastAPI + Cloudflare Tunnel.
 
-### 19.2 Assets (Ranked by Sensitivity)
+### 17.2 Assets (Ranked by Sensitivity)
 
 1. Authentication tokens (Supabase JWT).
 2. OTP codes (transient) / phone numbers (PII) – NOTE: only hashed OTP stored; phone stored in `phone_otps`.
@@ -472,7 +455,7 @@ This appendix formalizes (a) threat model, (b) security controls, (c) service le
 7. Infrastructure secrets (Supabase service key, Solapi API keys).
 8. user_hash (pseudo-identifier linking pre-auth actions).
 
-### 19.3 Actors
+### 17.3 Actors
 
 | Actor | Description | Trust Level |
 |-------|-------------|-------------|
@@ -485,7 +468,7 @@ This appendix formalizes (a) threat model, (b) security controls, (c) service le
 | Cloudflare Tunnel | Exposure layer for frontend/backend | Medium (network edge) |
 | Build / CI System | Produces container images | High (supply chain) |
 
-### 19.4 Trust Boundaries
+### 17.4 Trust Boundaries
 
 1. Browser ↔ Backend API (HTTPS, JWT boundary).
 2. Backend ↔ Supabase REST/RPC (service key boundary).
@@ -493,7 +476,7 @@ This appendix formalizes (a) threat model, (b) security controls, (c) service le
 4. Admin UI actions ↔ Admin authorization (table lookup each request).
 5. Pre-auth context (user_hash only) ↔ Authenticated context (user_id mapping at onboarding link).
 
-### 19.5 Attack Surface (Key Endpoints / Vectors)
+### 17.5 Attack Surface (Key Endpoints / Vectors)
 
 | Surface | Risks | Core Mitigations |
 |---------|------|------------------|
@@ -506,7 +489,7 @@ This appendix formalizes (a) threat model, (b) security controls, (c) service le
 | Cloudflare Tunnel | Exposure config drift | Restrict origins; CORS allowlist; infra change review |
 | Dependency Chain | Supply chain | Pin versions; weekly vulnerability scan; lockfile integrity |
 
-### 19.6 Threat Enumeration (STRIDE Summary)
+### 17.6 Threat Enumeration (STRIDE Summary)
 
 | Category | Example Threat | Impact | Mitigation |
 |----------|---------------|--------|-----------|
@@ -517,7 +500,7 @@ This appendix formalizes (a) threat model, (b) security controls, (c) service le
 | Denial of Service | OTP flood or simulation spam | Service degradation | Layered rate limits, concurrency cap per user, exponential backoff |
 | Elevation of Privilege | Normal user hits admin route | Unauthorized access | Centralized dependency `is_admin(user_id)` check each request |
 
-### 19.7 Security Controls (Current vs Planned)
+### 17.7 Security Controls (Current vs Planned)
 
 | Control | Status | Notes |
 |---------|--------|-------|
@@ -531,7 +514,7 @@ This appendix formalizes (a) threat model, (b) security controls, (c) service le
 | Audit logging (admin & onboarding link) | Planned | Append-only table |
 | Dependency vulnerability scanning | Planned | Enable GitHub Dependabot / pip-audit weekly |
 
-### 19.8 Service Level Objectives (SLOs)
+### 17.8 Service Level Objectives (SLOs)
 
 | Dimension | Target | Measurement | Rationale |
 |----------|--------|-------------|-----------|
@@ -544,7 +527,7 @@ This appendix formalizes (a) threat model, (b) security controls, (c) service le
 
 Error Budget: 0.5% monthly unavailability; if consumed > 50% mid-period, freeze feature deployment until budget recovers.
 
-### 19.9 Rate Limits (Enforced / Planned)
+### 17.9 Rate Limits (Enforced / Planned)
 
 | Endpoint Group | Limit | Window | Scope Keys | Action on Breach | Status |
 |----------------|-------|--------|------------|------------------|--------|
@@ -559,7 +542,7 @@ Error Budget: 0.5% monthly unavailability; if consumed > 50% mid-period, freeze 
 
 Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + persistent fallback (Supabase) for sliding window. Include `Retry-After` header where meaningful.
 
-### 19.10 Logging & Monitoring
+### 17.10 Logging & Monitoring
 
 | Aspect | Spec |
 |--------|------|
@@ -570,7 +553,7 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 | Alerts | >5 consecutive OTP send failures (provider outage); p95 latency > target for 15m; 5xx rate >1% over 5m; unusual admin publish burst (>3 in 5m) |
 | Dashboard | Onboarding funnel (verify → otp → consent → link → first simulation) |
 
-### 19.11 Key & Secret Management
+### 17.11 Key & Secret Management
 
 | Secret | Rotation Policy | Storage (Current) | Migration Plan |
 |--------|-----------------|-------------------|----------------|
@@ -579,7 +562,7 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 | OTP HMAC secret | 180 days (stagger) | .env | Use versioned secret; store secret_version in OTP rows |
 | JWKS cache | 5–15 min refresh | Memory | Maintain fallback old key set for grace period |
 
-### 19.12 Data Retention & Purge
+### 17.12 Data Retention & Purge
 
 | Table | Retention | Purge Mechanism | Rationale |
 |-------|-----------|----------------|-----------|
@@ -590,7 +573,7 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 | notices / privacy_policies | Permanent | Never purge (archiving) | Historical reference |
 | logs (app) | 30 days | Rolling retention in log store | Cost + internal needs |
 
-### 19.13 Validation & Input Constraints (Security-Relevant Subset)
+### 17.13 Validation & Input Constraints (Security-Relevant Subset)
 
 | Field | Constraint | Security Reason |
 |-------|-----------|-----------------|
@@ -600,7 +583,7 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 | simulation_rounds | 1–1000 | Prevent CPU abuse |
 | memo | ≤ 1000 chars UTF-8 | Avoid oversized payloads |
 
-### 19.14 Operational Security Procedures
+### 17.14 Operational Security Procedures
 
 | Procedure | Trigger | Action |
 |-----------|--------|--------|
@@ -609,7 +592,7 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 | Policy Publish | New version published | Invalidate cache; log audit record |
 | Security Incident (P1) | Confirmed data exposure | Revoke tokens, rotate keys, notify stakeholders, post-mortem in 72h |
 
-### 19.15 Acceptance / Verification
+### 17.15 Acceptance / Verification
 
 | Control | Verification Method |
 |---------|--------------------|
@@ -618,5 +601,255 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 | Logging Redaction | Sample logs: ensure masked phone & no secrets |
 | RLS Enforcement | Attempt cross-user simulation fetch → 0 rows |
 | Latency SLO | Weekly report summarizing p50/p95 vs targets |
+
+---
+
+## 18. Validation & Error Model
+
+### 18.1 Validation Constraints (Comprehensive)
+
+| Domain | Field | Type | Constraints (Min/Max/Format) | Required | Notes |
+|--------|-------|------|--------------------------------|----------|-------|
+| User | name | string | 1..50, Unicode NFC | Yes (verify-user, otp) | Normalize whitespace |
+| User | phone_number | string | E.164, length 10..15 | Yes | Normalized before hashing |
+| OTP | otp_code | string | 6 digits (^[0-9]{6}$) | Yes (verify) | Reject leading zeros? (No) |
+| Simulation | plan_id | enum | A,B,C,D,K,P,R,F,E | Yes | Validate against constant set |
+| Simulation | starting_company_round | int | 1..100 | Yes | Must be <= current_company_round |
+| Simulation | current_company_round | int | 1..100 | Yes | >= starting round |
+| Simulation | simulation_rounds | int | 1..100 | Yes | Hard cap to prevent abuse |
+| Simulation | scheduled_payment | object | keys round:int -> amount: >=0 int | Yes | Validate total sum < configurable cap |
+| Simulation | sales_achievement_rates | object | round:string -> 50..100 int | Optional | If absent default plan baseline |
+| Simulation | memo | string | 0..1000 chars | Optional | Null allowed to clear |
+| Policy | version | string | ^v?[0-9]+\.[0-9]+\.[0-9]+$ (semver) | Yes | Leading v optional |
+| Policy | locale | string | ^[a-z]{2}-[A-Z]{2}$ | Yes | Default ko-KR |
+| Consent | consent_type | string | whitelist: privacy_policy | Yes | Enum expansion gated |
+| Consent | consent_version | string | As policy.version | Yes | Must match published version |
+| Onboarding | consent_version | string | As policy.version | Conditional | Only if consent recorded |
+
+### 18.2 Structured Error Object
+
+All error responses MUST return HTTP status != 2xx with JSON body:
+
+```json
+{
+  "error": {
+    "code": "OTP_INVALID",
+    "message": "The code you entered is incorrect.",
+    "details": { "remaining_attempts": 2 },
+    "trace_id": "<uuid>"
+  }
+}
+```
+
+Fields:
+
+- code (string; UPPER_SNAKE): machine parsable.
+- message (string; localized-ready, default ko-KR).
+- details (object; optional contextual data).
+- trace_id (string; correlates logs & metrics).
+
+### 18.3 Error & Status Code Matrix (Excerpt)
+
+| Endpoint | Scenario | HTTP | code | Message (EN draft) | Notes |
+|----------|----------|------|------|--------------------|-------|
+| POST /api/verify-user | Not whitelisted | 404 | USER_NOT_WHITELISTED | User not found | Hide enumeration (same as invalid?) |
+| POST /api/otp/send | Rate limit exceeded | 429 | OTP_SEND_RATE_LIMIT | Too many requests. Try again later. | Include retry_after header |
+| POST /api/otp/send | SMS provider failure | 502 | OTP_PROVIDER_FAILURE | Failed to send code. Retry shortly. | Do not reveal provider error |
+| POST /api/otp/verify | Wrong code | 400 | OTP_INVALID | Incorrect code. | Decrement attempts |
+| POST /api/otp/verify | Expired | 400 | OTP_EXPIRED | Code expired. Request a new one. | No attempt decrement |
+| POST /api/otp/verify | Attempts exhausted | 423 | OTP_LOCKED | Too many attempts. Request new code. | 423 Locked |
+| POST /api/onboarding/link | Missing consent | 409 | CONSENT_REQUIRED | Please re-accept current policy. | Client should redirect |
+| GET /api/onboarding/status | Not linked yet | 200 | (none) | success true with flags | Normal path |
+| POST /api/simulation/create | Invalid plan | 400 | PLAN_UNSUPPORTED | Unsupported plan id. | Validation |
+| POST /api/simulation/run | Not owner | 403 | FORBIDDEN | You don't have access to this simulation. | RLS + server check |
+| PATCH /api/simulations/{id} | Concurrent update | 409 | CONFLICT_MODIFIED | Simulation changed; reload and retry. | Optional optimistic lock |
+| POST /api/admin/privacy-policies | Duplicate version | 409 | POLICY_VERSION_EXISTS | Version already exists. | Unique(version,locale) |
+| POST /api/admin/privacy-policies/{id}/publish | Already published | 409 | POLICY_ALREADY_PUBLISHED | Policy already published. | Idempotent safety |
+| Any | Unhandled exception | 500 | INTERNAL_ERROR | Unexpected error occurred. | trace_id logged |
+
+### 18.4 OTP Resend Policy & UX Microcopy
+
+Policy:
+
+- Initial send: immediate.
+- Cooldown between resends: 60s (show countdown).
+- Max resends per 10 minutes: 3 (OTP_SEND_RATE_LIMIT if exceeded).
+- Expiry: 5 minutes from creation.
+- Attempts: 6 attempts per code; after exhaustion require new OTP.
+
+Microcopy (ko-KR baseline examples):
+
+- Sending: "인증 코드를 전송 중입니다..."
+- Sent success: "인증 코드가 전송되었습니다. 유효 시간은 5분입니다."
+- Resend disabled: "재전송 가능까지 {seconds}초 남았습니다."
+- Wrong code: "코드가 올바르지 않습니다. 다시 시도하세요. (남은 시도 {remaining_attempts}회)"
+- Expired: "코드가 만료되었습니다. 새 코드를 요청하세요."
+- Locked: "시도 가능 횟수를 초과했습니다. 새 코드를 요청하세요."
+
+### 18.5 Accessibility & Internationalization (Minimal Checklist)
+
+| Area | Baseline Requirement |
+|------|----------------------|
+| Color Contrast | All text/background pairs WCAG 2.1 AA (contrast ≥ 4.5:1) |
+| Focus Management | Focus ring visible; programmatic focus on error summary & dialogs |
+| Keyboard Nav | All interactive elements reachable via Tab; skip links supported |
+| Semantics | Forms use labels; ARIA only for gaps; no div-only buttons |
+| Error Announce | Live region (aria-live polite) for form errors & success messages |
+| Motion | Avoid layout shift on OTP field; reserve space for errors |
+| I18n Prep | All user-visible strings behind translation function `t(key)` placeholder; default ko-KR; no concatenated dynamic strings |
+| Date/Number | Use locale-aware formatting utilities |
+
+### 18.6 OpenAPI Specification Integration
+
+- FastAPI auto-generates OpenAPI JSON at `/openapi.json`.
+- CI Step: fetch spec after test stage, compare against committed snapshot `docs/api/openapi.snapshot.json`.
+- If diff: require PR to include updated snapshot + CHANGELOG note (API Added / Changed / Deprecated).
+- Client Generation (optional future): Use openapi-typescript to produce `frontend/src/types/api.ts` (ensuring single source of truth for contracts).
+- Backward Compatibility Rules:
+  - Adding optional response fields: Allowed (non-breaking).
+  - Removing fields or changing semantics: Requires version bump (see Section 20 Versioning & Evolution).
+  - Deprecations annotated with `deprecated: true` in OpenAPI and documented in CHANGELOG.
+
+### 18.7 Structured Outcome Codes
+
+Outcome codes (subset) unify logs & analytics: `SUCCESS`, `VALIDATION_ERROR`, `RATE_LIMITED`, `NOT_FOUND`, `FORBIDDEN`, `CONFLICT`, `INTERNAL_ERROR`.
+
+---
+
+## 19. Operational Playbook (Deploy, Monitor, Rollback)
+
+### 19.1 Deployment Workflow
+
+| Stage | Action | Validation | Promotion Criteria |
+|-------|--------|-----------|--------------------|
+| Dev | Merge to feature branch | Unit & lint pass | Branch policy |
+| Staging (optional) | Deploy tagged pre-release | Smoke tests + OpenAPI diff | Manual approval |
+| Prod (Internal) | Deploy signed image tag | Health check, migration success | 0 blocking alerts in 15m |
+
+Deployment Steps:
+
+1. Build images with pinned dependency hashes.
+2. Run DB migrations inside a transaction (idempotent).
+3. Run smoke script: verify /api/health, run OTP send dry-run (provider sandbox), fetch latest policy.
+4. If failure: rollback by re-deploying last known-good image + reverse unsafe migrations (forward-only design preferred; use compensating migration if needed).
+
+### 19.2 Monitoring & Alerting Runbook
+
+| Alert | Threshold | Immediate Action | Escalation |
+|-------|-----------|------------------|------------|
+| OTP provider failure spike | >30% failures 5m | Switch to fallback provider (future) / notify | Engineering lead |
+| p95 CRUD latency breach | > 800ms 15m | Inspect DB (locks); check Supabase status | Infra owner |
+| 5xx error rate | >1% 5m | Pull logs by trace_id; identify recent deploy | Rollback if deploy-related |
+| Admin publish burst | >3 publishes 5m | Verify legitimacy; temporarily raise threshold | Security contact |
+
+### 19.3 Audit Logging Requirements
+
+| Event | Fields | Retention | Purpose |
+|-------|--------|-----------|---------|
+| policy_publish | policy_id, new_version, admin_user_id, ts, previous_published_id | 1 year | Accountability |
+| policy_create | policy_id, version, admin_user_id, ts | 1 year | Change trace |
+| notice_create | notice_id, admin_user_id, ts | 6 months | Content provenance |
+| onboarding_link | user_id, whitelist_passed, otp_verified, consent_version, ts | 6 months | Onboarding trace |
+| admin_login_check | admin_user_id, ts, ip_hash | 3 months | Security anomaly detection |
+| simulation_run | simulation_id, user_id, rounds, duration_ms, engine_version, ts | 6 months | Performance & usage |
+
+### 19.4 User Action Analytics (Privacy-Aware)
+
+Anonymous event model (user_id pseudonymous; avoid phone or raw PII):
+
+| Event | Fields | Note |
+|-------|--------|------|
+| page_view | user_id, path, ts | Path whitelist only |
+| session_start | user_id, ts | Derived from first activity after inactivity (30m) |
+| session_end | user_id, duration_s, pages_viewed | Calculated asynchronously |
+| otp_step | user_id/hash_context, outcome, ts | outcome: sent, verified, expired |
+| consent_accept | user_hash/user_id, version, ts | Pre vs post auth mapping |
+| simulation_created | user_id, plan_id, ts | Usage metric |
+| simulation_run | user_id, simulation_id, rounds, duration_ms | Performance + capacity |
+
+Page dwell time: compute client-side heartbeat (every 15s) aggregated server-side; cap at 5 min per page for analytics normalization.
+
+### 19.5 Rollback Strategy
+
+| Scenario | Action |
+|----------|--------|
+| API regression | Redeploy previous image (immutably tagged) |
+| Failed migration (non-destructive) | Apply down migration (only if explicitly authored) |
+| Failed migration (destructive) | Restore from last snapshot backup (Supabase) + replay accepted writes (if feasible) |
+| Security incident | Rotate keys (Supabase service, Solapi, OTP secret) sequentially; revoke sessions |
+
+### 19.6 Operational Metrics Dashboard (Recommended Widgets)
+
+- Latency heatmap (p50/p95) by endpoint group.
+- OTP funnel (send -> verify success ratio).
+- Simulation throughput (runs/hour) & average duration.
+- Policy publish history timeline.
+- Error code distribution (top 10).
+
+---
+
+## 20. Versioning & Evolution (API, Simulation Engine, Policy Content)
+
+### 20.1 API Versioning Strategy
+
+- Style: URL-less (implicit) minor evolution; add `X-API-Version` response header referencing current semantic version (e.g., 1.3.0).
+- Backward Compatible Changes: additive fields, new endpoints.
+- Breaking Changes: field removal/rename, semantic change, auth scope change → require major version bump noted in CHANGELOG and OpenAPI `info.version`.
+- Deprecation Lifecycle: mark deprecated in OpenAPI + response header `Deprecation: true`; maintain for ≥1 minor version before removal.
+
+### 20.2 Simulation Engine Versioning
+
+- Introduce `engine_version` (semantic) recorded in `simulations.simulation_results` metadata.
+- Changes that alter numeric outcomes MUST increment minor (e.g., formula tweak). Algorithmic shift increments major.
+- Historical results are immutable: never recompute in-place under a new engine version; re-run produces a new result set with new engine_version.
+- Determinism: same inputs + engine_version guarantee identical result; add regression tests snapshotting key scenarios.
+
+### 20.3 Policy Content Versioning
+
+- Existing `privacy_policies.version` acts as semantic version (allow patch bump for typo corrections; patch-level may allow content diff if non-material—log reason in audit).
+- Publish flow ensures single active published policy per locale.
+- Deprecation: superseded versions remain readable to admins (historical record) but not returned as “current”.
+
+### 20.4 Migration Governance
+
+| Change Type | Version Impact | Required Artifacts |
+|-------------|---------------|--------------------|
+| Add optional response field | Patch | OpenAPI update, tests |
+| Add new endpoint | Minor | OpenAPI, tests, docs entry |
+| Remove field / break semantics | Major | Migration plan, comms note |
+| Simulation formula adjustment | Minor (engine) | Engine version bump, fixture diffs |
+| Simulation structural change | Major (engine) | Migration note, dual-run validation |
+
+### 20.5 CHANGELOG Discipline
+
+- Keep `CHANGELOG.md` with sections: Added, Changed, Deprecated, Removed, Fixed, Security.
+- Each release tags commit; link to OpenAPI diff.
+
+### 20.6 Backward Compatibility Testing
+
+- Nightly job: regenerate client types from OpenAPI; diff to previous commit—if incompatible, alert engineering.
+- Contract tests call critical endpoints using previous version fixtures to validate additive-only change.
+
+---
+
+## 21. Glossary
+
+- Supabase: Backend-as-a-Service providing Postgres, Auth, Storage, and APIs.
+- JWKS: JSON Web Key Set for verifying JWT signatures.
+- OTP: One-time password sent via SMS.
+- PWA: Progressive Web App supporting installability and service worker caching.
+- RLS: Row Level Security (Postgres policy-based row access control).
+- SLO: Service Level Objective.
+- STRIDE: Threat modeling mnemonic (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege).
+- Engine Version: Semantic identifier for simulation algorithm revision.
+
+---
+
+## 22. Appendices
+
+- Health probe: /api/health returns status='ok' when Supabase reachable; latency in ms.
+- Error handling: Backend returns structured HTTP errors with detail; frontend surfaces messages (see Section 18).
+- Known caveats: consent_records schema must include user_hash to match implementation; ensure DB migrations align with API.
+- Future Considerations: offline caching strategy, multi-locale policy storage, feature flag framework.
 
 ---
