@@ -452,3 +452,171 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 - Health probe: /api/health returns status='ok' when Supabase reachable; latency in ms.
 - Error handling: Backend returns structured HTTP errors with detail; frontend surfaces messages.
 - Known caveats: consent_records schema must include user_hash to match implementation; ensure DB migrations align with API.
+
+---
+
+## 19. Security & Performance Appendix
+
+### 19.1 Scope & Objectives
+
+This appendix formalizes (a) threat model, (b) security controls, (c) service level objectives (SLOs), (d) rate limits, (e) logging & monitoring, (f) data retention. It reflects 2025 best practice for a small internal PWA (60–100 users; peak 30–60) using Supabase + FastAPI + Cloudflare Tunnel.
+
+### 19.2 Assets (Ranked by Sensitivity)
+
+1. Authentication tokens (Supabase JWT).
+2. OTP codes (transient) / phone numbers (PII) – NOTE: only hashed OTP stored; phone stored in `phone_otps`.
+3. User onboarding status (`user_onboarding` row: whitelist_passed, otp_verified, consent_version).
+4. Simulation definitions & results (`simulations`).
+5. Admin capabilities (publish/unpublish policies, create notices).
+6. Privacy policy content (integrity concern).
+7. Infrastructure secrets (Supabase service key, Solapi API keys).
+8. user_hash (pseudo-identifier linking pre-auth actions).
+
+### 19.3 Actors
+
+| Actor | Description | Trust Level |
+|-------|-------------|-------------|
+| End User | Whitelisted internal participant | Low → Elevated post-auth |
+| Admin User | User with admin entry in `admins` | Medium (requires server-side verification each request) |
+| Attacker (External) | Unauthenticated internet client | None |
+| Attacker (Internal) | Whitelisted but malicious | Low (after auth) |
+| Supabase | Managed backend (DB/Auth) | High (trusted service) |
+| SMS Provider (Solapi) | OTP delivery channel | Medium (assumed correct delivery, not trusted with system auth) |
+| Cloudflare Tunnel | Exposure layer for frontend/backend | Medium (network edge) |
+| Build / CI System | Produces container images | High (supply chain) |
+
+### 19.4 Trust Boundaries
+
+1. Browser ↔ Backend API (HTTPS, JWT boundary).
+2. Backend ↔ Supabase REST/RPC (service key boundary).
+3. Backend ↔ SMS Provider (outbound HTTP with API key).
+4. Admin UI actions ↔ Admin authorization (table lookup each request).
+5. Pre-auth context (user_hash only) ↔ Authenticated context (user_id mapping at onboarding link).
+
+### 19.5 Attack Surface (Key Endpoints / Vectors)
+
+| Surface | Risks | Core Mitigations |
+|---------|------|------------------|
+| /api/otp/send | Enumeration (phone discovery), abuse (SMS flooding) | Hash whitelist; generic responses; strict rate limits; IP + phone counters |
+| /api/otp/verify | Brute force guessing | Attempt counter; lockout; constant-time hash compare; rate limiting |
+| /api/onboarding/link | Unauthorized linking / replay | Require valid JWT; idempotent upsert; audit log (planned) |
+| /api/admin/* | Privilege escalation | Server-side admin check (not client claim); deny by default; per-action audit |
+| /api/simulation/run | Resource exhaustion | User-level rate limit; max rounds constraint; sane defaults |
+| JWT Validation | Forged tokens / key rotation lag | Supabase JWKS fetch with caching & TTL; kid verification; audience & issuer checks |
+| Cloudflare Tunnel | Exposure config drift | Restrict origins; CORS allowlist; infra change review |
+| Dependency Chain | Supply chain | Pin versions; weekly vulnerability scan; lockfile integrity |
+
+### 19.6 Threat Enumeration (STRIDE Summary)
+
+| Category | Example Threat | Impact | Mitigation |
+|----------|---------------|--------|-----------|
+| Spoofing | Forged admin JWT | Unauthorized admin actions | JWKS signature check + admin table verification |
+| Tampering | Modify simulation results | Incorrect analytics | Results regeneration on input change; restrict update fields |
+| Repudiation | Admin denies publishing policy | Lack of accountability | Add audit log (timestamp, admin user_id, policy_id) (Planned) |
+| Information Disclosure | OTP code leakage in logs | Account takeover | Never log raw codes; store hashed; redact phone except last 2 digits |
+| Denial of Service | OTP flood or simulation spam | Service degradation | Layered rate limits, concurrency cap per user, exponential backoff |
+| Elevation of Privilege | Normal user hits admin route | Unauthorized access | Centralized dependency `is_admin(user_id)` check each request |
+
+### 19.7 Security Controls (Current vs Planned)
+
+| Control | Status | Notes |
+|---------|--------|-------|
+| JWT (RS256) validation via JWKS | Implemented | Cache keys (TTL 5–15m) |
+| RLS on user-owned tables | Planned | Enforce before production launch |
+| Admin server-side check | Implemented | Table lookup each request |
+| OTP hashing (HMAC-SHA256) | Planned | Present spec: generic hash; upgrade to HMAC with server secret |
+| Rate limiting (OTP send/verify) | Partial | Add per-IP dimension + sliding window |
+| Secrets in environment (vault) | Planned | Currently .env in container build context |
+| Structured logging (JSON) | Planned | Add trace_id per request |
+| Audit logging (admin & onboarding link) | Planned | Append-only table |
+| Dependency vulnerability scanning | Planned | Enable GitHub Dependabot / pip-audit weekly |
+
+### 19.8 Service Level Objectives (SLOs)
+
+| Dimension | Target | Measurement | Rationale |
+|----------|--------|-------------|-----------|
+| API CRUD latency (non-simulation) | p50 < 300ms, p95 < 800ms | From backend timing logs | Internal user responsiveness |
+| Simulation run (≤ 500 rounds) | p95 < 2s | Timed endpoint | User feedback threshold |
+| Availability (Core API set) | Monthly 99.5% | (Total time - error/outage) / total | Internal stage tolerance |
+| OTP send success | > 98% | Count success / attempts | Reliability of onboarding |
+| Error rate (5xx) | < 1% of requests | Log aggregation | Stability indicator |
+| Policy publish propagation | < 5s | Time diff publish -> visible | Cache invalidation correctness |
+
+Error Budget: 0.5% monthly unavailability; if consumed > 50% mid-period, freeze feature deployment until budget recovers.
+
+### 19.9 Rate Limits (Enforced / Planned)
+
+| Endpoint Group | Limit | Window | Scope Keys | Action on Breach | Status |
+|----------------|-------|--------|------------|------------------|--------|
+| OTP Send | 3 | 15 min | phone+IP | 429 + generic cooldown msg | Enforce now |
+| OTP Send | 10 | 24 h | phone | 429; require manual support | Planned |
+| OTP Verify | 6 | 15 min | phone | Lock OTP; require resend | Enforce now |
+| OTP Verify | 15 | 24 h | phone | Throttle (fixed 60s delay) | Planned |
+| Onboarding Link | 10 | 1 h | user_id | 429 | Planned |
+| Simulation Run | 30 | 10 min | user_id | 429; suggest adjust rounds | Planned |
+| Admin Policy Publish | 5 | 1 h | admin user_id | 429; log security event | Planned |
+| Notices Create | 10 | 1 h | admin user_id | 429 | Planned |
+
+Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + persistent fallback (Supabase) for sliding window. Include `Retry-After` header where meaningful.
+
+### 19.10 Logging & Monitoring
+
+| Aspect | Spec |
+|--------|------|
+| Log Format | JSON lines (timestamp, level, trace_id, user_id?, route, latency_ms, outcome_code) |
+| Redaction | Mask phone (show last 2 digits), never log OTP code, redact Authorization header |
+| Trace Correlation | Generate trace_id per request; propagate to downstream calls (Supabase via custom header if supported) |
+| Metrics | request_count{route,status}; latency_histogram_ms; otp_send_attempts; otp_verify_failures; simulation_run_latency_ms; policy_publish_count; admin_action_count |
+| Alerts | >5 consecutive OTP send failures (provider outage); p95 latency > target for 15m; 5xx rate >1% over 5m; unusual admin publish burst (>3 in 5m) |
+| Dashboard | Onboarding funnel (verify → otp → consent → link → first simulation) |
+
+### 19.11 Key & Secret Management
+
+| Secret | Rotation Policy | Storage (Current) | Migration Plan |
+|--------|-----------------|-------------------|----------------|
+| Supabase service key | 90 days | .env | Move to managed secret store (e.g., GitHub Actions secrets + runtime injection) |
+| Solapi API key | 180 days | .env | Same as above |
+| OTP HMAC secret | 180 days (stagger) | .env | Use versioned secret; store secret_version in OTP rows |
+| JWKS cache | 5–15 min refresh | Memory | Maintain fallback old key set for grace period |
+
+### 19.12 Data Retention & Purge
+
+| Table | Retention | Purge Mechanism | Rationale |
+|-------|-----------|----------------|-----------|
+| phone_otps | 24h after expires_at | Daily job (DELETE) | Minimize PII exposure |
+| consent_records | Indefinite (legal) | None (export on request) | Compliance trail |
+| simulations | Active lifetime | User delete → hard delete (internal stage) | No legal retention requirement yet |
+| user_onboarding | Until account deletion | Cascade on user removal | Re-link not required post-delete |
+| notices / privacy_policies | Permanent | Never purge (archiving) | Historical reference |
+| logs (app) | 30 days | Rolling retention in log store | Cost + internal needs |
+
+### 19.13 Validation & Input Constraints (Security-Relevant Subset)
+
+| Field | Constraint | Security Reason |
+|-------|-----------|-----------------|
+| phone_number | E.164, length 10–15 | Prevent injection / storage bloat |
+| otp_code | 6 digits numeric | Uniform entropy; reject formatting variance |
+| plan_id | Enum (A,B,C,D,K,P,R,F,E) | Prevent arbitrary plan execution |
+| simulation_rounds | 1–1000 | Prevent CPU abuse |
+| memo | ≤ 1000 chars UTF-8 | Avoid oversized payloads |
+
+### 19.14 Operational Security Procedures
+
+| Procedure | Trigger | Action |
+|-----------|--------|--------|
+| Key Rotation | Scheduled (90d) | Generate new key, deploy, revoke old after 24h overlap |
+| OTP Abuse Spike | > 20 send failures (distinct phones) in 5m | Temporarily tighten rate limits & alert |
+| Policy Publish | New version published | Invalidate cache; log audit record |
+| Security Incident (P1) | Confirmed data exposure | Revoke tokens, rotate keys, notify stakeholders, post-mortem in 72h |
+
+### 19.15 Acceptance / Verification
+
+| Control | Verification Method |
+|---------|--------------------|
+| Rate Limits | Automated test hitting boundary; expect 429 and Retry-After |
+| OTP Hashing | Confirm no raw code persisted (DB inspection) |
+| Logging Redaction | Sample logs: ensure masked phone & no secrets |
+| RLS Enforcement | Attempt cross-user simulation fetch → 0 rows |
+| Latency SLO | Weekly report summarizing p50/p95 vs targets |
+
+---

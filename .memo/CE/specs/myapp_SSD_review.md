@@ -243,7 +243,7 @@ Core functional flows, major tables, high-level business logic, non-functional p
 ## Prioritized Action Plan (Top 12)
 
 <!-- 1. Fix numbering inconsistencies; unify terminology (`scheduled_payment` vs `investments`). -->
-2. Add Security & Performance Appendix (threat model + SLOs + rate limits table).
+<!-- 2. Add Security & Performance Appendix (threat model + SLOs + rate limits table). -->
 3. Introduce structured error & status code matrix.
 4. Define validation + constraints table (critical for frontend alignment & preventing security issues).
 5. Add OTP resend policy & user-facing error microcopy guidelines.
