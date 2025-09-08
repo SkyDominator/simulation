@@ -665,7 +665,7 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 
 Validation:
 
-- Middleware injects headers; startup self-test fetches root & asserts set.
+- Middleware `security_headers_mw` injects headers; startup self-test fetches root & asserts set.
 - Playwright smoke validates CSP presence & denies inline script removed test (future when hashes in place).
 - Report-Only CSP phase (2 weeks) logging violations to console (future endpoint) before strict mode.
 
@@ -936,8 +936,13 @@ Page dwell time: compute client-side heartbeat (every 15s) aggregated server-sid
 - Introduce `engine_version` (semantic) recorded in `simulations.simulation_results` metadata.
 - Changes that alter numeric outcomes MUST increment minor (e.g., formula tweak). Algorithmic shift increments major.
 - Historical results are immutable: never recompute in-place under a new engine version; re-run produces a new result set with new engine_version.
-- Determinism: same inputs + engine_version guarantee identical result; add regression tests snapshotting key scenarios.
+- Determinism: same inputs + engine_version guarantee identical result; regression snapshot tests cover canonical scenarios.
 - Migration Note: initial backfill sets engine_version='1.0.0' for all existing rows; future version bumps require (a) CHANGELOG entry, (b) new regression snapshot tests, (c) adding upgrade rationale to audit log on first deploy.
+- Regression Test Scaffold:
+  - Directory: `backend/tests/engine_snapshots/`
+  - Fixture: `{ "input": {...}, "expected": { "engine_version": "1.0.0", "results_hash": "<sha256>", "metrics": { ... } } }`
+  - Hash = SHA256 of canonical JSON (sorted keys) of numeric outputs.
+  - CI job `engine-snapshot` fails if hash drift occurs without engine_version bump.
 
 ### 20.3 Policy Content Versioning
 
@@ -999,7 +1004,7 @@ Page dwell time: compute client-side heartbeat (every 15s) aggregated server-sid
 | Backend integration | pytest + test DB | Endpoint + DB contract |
 | Simulation invariants | pytest + hypothesis | Detect algorithm edge regressions |
 | Frontend unit | Vitest + RTL | Component & hook behavior |
-| Contract (API) | Custom script + JSON schema | Ensure responses match OpenAPI snapshot |
+| Contract (API) | Custom script + JSON schema + Spectral | Ensure responses match OpenAPI snapshot & style rules |
 | Accessibility | axe-core (Playwright/JS) | Baseline WCAG scanning for critical flows |
 | Performance smoke | k6/Locust (light) | SLO guard (p95 latency) |
 | Security scanning | pip-audit, npm audit, optional Bandit | Dependency/code risk |
@@ -1019,8 +1024,8 @@ Page dwell time: compute client-side heartbeat (every 15s) aggregated server-sid
 1. Lint & Type Check (ESLint, tsc).
 2. Backend tests + coverage.
 3. Frontend tests + coverage.
-4. Generate & diff OpenAPI snapshot.
-5. Spectral lint spec.
+4. Generate & diff OpenAPI snapshot (workflow: `openapi-snapshot.yml`).
+5. Spectral lint spec via `.spectral.yaml` (rules: operation-tags, no-unused-components, operationId-unique, path-kebab-case).
 6. Contract tests (uses snapshot + running app where needed).
 7. Accessibility scan (headless pages: OTP, Consent, Main, Admin Policy).
 8. Security scans (pip-audit, npm audit) fail on HIGH.
@@ -1032,6 +1037,7 @@ Page dwell time: compute client-side heartbeat (every 15s) aggregated server-sid
 - On drift: provide unified diff; developer updates snapshot + CHANGELOG section.
 - On flaky test (tagged @flaky): auto retry once; otherwise fail.
 - On performance regression (p95 > budget + 10%): mark build unstable, require investigation.
+- On engine snapshot drift: hash mismatch without engine_version bump -> fail; with bump -> require fixture regen.
 
 ### 23.5 Local Developer Commands (Illustrative)
 
