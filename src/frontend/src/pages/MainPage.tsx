@@ -10,7 +10,7 @@ import { Container, Paper, Typography, Stack, Divider } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AddIcon from "@mui/icons-material/Add";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
-import PolicyIcon from "@mui/icons-material/Gavel";
+// import PolicyIcon from "@mui/icons-material/Gavel";
 
 // Extracted components
 import SimulationTable, {

@@ -4,9 +4,10 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 // Helper to read env at build time for API base url pattern
-// const API_BASE = process.env.VITE_API_BASE_URL || "https://simulation.lightoflifeclub.com/api";
-// const API_BASE = "http://10.10.113.129:8000/api";
-const API_BASE = "http://172.29.50.33:8000/api";
+const API_BASE =
+  process.env.VITE_API_BASE_URL || "https://simulation.lightoflifeclub.com/api";
+// "http://10.10.113.129:8000/api";
+// "http://172.30.1.39:8000/api";
 
 export default defineConfig({
   plugins: [
