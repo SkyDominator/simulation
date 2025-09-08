@@ -1,6 +1,6 @@
 # LOLClub Simulation – Software Specification Document (SSD)
 
-Version: 0.1.0  
+Version: 0.1.4  
 Date: 2025-09-05  
 Status: Draft (auto-generated from source)  
 Owners: Product, Engineering (Backend/Frontend)
@@ -226,6 +226,91 @@ Note: Field types reflect usage in code. Additional audit fields (created_at/upd
   - consent_given_at timestamptz default now()
   - ip_address text null
   - user_agent text null
+
+### 6.2 Canonical table schemas (authoritative sources)
+The following canonical column lists are derived from the backend migrations and Pydantic models (single source of truth for the API and DB). These are intentionally explicit to prevent schema drift between the SSD and implementation.
+
+- whitelist
+  - user_hash text PRIMARY KEY -- sha256("{name}-{normalized_phone}")
+
+- admins
+  - user_id uuid PRIMARY KEY -- references auth.users(id)
+
+- notices
+  - id uuid PRIMARY KEY
+  - title text NOT NULL
+  - content text NOT NULL
+  - pinned boolean DEFAULT false
+  - published boolean DEFAULT false
+  - created_at timestamptz DEFAULT now()
+  - updated_at timestamptz DEFAULT now()
+
+- privacy_policies
+  - id uuid PRIMARY KEY DEFAULT gen_random_uuid()
+  - version text NOT NULL
+  - locale text NOT NULL DEFAULT 'ko-KR'
+  - content text NOT NULL
+  - published boolean NOT NULL DEFAULT false
+  - effective_date date NULL
+  - updated_at timestamptz NOT NULL DEFAULT now()  -- canonical field name: `updated_at`
+  - created_at timestamptz NOT NULL DEFAULT now()
+  - created_by text NULL
+  - unique(version, locale)
+
+- phone_otps
+  - id uuid PRIMARY KEY DEFAULT gen_random_uuid()
+  - phone text NOT NULL -- E.164 normalized form
+  - code_hash text NOT NULL -- HMAC(secret, phone|code)
+  - created_at timestamptz NOT NULL DEFAULT now()
+  - expires_at timestamptz NOT NULL
+  - attempts smallint NOT NULL DEFAULT 0
+  - used boolean NOT NULL DEFAULT false
+  - provider_msg_id text NULL
+  - client_ip inet NULL
+  - user_agent text NULL
+  - indexes: phone, created_at, (phone, used, expires_at)
+
+- user_onboarding
+  - user_id uuid PRIMARY KEY
+  - user_hash text NULL
+  - phone_last4 text NULL
+  - whitelist_passed boolean DEFAULT false
+  - otp_verified boolean DEFAULT false
+  - consent_version text NULL
+  - consent_given_at timestamptz NULL
+  - created_at timestamptz DEFAULT now()
+  - updated_at timestamptz DEFAULT now()
+
+- consent_records
+  - id uuid PRIMARY KEY DEFAULT uuid_generate_v4()
+  - user_id uuid REFERENCES auth.users(id) NOT NULL
+  - consent_type text NOT NULL -- e.g., 'privacy_policy'
+  - consent_version text NOT NULL
+  - consent_given_at timestamptz DEFAULT now()
+  - ip_address text NULL
+  - user_agent text NULL
+  - RLS: users can access their own records (see Section 17.7)
+
+- simulations (application model)
+  - id uuid PRIMARY KEY
+  - user_id uuid REFERENCES auth.users(id) NOT NULL
+  - plan_id text NOT NULL -- enum (A,B,C,...)
+  - starting_company_round integer NOT NULL
+  - current_company_round integer NOT NULL
+  - simulation_rounds integer NOT NULL
+  - investments jsonb NULL -- normalized list of {round:int, amount:int}
+  - sales_achievement_rates jsonb NULL -- map round->percent
+  - simulation_results jsonb NULL -- persisted output + engine_version metadata
+  - memo text NULL
+  - created_at timestamptz DEFAULT now()
+  - updated_at timestamptz DEFAULT now()
+
+Notes:
+- These canonical fields are intentionally normalized for the API surface (Pydantic models reflect the same names and shapes). If schema changes are required, update the migrations, Pydantic models in `src/backend/models/schemas.py`, and this SSD simultaneously.
+
+Canonical date/field naming convention:
+- The canonical column name for entity update timestamps across all tables is `updated_at` (timestamp with time zone). Where legacy or alternative names appear (for example `last_updated` in some docs), `updated_at` is authoritative; APIs and migrations MUST use `updated_at` and map/convert incoming/outgoing names as needed.
+
 
 ### 6.1 Planned Audit / Analytics Tables
 
@@ -559,9 +644,11 @@ This appendix formalizes (a) threat model, (b) security controls, (c) service le
 | Control | Status | Notes |
 |---------|--------|-------|
 | JWT (RS256) validation via JWKS | Implemented | Cache keys (TTL 5–15m) |
-| RLS on user-owned tables | Planned | Enforce before production launch |
+| RLS on user-owned tables | MUST (release blocker) | Enforce before production launch; target: before production deployment (sprint+1) |
 | Admin server-side check | Implemented | Table lookup each request |
-| OTP hashing (HMAC-SHA256) | Planned | Present spec: generic hash; upgrade to HMAC with server secret |
+| OTP hashing (HMAC-SHA256) | MUST (release blocker) | Implement HMAC-based OTP storage & verification; target: sprint+1 cutover with dual-version validation |
+
+NOTE: The two items above (RLS and OTP HMAC) are considered release blockers for production. Implementation MUST be completed and validated in staging before promotion. A minimal test matrix (RLS policy verification, OTP code lifecycle, and rate-limit behavior) MUST be added to CI.
 | Rate limiting (OTP send/verify) | Partial | Add per-IP dimension + sliding window |
 | Secrets in environment (vault) | Planned | Currently .env in container build context |
 | Structured logging (JSON) | Planned | Add trace_id per request |
@@ -644,6 +731,17 @@ The following retention windows are mandatory; the system MUST implement automat
 - `logs` MUST be pruned to maintain ≤ 30 rolling days.
 - Planned audit tables MUST honor specified retention (admin: 1 year; user events: 6 months).
 - Purge jobs SHOULD emit a summary metric (purged_row_count).
+ 
+### Privacy compliance note
+The service follows a privacy-by-design posture: only collect the minimal PII required (phone E.164 and last-4 masking when possible), store transient OTP data for a maximum of 24 hours after expiry, and keep consent records as a legal audit trail. A documented Subject Access / Data Deletion process (DSAR) will be provided to product and legal teams and implemented as an administrative workflow (export + deletion) prior to production launch.
+
+### CI / Contract test checklist (minimal)
+The following checks MUST run in CI for every main/staging merge before production promotion:
+- OpenAPI snapshot diff: regenerate `docs/api/openapi.snapshot.json` and fail CI on contract drift.
+- Spectral (or equivalent) lint: run OpenAPI linting and fail on policy violations for error codes and response schemas.
+- Security header smoke: basic HTTP check that core endpoints include HSTS and CSP response headers.
+- Accessibility smoke: run a simple axe-core scan against a small set of critical pages (OTPPage, LoginPage, SimulationList) and fail on any critical violations.
+
 
 ### 17.13 Validation & Input Constraints (Security-Relevant Subset)
 
