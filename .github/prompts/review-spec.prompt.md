@@ -25,6 +25,13 @@ Review the LOLClub Simulation Software Specification Document (SSD) `/.memo/CE/s
     1. Are the specifications described in the SSD complete and do they cover all necessary aspects of the system (e.g., functional requirements, non-functional requirements, etc.)?
     2. Are there any redundant or unnecessary specifications or sections that could be removed or simplified?
 
+## Notes
+
+- All reviews should be based on the latest version of the SSD.
+- Provide specific examples and references to the SSD where applicable.
+- The review should be structured and organized, with clear headings and subheadings for each key review area.
+- The review should be based on the best practices and standards in software development and system design as of the current date to make the SSD meet the purpose/goals of the project, given the app environments ("Environment Profiles" described in the SSD).
+
 ## Review format
 
 Write your review as `/.memo/CE/specs/myapp_SSD_review-011.md` (SSD Review (v0.1.1)). Include suggestions for improvements or changes where necessary for each key review area.
