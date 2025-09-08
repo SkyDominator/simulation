@@ -336,7 +336,13 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 
 ---
 
-## 14. Acceptance Criteria (samples)
+## 14. Additional Guidelines about Tech Stacks
+
+- Choose and operate the state management solution (e.g., Redux, MobX, Zustand, etc.) that best fits the project requirements and minimizes user friction.
+- Follow best practices for directory structure and code organization.
+- Ensure all dependencies are clearly documented and versioned.
+
+## 15. Acceptance Criteria (samples)
 
 - OTP & Whitelist
   - Given a whitelisted name+phone, when POST /api/verify-user, then is_whitelisted=true and user_hash returned.
