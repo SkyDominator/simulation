@@ -59,9 +59,76 @@ Out-of-scope (deferred):
 - Engineering
     - Maintains backend services, data schema, and frontend app.
 
+
+
+## 4. Environment Profiles
+
+### 4.1 Local Development Environment
+
+| Component | Specification |
+|-----------|--------------|
+| OS | Windows 11 |
+| IDE | Visual Studio Code |
+| Browser | Google Chrome (1920x1080) |
+| Device | Desktop (LG Gram Notebook) |
+| Python | 3.11.6 or later (backend runtime; container may pin 3.12 in future) |
+| TypeScript | 5.8.3 or later |
+| React | 19.1.0 or later |
+
+Notes:
+
+- Primary dev workflow uses Docker Compose (frontend + backend + ancillary services as needed).
+- Chrome is the reference browser for layout and PWA install behavior during development.
+
+### 4.2 Test (Internal App Test) Environment
+
+Target devices for functional / UX validation:
+
+- Desktop: Windows 11 + Google Chrome (latest stable).
+- Mobile: iPhone 11 Pro (iOS 18.1.1) + Google Chrome.
+
+### 4.3 Live (Production) Environment Targets
+
+Supported / validated device & browser matrix (minimum baselines):
+
+- Desktop: Windows 11+ (latest two Chrome versions).
+- Mobile (iOS): iPhone 11+ on iOS 18.1.1+ using Google Chrome (Chromium-based WebKit wrapper on iOS).
+- Mobile (Android): Samsung Galaxy S21+ (Android 12+) using Google Chrome (latest two versions).
+
+Accessibility / Responsiveness:
+
+- Mobile-first layout priority; desktop receives adaptive scaling (max content width, responsive breakpoints consistent with MUI defaults or custom theme breakpoints).
+
+### 4.4 Expected User Load
+
+| Metric | Estimate (Initial Internal Phase) |
+|--------|-----------------------------------|
+| Total registered/whitelisted users | 60–100 |
+| Simultaneous active users (peak) | 30–60 |
+
+Implications:
+
+- Scaling requirements modest; single-region Supabase + minimal horizontal scaling acceptable.
+- Rate limiting + abuse detection should still be enforced early to prevent misuse of OTP or simulation endpoints.
+
+### 4.5 Validation & Testing Notes
+
+- Cross-browser smoke checklist to include: PWA install prompt, OTP flow, consent acceptance, OAuth redirect, simulation run, notice viewing.
+- Performance sampling at expected concurrency: ensure median simulation run (< 2s) under peak simultaneous use assumptions.
+- Provide synthetic test users covering both admin and standard roles across device classes.
+
+### 4.6 Risks / Considerations
+
+| Risk | Description | Mitigation |
+|------|-------------|------------|
+| Device variability | Limited initial device matrix may hide layout bugs on smaller Android screens | Add one sub-6" Android test device in later cycle |
+| Private distribution friction | Users may not understand PWA install flow | Add onboarding tooltip / install CTA guidance |
+| iOS Chrome limitations | Uses WebKit; some APIs (e.g., push notifications) limited | Document unsupported capabilities; degrade gracefully |
+| Peak simultaneous simulations | Running many high-round simulations concurrently could spike CPU | Introduce server-side execution queue or per-user run throttle if needed |
+
 ---
 
-## 4. System Architecture
+## 5. System Architecture
 
 - Frontend: React 19 + TypeScript + Vite (vite-plugin-pwa, MUI for UI). Auth via @supabase/supabase-js. State persisted selectively to localStorage/sessionStorage.
 - Backend: FastAPI (Python 3.12), Pydantic v2 schemas, Supabase client (REST/RPC). JWT verification uses Supabase JWKS.
@@ -76,7 +143,7 @@ High-level flow:
 
 ---
 
-## 5. Data & Models (Supabase)
+## 6. Data & Models (Supabase)
 
 Note: Field types reflect usage in code. Additional audit fields (created_at/updated_at) often exist and are managed by Supabase.
 
@@ -158,7 +225,7 @@ Security notes:
 
 ---
 
-## 6. Security & Authentication
+## 7. Security & Authentication
 
 - Frontend authenticates via Supabase OAuth providers: google, kakao. Sessions persisted with autoRefresh.
 - Backend validates Authorization header using Supabase JWKS with audience "authenticated"; extracts sub as user_id.
@@ -168,7 +235,7 @@ Security notes:
 
 ---
 
-## 7. Functional Requirements
+## 8. Functional Requirements
 
 7.1 Pre-auth Whitelist & OTP
 
@@ -220,7 +287,7 @@ Security notes:
 
 ---
 
-## 8. API Contracts (Selected)
+## 9. API Contracts (Selected)
 
 Notation: All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 
@@ -274,7 +341,7 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 
 ---
 
-## 9. Simulation Engine (Business Logic)
+## 10. Simulation Engine (Business Logic)
 
 - Plans: A, B, C, D, K, P, R, F, E with parameters (PLAN_PARAMETERS).
 - Core concepts:
@@ -288,7 +355,7 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 
 ---
 
-## 10. Non-Functional Requirements
+## 11. Non-Functional Requirements
 
 - Performance: API endpoints should respond < 500ms for typical operations; simulation run depends on rounds but expected to be < 2s for common inputs.
 - Availability: Health endpoint surfaces dependency issues; tolerate transient Supabase failures by surfacing errors gracefully.
@@ -299,7 +366,7 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 
 ---
 
-## 11. PWA Requirements
+## 12. PWA Requirements
 
 - Manifest: name, icons (192–512 maskable). Start URL index.html; theme/background colors per UI theme.
 - Service Worker: Provided via vite-plugin-pwa defaults; no custom runtime caching specified in source snapshot.
@@ -308,7 +375,7 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 
 ---
 
-## 12. UI/UX Flows
+## 13. UI/UX Flows
 
 - Pre-auth Flow:
   1) OTPPage: user enters name/phone; on success receives user_hash.
@@ -324,7 +391,7 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 
 ---
 
-## 13. Constraints & Assumptions
+## 14. Constraints & Assumptions
 
 - Environment variables:
   - Backend: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (server-only), `SUPABASE_PUBLISHABLE_KEY` (optional fallback), `SOLAPI_*` for SMS, `OTP_*` limits and secret.
@@ -336,13 +403,13 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 
 ---
 
-## 14. Additional Guidelines about Tech Stacks
+## 15. Additional Guidelines about Tech Stacks
 
 - Choose and operate the state management solution (e.g., Redux, MobX, Zustand, etc.) that best fits the project requirements and minimizes user friction.
 - Follow best practices for directory structure and code organization.
 - Ensure all dependencies are clearly documented and versioned.
 
-## 15. Acceptance Criteria (samples)
+## 16. Acceptance Criteria (samples)
 
 - OTP & Whitelist
   - Given a whitelisted name+phone, when POST /api/verify-user, then is_whitelisted=true and user_hash returned.
@@ -371,7 +438,7 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 
 ---
 
-## 15. Glossary
+## 17. Glossary
 
 - Supabase: Backend-as-a-Service providing Postgres, Auth, Storage, and APIs.
 - JWKS: JSON Web Key Set for verifying JWT signatures.
@@ -380,7 +447,7 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 
 ---
 
-## 16. Appendices
+## 18. Appendices
 
 - Health probe: /api/health returns status='ok' when Supabase reachable; latency in ms.
 - Error handling: Backend returns structured HTTP errors with detail; frontend surfaces messages.
