@@ -202,6 +202,7 @@ Note: Field types reflect usage in code. Additional audit fields (created_at/upd
   - starting_company_round int
   - current_company_round int
   - simulation_rounds int
+  - engine_version text default '1.0.0'  -- semantic identifier of algorithm used for latest results
   - investments jsonb [{round:int, amount:int}]
   - sales_achievement_rates jsonb {round(str): percent(int 50..100)}
   - simulation_results jsonb (history array)
@@ -217,6 +218,50 @@ Note: Field types reflect usage in code. Additional audit fields (created_at/upd
   - consent_given_at timestamptz default now()
   - ip_address text null
   - user_agent text null
+
+### 6.1 Planned Audit / Analytics Tables
+
+Proposed tables to support Sections 17.10 (Logging & Monitoring), 19.3 (Audit Logging) and 19.4 (User Action Analytics). Will be introduced via migrations once implementation begins.
+
+```sql
+-- Administrative actions (publish, create, delete)
+create table if not exists audit_admin_actions (
+  id uuid primary key default gen_random_uuid(),
+  admin_user_id uuid not null references admins(user_id),
+  action_type text not null check (action_type in (
+    'policy_create','policy_update','policy_publish','notice_create','notice_update','notice_delete'
+  )),
+  entity_id uuid null,
+  previous_published_id uuid null,
+  new_version text null,
+  created_at timestamptz not null default now()
+);
+
+-- User events (privacy-aware usage analytics)
+create table if not exists audit_user_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  event_type text not null check (event_type in (
+    'page_view','session_start','session_end','otp_step','consent_accept','simulation_created','simulation_run'
+  )),
+  event_data jsonb not null default '{}',
+  created_at timestamptz not null default now()
+);
+
+-- Optional: store historical simulation outputs if multiple versions need retention beyond latest
+create table if not exists simulation_results_history (
+  id uuid primary key default gen_random_uuid(),
+  simulation_id uuid not null references simulations(id) on delete cascade,
+  engine_version text not null,
+  results jsonb not null,
+  created_at timestamptz not null default now()
+);
+```
+
+Retention Alignment (see 17.12):
+- audit_admin_actions: 1 year
+- audit_user_events: 6 months
+- simulation_results_history: retained per simulation lifetime (deleted on simulation delete)
 
 Security notes:
 
@@ -434,7 +479,7 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
   - Given an admin user, when publishing a policy, then other policies become unpublished, and GET public returns the published one.
 
 - General
- - Navigating back and forth between pages does not cause data loss or unexpected behavior.
+  - Navigating back and forth between pages does not cause data loss or unexpected behavior.
 
 ---
 
@@ -604,6 +649,38 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 
 ---
 
+### 17.16 Security Headers & CSP Baseline
+
+| Header | Value / Pattern | Rationale |
+|--------|-----------------|-----------|
+| Content-Security-Policy | default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' | Mitigate XSS; restrict external origins (temporary relax inline/eval) |
+| X-Content-Type-Options | nosniff | Prevent MIME sniffing |
+| X-Frame-Options | DENY | Clickjacking defense |
+| Referrer-Policy | strict-origin-when-cross-origin | Reduce leaking path info |
+| Permissions-Policy | geolocation=(), microphone=(), camera=(), payment=() | Least privilege |
+| Strict-Transport-Security | max-age=63072000; includeSubDomains; preload | Enforce long-term HTTPS |
+| Cross-Origin-Embedder-Policy | require-corp | Future isolation for advanced features |
+| Cross-Origin-Opener-Policy | same-origin | Prevent cross-window interference |
+| Cross-Origin-Resource-Policy | same-origin | Prevent resource embedding leaks |
+
+Validation:
+
+- Middleware injects headers; startup self-test fetches root & asserts set.
+- Playwright smoke validates CSP presence & denies inline script removed test (future when hashes in place).
+- Report-Only CSP phase (2 weeks) logging violations to console (future endpoint) before strict mode.
+
+Debt / Follow-up:
+
+- Remove 'unsafe-inline' & 'unsafe-eval' by introducing build-time hashed scripts (target: within 2 sprints).
+- Evaluate need for blob: after refactoring workers.
+
+Incident Triggers:
+
+- Missing HSTS or CSP for >5m on prod -> page ops channel.
+- CSP violation spike (>50/day) -> open investigation ticket.
+
+---
+
 ## 18. Validation & Error Model
 
 ### 18.1 Validation Constraints (Comprehensive)
@@ -648,24 +725,60 @@ Fields:
 - details (object; optional contextual data).
 - trace_id (string; correlates logs & metrics).
 
-### 18.3 Error & Status Code Matrix (Excerpt)
+### 18.3 Error & Status Code Matrix (Comprehensive)
 
 | Endpoint | Scenario | HTTP | code | Message (EN draft) | Notes |
 |----------|----------|------|------|--------------------|-------|
-| POST /api/verify-user | Not whitelisted | 404 | USER_NOT_WHITELISTED | User not found | Hide enumeration (same as invalid?) |
-| POST /api/otp/send | Rate limit exceeded | 429 | OTP_SEND_RATE_LIMIT | Too many requests. Try again later. | Include retry_after header |
-| POST /api/otp/send | SMS provider failure | 502 | OTP_PROVIDER_FAILURE | Failed to send code. Retry shortly. | Do not reveal provider error |
-| POST /api/otp/verify | Wrong code | 400 | OTP_INVALID | Incorrect code. | Decrement attempts |
-| POST /api/otp/verify | Expired | 400 | OTP_EXPIRED | Code expired. Request a new one. | No attempt decrement |
-| POST /api/otp/verify | Attempts exhausted | 423 | OTP_LOCKED | Too many attempts. Request new code. | 423 Locked |
-| POST /api/onboarding/link | Missing consent | 409 | CONSENT_REQUIRED | Please re-accept current policy. | Client should redirect |
+| POST /api/verify-user | Not whitelisted | 404 | USER_NOT_WHITELISTED | User not found | Generic to avoid enumeration |
+| POST /api/verify-user | Invalid phone format | 400 | VALIDATION_ERROR | Invalid phone number format. | Field errors in details |
+| POST /api/otp/send | Rate limit exceeded | 429 | OTP_SEND_RATE_LIMIT | Too many requests. Try again later. | Retry-After |
+| POST /api/otp/send | SMS provider failure | 502 | OTP_PROVIDER_FAILURE | Failed to send code. Retry shortly. | Provider hidden |
+| POST /api/otp/send | Not whitelisted | 404 | USER_NOT_WHITELISTED | User not found | Same semantics as verify-user |
+| POST /api/otp/verify | Wrong code | 400 | OTP_INVALID | Incorrect code. | remaining_attempts included |
+| POST /api/otp/verify | Expired | 400 | OTP_EXPIRED | Code expired. Request a new one. | |
+| POST /api/otp/verify | Attempts exhausted | 423 | OTP_LOCKED | Too many attempts. Request new code. | Locked until resend |
+| POST /api/otp/verify | Rate limit exceeded | 429 | OTP_VERIFY_RATE_LIMIT | Too many verification attempts. | |
+| GET /api/privacy-policy | Version not found | 404 | POLICY_NOT_FOUND | Policy version not found. | |
+| POST /api/consents | Version mismatch | 409 | CONSENT_VERSION_MISMATCH | Supplied version not current. | Refresh required |
+| POST /api/consents | Invalid consent_type | 400 | VALIDATION_ERROR | Invalid consent type. | |
+| GET /api/consents/{user_hash} | Not found | 404 | CONSENT_NOT_FOUND | No records for user. | Expected early onboarding |
+| POST /api/onboarding/link | Missing prior consent | 409 | CONSENT_REQUIRED | Re-accept current policy. | Blocks linking |
+| POST /api/onboarding/link | Already linked | 200 | (none) | Already linked. | Idempotent |
 | GET /api/onboarding/status | Not linked yet | 200 | (none) | success true with flags | Normal path |
-| POST /api/simulation/create | Invalid plan | 400 | PLAN_UNSUPPORTED | Unsupported plan id. | Validation |
-| POST /api/simulation/run | Not owner | 403 | FORBIDDEN | You don't have access to this simulation. | RLS + server check |
-| PATCH /api/simulations/{id} | Concurrent update | 409 | CONFLICT_MODIFIED | Simulation changed; reload and retry. | Optional optimistic lock |
-| POST /api/admin/privacy-policies | Duplicate version | 409 | POLICY_VERSION_EXISTS | Version already exists. | Unique(version,locale) |
-| POST /api/admin/privacy-policies/{id}/publish | Already published | 409 | POLICY_ALREADY_PUBLISHED | Policy already published. | Idempotent safety |
-| Any | Unhandled exception | 500 | INTERNAL_ERROR | Unexpected error occurred. | trace_id logged |
+| POST /api/simulation/create | Invalid plan | 400 | PLAN_UNSUPPORTED | Unsupported plan id. | |
+| POST /api/simulation/create | Rounds out of bounds | 400 | SIM_ROUNDS_OOB | simulation_rounds out of bounds. | |
+| POST /api/simulation/create | Payment total too large | 400 | PAYMENT_TOTAL_EXCEEDED | Total scheduled payment exceeds cap. | |
+| GET /api/simulations | Unauthorized | 401 | UNAUTHORIZED | Authentication required. | |
+| GET /api/simulations/{id} | Not owner | 403 | FORBIDDEN | Access denied. | |
+| GET /api/simulations/{id} | Not found | 404 | SIMULATION_NOT_FOUND | Simulation not found. | |
+| POST /api/simulation/run | Engine version mismatch | 409 | ENGINE_VERSION_MISMATCH | Engine updated; re-run required. | |
+| POST /api/simulation/run | Concurrency cap reached | 429 | SIMULATION_RATE_LIMIT | Too many concurrent runs. | |
+| PATCH /api/simulations/{id} | Concurrent update | 409 | CONFLICT_MODIFIED | Simulation changed; reload. | optimistic lock |
+| PATCH /api/simulations/{id} | Validation fail | 400 | VALIDATION_ERROR | Field constraints violated. | Field list in details |
+| PATCH /api/simulations/{id}/memo | Memo too long | 400 | MEMO_TOO_LONG | Memo length exceeds limit. | |
+| DELETE /api/simulations/{id} | Not found | 404 | SIMULATION_NOT_FOUND | Simulation not found. | |
+| DELETE /api/simulations/{id} | Not owner | 403 | FORBIDDEN | Access denied. | |
+| POST /api/admin/privacy-policies | Duplicate version | 409 | POLICY_VERSION_EXISTS | Version exists. | |
+| POST /api/admin/privacy-policies/{id}/publish | Already published | 409 | POLICY_ALREADY_PUBLISHED | Policy already published. | |
+| POST /api/admin/privacy-policies/{id}/publish | Not found | 404 | POLICY_NOT_FOUND | Policy not found. | |
+| PATCH /api/admin/privacy-policies/{id} | Published immutable | 409 | POLICY_PUBLISHED_IMMUTABLE | Cannot modify published policy. | |
+| GET /api/admin/privacy-policies/{id} | Not found | 404 | POLICY_NOT_FOUND | Policy not found. | |
+| GET /api/admin/me | Not admin | 403 | FORBIDDEN | Admin privileges required. | |
+| POST /api/admin/notices | Validation fail | 400 | VALIDATION_ERROR | Invalid notice fields. | |
+| PATCH /api/admin/notices/{id} | Not found | 404 | NOTICE_NOT_FOUND | Notice not found. | |
+| DELETE /api/admin/notices/{id} | Not found | 404 | NOTICE_NOT_FOUND | Notice not found. | |
+| DELETE /api/admin/notices/{id} | Not admin | 403 | FORBIDDEN | Admin privileges required. | |
+| GET /api/notices/{id} | Not found | 404 | NOTICE_NOT_FOUND | Notice not found. | |
+| GET /api/health | Degraded | 200 | HEALTH_DEGRADED | Service degraded. | Include latency metrics |
+| Any | Validation error | 400 | VALIDATION_ERROR | Invalid request payload. | |
+| Any | Method not allowed | 405 | METHOD_NOT_ALLOWED | Method not allowed. | Framework default |
+| Any | Unauthorized | 401 | UNAUTHORIZED | Authentication required. | |
+| Any | Forbidden | 403 | FORBIDDEN | Access denied. | |
+| Any | Rate limited | 429 | RATE_LIMITED | Too many requests. | Generic fallback |
+| Any | Not found | 404 | NOT_FOUND | Resource not found. | Generic fallback |
+| Any | Internal error | 500 | INTERNAL_ERROR | Unexpected error occurred. | trace_id logged |
+
+Maintenance: New endpoints MUST append a row and update OpenAPI responses.
 
 ### 18.4 OTP Resend Policy & UX Microcopy
 
@@ -701,18 +814,39 @@ Microcopy (ko-KR baseline examples):
 
 ### 18.6 OpenAPI Specification Integration
 
-- FastAPI auto-generates OpenAPI JSON at `/openapi.json`.
-- CI Step: fetch spec after test stage, compare against committed snapshot `docs/api/openapi.snapshot.json`.
-- If diff: require PR to include updated snapshot + CHANGELOG note (API Added / Changed / Deprecated).
-- Client Generation (optional future): Use openapi-typescript to produce `frontend/src/types/api.ts` (ensuring single source of truth for contracts).
-- Backward Compatibility Rules:
-  - Adding optional response fields: Allowed (non-breaking).
-  - Removing fields or changing semantics: Requires version bump (see Section 20 Versioning & Evolution).
-  - Deprecations annotated with `deprecated: true` in OpenAPI and documented in CHANGELOG.
+- Snapshot path: `docs/api/openapi.snapshot.json` (authoritative committed contract).
+- Regeneration (local): `curl -s http://localhost:8000/openapi.json > docs/api/openapi.snapshot.json` (backend running) OR programmatic extraction.
+- CI pipeline:
+  1. Run tests.
+  2. Fetch live spec → temporary file.
+  3. Diff with snapshot. If drift: fail unless snapshot + CHANGELOG updated.
+  4. Spectral lint for style / completeness (e.g., error responses present, tag naming).
+  5. (Optional) Generate TS types: `npx openapi-typescript docs/api/openapi.snapshot.json -o src/frontend/src/types/api.ts`.
+- Contract tests: validate representative negative paths return matrix-defined error codes (Section 18.3).
+- Backward compatibility rules:
+  - Additive optional fields: non-breaking.
+  - Removal / required field addition / semantic change: breaking (major version bump Section 20).
+  - Deprecations: mark with `deprecated: true` and add CHANGELOG entry.
 
 ### 18.7 Structured Outcome Codes
 
-Outcome codes (subset) unify logs & analytics: `SUCCESS`, `VALIDATION_ERROR`, `RATE_LIMITED`, `NOT_FOUND`, `FORBIDDEN`, `CONFLICT`, `INTERNAL_ERROR`.
+Outcome codes unify logs & analytics and MUST align with error matrix codes where applicable: `SUCCESS`, `VALIDATION_ERROR`, `RATE_LIMITED`, `NOT_FOUND`, `FORBIDDEN`, `CONFLICT_MODIFIED`, `INTERNAL_ERROR`, `ENGINE_VERSION_MISMATCH`, `SIMULATION_RUN_COMPLETED`, `POLICY_PUBLISHED`, `OTP_INVALID`, `OTP_EXPIRED`, `OTP_LOCKED`.
+
+### 18.8 Pagination & Concurrency Policies
+
+| Topic | Policy | Rationale |
+|-------|--------|-----------|
+| Default page size | 50 | Balanced payload & latency |
+| Max page size | 200 | Prevent large scans |
+| Pagination style | Offset+limit (initial) | Simplicity; evaluate cursor later |
+| Sorting (simulations) | created_at desc | Stable recency ordering |
+| Sorting (notices) | created_at desc | Recency priority |
+| Concurrency (sim runs) | 1 active run/user | Prevent CPU spikes |
+| Conflict detection | updated_at compare → 409 | Optimistic locking semantics |
+| Rate-limited run error | SIMULATION_RATE_LIMIT | Communicate retry condition |
+| Engine mismatch | ENGINE_VERSION_MISMATCH | Ensures deterministic expectations |
+
+Clients SHOULD refetch entity on 409 and MUST handle 429 by delaying retries using backoff (1s, 2s, 4s...).
 
 ---
 
@@ -803,6 +937,7 @@ Page dwell time: compute client-side heartbeat (every 15s) aggregated server-sid
 - Changes that alter numeric outcomes MUST increment minor (e.g., formula tweak). Algorithmic shift increments major.
 - Historical results are immutable: never recompute in-place under a new engine version; re-run produces a new result set with new engine_version.
 - Determinism: same inputs + engine_version guarantee identical result; add regression tests snapshotting key scenarios.
+- Migration Note: initial backfill sets engine_version='1.0.0' for all existing rows; future version bumps require (a) CHANGELOG entry, (b) new regression snapshot tests, (c) adding upgrade rationale to audit log on first deploy.
 
 ### 20.3 Policy Content Versioning
 
@@ -851,5 +986,65 @@ Page dwell time: compute client-side heartbeat (every 15s) aggregated server-sid
 - Error handling: Backend returns structured HTTP errors with detail; frontend surfaces messages (see Section 18).
 - Known caveats: consent_records schema must include user_hash to match implementation; ensure DB migrations align with API.
 - Future Considerations: offline caching strategy, multi-locale policy storage, feature flag framework.
+
+---
+
+## 23. Testing & CI Pipeline
+
+### 23.1 Test Layers
+
+| Layer | Tooling | Purpose |
+|-------|---------|---------|
+| Backend unit | pytest | Validate pure logic & helpers |
+| Backend integration | pytest + test DB | Endpoint + DB contract |
+| Simulation invariants | pytest + hypothesis | Detect algorithm edge regressions |
+| Frontend unit | Vitest + RTL | Component & hook behavior |
+| Contract (API) | Custom script + JSON schema | Ensure responses match OpenAPI snapshot |
+| Accessibility | axe-core (Playwright/JS) | Baseline WCAG scanning for critical flows |
+| Performance smoke | k6/Locust (light) | SLO guard (p95 latency) |
+| Security scanning | pip-audit, npm audit, optional Bandit | Dependency/code risk |
+
+### 23.2 Gates & Thresholds
+
+| Metric | Threshold |
+|--------|-----------|
+| Backend coverage | ≥75% lines (critical modules ≥90%) |
+| Frontend coverage | ≥60% lines |
+| OpenAPI drift | 0 (snapshot updated or fail) |
+| Axe critical violations | 0 |
+| Contract tests | 100% pass |
+
+### 23.3 CI Job Order (Proposed)
+ 
+1. Lint & Type Check (ESLint, tsc).
+2. Backend tests + coverage.
+3. Frontend tests + coverage.
+4. Generate & diff OpenAPI snapshot.
+5. Spectral lint spec.
+6. Contract tests (uses snapshot + running app where needed).
+7. Accessibility scan (headless pages: OTP, Consent, Main, Admin Policy).
+8. Security scans (pip-audit, npm audit) fail on HIGH.
+9. Build & tag images (content digest).
+10. Publish artifacts (coverage, spec, images).
+
+### 23.4 Failure Handling
+
+- On drift: provide unified diff; developer updates snapshot + CHANGELOG section.
+- On flaky test (tagged @flaky): auto retry once; otherwise fail.
+- On performance regression (p95 > budget + 10%): mark build unstable, require investigation.
+
+### 23.5 Local Developer Commands (Illustrative)
+
+| Command | Description |
+|---------|-------------|
+| make test-backend | Run backend unit/integration tests |
+| make test-frontend | Run frontend tests |
+| make openapi-snapshot | Regenerate OpenAPI snapshot file |
+| make contract-test | Run contract test suite |
+
+### 23.6 Reporting
+
+- PR comment summarizing coverage deltas & drift status.
+- Weekly trend (optional) for latency + error rate extracted from logs.
 
 ---
