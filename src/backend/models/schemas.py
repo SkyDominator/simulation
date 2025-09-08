@@ -180,12 +180,14 @@ class PrivacyPolicyCreateRequest(BaseModel):
     locale: str = "ko-KR"
     published: bool = False
     effective_date: Optional[date] = None
-    last_updated: Optional[date] = None
+    updated_at: Optional[date] = None
+
 
 class PrivacyPolicyCreateResponse(BaseModel):
     id: str
     message: str
     success: bool
+
 
 class PrivacyPolicyUpdateRequest(BaseModel):
     version: Optional[str] = None
@@ -193,17 +195,20 @@ class PrivacyPolicyUpdateRequest(BaseModel):
     locale: Optional[str] = None
     published: Optional[bool] = None
     effective_date: Optional[date] = None
-    last_updated: Optional[date] = None
+    updated_at: Optional[date] = None
+
 
 class PrivacyPolicyUpdateResponse(BaseModel):
     id: str
     message: str
     success: bool
 
+
 class PrivacyPolicyPublishResponse(BaseModel):
     id: str
     message: str
     success: bool
+
 
 # Admin listing/detail
 class PrivacyPolicy(BaseModel):
@@ -213,15 +218,16 @@ class PrivacyPolicy(BaseModel):
     locale: str
     published: bool
     effective_date: Optional[str] = None
-    last_updated: Optional[str] = None
+    updated_at: Optional[str] = None
     created_by: Optional[str] = None
     created_at: Optional[str] = None
-    updated_at: Optional[str] = None
     model_config = ConfigDict(extra='allow')
+
 
 class PrivacyPolicyListResponse(BaseModel):
     policies: List[PrivacyPolicy]
     success: bool = True
+
 
 class PrivacyPolicyDetailResponse(BaseModel):
     policy: PrivacyPolicy

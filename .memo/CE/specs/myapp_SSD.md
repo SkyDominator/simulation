@@ -444,7 +444,7 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 
 - GET /api/privacy-policy
   - qs: version?, locale?
-  - res: { version: string, last_updated: string, content: string, success: boolean, source?: 'db'|'static-file', locale?: string }
+  - res: { version: string, updated_at: string, content: string, success: boolean, source?: 'db'|'static-file', locale?: string }
 
 - POST /api/consents
   - req: { user_hash: string, consent_type: string, consent_version: string, ip_address?: string, user_agent?: string }
