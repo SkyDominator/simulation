@@ -1,0 +1,1 @@
+2. Is the SSD designed with security in mind (e.g., data protection, access control, etc.)?

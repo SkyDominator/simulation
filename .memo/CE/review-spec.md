@@ -5,15 +5,14 @@ tools: ['codebase', 'usages', 'problems', 'fetch', 'searchResults', 'githubRepo'
 
 # Software Specification Document Review
 
-Review the LOLClub Simulation Software Specification Document (SSD) for completeness, clarity, and alignment with project goals. Provide feedback on any areas that require improvement or further clarification.
+Review the LOLClub Simulation Software Specification Document (SSD) for completeness, clarity, and alignment with the project goals. Provide feedback on any areas that require improvement or further clarification.
 
 ## Key Review Areas
 
 1. Efficiency & Security
-    1. Does the SSD cover both efficiency and security in UX flow?
-    2. Is the SSD designed with security in mind (e.g., data protection, access control, etc.)?
+    1. Does the SSD cover both efficiency and security (both in the perspective of user experience and data protection) in UX flow?
 2. Usability & User Experience
-    1. Does SSD ensure the onboarding process (OTP + consent) provide a smooth user experience? Does the SSD covers the error messages and guidance clear for users during onboarding?
+    1. Does SSD ensure the onboarding process (OTP + consent) provide a smooth user experience? Does the SSD covers the error messages and guidance clear for users?
 3. Consistency
     1. Is the SSD (including tech stacks) consistent with the overall project goals and requirements?
     2. Are the specifications described in the SSD consistent with each other and do they avoid contradictions?
@@ -22,9 +21,7 @@ Review the LOLClub Simulation Software Specification Document (SSD) for complete
     1. Is the SSD maintainable and adaptable to future changes?
 5. Standard Adherence
     1. Do the specifications in the SSD align with industry best practices and standards (as of the current date)?
-6. Testability
-    1. Are the specifications described in the SSD testable and verifiable (e.g., through user testing, automated tests, etc.)?
-7. Completeness & Clarity
+6. Completeness & Clarity
     1. Are the specifications described in the SSD complete and do they cover all necessary aspects of the system (e.g., functional requirements, non-functional requirements, etc.)?
     2. Are there any redundant or unnecessary specifications or sections that could be removed or simplified?
 

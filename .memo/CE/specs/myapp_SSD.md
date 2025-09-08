@@ -11,7 +11,7 @@ Owners: Product, Engineering (Backend/Frontend)
 
 LOLClub Simulation is a PWA that allows whitelisted users to sign in via Supabase OAuth, manage investment plan simulations, and review results. The app enforces a pre-auth onboarding flow (whitelist + OTP + privacy consent) and provides an admin UI for managing privacy policies and notices. The backend is a FastAPI service integrated with Supabase (Auth, Postgres, Storage), and the frontend is a React/Vite app.
 
-Goals:
+The Goals of this Project:
 
 - Provide an authenticated experience for running configurable financial simulations and storing results per user.
 - Enforce onboarding: whitelist check, OTP verification, and privacy policy consent.
