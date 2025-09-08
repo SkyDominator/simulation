@@ -34,4 +34,4 @@ Review the LOLClub Simulation Software Specification Document (SSD) `/.memo/CE/s
 
 ## Review format
 
-Write your review as `/.memo/CE/specs/myapp_SSD_review-011.md` (SSD Review (v0.1.1)). Include suggestions for improvements or changes where necessary for each key review area.
+Write your review as `/.memo/CE/specs/myapp_SSD_review-012.md` (SSD Review (v0.1.2)). Include suggestions for improvements or changes where necessary for each key review area.
