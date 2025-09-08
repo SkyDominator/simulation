@@ -5,7 +5,7 @@ tools: ['codebase', 'usages', 'problems', 'fetch', 'searchResults', 'githubRepo'
 
 # Software Specification Document Review
 
-Review the LOLClub Simulation Software Specification Document (SSD) for completeness, clarity, and alignment with the project goals. Provide feedback on any areas that require improvement or further clarification.
+Review the LOLClub Simulation Software Specification Document (SSD) `/.memo/CE/specs/myapp_SSD.md` for completeness, clarity, and alignment with the project goals. Provide feedback on any areas that require improvement or further clarification.
 
 ## Key Review Areas
 
