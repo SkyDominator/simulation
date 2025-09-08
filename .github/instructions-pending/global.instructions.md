@@ -16,9 +16,18 @@ React: 19.1.0 or later
 
 Refer to [my app development instructions](./simulation.instructions.md)
 
-## For app testing
+## For app test environment
 
-Here is the testing environment:
+Here is the test environment:
 
 * Desktop: (Windows 11, Google Chrome)
 * Mobile: (iPhone 11 Pro, iOS 18.1.1, Google Chrome)
+
+## For app live environment
+
+Here is the live environment:
+
+* Desktop: (Windows 11+, Google Chrome)
+* Mobile: 
+    * iPhone 11+, iOS 18.1.1+, Google Chrome
+    * Samsung Galaxy S21+, Android 12+, Google Chrome
