@@ -574,6 +574,8 @@ Error Budget: 0.5% monthly unavailability; if consumed > 50% mid-period, freeze 
 
 ### 17.9 Rate Limits (Enforced / Planned)
 
+The service MUST enforce the following rate limits. Where Status is "Planned" the control MUST be implemented before production readiness. Breaches MUST yield the specified error condition and SHOULD include a `Retry-After` header when a retry window is defined.
+
 | Endpoint Group | Limit | Window | Scope Keys | Action on Breach | Status |
 |----------------|-------|--------|------------|------------------|--------|
 | OTP Send | 3 | 15 min | phone+IP | 429 + generic cooldown msg | Enforce now |
@@ -585,7 +587,7 @@ Error Budget: 0.5% monthly unavailability; if consumed > 50% mid-period, freeze 
 | Admin Policy Publish | 5 | 1 h | admin user_id | 429; log security event | Planned |
 | Notices Create | 10 | 1 h | admin user_id | 429 | Planned |
 
-Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + persistent fallback (Supabase) for sliding window. Include `Retry-After` header where meaningful.
+Rate Limit Implementation Guidance: Implementation MUST use an in-memory token bucket (fast path) with a persistent (Supabase) fallback for sliding window accuracy. A `Retry-After` header MUST be returned for OTP send, OTP verify, and simulation run throttles. Limits SHOULD be configurable via environment variables with sane defaults.
 
 ### 17.10 Logging & Monitoring
 
@@ -598,6 +600,11 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 | Alerts | >5 consecutive OTP send failures (provider outage); p95 latency > target for 15m; 5xx rate >1% over 5m; unusual admin publish burst (>3 in 5m) |
 | Dashboard | Onboarding funnel (verify → otp → consent → link → first simulation) |
 
+- Logs MUST redact phone numbers except last 2 digits.
+- Logs MUST NOT include raw OTP codes or Authorization headers.
+- Each request MUST include a generated `trace_id` for correlation.
+- Alert thresholds listed MUST trigger an operational notification.
+
 ### 17.11 Key & Secret Management
 
 | Secret | Rotation Policy | Storage (Current) | Migration Plan |
@@ -607,7 +614,13 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 | OTP HMAC secret | 180 days (stagger) | .env | Use versioned secret; store secret_version in OTP rows |
 | JWKS cache | 5–15 min refresh | Memory | Maintain fallback old key set for grace period |
 
+- Secrets MUST NOT be committed to source control.
+- Rotation intervals MUST be documented and scheduled.
+- OTP HMAC secret MUST rotate at least every 180 days with overlap permitting validation of codes from the previous version for ≤5 minutes.
+
 ### 17.12 Data Retention & Purge
+
+The following retention windows are mandatory; the system MUST implement automated purge for any time-bounded data. Permanent tables MUST NOT be purged except through explicit administrative archival procedures.
 
 | Table | Retention | Purge Mechanism | Rationale |
 |-------|-----------|----------------|-----------|
@@ -617,6 +630,11 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 | user_onboarding | Until account deletion | Cascade on user removal | Re-link not required post-delete |
 | notices / privacy_policies | Permanent | Never purge (archiving) | Historical reference |
 | logs (app) | 30 days | Rolling retention in log store | Cost + internal needs |
+
+- `phone_otps` rows MUST be deleted within 24h after `expires_at`.
+- `logs` MUST be pruned to maintain ≤ 30 rolling days.
+- Planned audit tables MUST honor specified retention (admin: 1 year; user events: 6 months).
+- Purge jobs SHOULD emit a summary metric (purged_row_count).
 
 ### 17.13 Validation & Input Constraints (Security-Relevant Subset)
 
@@ -628,6 +646,9 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 | simulation_rounds | 1–1000 | Prevent CPU abuse |
 | memo | ≤ 1000 chars UTF-8 | Avoid oversized payloads |
 
+- All listed constraints MUST be enforced server-side; frontend validation is advisory.
+- Violations MUST yield `VALIDATION_ERROR` with field-level detail where feasible.
+
 ### 17.14 Operational Security Procedures
 
 | Procedure | Trigger | Action |
@@ -636,6 +657,9 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 | OTP Abuse Spike | > 20 send failures (distinct phones) in 5m | Temporarily tighten rate limits & alert |
 | Policy Publish | New version published | Invalidate cache; log audit record |
 | Security Incident (P1) | Confirmed data exposure | Revoke tokens, rotate keys, notify stakeholders, post-mortem in 72h |
+
+- A confirmed P1 incident MUST trigger token revocation and key rotation within 60 minutes.
+- A post-mortem MUST be published internally within 72 hours.
 
 ### 17.15 Acceptance / Verification
 
@@ -665,7 +689,7 @@ Rate Limit Implementation Guidance: Use in-memory token bucket (fast path) + per
 
 Validation:
 
-- Middleware `security_headers_mw` injects headers; startup self-test fetches root & asserts set.
+- Middleware `security_headers_mw` MUST inject headers; startup self-test MUST fetch root & assert presence.
 - Playwright smoke validates CSP presence & denies inline script removed test (future when hashes in place).
 - Report-Only CSP phase (2 weeks) logging violations to console (future endpoint) before strict mode.
 
@@ -676,8 +700,12 @@ Debt / Follow-up:
 
 Incident Triggers:
 
-- Missing HSTS or CSP for >5m on prod -> page ops channel.
-- CSP violation spike (>50/day) -> open investigation ticket.
+| Missing HSTS or CSP for >5m on prod | MUST alert ops channel |
+| CSP violation spike (>50/day) | MUST open investigation ticket |
+
+- All non-health responses MUST include the listed security headers.
+- CSP MUST transition from Report-Only to Enforce after violation rate remains below threshold for 14 consecutive days.
+- 'unsafe-inline' and 'unsafe-eval' MUST be removed by the target deprecation date; extensions require explicit approval.
 
 ---
 
@@ -720,10 +748,10 @@ All error responses MUST return HTTP status != 2xx with JSON body:
 
 Fields:
 
-- code (string; UPPER_SNAKE): machine parsable.
-- message (string; localized-ready, default ko-KR).
-- details (object; optional contextual data).
-- trace_id (string; correlates logs & metrics).
+- `code` MUST be an UPPER_SNAKE identifier defined in Section 18.3.
+- `message` MUST be present (localization-ready, default ko-KR).
+- `trace_id` MUST correlate to request logs.
+- `details` MAY provide structured context and MUST NOT expose secrets or PII beyond masked identifiers.
 
 ### 18.3 Error & Status Code Matrix (Comprehensive)
 
@@ -778,7 +806,7 @@ Fields:
 | Any | Not found | 404 | NOT_FOUND | Resource not found. | Generic fallback |
 | Any | Internal error | 500 | INTERNAL_ERROR | Unexpected error occurred. | trace_id logged |
 
-Maintenance: New endpoints MUST append a row and update OpenAPI responses.
+Maintenance: New endpoints MUST append a row and update OpenAPI responses. Removing or changing semantics of an existing code MUST trigger a major API version bump (see 20.1).
 
 ### 18.4 OTP Resend Policy & UX Microcopy
 
@@ -814,15 +842,15 @@ Microcopy (ko-KR baseline examples):
 
 ### 18.6 OpenAPI Specification Integration
 
-- Snapshot path: `docs/api/openapi.snapshot.json` (authoritative committed contract).
-- Regeneration (local): `curl -s http://localhost:8000/openapi.json > docs/api/openapi.snapshot.json` (backend running) OR programmatic extraction.
+- Snapshot path: `docs/api/openapi.snapshot.json` (authoritative committed contract) and MUST be present on main.
+- Regeneration (local): `curl -s http://localhost:8000/openapi.json > docs/api/openapi.snapshot.json` (backend running) OR programmatic extraction. Generation MUST be reproducible.
 - CI pipeline:
   1. Run tests.
   2. Fetch live spec → temporary file.
   3. Diff with snapshot. If drift: fail unless snapshot + CHANGELOG updated.
   4. Spectral lint for style / completeness (e.g., error responses present, tag naming).
   5. (Optional) Generate TS types: `npx openapi-typescript docs/api/openapi.snapshot.json -o src/frontend/src/types/api.ts`.
-- Contract tests: validate representative negative paths return matrix-defined error codes (Section 18.3).
+- Contract tests MUST validate representative negative paths return matrix-defined error codes (Section 18.3) and MUST fail the pipeline on drift.
 - Backward compatibility rules:
   - Additive optional fields: non-breaking.
   - Removal / required field addition / semantic change: breaking (major version bump Section 20).
@@ -830,7 +858,7 @@ Microcopy (ko-KR baseline examples):
 
 ### 18.7 Structured Outcome Codes
 
-Outcome codes unify logs & analytics and MUST align with error matrix codes where applicable: `SUCCESS`, `VALIDATION_ERROR`, `RATE_LIMITED`, `NOT_FOUND`, `FORBIDDEN`, `CONFLICT_MODIFIED`, `INTERNAL_ERROR`, `ENGINE_VERSION_MISMATCH`, `SIMULATION_RUN_COMPLETED`, `POLICY_PUBLISHED`, `OTP_INVALID`, `OTP_EXPIRED`, `OTP_LOCKED`.
+Outcome codes unify logs & analytics and MUST align with error matrix codes where applicable: `SUCCESS`, `VALIDATION_ERROR`, `RATE_LIMITED`, `NOT_FOUND`, `FORBIDDEN`, `CONFLICT_MODIFIED`, `INTERNAL_ERROR`, `ENGINE_VERSION_MISMATCH`, `SIMULATION_RUN_COMPLETED`, `POLICY_PUBLISHED`, `OTP_INVALID`, `OTP_EXPIRED`, `OTP_LOCKED`. Introducing a new outcome code MUST add logging + dashboard updates.
 
 ### 18.8 Pagination & Concurrency Policies
 
@@ -841,12 +869,12 @@ Outcome codes unify logs & analytics and MUST align with error matrix codes wher
 | Pagination style | Offset+limit (initial) | Simplicity; evaluate cursor later |
 | Sorting (simulations) | created_at desc | Stable recency ordering |
 | Sorting (notices) | created_at desc | Recency priority |
-| Concurrency (sim runs) | 1 active run/user | Prevent CPU spikes |
+| Concurrency (sim runs) | 1 active run/user (MUST enforce) | Prevent CPU spikes |
 | Conflict detection | updated_at compare → 409 | Optimistic locking semantics |
 | Rate-limited run error | SIMULATION_RATE_LIMIT | Communicate retry condition |
 | Engine mismatch | ENGINE_VERSION_MISMATCH | Ensures deterministic expectations |
 
-Clients SHOULD refetch entity on 409 and MUST handle 429 by delaying retries using backoff (1s, 2s, 4s...).
+Clients SHOULD refetch entity on 409 and MUST handle 429 by delaying retries using backoff (1s, 2s, 4s...). Server MUST supply appropriate status codes and SHOULD include a diagnostic message.
 
 ---
 
@@ -933,10 +961,10 @@ Page dwell time: compute client-side heartbeat (every 15s) aggregated server-sid
 
 ### 20.2 Simulation Engine Versioning
 
-- Introduce `engine_version` (semantic) recorded in `simulations.simulation_results` metadata.
+- Introduce `engine_version` (semantic) recorded in `simulations.simulation_results` metadata (MUST exist for every persisted result set).
 - Changes that alter numeric outcomes MUST increment minor (e.g., formula tweak). Algorithmic shift increments major.
-- Historical results are immutable: never recompute in-place under a new engine version; re-run produces a new result set with new engine_version.
-- Determinism: same inputs + engine_version guarantee identical result; regression snapshot tests cover canonical scenarios.
+- Historical results are immutable: MUST NOT recompute in-place under a new engine version; re-run produces a new result set.
+- Determinism: same inputs + engine_version MUST yield identical results; regression snapshot tests cover canonical scenarios.
 - Migration Note: initial backfill sets engine_version='1.0.0' for all existing rows; future version bumps require (a) CHANGELOG entry, (b) new regression snapshot tests, (c) adding upgrade rationale to audit log on first deploy.
 - Regression Test Scaffold:
   - Directory: `backend/tests/engine_snapshots/`
@@ -1024,8 +1052,8 @@ Page dwell time: compute client-side heartbeat (every 15s) aggregated server-sid
 1. Lint & Type Check (ESLint, tsc).
 2. Backend tests + coverage.
 3. Frontend tests + coverage.
-4. Generate & diff OpenAPI snapshot (workflow: `openapi-snapshot.yml`).
-5. Spectral lint spec via `.spectral.yaml` (rules: operation-tags, no-unused-components, operationId-unique, path-kebab-case).
+4. Generate & diff OpenAPI snapshot (workflow: `openapi-snapshot.yml`) – pipeline MUST fail if any breaking (non-additive) change detected.
+5. Spectral lint spec via `.spectral.yaml` (rules: operation-tags, no-unused-components, operationId-unique, path-kebab-case) – MUST pass with zero errors.
 6. Contract tests (uses snapshot + running app where needed).
 7. Accessibility scan (headless pages: OTP, Consent, Main, Admin Policy).
 8. Security scans (pip-audit, npm audit) fail on HIGH.
