@@ -1,4 +1,4 @@
-# PartnerClub Simulation – Software Specification Document (SSD)
+# LOLClub Simulation – Software Specification Document (SSD)
 
 Version: 0.1.0  
 Date: 2025-09-05  
@@ -9,7 +9,7 @@ Owners: Product, Engineering (Backend/Frontend)
 
 ## 1. Introduction / Purpose
 
-PartnerClub Simulation is a PWA that allows whitelisted users to sign in via Supabase OAuth, manage investment plan simulations, and review results. The app enforces a pre-auth onboarding flow (whitelist + OTP + privacy consent) and provides an admin UI for managing privacy policies and notices. The backend is a FastAPI service integrated with Supabase (Auth, Postgres, Storage), and the frontend is a React/Vite app.
+LOLClub Simulation is a PWA that allows whitelisted users to sign in via Supabase OAuth, manage investment plan simulations, and review results. The app enforces a pre-auth onboarding flow (whitelist + OTP + privacy consent) and provides an admin UI for managing privacy policies and notices. The backend is a FastAPI service integrated with Supabase (Auth, Postgres, Storage), and the frontend is a React/Vite app.
 
 Goals:
 
@@ -20,7 +20,7 @@ Goals:
 Outcomes:
 
 - Clear API contracts (FastAPI + Pydantic) and UI flows.
-- Documented data models (Supabase tables, constraints).
+- Documented data models (Supabase tables, constraints, RLS policies).
 - Non-functional and security requirements aligned with PWA + Supabase integration.
 
 ---
@@ -29,10 +29,11 @@ Outcomes:
 
 In-scope (current release):
 
-- Pre-auth user validation: whitelist check (name+phone hash), OTP send/verify.
-- Privacy policy retrieval (public) and consent recording (pre-auth context via user_hash).
+- Pre-auth user validation: OTP send/verify.
+    - Whitelist check (name+phone hash) on OTP send request.
+- Privacy policy retrieval (public) and consent recording (pre-auth context).
 - Supabase OAuth login (Google, Kakao) and JWT-based backend auth.
-- Onboarding link/status persistence (per authenticated user).
+- Onboarding status (OTP, consent) persistence management (per authenticated user).
 - Simulation plan CRUD and run (persist inputs and results).
 - Public notices list/detail; admin CRUD for notices and privacy policies.
 - PWA shell with basic installability (manifest, icons).
@@ -48,9 +49,15 @@ Out-of-scope (deferred):
 
 ## 3. Stakeholders & Roles
 
-- End user: Runs simulations after onboarding and login.
-- Admin: Manages notices and privacy policies; can view admin-only routes.
-- Engineering: Maintains backend services, data schema, and frontend app.
+- End user
+    - Runs simulations after onboarding (OTP authentication, privacy consent) and login.
+        - Creates or modifies or deletes simulations
+    - Reviews simulation results and reports.
+    - Reads notices and privacy policies.
+- Admin
+    - Manages notices and privacy policies; can view admin-only routes.
+- Engineering
+    - Maintains backend services, data schema, and frontend app.
 
 ---
 
@@ -63,7 +70,7 @@ Out-of-scope (deferred):
 
 High-level flow:
 
-1) Pre-auth: WhitelistCheck -> ConsentPage -> Login (Supabase OAuth).  
+1) Pre-auth: OTP Authentication (includes WhitelistCheck) -> ConsentPage -> Login (Supabase OAuth).  
 2) Auth: Backend validates JWT via Supabase JWKS; issues user-specific data access.  
 3) App: Users manage simulations; admins manage notices/policies.  
 
@@ -114,6 +121,7 @@ Note: Field types reflect usage in code. Additional audit fields (created_at/upd
 
 - user_onboarding
   - user_id uuid (pk)
+  - user_hash text
   - whitelist_passed boolean default false
   - otp_verified boolean default false
   - consent_version text null
@@ -135,7 +143,8 @@ Note: Field types reflect usage in code. Additional audit fields (created_at/upd
 
 - consent_records (implementation expectation)
   - id uuid (pk)
-  - user_hash text  
+  - user_hash text (pre-auth context)
+  - user_id uuid null (auth.users.id; null for pre-auth)
   - consent_type text (e.g., 'privacy_policy')
   - consent_version text
   - consent_given_at timestamptz default now()
@@ -302,15 +311,15 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 ## 12. UI/UX Flows
 
 - Pre-auth Flow:
-  1) WhitelistCheckPage: user enters name/phone; on success receives user_hash.
+  1) OTPPage: user enters name/phone; on success receives user_hash.
   2) ConsentPage: fetch current policy; user must accept; backend records consent (user_hash, version).
-  3) LoginPage: Supabase OAuth (Google/Kakao). User can navigate back to whitelist if needed.
+  3) LoginPage: Supabase OAuth (Google/Kakao). User can navigate back to OTPPage if needed.
 
 - Post-auth Flow:
   - Onboarding link: App links prior context (whitelist_passed=true, otp_verified=true, consent_version) to user_id.
-  - Onboarding gate: If stored consent_version != current policy.version, redirect to ConsentPage.
+  - Onboarding gate: If stored consent_version != current policy.version, redirect to ConsentPage. If the stored consent_version is updated at last, redirect users to the MainPage.
   - MainPage: list simulations; open notice board; navigate to PlanEditor, Results.
-  - PlanEditor: create/update plans; on run, call simulation/run; ResultsPage renders history.
+  - PlanEditor: create/update plans; on run, call simulation/run; ResultsPage renders results.
   - AdminPolicyPage: admin-only CRUD for policies; publish management.
 
 ---
@@ -323,14 +332,15 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 - Supabase RLS should be configured on user-owned tables; admin APIs rely on server checks.
 - Whitelist table exists with user_hash; seeding/management handled out-of-band.
 - Consent records use user_hash pre-auth (note: production schema must match server expectations).
-- Docker/Cloudflare Tunnel used for deployment; ports: frontend dev 5173, backend 8000.
+- Docker/Cloudflare Tunnel used for deployment; ports: frontend preview 4173 (currently serving on preview mode, dev: 5173), backend 8000.
 
 ---
 
 ## 14. Acceptance Criteria (samples)
 
-- Whitelist & OTP
+- OTP & Whitelist
   - Given a whitelisted name+phone, when POST /api/verify-user, then is_whitelisted=true and user_hash returned.
+    - The whitelist checking should be part of the OTP authentication process. It should only exist as part of the OTP authentication process. The user_hash itself should only be used for whitelist checking and Onboarding status linking.
   - Given OTP sent, when correct code provided to /api/otp/verify before expiry, then success=true.
   - Given OTP attempts exceed max, when another attempt is made, then success=false and remaining_attempts=0.
 
@@ -349,6 +359,9 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 - Admin
   - Given an admin user, when GET /api/admin/me, then is_admin=true.
   - Given an admin user, when publishing a policy, then other policies become unpublished, and GET public returns the published one.
+
+- General
+ - Navigating back and forth between pages does not cause data loss or unexpected behavior.
 
 ---
 
