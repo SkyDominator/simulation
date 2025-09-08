@@ -242,7 +242,7 @@ Core functional flows, major tables, high-level business logic, non-functional p
 
 ## Prioritized Action Plan (Top 12)
 
-1. Fix numbering inconsistencies; unify terminology (`scheduled_payment` vs `investments`).
+<!-- 1. Fix numbering inconsistencies; unify terminology (`scheduled_payment` vs `investments`). -->
 2. Add Security & Performance Appendix (threat model + SLOs + rate limits table).
 3. Introduce structured error & status code matrix.
 4. Define validation + constraints table (critical for frontend alignment & preventing security issues).
@@ -250,10 +250,11 @@ Core functional flows, major tables, high-level business logic, non-functional p
 6. Document logging & monitoring standards (PII redaction, correlation IDs, metrics).
 7. Add simulation engine versioning + immutability policy for historical results.
 8. Provide admin action audit requirements (publish/unpublish tracking fields: who, when).
-9. Introduce Accessibility & Internationalization minimal checklist (even if i18n deferred).
-10. Add retention & purge policies for OTP + onboarding-related transient data.
-11. Provide OpenAPI formal spec reference and automate regeneration (reduces drift risk).
-12. Add dependency & secret rotation policy summary.
+9. Provide user action audit requirements (publish/unpublish tracking fields: who stayed at which page when and how long).
+10. Introduce Accessibility & Internationalization minimal checklist (even if i18n deferred).
+11. Add retention & purge policies for OTP + onboarding-related transient data.
+12. Provide OpenAPI formal spec reference and automate regeneration (reduces drift risk).
+<!-- 13. Add dependency & secret rotation policy summary. -->
 
 ---
 
