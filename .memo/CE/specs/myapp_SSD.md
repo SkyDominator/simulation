@@ -209,6 +209,14 @@ Note: Field types reflect usage in code. Additional audit fields (created_at/upd
   - memo text null
   - created_at timestamptz, updated_at timestamptz
 
+  NOTE: Error conditions related to simulations MUST map to Section 18.3 codes:
+  - Concurrency limit → SIMULATION_RATE_LIMIT
+  - Engine version mismatch → ENGINE_VERSION_MISMATCH
+  - Optimistic locking failure (updated_at drift) → CONFLICT_MODIFIED
+  - Not owner / forbidden access → FORBIDDEN
+  - Missing simulation id / unknown resource → SIMULATION_NOT_FOUND
+  Implementations adding new simulation-related failure paths MUST register a new code (Section 18.3) and update the Event→Outcome mapping (Appendix 22.1).
+
 - consent_records (implementation expectation)
   - id uuid (pk)
   - user_hash text (pre-auth context)
@@ -259,6 +267,7 @@ create table if not exists simulation_results_history (
 ```
 
 Retention Alignment (see 17.12):
+
 - audit_admin_actions: 1 year
 - audit_user_events: 6 months
 - simulation_results_history: retained per simulation lifetime (deleted on simulation delete)
@@ -806,7 +815,7 @@ Fields:
 | Any | Not found | 404 | NOT_FOUND | Resource not found. | Generic fallback |
 | Any | Internal error | 500 | INTERNAL_ERROR | Unexpected error occurred. | trace_id logged |
 
-Maintenance: New endpoints MUST append a row and update OpenAPI responses. Removing or changing semantics of an existing code MUST trigger a major API version bump (see 20.1).
+Maintenance: New endpoints MUST append a row and update OpenAPI responses. Removing or changing semantics of an existing code MUST trigger a major API version bump (see 20.1). Cross-References: SIMULATION_RATE_LIMIT & ENGINE_VERSION_MISMATCH (Section 18.8 Pagination & Concurrency Policies), CONFLICT_MODIFIED (Optimistic locking policy Section 18.8), POLICY_VERSION_EXISTS / POLICY_ALREADY_PUBLISHED (Policy lifecycle Section 20.3), and ENGINE_VERSION_MISMATCH (Engine governance Section 20.2). When introducing a new code implementers MUST: (a) add to this matrix, (b) add an outcome code if user-visible state change, (c) update Appendix 22.1 Event→Outcome mapping, (d) extend contract tests for negative path coverage.
 
 ### 18.4 OTP Resend Policy & UX Microcopy
 
@@ -1020,6 +1029,57 @@ Page dwell time: compute client-side heartbeat (every 15s) aggregated server-sid
 - Known caveats: consent_records schema must include user_hash to match implementation; ensure DB migrations align with API.
 - Future Considerations: offline caching strategy, multi-locale policy storage, feature flag framework.
 
+### 22.1 Event → Outcome Code Mapping
+
+| Event (Audit / User) | Trigger Scenario | Outcome Code | Notes |
+|----------------------|------------------|--------------|-------|
+| simulation_run.start | User initiates run (pre-exec) | (none) | Logged prior to execution for duration calc |
+| simulation_run.complete | Successful execution | SIMULATION_RUN_COMPLETED | Add duration_ms metric |
+| simulation_run.engine_mismatch | engine_version stale | ENGINE_VERSION_MISMATCH | Client MUST re-run after refresh |
+| simulation_run.rate_limited | Concurrency cap hit | SIMULATION_RATE_LIMIT | Client SHOULD backoff (see 18.8) |
+| otp.verify.invalid | Wrong code | OTP_INVALID | Include remaining_attempts in details |
+| otp.verify.expired | Code expired | OTP_EXPIRED |  |
+| otp.verify.locked | Attempts exhausted | OTP_LOCKED | Further attempts blocked until resend |
+| otp.send.rate_limited | Exceeded send policy | OTP_SEND_RATE_LIMIT | 429 with Retry-After |
+| consent.accept.version_mismatch | Version not current | CONSENT_VERSION_MISMATCH | Requires refresh of policy |
+| policy.publish.success | Admin publishes | POLICY_PUBLISHED | Tracked for audit dashboard |
+| policy.publish.conflict | Already published | POLICY_ALREADY_PUBLISHED | Admin UX surfaces prior state |
+| simulation.update.conflict | Optimistic lock fail | CONFLICT_MODIFIED | Client MUST refetch |
+| any.validation.failure | Payload invalid | VALIDATION_ERROR | Field list in details |
+| any.rate.limit.generic | Generic rate limiting | RATE_LIMITED | Fallback throttle |
+| any.internal.error | Unhandled exception | INTERNAL_ERROR | trace_id logged |
+
+Adding a new outcome-producing event MUST: (1) update this table, (2) add/confirm error code in Section 18.3, (3) ensure logging pipeline captures event_type, outcome_code, trace_id.
+
+### 22.2 Accessibility Requirement ↔ WCAG Mapping
+
+| Requirement (Section 18.5) | WCAG 2.1 Success Criteria | Notes |
+|---------------------------|----------------------------|-------|
+| Color Contrast ≥4.5:1 | 1.4.3 Contrast (Minimum) | Use design token contrast checks in CI (optional) |
+| Focus ring visible & programmatic focus | 2.4.3 Focus Order; 2.4.7 Focus Visible | Ensure no outline suppression via CSS reset |
+| Keyboard navigation for interactive elements | 2.1.1 Keyboard | Include skip link at top of page |
+| Semantic form labeling | 1.3.1 Info and Relationships; 3.3.2 Labels or Instructions | ARIA only where native semantics insufficient |
+| Live region for errors | 4.1.3 Status Messages | aria-live="polite" region near form root |
+| Stable layout (avoid shifts) | 2.2.1 Timing Adjustable (indirect), 2.3.3 Animation from Interactions | Reserve space for validation messages |
+| I18n string externalization | 3.1.2 Language of Parts | Future multi-locale expansion |
+
+Axe-core CI scan MUST report 0 critical violations; additions require justification & tracked remediation issue.
+
+### 22.3 Performance Test Acceptance Targets
+
+These targets inform the lightweight performance smoke (Section 23) and are distinct from production SLOs; exceeding them FAILS the perf job.
+
+| Endpoint Group | p50 (ms) | p95 (ms) | Max Test Rounds | Concurrent Virtual Users | Notes |
+|----------------|----------|----------|------------------|--------------------------|-------|
+| OTP send (verify-user + send) | 120 | 400 | 200 | 5 | External SMS mocked |
+| OTP verify | 80 | 300 | 200 | 5 | Includes DB read/update |
+| Simulations list (GET /api/simulations) | 60 | 250 | 150 | 5 | Warm cache expectations |
+| Simulation create | 90 | 350 | 150 | 5 | Insert + validation |
+| Simulation run (algorithm) | 150 | 600 | 120 | 3 | CPU-bound deterministic run |
+| Privacy policy fetch | 40 | 180 | 150 | 5 | Simple select + cache |
+
+If p95 exceeds target by >10% the pipeline MUST mark build unstable and require manual approval before deploy.
+
 ---
 
 ## 23. Testing & CI Pipeline
@@ -1082,3 +1142,22 @@ Page dwell time: compute client-side heartbeat (every 15s) aggregated server-sid
 - Weekly trend (optional) for latency + error rate extracted from logs.
 
 ---
+
+### 23.7 Security Test Checklist (Mandatory in CI)
+
+Automated security validation step MUST execute after contract tests and BEFORE image publish. All MUST pass:
+
+| Category | Test | Method | Expected Result |
+|----------|------|--------|-----------------|
+| Headers | HSTS, CSP, X-Content-Type-Options, X-Frame-Options present | HTTP probe against running container | All headers present with configured values |
+| Rate Limiting | OTP send > policy threshold | Repeated POST /api/otp/send | 429 with OTP_SEND_RATE_LIMIT + Retry-After |
+| OTP Lockout | Exhaust attempts | Repeated wrong codes | 423 with OTP_LOCKED after max attempts |
+| Concurrency | Parallel simulation runs >1 | Spawn 2 run requests | Second returns 429 SIMULATION_RATE_LIMIT |
+| Engine Version | Run with stale engine_version | Simulate engine bump & run | 409 ENGINE_VERSION_MISMATCH |
+| Authorization | Access another user's simulation | Force ID swap in token context | 403 FORBIDDEN or 404 SIMULATION_NOT_FOUND per policy |
+| JWT Audience | Invalid aud claim | Forge token with wrong aud | 401 UNAUTHORIZED |
+| Error Schema | Malformed request | Send invalid JSON | 400 VALIDATION_ERROR; schema matches Section 18.2 |
+| Dependency Scan | pip-audit / npm audit | Tooling | No HIGH (fail otherwise) |
+| CSP Violation Budget | Inject inline script in test page | Headless browser evaluation | Block execution; no 'unsafe-inline' |
+
+Failures MUST block merge. New security-relevant endpoints MUST add at least one negative-path test here.
