@@ -45,6 +45,8 @@
     1.  useEffect에서 클린업을 사용해 unmount한 컴포넌트가 setState를 호출하고 memory leak를 일으키는 일을 방지하고 있는지 프론트엔드 코드 전체 점검 필요.
         1.  This is a "cleanup pattern" for effects with async side effects. It prevents stale closures or updates on unmounted components.
 
+5. 테스트 코드 구현
+
 관리 기능:
 
 1. 누가 언제부터 접속해서 어디까지 있었는가 등 사용자 행동 데이터
