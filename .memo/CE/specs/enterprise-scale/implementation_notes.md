@@ -43,4 +43,5 @@ create table if not exists simulation_results_history (
   4. Remove legacy columns in a later migration after consumers finish migration.
 
 ## Notes
+
 - Keep this file under `.memo/CE/implementation_notes.md` as a living reference. Do not include low-level SQL in the SSD; the SSD should remain the authoritative spec for contracts and schema fields.

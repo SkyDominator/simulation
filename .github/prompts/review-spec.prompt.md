@@ -9,19 +9,23 @@ Review the LOLClub Simulation Software Specification Document (SSD) `/.memo/CE/s
 
 ## Key Review Areas
 
-1. Efficiency & Security
+1. Fits to the Goals & Environments
+    1. Does the SSD align with the project goals?
+    2. Does the SSD exactly match the app environments (e.g., target devices, target OS, target web browsers,  target users, etc.)?
+      * The SSD should scale exactly, not including over-engineering nor under-engineering.
+2. Efficiency & Security
     1. Does the SSD cover both efficiency and security (both in the perspective of user experience and data protection) in UX flow?
-2. Usability & User Experience
+3. Usability & User Experience
     1. Does SSD ensure the onboarding process (OTP + consent) provide a smooth user experience? Does the SSD covers the error messages and guidance clear for users?
-3. Consistency
+4. Consistency
     1. Is the SSD (including tech stacks) consistent with the overall project goals and requirements?
     2. Are the specifications described in the SSD consistent with each other and do they avoid contradictions?
     3. Are the specifications described in the SSD aligned with the needs and expectations of stakeholders (e.g., users, developers, business owners, etc.)?
-4. Maintainability
+5. Maintainability
     1. Is the SSD maintainable and adaptable to future changes?
-5. Standard Adherence
+6. Standard Adherence
     1. Do the specifications in the SSD align with industry best practices and standards (as of the current date)?
-6. Completeness & Clarity
+7. Completeness & Clarity
     1. Are the specifications described in the SSD complete and do they cover all necessary aspects of the system (e.g., functional requirements, non-functional requirements, etc.)?
     2. Are there any redundant or unnecessary specifications or sections that could be removed or simplified?
 
