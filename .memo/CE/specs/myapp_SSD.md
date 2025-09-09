@@ -363,17 +363,173 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 
 ## 13. UI/UX Flows
 
-### 13.1 Pre-auth Flow
+### 13.1 Application Shell & Layout
 
-1. **OTPPage**: user enters name/phone; on success receives user_hash
-2. **ConsentPage**: user accepts privacy policy; consent recorded with user_hash  
-3. **LoginPage**: Supabase OAuth (Google/Kakao). User can navigate back if needed
+**Shell Component**: Provides consistent layout with centered header and responsive content area
 
-### 13.2 Post-auth Flow
+- **Header**: "생명빛 클럽 시뮬레이션" title in primary color bar (max-width: 600px)
+- **Main Content**: Responsive container (max-width: 1400px) with padding `xs: 2, md: 4`
+- **PWA Integration**: Landscape orientation enforcer for mobile devices
+- **Theme**: Material-UI theme with consistent color scheme and typography
 
-- **Onboarding link**: App links prior context (whitelist_passed=true, otp_verified=true, consent_version) to user_id
-- **Main App**: Users manage simulations; admins manage notices/policies
-- **AdminPolicyPage**: admin-only CRUD for policies; publish management
+**LandscapeEnforcer**: Mobile-specific component that:
+
+- Detects portrait orientation via `matchMedia("(orientation: portrait)")`
+- Attempts screen orientation lock to landscape where supported
+- Shows blocking overlay with rotation instruction when in portrait mode
+- Z-index 2000 overlay prevents interaction until proper orientation
+
+### 13.2 Pre-auth User Journey (Multi-step Flow)
+
+**Page Flow Control**: AppController manages page state with persistent UI state in localStorage
+
+- **State Management**: `page` state drives navigation between `whitelist`, `consent`, `login`, and main pages
+- **Session Storage**: Temporary onboarding context (`userHash`, `consentVersion`) stored in sessionStorage
+- **Consent Flow Hook**: `useConsentFlow` automatically drives page transitions based on backend consent status
+
+**Step 1: WhitelistCheckPage** (`page: "whitelist"`):
+
+- **Form Layout**: Centered Paper component (max-width: 500px) with logo and welcome message
+- **Name Input**: Text field with auto-focus for user name entry
+- **Phone Input**: Auto-formatting field with real-time hyphen insertion (010-1234-5678 pattern)
+  - Supports 010/011/016/017/018/019 prefixes with appropriate formatting
+  - Input mode: `tel`, max length: 13 characters
+- **Validation**: Client-side validation for required fields before API call
+- **Loading States**: CircularProgress indicator during API requests
+- **Error Handling**: Alert component for validation and API errors
+- **Submit Action**: "인증번호 받기" button triggers combined whitelist check + OTP send
+- **Success Flow**: On verification success, transitions to embedded OtpVerificationPage
+
+**Step 2: OtpVerificationPage** (embedded within WhitelistCheckPage):
+
+- **Context Preservation**: Receives phone, name, userHash from parent component
+- **Input Design**: Large numeric input field with auto-complete support (`one-time-code`)
+  - 6-digit code entry with numeric keypad on mobile
+  - Input validation: numeric only, max length 6
+- **Timer Display**: Real-time countdown showing expiration time (MM:SS format)
+- **Resend Logic**: Progressive button states:
+  - Active: "인증번호 재전송" when countdown expired
+  - Disabled: "재전송 M:SS" during countdown period
+  - Rate limiting: 3 sends per 15 minutes enforced by backend
+- **Navigation**: "이전으로" button returns to whitelist form with state reset
+- **Success Action**: Stores `userHash` in sessionStorage and triggers parent `onVerified` callback
+
+**Step 3: ConsentPage** (`page: "consent"`):
+
+- **Layout**: Centered Paper component (max-width: 600px) with structured consent flow
+- **Privacy Policy Integration**:
+  - Fetches current policy version via `api.getPrivacyPolicy()`
+  - Inline summary with key data collection points
+  - Modal dialog for full policy text with ReactMarkdown rendering
+  - Version tracking and last updated date display
+- **Consent UI**:
+  - Checkbox with explicit consent text
+  - Two-button layout: "취소" (decline) and "계속하기" (accept)
+  - Disabled submit until checkbox is checked
+- **Data Recording**: Records consent with `userHash`, `consent_type: "privacy_policy"`, `policyVersion`
+- **Flow Control**:
+  - Accept: Stores `consentVersion` in sessionStorage, proceeds to login
+  - Decline: Clears userHash, returns to whitelist with component remount
+
+**Step 4: LoginPage** (`page: "login"`):
+
+- **OAuth Integration**: Supabase auth with Google and Kakao providers
+- **Provider Buttons**: Branded buttons with loading states and error handling
+- **Navigation**: "이전으로" option to return to whitelist check
+- **Loading States**: Individual loading indicators per provider to prevent double-clicks
+- **Error Recovery**: Alert messages for authentication failures with retry options
+
+### 13.3 Authentication State Transitions
+
+**Onboarding Linking**: Post-authentication automatic backend synchronization
+
+- **API Call**: `api.linkOnboarding()` with whitelist_passed, otp_verified, consent_version
+- **Context Cleanup**: Removes temporary sessionStorage items after successful linking
+- **Consent Validation**: Checks user consent version against current policy version
+- **Redirect Logic**: Forces consent re-acceptance if versions don't match
+
+**State Restoration**: App visibility change handlers for session recovery
+
+- **Persistence**: UI state (page, editingPlan, noticeOpen, simulationResult) in localStorage
+- **Restoration**: On app focus/visibility change, restores state with diff checking
+- **Session Management**: Supabase session auto-refresh maintains authentication
+
+### 13.4 Main Application Experience
+
+**MainPage Navigation** (`page: "main"`):
+
+- **Header Actions**:
+  - Add simulation button (+ icon) navigates to plan editor
+  - Notice board icon opens global notice modal
+  - Help icon opens contact modal
+  - Logout with confirmation
+- **Simulation Management**:
+  - **Table Interface**: Sortable columns (plan type, rounds, dates) with sort indicators
+  - **Bulk Operations**: Multi-select checkboxes with batch delete functionality
+  - **Row Actions**: Edit, run, view results, memo, delete icons per simulation
+  - **Loading States**: LinearProgress during simulation runs, skeleton loading for table
+  - **Empty States**: Welcome message and CTA for first-time users
+- **Summary Reports**: Statistical overview of selected simulations with export capabilities
+
+**PlanEditor Multi-step Wizard** (`page: "plan-editor"`):
+
+- **Step Navigation**: Material-UI Stepper component with 5 steps:
+  1. Plan Type Selector (A, B, C, D, K, P, R, F, E)
+  2. Starting Company Round
+  3. Current Company Round (must be ≥ starting round)
+  4. Simulation Rounds (plan-specific defaults: A/B/C=15, others=18)
+  5. Investment Schedule Editor with round-by-round input
+- **Validation Modals**: Step-specific validation with detailed error messages
+- **State Persistence**: Draft plans saved to localStorage for session recovery
+- **Auto-generation**: Default investment amounts based on plan type and round
+- **Progress Indicators**: Current step highlighting with completion status
+
+**ResultsPage** (`page: "results"`):
+
+- **Data Visualization**: Responsive tables and charts for simulation results
+- **Navigation**: Back to main page with preserved context
+- **Export Functions**: Download simulation results in various formats
+
+### 13.5 Mobile-First Responsive Design
+
+**Breakpoint Strategy**: Material-UI responsive design with mobile-first approach
+
+- **Mobile (xs)**: Single-column layouts, full-width inputs, touch-friendly button sizing
+- **Desktop (md+)**: Multi-column layouts, optimized spacing, hover states
+
+**Touch Interaction Patterns**:
+
+- **Button Sizing**: Minimum 44px touch targets for accessibility
+- **Input Fields**: Large, clearly labeled form controls with appropriate input modes
+- **Table Scrolling**: Horizontal scroll for simulation table on narrow screens
+- **Modal Handling**: Full-screen modals on mobile, overlay on desktop
+
+**Progressive Enhancement**:
+
+- **Core Functionality**: Works without JavaScript for basic policy viewing
+- **Enhanced Features**: Interactive sorting, real-time validation, auto-save
+- **Offline Indicators**: Connection status awareness (future enhancement)
+
+### 13.6 Error Recovery & Accessibility
+
+**Error State Management**:
+
+- **Network Failures**: Retry mechanisms with exponential backoff
+- **Validation Errors**: Inline error messages with clear recovery instructions
+- **Session Expiry**: Automatic redirect to login with context preservation
+
+**Accessibility Features**:
+
+- **Keyboard Navigation**: Tab order and focus management throughout forms
+- **Screen Reader Support**: Proper ARIA labels and semantic HTML structure
+- **Auto-complete Support**: OTP fields with `one-time-code` attribute for SMS integration
+- **Color Contrast**: Material-UI theme ensures WCAG compliance
+
+**Loading & Feedback States**:
+
+- **Progress Indicators**: CircularProgress for actions, LinearProgress for data loading
+- **Success Confirmations**: Toast notifications for completed actions
+- **State Preservation**: Form inputs maintained across navigation and errors
 
 ---
 
