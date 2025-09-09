@@ -417,13 +417,219 @@ When scaling beyond 100 users, refer to [`enterprise-scale/`](enterprise-scale/)
 
 ---
 
-## 19. Glossary
+## 19. User Experience Flows
+
+### 19.1 Pre-auth User Journey
+
+**Onboarding Flow (First-time Users)**:
+
+1. **WhitelistCheckPage**: User enters name + phone → system validates against SHA256 hash in whitelist table
+   - **Success**: Redirects to OTP verification with `user_hash` stored in sessionStorage
+   - **Failure**: Shows error message with retry option
+   - **UX Considerations**: Clear error messaging, input validation, mobile-optimized form layout
+
+2. **OTPVerificationPage**: User receives and enters 6-digit code
+   - **Loading States**: Shows spinner during send/verify operations
+   - **Error Handling**: Displays remaining attempts, resend timer, clear error messages
+   - **Rate Limiting UX**: Progressive backoff messaging (3 sends per 15min, 6 verify attempts)
+   - **Accessibility**: Large input fields for mobile, auto-focus, numeric keypad
+
+3. **ConsentPage**: Privacy policy acceptance
+   - **Content**: Fetches current published policy version via GET /api/privacy-policy
+   - **UX**: Scrollable policy text, clear "Accept" button, cannot proceed without consent
+   - **State Persistence**: Consent recorded against user_hash before authentication
+
+4. **LoginPage**: Supabase OAuth selection
+   - **Providers**: Google, Kakao buttons with brand-appropriate styling
+   - **Fallback**: Back navigation to previous steps if needed
+   - **Mobile**: Touch-friendly button sizing, clear provider identification
+
+### 19.2 Authenticated User Experience
+
+**Post-login Flow**:
+
+1. **Onboarding Linking**: Automatic backend call to link pre-auth context to authenticated user_id
+2. **MainPage Navigation**:
+   - **Loading States**: Skeleton loaders for simulation table, progressive data loading
+   - **Empty States**: Welcome message and CTA for first simulation creation
+   - **Bulk Operations**: Multi-select with batch actions (delete, export)
+
+**Simulation Management UX**:
+
+- **Plan Editor**: Multi-step wizard with validation, progress indicators, contextual help
+- **Results Visualization**: Responsive tables, mobile-scrollable layouts, summary cards
+- **State Management**: Auto-save drafts to localStorage, session recovery on browser refresh
+
+### 19.3 Error Recovery Patterns
+
+**Network Resilience**:
+
+- **Retry Logic**: Exponential backoff for failed API calls with user-friendly retry buttons
+- **Offline Indicators**: Connection status in header, cached content when possible
+- **Progressive Enhancement**: Core functionality available even with slow connections
+
+**Validation & Feedback**:
+
+- **Real-time Validation**: Input field validation with inline error messages
+- **Form State Recovery**: Preserve user inputs across navigation and errors
+- **Success Confirmations**: Clear feedback for completed actions (simulation created, policy updated)
+
+---
+
+## 20. Data Migration Strategy
+
+### 20.1 Schema Evolution Approach
+
+**Version-Safe Migrations**:
+
+- **Additive Changes**: New columns added with default values, backward-compatible
+- **Deprecation Pattern**: Mark columns for removal with migration comments, grace period before DROP
+- **Index Management**: Create indexes concurrently, drop only after confirming usage patterns
+
+**Migration Execution**:
+
+```sql
+-- Example: Adding new simulation metadata
+ALTER TABLE simulations 
+ADD COLUMN metadata JSONB DEFAULT '{}';
+
+-- Example: Evolving privacy policy structure
+ALTER TABLE privacy_policies 
+ADD COLUMN category TEXT DEFAULT 'general',
+ADD COLUMN mandatory BOOLEAN DEFAULT true;
+```
+
+### 20.2 Data Consistency Patterns
+
+**Supabase-Specific Considerations**:
+
+- **RLS Policy Updates**: Test policy changes in staging before production deployment
+- **Foreign Key Constraints**: Maintain referential integrity during user_id migrations
+- **JSONB Evolution**: Use backwards-compatible JSONB schema changes for `simulation_results`, `investments`
+
+**User Data Migration**:
+
+- **Consent Version Tracking**: When privacy policies update, flag users requiring re-consent
+- **Simulation Schema Updates**: Preserve historical simulation data while supporting new plan parameters
+- **Whitelist Management**: Support bulk import/export for whitelist hash updates
+
+### 20.3 Rollback Procedures
+
+**Safe Rollback Strategy**:
+
+- **Database**: Keep old columns during migration grace period, restore from Supabase backups if needed
+- **Application**: Feature flags to disable new functionality, graceful degradation
+- **User State**: Preserve pre-migration user preferences and simulation history
+
+---
+
+## 21. Backup and Recovery
+
+### 21.1 Data Protection Strategy
+
+**Supabase Managed Backups**:
+
+- **Automatic Backups**: Daily snapshots with 7-day retention (Supabase Pro tier)
+- **Point-in-Time Recovery**: Up to 7 days for critical data recovery scenarios
+- **Geographic Redundancy**: Multi-region backup storage via Supabase infrastructure
+
+**Application-Level Backups**:
+
+- **Simulation Export**: User-initiated export of personal simulation history to JSON/CSV
+- **Policy Archive**: Administrative backup of all privacy policy versions before publication
+- **Whitelist Management**: External backup of hashed whitelist for disaster recovery
+
+### 21.2 Recovery Procedures
+
+**Data Loss Scenarios**:
+
+1. **User Simulation Data**: Restore from daily Supabase backup, user notification of potential data loss window
+2. **Privacy Policy Corruption**: Restore from version control + database backup combination
+3. **Whitelist Compromise**: Re-hash from master list, coordinate with user communication
+
+**Recovery Time Objectives**:
+
+- **Database Restore**: < 4 hours for complete restoration from backup
+- **Application Recovery**: < 30 minutes for service restoration (Docker container restart)
+- **User Notification**: < 2 hours for incident communication
+
+### 21.3 Business Continuity
+
+**Service Degradation Modes**:
+
+- **Read-Only Mode**: If write operations fail, allow simulation viewing and export
+- **Cached Policy**: Serve privacy policy from static backup if database unavailable
+- **OTP Fallback**: Manual verification process if SMS provider fails
+
+---
+
+## 22. Performance Baselines
+
+### 22.1 API Performance Targets
+
+**Core Endpoints**:
+
+| Endpoint | Target (p95) | Acceptable (p99) | Timeout |
+|----------|--------------|------------------|---------|
+| POST /api/otp/send | < 2000ms | < 4000ms | 10s |
+| POST /api/otp/verify | < 300ms | < 500ms | 5s |
+| POST /api/simulation/create | < 400ms | < 600ms | 10s |
+| POST /api/simulation/run | < 1500ms | < 3000ms | 15s |
+| GET /api/simulations | < 200ms | < 400ms | 5s |
+| GET /api/health | < 100ms | < 200ms | 3s |
+
+**Database Operations**:
+
+- **Supabase Query Performance**: < 100ms for simple selects, < 500ms for complex joins
+- **JWT Verification**: < 50ms including JWKS cache lookup (5-15min TTL)
+- **Simulation Engine**: < 1000ms for 10-round simulation with complex investment schedules
+
+### 22.2 Frontend Performance Metrics
+
+**Core Web Vitals Targets**:
+
+- **Largest Contentful Paint (LCP)**: < 2.5s for MainPage initial load
+- **First Input Delay (FID)**: < 100ms for all interactive elements
+- **Cumulative Layout Shift (CLS)**: < 0.1 for stable page layouts
+
+**Application-Specific Metrics**:
+
+- **Page Transitions**: < 200ms between authenticated pages
+- **Simulation Table Rendering**: < 500ms for 100+ simulation rows
+- **Plan Editor**: < 100ms response time for input validation
+
+### 22.3 Scalability Considerations
+
+**Current Load Profile** (60-100 users):
+
+- **Concurrent Users**: 30-60 peak, 5-15 average
+- **API Requests**: ~1000 requests/hour peak, mostly GET operations
+- **Database Connections**: 5-10 concurrent via Supabase connection pooling
+
+**Performance Monitoring**:
+
+- **Health Endpoint**: Tracks Supabase latency and availability
+- **Client-side Telemetry**: Error rates, page load times via browser performance APIs
+- **Rate Limiting**: OTP endpoints protected (3/15min send, 6 attempts per code)
+
+**Scaling Thresholds**:
+
+- **Database**: Current Supabase tier supports 500+ concurrent connections
+- **Backend**: Single FastAPI instance handles current load; horizontal scaling at 200+ concurrent users
+- **Frontend**: Cloudflare CDN provides global distribution, Vite build optimizations for bundle size
+
+---
+
+## 23. Glossary
 
 - **Supabase**: Backend-as-a-Service providing Postgres, Auth, Storage, and APIs
 - **JWKS**: JSON Web Key Set for verifying JWT signatures
 - **OTP**: One-time password sent via SMS
 - **PWA**: Progressive Web App supporting installability and service worker caching
 - **RLS**: Row Level Security (Postgres policy-based row access control)
+- **P95/P99**: 95th and 99th percentile performance metrics
+- **LCP/FID/CLS**: Core Web Vitals performance metrics
+- **RTT**: Round-trip time for network requests
 
 ---
 
