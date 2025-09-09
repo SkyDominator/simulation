@@ -156,6 +156,7 @@ Core tables (field types reflect actual implementation):
   - id uuid (pk), user_id uuid, plan_id text, starting_company_round int, current_company_round int
   - simulation_rounds int, investments jsonb, sales_achievement_rates jsonb
   - simulation_results jsonb, memo text, created_at timestamptz, updated_at timestamptz
+  - Note: API endpoints use `scheduled_payment` parameter which is converted to `investments` jsonb for storage
 
 - **consent_records**
   - id uuid (pk), user_hash text, user_id uuid, consent_type text
@@ -338,6 +339,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
   - max_investor_count controls growth vs stable phase
   - Tax 3.3% applied to total revenue; net profit and cumulative tracked each round
 - **Service**: FinancialSimulationService(plan_id, scheduled_payment?, sales_achievement_rates?) → run_simulation(rounds) → results.history
+- **Parameter Conversion**: API `scheduled_payment` parameters are converted to database `investments` jsonb format during persistence
 - **Persistence**: results stored in simulations.simulation_results; recalculated on demand if missing or when inputs change
 
 ---
