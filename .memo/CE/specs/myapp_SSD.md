@@ -176,8 +176,8 @@ Core tables (field types reflect usage in code):
 | JWT validation via JWKS | ✅ Implemented | Cache keys (TTL 5–15m) |
 | Admin server-side check | ✅ Implemented | Table lookup each request |
 | OTP rate limiting | ✅ Basic | 3 sends per 15 min, 6 verify attempts |
-| RLS on user tables | 🔲 Required | Before production launch |
-| OTP hashing | 🔲 Required | HMAC-based storage needed |
+| RLS on user tables | ✅ Basic |  |
+| OTP hashing | ✅ Basic |  |
 
 ---
 
