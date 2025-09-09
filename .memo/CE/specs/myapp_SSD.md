@@ -110,7 +110,7 @@ Implications:
 ## 5. System Architecture
 
 - **Frontend**: React 19 + TypeScript + Vite (vite-plugin-pwa, MUI for UI). Auth via @supabase/supabase-js. State persisted selectively to localStorage/sessionStorage.
-- **Backend**: FastAPI (Python 3.12), Pydantic v2 schemas, Supabase client (REST/RPC). JWT verification uses Supabase JWKS.
+- **Backend**: FastAPI (Python 3.11.6 or later), Pydantic v2 schemas, Supabase client (REST/RPC). JWT verification uses Supabase JWKS.
 - **Data**: Supabase Postgres (tables below). Auth via Supabase; JWT audience "authenticated". Optional static fallback for policy content.
 - **Infra**: Dockerized services; Cloudflare Tunnel for public frontend domain; CORS configured for local dev and tunnel domain.
 
