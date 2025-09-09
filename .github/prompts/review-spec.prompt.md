@@ -5,37 +5,50 @@ tools: ['codebase', 'usages', 'problems', 'fetch', 'searchResults', 'githubRepo'
 
 # Software Specification Document Review
 
-Review the LOLClub Simulation Software Specification Document (SSD) `/.memo/CE/specs/myapp_SSD.md` for completeness, clarity, and alignment with the project goals. Provide feedback on any areas that require improvement or further clarification.
+Read thoroughly the following review areas and review the Software Specification Document (SSD) `/.memo/CE/specs/myapp_SSD.md`. Provide feedback on any areas that require improvement or further clarification.
 
-## Key Review Areas
+# Review Areas
 
-1. Fits to the Goals & Environments
-    1. Does the SSD align with the project goals?
-    2. Does the SSD exactly match the app environments (e.g., target devices, target OS, target web browsers,  target users, etc.)?
-      * The SSD should scale exactly, not including over-engineering nor under-engineering.
-2. Efficiency & Security
-    1. Does the SSD cover both efficiency and security (both in the perspective of user experience and data protection) in UX flow?
-3. Usability & User Experience
-    1. Does SSD ensure the onboarding process (OTP + consent) provide a smooth user experience? Does the SSD covers the error messages and guidance clear for users?
-4. Consistency
-    1. Is the SSD (including tech stacks) consistent with the overall project goals and requirements?
-    2. Are the specifications described in the SSD consistent with each other and do they avoid contradictions?
-    3. Are the specifications described in the SSD aligned with the needs and expectations of stakeholders (e.g., users, developers, business owners, etc.)?
-5. Maintainability
-    1. Is the SSD maintainable and adaptable to future changes?
-6. Standard Adherence
-    1. Do the specifications in the SSD align with industry best practices and standards (as of the current date)?
-7. Completeness & Clarity
-    1. Are the specifications described in the SSD complete and do they cover all necessary aspects of the system (e.g., functional requirements, non-functional requirements, etc.)?
-    2. Are there any redundant or unnecessary specifications or sections that could be removed or simplified?
+## Background
 
-## Notes
+A Software Specification Document (SSD) is a comprehensive technical document that defines the requirements, architecture, and implementation details for a software system. As of 2025, SSDs have evolved to be:
 
-- All reviews should be based on the latest version of the SSD.
-- Provide specific examples and references to the SSD where applicable.
-- The review should be structured and organized, with clear headings and subheadings for each key review area.
-- The review should be based on the best practices and standards in software development and system design as of the current date to make the SSD meet the purpose/goals of the project, given the app environments ("Environment Profiles" described in the SSD).
+* Living documents that integrate with CI/CD pipelines and are auto-generated from source code
+* API-first specifications often tied to OpenAPI schemas and contract testing
+* Security-conscious with threat modeling and compliance requirements built-in
+* Cloud-native aware with considerations for microservices, containers, and managed services
+* Accessibility and internationalization ready from the start
+
+## SSD Coverage Guidelines
+
+### Coverage Width
+
+* Functional Requirements (what the system does)
+    * UX flows
+    * User roles and permissions
+    * Data models and relationships
+* Non-functional Requirements (performance, security, scalability)
+* API Contracts and data models
+* Architecture and system design
+* Security and authentication flows
+* Error handling and validation
+* Deployment and operational considerations
+
+### Coverage Depth
+
+* High-level for stakeholder alignment
+* Medium-detail for implementation guidance
+* Deep-detail only for critical/complex components
+* Reference links to detailed implementation docs
+
+
+### The most important question to ask:
+
+*Does it fit to the Goals & Environments?*
+
+1. Does the SSD align with the project goals?
+2. Does the SSD exactly match the app environments (e.g., target devices, target OS, target web browsers,  target users, etc.)? The SSD should scale exactly, not including over-engineering nor under-engineering.
 
 ## Review format
 
-Write your review as `/.memo/CE/specs/myapp_SSD_review-014.md` (SSD Review (v0.1.4)). Include suggestions for improvements or changes where necessary for each key review area.
+Write your review as `/.memo/CE/specs/myapp_SSD_review-020.md` (SSD Review (v0.2.0)). Include suggestions for improvements or changes where necessary for each key review area.
