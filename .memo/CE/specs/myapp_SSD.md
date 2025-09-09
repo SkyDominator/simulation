@@ -314,53 +314,7 @@ Canonical date/field naming convention:
 
 ### 6.1 Planned Audit / Analytics Tables
 
-Proposed tables to support Sections 17.10 (Logging & Monitoring), 19.3 (Audit Logging) and 19.4 (User Action Analytics). Will be introduced via migrations once implementation begins.
-
-```sql
--- Administrative actions (publish, create, delete)
-create table if not exists audit_admin_actions (
-  id uuid primary key default gen_random_uuid(),
-  admin_user_id uuid not null references admins(user_id),
-  action_type text not null check (action_type in (
-    'policy_create','policy_update','policy_publish','notice_create','notice_update','notice_delete'
-  )),
-  entity_id uuid null,
-  previous_published_id uuid null,
-  new_version text null,
-  created_at timestamptz not null default now()
-);
-
--- User events (privacy-aware usage analytics)
-create table if not exists audit_user_events (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null,
-  event_type text not null check (event_type in (
-    'page_view','session_start','session_end','otp_step','consent_accept','simulation_created','simulation_run'
-  )),
-  event_data jsonb not null default '{}',
-  created_at timestamptz not null default now()
-);
-
--- Optional: store historical simulation outputs if multiple versions need retention beyond latest
-create table if not exists simulation_results_history (
-  id uuid primary key default gen_random_uuid(),
-  simulation_id uuid not null references simulations(id) on delete cascade,
-  engine_version text not null,
-  results jsonb not null,
-  created_at timestamptz not null default now()
-);
-```
-
-Retention Alignment (see 17.12):
-
-- audit_admin_actions: 1 year
-- audit_user_events: 6 months
-- simulation_results_history: retained per simulation lifetime (deleted on simulation delete)
-
-Security notes:
-
-- RLS recommended: users can only access their own rows (e.g., simulations.user_id = auth.uid()).
-- Admin table used to gate admin APIs (server-side check).
+Low-level table definitions, SQL snippets, and trigger/index guidance have been moved to `.memo/CE/implementation_notes.md` to keep the SSD focused on contracts and governance. See that document for example DDL, retention alignment, and trigger/index notes.
 
 ---
 
@@ -577,7 +531,9 @@ Notation: All JSON. Auth header required where noted: `Authorization: Bearer {to
 
 ---
 
-## 17. Security & Performance Appendix
+## Appendices (Implementation & Governance)
+
+Low-level implementation snippets have been moved to `.memo/CE/implementation_notes.md`. The Error & Status Code Matrix in Section 18.3 (A.2.1 below) is the single source of truth for error codes; other sections should reference codes from that matrix rather than duplicating rows.
 
 ### 17.1 Scope & Objectives
 
@@ -728,15 +684,22 @@ The following retention windows are mandatory; the system MUST implement automat
 | logs (app) | 30 days | Rolling retention in log store | Cost + internal needs |
 
 - `phone_otps` rows MUST be deleted within 24h after `expires_at`.
+
 - `logs` MUST be pruned to maintain ≤ 30 rolling days.
+
 - Planned audit tables MUST honor specified retention (admin: 1 year; user events: 6 months).
-- Purge jobs SHOULD emit a summary metric (purged_row_count).
- 
+
+-- Purge jobs SHOULD emit a summary metric (purged_row_count).
+
+
 ### Privacy compliance note
 The service follows a privacy-by-design posture: only collect the minimal PII required (phone E.164 and last-4 masking when possible), store transient OTP data for a maximum of 24 hours after expiry, and keep consent records as a legal audit trail. A documented Subject Access / Data Deletion process (DSAR) will be provided to product and legal teams and implemented as an administrative workflow (export + deletion) prior to production launch.
 
+
 ### CI / Contract test checklist (minimal)
+
 The following checks MUST run in CI for every main/staging merge before production promotion:
+
 - OpenAPI snapshot diff: regenerate `docs/api/openapi.snapshot.json` and fail CI on contract drift.
 - Spectral (or equivalent) lint: run OpenAPI linting and fail on policy violations for error codes and response schemas.
 - Security header smoke: basic HTTP check that core endpoints include HSTS and CSP response headers.
