@@ -59,7 +59,7 @@ class TestFinancialSimulationService:
         assert service.max_investor_count == expected_max_investor
     
     @pytest.mark.parametrize("plan_id,expected_max_bonus", [
-        ('A', 30000000), ('B', 30000000), ('C', 50000000), ('D', 100000000)
+        ('A', 30000000), ('B', 30000000), ('C', 50000000), ('D', 100000000) 
     ])
     def test_plan_specific_max_bonus(self, plan_id, expected_max_bonus):
         """Test plan-specific max bonus parameters"""
@@ -68,7 +68,7 @@ class TestFinancialSimulationService:
     
     def test_custom_sales_achievement_rates(self):
         """Test custom sales achievement rates override"""
-        custom_rates = {4: 0.8, 5: 0.9, 6: 1.0}
+        custom_rates = {4: 0.8, 5: 0.9, 6: 1.0, 7: 0.95, 8:0.6, 9:0.7, 10:0.65}
         service = FinancialSimulationService(
             plan_id="A", 
             sales_achievement_rates=custom_rates
