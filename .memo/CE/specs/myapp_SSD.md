@@ -218,7 +218,7 @@ Core tables (field types reflect actual implementation):
 - **Public**: GET /api/notices (published only), GET /api/notices/{id} (published only)
 - **Admin Check**: GET /api/admin/me → verifies admin privileges
 - **Admin Notices**: POST/PATCH/DELETE /api/admin/notices/{id}
-- **Admin Privacy Policies**: 
+- **Admin Privacy Policies**:
   - POST /api/admin/privacy-policies → create new policy (unpublished by default)
   - PATCH /api/admin/privacy-policies/{id} → update policy
   - DELETE /api/admin/privacy-policies/{id} → delete policy
@@ -397,7 +397,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Validation**: Client-side validation for required fields before API call
 - **Loading States**: CircularProgress indicator during API requests
 - **Error Handling**: Alert component for validation and API errors
-- **Submit Action**: "인증번호 받기" button triggers combined whitelist check + OTP send
+- **Submit Action**: "인증번호 받기" button first calls verify-user API, then sends OTP on whitelist confirmation
 - **Success Flow**: On verification success, transitions to embedded OtpVerificationPage
 
 **Step 2: OtpVerificationPage** (embedded within WhitelistCheckPage):
@@ -478,7 +478,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
   2. Starting Company Round
   3. Current Company Round (must be ≥ starting round)
   4. Simulation Rounds (plan-specific defaults: A/B/C=15, others=18)
-  5. Investment Schedule Editor with round-by-round input
+  5. Investment Schedule Editor with round-by-round investment input
 - **Validation Modals**: Step-specific validation with detailed error messages
 - **State Persistence**: Draft plans saved to localStorage for session recovery
 - **Auto-generation**: Default investment amounts based on plan type and round
@@ -647,7 +647,7 @@ When scaling beyond 100 users, refer to [`enterprise-scale/`](enterprise-scale/)
    - **Failure**: Shows error message with retry option
    - **UX Considerations**: Clear error messaging, input validation, mobile-optimized form layout
 
-2. **OTPVerificationPage**: User receives and enters 6-digit code
+2. **OtpVerificationPage**: User receives and enters 6-digit code
    - **Loading States**: Shows spinner during send/verify operations
    - **Error Handling**: Displays remaining attempts, resend timer, clear error messages
    - **Rate Limiting UX**: Progressive backoff messaging (3 sends per 15min, 6 verify attempts)
