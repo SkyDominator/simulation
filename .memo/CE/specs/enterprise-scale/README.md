@@ -4,11 +4,14 @@ This directory contains detailed specifications for scaling the LOLClub Simulati
 
 ## Directory Structure
 
+### Database
+- [`schema-implementation.md`](database/schema-implementation.md) - Low-level database implementation guidance including audit tables, indexes, triggers, RLS policies, and Supabase-specific optimizations
+
 ### Security
-- [`comprehensive-threat-model.md`](security/comprehensive-threat-model.md) - Complete security framework including STRIDE analysis, rate limiting matrices, SLOs, audit logging, and CSP baselines
+- [`comprehensive-threat-model.md`](security/comprehensive-threat-model.md) - Complete security framework including STRIDE analysis, rate limiting matrices, SLOs, audit logging, CSP baselines, and OTP security implementation
 
 ### Operations
-- [`enterprise-operations.md`](operations/enterprise-operations.md) - Operational playbooks, monitoring, deployment strategies, versioning, and comprehensive testing frameworks
+- [`enterprise-operations.md`](operations/enterprise-operations.md) - Operational playbooks, monitoring, deployment strategies, versioning, migration coordination, and comprehensive testing frameworks
 
 ### Error Handling
 - [`error-handling.md`](error-handling.md) - Comprehensive error matrices (40+ error codes), validation constraints, OpenAPI integration, and accessibility requirements

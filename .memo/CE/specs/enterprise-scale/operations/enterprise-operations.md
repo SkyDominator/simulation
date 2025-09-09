@@ -239,6 +239,149 @@ Automated security validation step MUST execute after contract tests and BEFORE 
 
 | Category | Test | Method | Expected Result |
 |----------|------|--------|-----------------|
+| Rate Limits | Send 4 OTP requests rapidly | Script + assertions | 4th request returns 429 |
+| Auth Bypass | Access /api/simulations without token | curl/requests | 401 UNAUTHORIZED |
+| Admin Privilege | Non-admin user calls admin endpoint | Auth token + requests | 403 FORBIDDEN |
+| CORS Headers | Cross-origin request simulation | JS fetch test | Proper CORS response |
+| Security Headers | GET /api/health | Header validation | All required headers present |
+
+## 24. Migration & Deployment Coordination (Enterprise)
+
+### 24.1 Safe Migration Deployment Strategy
+
+**Coordinated Migration Steps**:
+
+When deploying migrations that add/deprecate columns used by APIs, coordinate the following steps:
+
+1. **Phase 1 - Additive Migration**:
+   ```sql
+   -- Add new columns with backward-compatible defaults
+   ALTER TABLE simulations 
+   ADD COLUMN new_field JSONB DEFAULT '{}',
+   ADD COLUMN migration_flag BOOLEAN DEFAULT false;
+   
+   -- Create supporting indexes concurrently
+   CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_simulations_new_field 
+   ON simulations USING gin(new_field);
+   ```
+
+2. **Phase 2 - Application Update**:
+   - Update backend to write to both old and new columns (if keeping compatibility)
+   - Map field names at the API boundary for gradual transition
+   - Deploy application with dual-write capability
+
+3. **Phase 3 - Traffic Validation**:
+   - Run smoke tests against new endpoints
+   - Monitor error rates and performance metrics
+   - Validate data consistency between old and new columns
+
+4. **Phase 4 - Cutover and Cleanup**:
+   ```sql
+   -- After validation period, mark migration complete
+   UPDATE simulations SET migration_flag = true WHERE migration_flag = false;
+   
+   -- In subsequent migration, remove legacy columns
+   ALTER TABLE simulations 
+   DROP COLUMN old_field CASCADE;
+   ```
+
+### 24.2 Zero-Downtime Deployment Pattern
+
+**Application Deployment**:
+
+1. **Blue-Green Strategy**:
+   - Deploy new version alongside existing (different port/container)
+   - Health check new version thoroughly
+   - Switch load balancer/proxy to new version atomically
+   - Keep old version running for immediate rollback capability
+
+2. **Database Migration Coordination**:
+   ```bash
+   # Pre-deployment: Run additive migrations
+   ./run_migrations.sh --mode=additive
+   
+   # Deploy application
+   docker-compose up -d --scale backend=2
+   
+   # Health check and traffic switch
+   ./health_check.sh new-backend
+   ./switch_traffic.sh new-backend
+   
+   # Post-deployment: Run cleanup migrations after validation
+   ./run_migrations.sh --mode=cleanup --delay=1h
+   ```
+
+3. **Rollback Procedures**:
+   - Immediate: Switch traffic back to previous version
+   - Database: Use compensating migrations rather than rollback
+   - State: Preserve user data consistency during rollback
+
+### 24.3 Migration Testing Strategy
+
+**Pre-Production Validation**:
+
+1. **Schema Validation**:
+   ```sql
+   -- Test migration on copy of production data
+   CREATE DATABASE migration_test;
+   -- Restore latest backup
+   -- Run migration scripts
+   -- Validate data integrity
+   ```
+
+2. **Application Compatibility**:
+   - Run contract tests against migrated schema
+   - Validate API responses match expected format
+   - Test both old and new application versions during transition
+
+3. **Performance Impact Assessment**:
+   - Measure migration execution time on production-sized data
+   - Validate index creation doesn't block critical operations
+   - Test query performance before/after migration
+
+### 24.4 Emergency Rollback Procedures
+
+**Rapid Response Protocol**:
+
+1. **Immediate Actions** (< 5 minutes):
+   ```bash
+   # Stop new deployments
+   kubectl rollout pause deployment/backend
+   
+   # Revert to last known good version
+   kubectl rollout undo deployment/backend
+   
+   # Monitor system health
+   ./monitor_health.sh --alert-on-errors
+   ```
+
+2. **Data Recovery** (if needed):
+   - Identify scope of data corruption/loss
+   - Restore from point-in-time backup if necessary
+   - Run data consistency checks
+   - Communicate timeline and impact to users
+
+3. **Root Cause Analysis**:
+   - Preserve logs and metrics from failed deployment
+   - Document timeline and decisions made
+   - Update deployment procedures to prevent recurrence
+
+### 24.5 Migration Governance and Approval
+
+**Change Review Process**:
+
+| Change Risk | Approval Required | Testing Requirements |
+|-------------|------------------|---------------------|
+| Low (add column) | Tech lead review | Unit tests + smoke test |
+| Medium (modify constraints) | Team review + staging validation | Full integration suite |
+| High (drop column/table) | Architecture review + rollback plan | Production-like testing |
+
+**Documentation Requirements**:
+- Migration impact assessment
+- Rollback procedures
+- Performance implications
+- User communication plan (if applicable)
+|----------|------|--------|-----------------|
 | Headers | HSTS, CSP, X-Content-Type-Options, X-Frame-Options present | HTTP probe against running container | All headers present with configured values |
 | Rate Limiting | OTP send > policy threshold | Repeated POST /api/otp/send | 429 with OTP_SEND_RATE_LIMIT + Retry-After |
 | OTP Lockout | Exhaust attempts | Repeated wrong codes | 423 with OTP_LOCKED after max attempts |

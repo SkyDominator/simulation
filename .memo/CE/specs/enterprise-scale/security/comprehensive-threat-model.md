@@ -234,3 +234,91 @@ The following checks MUST run in CI for every main/staging merge before producti
 - All non-health responses MUST include the listed security headers.
 - CSP MUST transition from Report-Only to Enforce after violation rate remains below threshold for 14 consecutive days.
 - 'unsafe-inline' and 'unsafe-eval' MUST be removed by the target deprecation date; extensions require explicit approval.
+
+## 17.17 OTP Security Implementation (Enterprise)
+
+### Secure OTP Storage
+
+**HMAC-Based Storage**:
+- OTP codes MUST NOT be stored in plaintext
+- Use HMAC(otp_code, otp_secret_key) for verification
+- Store only the HMAC digest in `phone_otps.code_hash`
+
+**Implementation Pattern**:
+```python
+import hmac
+import hashlib
+from config.settings import settings
+
+def hash_otp_code(code: str, secret_version: int = 1) -> str:
+    """Generate HMAC hash of OTP code using versioned secret."""
+    secret_key = get_otp_secret(secret_version)
+    return hmac.new(
+        secret_key.encode(),
+        code.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+def verify_otp_code(code: str, stored_hash: str, secret_version: int = 1) -> bool:
+    """Constant-time verification of OTP code."""
+    expected_hash = hash_otp_code(code, secret_version)
+    return hmac.compare_digest(expected_hash, stored_hash)
+```
+
+### Versioned Secret Management
+
+**Secret Rotation Strategy**:
+- Support multiple OTP secret versions simultaneously
+- Add `secret_version` column to `phone_otps` table
+- During rotation, verify against both old and new secrets
+
+**Database Schema Enhancement**:
+```sql
+ALTER TABLE phone_otps 
+ADD COLUMN secret_version INTEGER DEFAULT 1;
+
+-- Index for efficient lookup during verification
+CREATE INDEX IF NOT EXISTS idx_phone_otps_secret_version 
+ON phone_otps (phone, secret_version, used, expires_at);
+```
+
+**Rotation Process**:
+1. Deploy new secret version alongside existing
+2. Generate new OTPs with new version, verify against both
+3. After grace period (24-48h), deprecate old version
+4. Monitor for verification failures during transition
+
+### Enhanced Rate Limiting
+
+**Multi-dimensional Protection**:
+```python
+# Per-phone limits (existing)
+OTP_RESEND_LIMIT_PER_15MIN = 3
+OTP_VERIFY_ATTEMPTS_MAX = 6
+
+# IP-based limits (enterprise addition)
+OTP_SEND_PER_IP_PER_HOUR = 20
+OTP_VERIFY_PER_IP_PER_HOUR = 60
+
+# Global circuit breaker
+OTP_GLOBAL_SEND_PER_MINUTE = 100
+```
+
+**Implementation Notes**:
+- Use Redis or in-memory cache for rate limit counters
+- Implement exponential backoff for repeated failures
+- Log rate limit violations for monitoring
+
+### Security Monitoring
+
+**OTP-Specific Alerts**:
+- High verification failure rate (>20% in 5min)
+- Unusual OTP request patterns (geographic, timing)
+- Secret version mismatch errors
+- Rate limit threshold breaches
+
+**Audit Events**:
+- OTP generation with success/failure reasons
+- Verification attempts with phone hash (not full number)
+- Rate limit violations with IP (hashed for privacy)
+- Secret rotation events
