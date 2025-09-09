@@ -124,7 +124,7 @@ High-level flow:
 
 ## 6. Data & Models (Supabase)
 
-Core tables (field types reflect usage in code):
+Core tables (field types reflect actual implementation):
 
 - **whitelist** (external/seeded)
   - user_hash text (sha256 of "{name}-{normalized_phone}")
@@ -138,16 +138,18 @@ Core tables (field types reflect usage in code):
 
 - **privacy_policies**
   - id uuid (pk), version text, locale text, content text, published boolean
-  - effective_date date, created_at timestamptz, updated_at timestamptz
+  - effective_date date, last_updated date, created_by text
+  - created_at timestamptz, updated_at timestamptz
   - unique(version, locale)
 
 - **phone_otps**
   - id uuid (pk), phone text, code_hash text, attempts smallint, used boolean
   - created_at timestamptz, expires_at timestamptz
+  - provider_msg_id text, client_ip inet, user_agent text
   - indexes: phone, created_at; composite (phone, used, expires_at)
 
 - **user_onboarding**
-  - user_id uuid (pk), user_hash text, whitelist_passed boolean, otp_verified boolean
+  - user_id uuid (pk), whitelist_passed boolean, otp_verified boolean
   - consent_version text, created_at timestamptz, updated_at timestamptz
 
 - **simulations**
@@ -191,7 +193,7 @@ Core tables (field types reflect usage in code):
 
 ### 8.2 Privacy Policy & Consent
 
-- **Get Policy**: GET /api/privacy-policy?version&locale → returns current or specific version
+- **Get Policy**: GET /api/privacy-policy?version&locale → returns current or specific version (DB first, static fallback)
 - **Record Consent**: POST /api/consents with user_hash, consent_type, consent_version
 - **Get User Consents**: GET /api/consents/{user_hash} → list of consent records (pre-auth)
 
@@ -205,21 +207,28 @@ Core tables (field types reflect usage in code):
 
 - **List**: GET /api/simulations (auth) → user-specific list
 - **Detail**: GET /api/simulations/{simulation_id} (auth) → single row (owner only)
-- **Create**: POST /api/simulation/create (auth) with plan parameters
+- **Create**: POST /api/simulation/create (auth) with plan parameters (plan_id, rounds, scheduled_payment, sales_achievement_rates)
 - **Run**: POST /api/simulation/run (auth) with simulation_id → executes simulation; persists results
 - **Update**: PATCH /api/simulations/{id} (auth) → updates inputs; clears results
 - **Update Memo**: PATCH /api/simulations/{id}/memo (auth) → set memo
-- **Delete**: DELETE /api/simulations/{id} (auth) → delete row if owner
+- **Delete**: DELETE /api/simulations/{id} (auth) OR POST /api/simulation/delete → delete row if owner
 
 ### 8.5 Notices & Admin
 
-- **Public**: GET /api/notices, GET /api/notices/{id} (published only)
-- **Admin**: GET /api/admin/me, POST/PATCH/DELETE /api/admin/notices/{id}
-- **Privacy Policies (Admin)**: CREATE, UPDATE, PUBLISH via /api/admin/privacy-policies
+- **Public**: GET /api/notices (published only), GET /api/notices/{id} (published only)
+- **Admin Check**: GET /api/admin/me → verifies admin privileges
+- **Admin Notices**: POST/PATCH/DELETE /api/admin/notices/{id}
+- **Admin Privacy Policies**: 
+  - POST /api/admin/privacy-policies → create new policy (unpublished by default)
+  - PATCH /api/admin/privacy-policies/{id} → update policy
+  - DELETE /api/admin/privacy-policies/{id} → delete policy
+  - POST /api/admin/privacy-policies/{id}/publish → publish policy (unpublishes others)
+  - GET /api/admin/privacy-policies → list all policies
+  - GET /api/admin/privacy-policies/{id} → get policy details
 
 ### 8.6 Health
 
-- **GET /api/health** → supabase probe and latency
+- **GET /api/health** → supabase probe and latency with service status
 
 ---
 
@@ -246,17 +255,77 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
   res: { success: boolean, message: string, remaining_attempts?: number }
 }
 
+// POST /api/consents (pre-auth)
+{
+  req: { user_hash: string, consent_type: string, consent_version: string, 
+         ip_address?: string, user_agent?: string },
+  res: { user_hash: string, consent_type: string, consent_version: string, 
+         consent_given_at: string, ip_address?: string, user_agent?: string }
+}
+
+// GET /api/privacy-policy?version&locale
+{
+  res: { version: string, updated_at: string, content: string, 
+         success: boolean, source: "db" | "static-file" }
+}
+
+// POST /api/onboarding/link (auth)
+{
+  req: { whitelist_passed: boolean, otp_verified: boolean, consent_version?: string },
+  res: { user_id: string, linked: boolean, message: string, success: boolean }
+}
+
+// GET /api/onboarding/status (auth)
+{
+  res: { user_id: string, whitelist_passed: boolean, otp_verified: boolean, 
+         consent_version?: string, success: boolean }
+}
+
 // POST /api/simulation/create (auth)
 {
   req: { plan_id: string, starting_company_round: number, current_company_round: number, 
-         simulation_rounds: number, scheduled_payment: Record<string, number> },
+         simulation_rounds: number, scheduled_payment: Record<string, number>,
+         sales_achievement_rates?: Record<string, number> },
   res: { simulation_id: string, plan_id: string, message: string, success: boolean }
 }
 
 // POST /api/simulation/run (auth)
 {
   req: { simulation_id: string },
-  res: { simulation_id, plan_id, history: Array<...>, message, success }
+  res: { simulation_id: string, plan_id: string, starting_company_round: number,
+         current_company_round: number, simulation_rounds: number,
+         scheduled_payment: Record<string, number>, sales_achievement_rates?: Record<string, number>,
+         history: Array<SimulationRound>, message: string, success: boolean }
+}
+
+// PATCH /api/simulations/{id} (auth)
+{
+  req: { plan_id: string, starting_company_round: number, current_company_round: number, 
+         simulation_rounds: number, scheduled_payment: Record<string, number>,
+         sales_achievement_rates?: Record<string, number> },
+  res: { simulation_id: string, plan_id: string, message: string, success: boolean }
+}
+
+// PATCH /api/simulations/{id}/memo (auth)
+{
+  req: { memo?: string },
+  res: { simulation_id: string, memo?: string, message: string, success: boolean }
+}
+
+// GET /api/admin/privacy-policies (auth, admin)
+{
+  res: { policies: Array<PrivacyPolicy>, success: boolean }
+}
+
+// POST /api/admin/privacy-policies/{id}/publish (auth, admin)
+{
+  res: { id: string, message: string, success: boolean }
+}
+
+// GET /api/health
+{
+  res: { status: "ok" | "degraded", services: { supabase: { ok: boolean, 
+         latency_ms?: number, error?: string } }, timestamp: string }
 }
 ```
 
