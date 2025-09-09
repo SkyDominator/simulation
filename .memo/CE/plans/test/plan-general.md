@@ -58,6 +58,19 @@ faker>=20.1.0
 freezegun>=1.2.2
 ```
 
+**Important!**: The backend testing must be run in venv, so activate the virtual environment first:
+
+```bash
+cd src/backend
+.\venv\Scripts\activate
+```
+
+Then install the new dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
 #### 2. Create Pytest Configuration
 **File**: `src/backend/pytest.ini`
 **Changes**: New file with test configuration
