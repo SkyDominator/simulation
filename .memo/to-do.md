@@ -39,6 +39,7 @@
 24. Security. When and how a login session is expired(destroyed?) It is crucial because since a login session survives it no longer requires white list check and OTP authentication.
 25. Flickering issue due to re-rendering. (TBD)
 26. 결과에 세전 수당 합계 표시
+27. last_updated 사용하지 않고 updated_date만 사용하도록 변경
 
 4.  for frontend:
     1.  useEffect에서 클린업을 사용해 unmount한 컴포넌트가 setState를 호출하고 memory leak를 일으키는 일을 방지하고 있는지 프론트엔드 코드 전체 점검 필요.
