@@ -202,6 +202,6 @@ export const DEFAULT_INVESTMENT_AMOUNTS = {
 
 // Local version tracking
 export const PARAMETERS_VERSION = {
-  version: "v1.0.0",
-  lastChecked: "2025-08-04",
+  version: "v1.1.0",
+  lastChecked: "2025-09-09",
 };
