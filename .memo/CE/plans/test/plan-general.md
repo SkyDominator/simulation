@@ -1180,8 +1180,22 @@ def get_test_settings():
 | Phase | Backend Coverage | Frontend Coverage | Integration Coverage |
 |-------|------------------|-------------------|---------------------|
 | Phase 1-2 | 40-50% | 0% | 0% |
-| Phase 3-4 | 60-70% | 40-50% | 30-40% |
-| Phase 5-6 | ≥75% | ≥60% | ≥50% |
+| Phase 3-4 | 60-70% | 50-60% | 40-50% |
+| Phase 5-6 | ≥75% | ≥70% | ≥60% |
+
+### Revised Coverage Rationale:
+
+**Frontend 70% Target is Achievable Because:**
+- Small, focused codebase (~15 components, 4 hooks)
+- Business-critical financial calculations in utils
+- Clear separation of concerns (API layer, auth context)
+- Limited third-party UI dependencies
+
+**Integration 60% Target Makes Sense Because:**
+- Only 8 critical user flows to test
+- Well-defined API contracts (20 endpoints)
+- High business risk (financial data, security)
+- Manageable test data setup
 
 ### Test Layer Implementation:
 
