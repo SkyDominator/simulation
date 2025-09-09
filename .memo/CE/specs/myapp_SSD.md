@@ -167,7 +167,7 @@ Core tables (field types reflect usage in code):
 - **Backend**: Validates Authorization header using Supabase JWKS with audience "authenticated"; extracts sub as user_id.
 - **CORS**: Allow list includes Cloudflare Tunnel domain and local dev hosts/ports.
 - **Secrets**: SUPABASE_SECRET_KEY used server-side. Publishable key only in frontend. SMS provider keys (Solapi) loaded from env.
-- **PII handling**: Consent recorded against user_hash pre-auth; onboarding links the consent version post-auth via user_id.
+- **PII handling**: Consent recorded against user_hash pre-auth; onboarding links the consent version post-auth via user_id and user_hash.
 
 ### 7.1 Core Security Controls
 
