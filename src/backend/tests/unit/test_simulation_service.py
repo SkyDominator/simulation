@@ -17,12 +17,20 @@ class TestFinancialSimulationService:
     @pytest.fixture
     def simulation_service_plan_a(self):
         """Create a FinancialSimulationService instance with Plan A"""
-        return FinancialSimulationService(plan_id="A")
+        return FinancialSimulationService(
+            plan_id="A",
+            scheduled_payment=PLAN_PARAMETERS["A"]["min_payment_new"],
+            sales_achievement_rates=PLAN_PARAMETERS["A"]["sales_achievement_rates"]
+        )
     
     @pytest.fixture
     def simulation_service_plan_b(self):
         """Create a FinancialSimulationService instance with Plan B"""
-        return FinancialSimulationService(plan_id="B")
+        return FinancialSimulationService(
+            plan_id="B",
+            scheduled_payment=PLAN_PARAMETERS["B"]["min_payment_new"],
+            sales_achievement_rates=PLAN_PARAMETERS["B"]["sales_achievement_rates"]
+        )
     
     def test_tax_calculation_accuracy(self, simulation_service_plan_a):
         """Test 3.3% tax calculation on total revenue"""
@@ -51,7 +59,11 @@ class TestFinancialSimulationService:
     ])
     def test_plan_specific_max_investors(self, plan_id, expected_max_investor):
         """Test plan-specific max investor count parameters"""
-        service = FinancialSimulationService(plan_id=plan_id)
+        service = FinancialSimulationService(
+            plan_id=plan_id,
+            scheduled_payment=PLAN_PARAMETERS[plan_id]["min_payment_new"],
+            sales_achievement_rates=PLAN_PARAMETERS[plan_id]["sales_achievement_rates"]
+        )
         assert service.max_investor_count == expected_max_investor
     
     @pytest.mark.parametrize("plan_id,expected_max_bonus", [
@@ -60,7 +72,11 @@ class TestFinancialSimulationService:
     ])
     def test_plan_specific_max_bonus(self, plan_id, expected_max_bonus):
         """Test plan-specific max bonus parameters"""
-        service = FinancialSimulationService(plan_id=plan_id)
+        service = FinancialSimulationService(
+            plan_id=plan_id,
+            scheduled_payment=PLAN_PARAMETERS[plan_id]["min_payment_new"],
+            sales_achievement_rates=PLAN_PARAMETERS[plan_id]["sales_achievement_rates"]
+        )
         assert service.params['max_bonus'] == expected_max_bonus
     
     def test_custom_sales_achievement_rates(self):
@@ -68,6 +84,7 @@ class TestFinancialSimulationService:
         custom_rates = {4: 0.8, 5: 0.9, 6: 1.0, 7: 0.95, 8:0.6, 9:0.7, 10:0.65}
         service = FinancialSimulationService(
             plan_id="A", 
+            scheduled_payment=PLAN_PARAMETERS["A"]["min_payment_new"],
             sales_achievement_rates=custom_rates
         )
         
@@ -78,7 +95,11 @@ class TestFinancialSimulationService:
     def test_invalid_plan_raises_error(self):
         """Test that invalid plan ID raises ValueError"""
         with pytest.raises(ValueError, match="Invalid plan"):
-            FinancialSimulationService(plan_id="INVALID")
+            FinancialSimulationService(
+                plan_id="INVALID",
+                scheduled_payment={1: 100000},
+                sales_achievement_rates={4: 1.0}
+            )
     
     def test_revenue_calculation_rounds_1_to_3(self, simulation_service_plan_a):
         """Test revenue calculation for early rounds (1-3)"""
@@ -154,6 +175,7 @@ class TestFinancialSimulationService:
         invalid_rates = {4: 0.3, 5: 1.5, 6: 0.8}  # 0.3 and 1.5 are invalid
         service = FinancialSimulationService(
             plan_id="A", 
+            scheduled_payment=PLAN_PARAMETERS["A"]["min_payment_new"],
             sales_achievement_rates=invalid_rates
         )
         
