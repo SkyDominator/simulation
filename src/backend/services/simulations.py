@@ -84,7 +84,10 @@ class SimulationService:
         sched_int = {int(k): v for k, v in sched_map.items()}
         # Convert sales achievement rates percent -> fraction for simulator override
         sales_rates_fraction = {int(k): (v / 100.0) for k, v in row.sales_achievement_rates.items()}
-        simulator = FinancialSimulationService(plan_id=row.plan_id, scheduled_payment=sched_int, sales_achievement_rates=sales_rates_fraction)
+        
+        simulator = FinancialSimulationService(plan_id=row.plan_id, 
+                                               scheduled_payment=sched_int, sales_achievement_rates=sales_rates_fraction)
+        
         results = simulator.run_simulation(row.simulation_rounds).to_dict()
         upd = self.client.table("simulations").update({"simulation_results": results}).eq("id", req.simulation_id).execute()
         if not upd.data:

@@ -1,12 +1,3 @@
-1. Refer to the simulations.py and elaborate testing with covering more test scinarios. If not need, don't. It's up to your decision.
-
-2. Tests should be done against all plans (refer to constants.py).
-
-
-Run python -m pytest tests\unit\test_simulation_service.py -v after activating venv.
-
-The venv is located at src/backend/venv/
-
 
 # 그 외
 
