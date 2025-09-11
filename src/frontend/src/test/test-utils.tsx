@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
-import { AuthContext, type AuthContextType } from "../context/AuthContextBase";
+import AuthContext, { type AuthContextType } from "../context/AuthContextBase";
 import { theme } from "../theme";
 import type { Session } from "@supabase/supabase-js";
 
