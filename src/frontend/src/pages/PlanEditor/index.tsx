@@ -21,11 +21,11 @@ import { ConfirmationModal, ValidationModal } from "./modals";
 import StartingRoundValidationModal from "./modals/StartingRoundValidationModal";
 import CurrentRoundValidationModal from "./modals/CurrentRoundValidationModal";
 import {
-  getPlanLimits,
+  getSimulationRoundLimits,
   generateInvestments,
   getDefaultInvestmentAmount,
 } from "./utils/investmentUtils";
-import { validateNumericValue } from "./utils/validationUtils";
+import { validateNumericValue as validateSimulationRounds } from "./utils/validationUtils";
 import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
@@ -98,10 +98,10 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   const [plan, setPlan] = useState<Plan>(initialPlan);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isValidationModalOpen, setValidationModalOpen] = useState(false);
-  const [validationData, setValidationData] = useState<ValidationData | null>(
-    null
-  );
+  const [isValidationModalOpen, setSimulationRoundsValidationModalOpen] =
+    useState(false);
+  const [validationData, setSimulationRoundsValidationData] =
+    useState<ValidationData | null>(null);
 
   // Separate modal states for steps 2 and 3
   const [isStartingRoundModalOpen, setStartingRoundModalOpen] = useState(false);
@@ -169,29 +169,34 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
     }));
   };
 
-  const handleValidation = (
+  const handleSimulationRoundsValidation = (
     value: number,
     min: number,
     max: number,
     field: keyof Plan
   ) => {
-    const validationResult = validateNumericValue(value, min, max, field);
-    if (validationResult) {
-      setValidationData(validationResult);
-      setValidationModalOpen(true);
+    const simulationRoundsValidationResult = validateSimulationRounds(
+      value,
+      min,
+      max,
+      field
+    );
+    if (simulationRoundsValidationResult) {
+      setSimulationRoundsValidationData(simulationRoundsValidationResult);
+      setSimulationRoundsValidationModalOpen(true);
       return false;
     }
     return true;
   };
 
-  const handleValidationConfirm = () => {
+  const handleSimulationRoundsValidationConfirm = () => {
     if (!validationData) return;
 
     const { value, min, max, field } = validationData;
     const newValue = value < min ? min : max;
 
     setPlan((prev) => ({ ...prev, [field]: newValue }));
-    setValidationModalOpen(false);
+    setSimulationRoundsValidationModalOpen(false);
   };
 
   const handleSaveClick = () => {
@@ -271,10 +276,16 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         return;
       }
     } else if (step === 4) {
-      const { min, max } = getPlanLimits(plan.plan_id);
+      // validate simulation_rounds
+      const { min, max } = getSimulationRoundLimits(plan.plan_id);
 
       if (
-        !handleValidation(plan.simulation_rounds, min, max, "simulation_rounds")
+        !handleSimulationRoundsValidation(
+          plan.simulation_rounds,
+          min,
+          max,
+          "simulation_rounds"
+        )
       ) {
         return;
       }
@@ -310,7 +321,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   const handleBack = () => {
     // Close all modals when going back
     setConfirmModalOpen(false);
-    setValidationModalOpen(false);
+    setSimulationRoundsValidationModalOpen(false);
     setStartingRoundModalOpen(false);
     setCurrentRoundModalOpen(false);
 
@@ -572,7 +583,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         <Button
           onClick={() => {
             setConfirmModalOpen(false);
-            setValidationModalOpen(false);
+            setSimulationRoundsValidationModalOpen(false);
             setStartingRoundModalOpen(false);
             setCurrentRoundModalOpen(false);
             // Clear any persisted draft and step so next open is fresh
@@ -624,8 +635,8 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
 
       <ValidationModal
         isOpen={isValidationModalOpen}
-        onClose={() => setValidationModalOpen(false)}
-        onConfirm={handleValidationConfirm}
+        onClose={() => setSimulationRoundsValidationModalOpen(false)}
+        onConfirm={handleSimulationRoundsValidationConfirm}
         validationData={validationData}
       />
 

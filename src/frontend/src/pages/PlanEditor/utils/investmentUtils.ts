@@ -32,13 +32,15 @@ export const getDefaultInvestmentAmount = (
 };
 
 /**
- * Gets the min and max limits for a plan type
+ * Gets the min and max simulation round limits for a plan type
  */
-export const getPlanLimits = (planType: string) => {
-  const isABC = ["A", "B", "C"].includes(planType);
+export const getSimulationRoundLimits = (planType: string) => {
+  // const isABC = ["A", "B", "C"].includes(planType);
   return {
-    min: isABC ? 15 : 18,
-    max: isABC ? 150 : 180,
+    // min: isABC ? 15 : 18,
+    // max: isABC ? 150 : 180,
+    min: 1,
+    max: 100,
   };
 };
 
