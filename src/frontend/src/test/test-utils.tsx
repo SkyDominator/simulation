@@ -1,16 +1,16 @@
-import { ReactElement } from "react";
+import type { ReactElement } from "react";
 import {
   render,
-  RenderOptions,
   screen,
   fireEvent,
   waitFor,
   act,
 } from "@testing-library/react";
+import type { RenderOptions } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import AuthContext, { type AuthContextType } from "../context/AuthContextBase";
-import { theme } from "../theme";
+import theme from "../theme";
 import type { Session } from "@supabase/supabase-js";
 
 // Mock user data for testing
@@ -101,8 +101,13 @@ export function renderWithProviders(
 export const waitForLoadingToFinish = () =>
   new Promise((resolve) => setTimeout(resolve, 0));
 
-export const createMockResponse = (data: unknown, ok = true) => ({
+export const createMockResponse = (
+  data: unknown,
+  ok = true,
+  status = ok ? 200 : 400
+) => ({
   ok,
+  status,
   json: () => Promise.resolve(data),
   text: () => Promise.resolve(JSON.stringify(data)),
 });
