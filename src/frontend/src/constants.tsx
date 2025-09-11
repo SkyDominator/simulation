@@ -24,6 +24,8 @@ export const DEFAULT_INVESTMENT_AMOUNTS = {
       15: 11000000,
       16: 11000000,
       17: 22000000,
+      18: 22000000,
+      19: 33000000,
     },
   },
   B: {
@@ -45,6 +47,8 @@ export const DEFAULT_INVESTMENT_AMOUNTS = {
       15: 11000000,
       16: 11000000,
       17: 22000000,
+      18: 22000000,
+      19: 33000000,
     },
   },
   C: {
@@ -66,6 +70,8 @@ export const DEFAULT_INVESTMENT_AMOUNTS = {
       15: 11000000,
       16: 11000000,
       17: 22000000,
+      18: 22000000,
+      19: 33000000,
     },
   },
   D: {
@@ -87,6 +93,8 @@ export const DEFAULT_INVESTMENT_AMOUNTS = {
       15: 11000000,
       16: 11000000,
       17: 22000000,
+      18: 22000000,
+      19: 33000000,
     },
   },
   R: {
@@ -108,6 +116,8 @@ export const DEFAULT_INVESTMENT_AMOUNTS = {
       15: 11000000,
       16: 11000000,
       17: 22000000,
+      18: 22000000,
+      19: 33000000,
     },
   },
 
@@ -130,6 +140,8 @@ export const DEFAULT_INVESTMENT_AMOUNTS = {
       15: 11000000,
       16: 11000000,
       17: 22000000,
+      18: 22000000,
+      19: 33000000,
     },
   },
 
@@ -152,6 +164,8 @@ export const DEFAULT_INVESTMENT_AMOUNTS = {
       15: 11000000,
       16: 11000000,
       17: 22000000,
+      18: 22000000,
+      19: 33000000,
     },
   },
 
@@ -174,6 +188,8 @@ export const DEFAULT_INVESTMENT_AMOUNTS = {
       15: 11000000,
       16: 11000000,
       17: 22000000,
+      18: 22000000,
+      19: 33000000,
     },
   },
 
@@ -196,12 +212,14 @@ export const DEFAULT_INVESTMENT_AMOUNTS = {
       15: 11000000,
       16: 11000000,
       17: 22000000,
+      18: 22000000,
+      19: 33000000,
     },
   },
 };
 
 // Local version tracking
 export const PARAMETERS_VERSION = {
-  version: "v1.1.0",
-  lastChecked: "2025-09-09",
+  version: "v1.1.1",
+  lastChecked: "2025-09-11",
 };
