@@ -1,4 +1,11 @@
 
+I have further questions.
+
+1. How did you decide that the test codes should
+2. Why the frontend test coverage is only around 20%? 
+3. For the chosen files and codelines for test, how they were chosen? On what criteria?
+
+
 # 그 외
 
 1. 메모장 밖에 화면 누르면 메모 화면 꺼지는 현상 수정
