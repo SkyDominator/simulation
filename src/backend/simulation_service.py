@@ -228,7 +228,9 @@ class FinancialSimulationService:
             min_payment = p['min_payment_re']
         
         # Actual payment is the maximum of scheduled and minimum
-        actual_payment = max(scheduled_payment, min_payment)
+        # actual_payment = max(scheduled_payment, min_payment)
+        # Frontend requests always send scheduled_payment >= min_payment
+        actual_payment = scheduled_payment
         
         return actual_payment
 
