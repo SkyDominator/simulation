@@ -21,7 +21,7 @@ export const getDefaultInvestmentAmount = (
       if (round in minPayments) {
         return minPayments[round];
       } else {
-        const maxMinPaymentRound = 17;
+        const maxMinPaymentRound = 19;
         return minPayments[maxMinPaymentRound]; // Use the last defined round for this plan type
       }
     }
