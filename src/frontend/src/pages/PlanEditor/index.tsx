@@ -277,7 +277,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
       }
     } else if (step === 4) {
       // validate simulation_rounds
-      const { min, max } = getSimulationRoundLimits(plan.plan_id);
+      const { min, max } = getSimulationRoundLimits();
 
       if (
         !handleSimulationRoundsValidation(
@@ -504,7 +504,6 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         return (
           <SimulationRoundsSelector
             simulationRounds={plan.simulation_rounds}
-            planType={plan.plan_id}
             onChange={(value) => setPlan({ ...plan, simulation_rounds: value })}
           />
         );

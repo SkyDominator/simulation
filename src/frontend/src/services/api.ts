@@ -18,8 +18,9 @@ import {
 } from "../types/types";
 
 // Prefer Vite-provided env var; fall back to the deployed backend URL
-export const API_BASE_URL: string = (import.meta as ImportMeta).env
-  .VITE_API_BASE_URL;
+export const API_BASE_URL: string =
+  (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
+  "https://simulation.lightoflifeclub.com/api";
 // "http://10.10.113.129:8001/api"; // dev mode only 1
 // "http://172.30.1.39:8001/api"; // dev mode only 2
 
