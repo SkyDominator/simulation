@@ -25,12 +25,23 @@ export const useSimulationActions = (
 
     try {
       setRunningId(simId);
-      const data = await api.runSimulation(simId, session.access_token);
+      const data = await api.runSimulation(
+        simId,
+        session.access_token,
+        plan.updated_at
+      );
       setSimulationResult(data);
       navigateToResults();
-    } catch (e) {
+    } catch (e: unknown) {
       console.error("Run simulation error:", e);
-      alert("시뮬레이션 실행에 실패했습니다.");
+      const msg = (e as Error)?.message ?? "";
+      if (msg.includes("409") || msg.includes("not up to date")) {
+        alert(
+          "업데이트가 아직 반영되지 않았습니다. 잠시 후 다시 시도해 주세요."
+        );
+      } else {
+        alert("시뮬레이션 실행에 실패했습니다.");
+      }
     } finally {
       setRunningId("");
     }

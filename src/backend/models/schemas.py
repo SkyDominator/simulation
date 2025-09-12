@@ -25,6 +25,8 @@ class SimulationCreateResponse(BaseModel):
 
 class SimulationRunRequest(BaseModel):
     simulation_id: str
+    # Optional optimistic concurrency token: client expects to run on or after this updated_at
+    expected_updated_at: Optional[str] = None
 
 class SimulationRunResponse(BaseModel):
     simulation_id: str
@@ -60,6 +62,7 @@ class SimulationUpdateResponse(BaseModel):
     plan_id: str
     message: str
     success: bool
+    updated_at: Optional[str] = None
 
 class SimulationMemoUpdateRequest(BaseModel):
     memo: Optional[str] = None

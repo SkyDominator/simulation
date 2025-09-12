@@ -66,29 +66,36 @@ class SimulationService:
             raise HTTPException(status_code=404, detail=f"Plan with ID {req.simulation_id} not found")
         row_data = db_response.data[0]
         row = SimulationRow.model_validate(row_data)
+
+        # Optional optimistic concurrency check using updated_at
+        try:
+            expected = getattr(req, "expected_updated_at", None)
+            if expected is not None:
+                actual = (row_data or {}).get("updated_at")
+                if actual is None or actual < expected:
+                    raise HTTPException(status_code=409, detail="Simulation data not up to date yet. Please retry.")
+        except HTTPException:
+            raise
+        except Exception:
+            # Do not block computation on comparison errors
+            pass
+
+        # Always compute fresh results
         sched_map = scheduled_payment_from_investments(row.investments)
-        if row.simulation_results:
-            res_dict = row.simulation_results or {}
-            return SimulationRunResponse(
-                simulation_id=row.id,
-                plan_id=row.plan_id,
-                starting_company_round=row.starting_company_round,
-                current_company_round=row.current_company_round,
-                simulation_rounds=row.simulation_rounds,
-                scheduled_payment=sched_map,
-                sales_achievement_rates=row.sales_achievement_rates,
-                history=res_dict.get("history", []),
-                message="Retrieved existing simulation results",
-                success=True,
-            )
         sched_int = {int(k): v for k, v in sched_map.items()}
         # Convert sales achievement rates percent -> fraction for simulator override
         sales_rates_fraction = {int(k): (v / 100.0) for k, v in row.sales_achievement_rates.items()}
         simulator = FinancialSimulationService(plan_id=row.plan_id, scheduled_payment=sched_int, sales_achievement_rates=sales_rates_fraction)
         results = simulator.run_simulation(row.simulation_rounds).to_dict()
-        upd = self.client.table("simulations").update({"simulation_results": results}).eq("id", req.simulation_id).execute()
-        if not upd.data:
-            logger.error("Failed to persist simulation results for %s", req.simulation_id)
+
+        # Best-effort persist
+        try:
+            upd = self.client.table("simulations").update({"simulation_results": results}).eq("id", req.simulation_id).execute()
+            if not upd.data:
+                logger.error("Failed to persist simulation results for %s", req.simulation_id)
+        except Exception as e:
+            logger.warning("Error persisting simulation results for %s: %s", req.simulation_id, e)
+
         return SimulationRunResponse(
             simulation_id=row.id,
             plan_id=row.plan_id,
@@ -98,7 +105,7 @@ class SimulationService:
             scheduled_payment=sched_map,
             sales_achievement_rates=row.sales_achievement_rates,
             history=results.get("history", []),
-            message="Simulation completed and results saved",
+            message="Simulation completed",
             success=True,
         )
 
@@ -126,6 +133,7 @@ class SimulationService:
             plan_id=req.plan_id,
             message="Simulation updated successfully (previous results invalidated)",
             success=True,
+            updated_at=upd.data[0].get("updated_at") if isinstance(upd.data, list) and upd.data else None,
         )
 
     def delete(self, simulation_id: str, user_id: str) -> SimulationDeleteResponse:

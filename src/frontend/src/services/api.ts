@@ -60,7 +60,8 @@ export const api = {
 
   runSimulation: async (
     simulation_id: string,
-    token: string
+    token: string,
+    expectedUpdatedAt?: string
   ): Promise<SimulationRunResponse> => {
     const response = await fetch(url("/simulation/run"), {
       method: "POST",
@@ -68,7 +69,10 @@ export const api = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ simulation_id }),
+      body: JSON.stringify({
+        simulation_id,
+        expected_updated_at: expectedUpdatedAt,
+      }),
     });
 
     if (!response.ok) {
