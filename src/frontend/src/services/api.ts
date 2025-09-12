@@ -18,11 +18,10 @@ import {
 } from "../types/types";
 
 // Prefer Vite-provided env var; fall back to the deployed backend URL
-export const API_BASE_URL: string =
-  (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
-  "https://simulation.lightoflifeclub.com/api";
-// "http://10.10.113.129:8001/api";
-// "http://172.30.1.39:8001/api";
+export const API_BASE_URL: string = (import.meta as ImportMeta).env
+  .VITE_API_BASE_URL;
+// "http://10.10.113.129:8001/api"; // dev mode only 1
+// "http://172.30.1.39:8001/api"; // dev mode only 2
 
 const url = (path: string) => {
   const base = API_BASE_URL.replace(/\/+$/, "");
@@ -60,7 +59,8 @@ export const api = {
 
   runSimulation: async (
     simulation_id: string,
-    token: string
+    token: string,
+    expectedUpdatedAt?: string
   ): Promise<SimulationRunResponse> => {
     const response = await fetch(url("/simulation/run"), {
       method: "POST",
@@ -68,7 +68,10 @@ export const api = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ simulation_id }),
+      body: JSON.stringify({
+        simulation_id,
+        expected_updated_at: expectedUpdatedAt,
+      }),
     });
 
     if (!response.ok) {

@@ -24,12 +24,12 @@ import {
 const columnLabelMap: Record<string, string> = {
   company_round: "회차",
   investor_count: "아바타 개수",
-  cumulative_net_profit: "총 이익",
+  cumulative_net_profit: "실납입계(적자vs흑자)",
   amount: "회차 매출액",
-  net_profit_after_tax: "회차 이익(세후)",
-  total_payment: "총 매출액",
-  total_revenue_after_tax: "수당(세후)",
-  total_revenue_before_tax: "수당(세전)",
+  net_profit_after_tax: "실납입(세후)",
+  total_payment: "매출계",
+  total_revenue_after_tax: "수당계(세후)",
+  total_revenue_before_tax: "수당계(세전)",
   sales_achievement_rate: "매출 달성율",
 };
 

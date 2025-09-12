@@ -21,7 +21,7 @@ class Investor:
         self.start_company_round = start_company_round
         self.internal_round = 1
         self.investor_type = investor_type
-        self.base_return_r3 = None
+        self.base_calc_value_r3 = None
         self.payment_history = []
         self.revenue_history = []
     
@@ -37,8 +37,8 @@ class Investor:
     def is_graduated(self, max_investor_count: int) -> bool:
         return self.internal_round >= max_investor_count
     
-    def set_base_return(self, value: float) -> None:
-        self.base_return_r3 = value
+    def set_base_calc_value(self, value: float) -> None:
+        self.base_calc_value_r3 = value
     
     def get_total_payments(self) -> float:
         return sum(record["amount"] for record in self.payment_history)
@@ -162,11 +162,10 @@ class FinancialSimulationService:
         Check if settlement bonus should be deactivated based on investor status.
         """
         if (self.settlement_bonus_active and 
-                investor.start_company_round == 1 and 
-                investor.internal_round == 15):
+                self.current_company_round > 15):
             self.settlement_bonus_active = False
             self.params['settlement_bonus'] = 0
-            logger.info("Settlement bonus deactivated: First investor reached 15th internal round")
+            logger.info("Settlement bonus deactivated: First investor reached 16th or higher current_company_round")
     
     def _calculate_revenue(self, investor: Investor, actual_payment: float) -> float:
         """
@@ -184,11 +183,10 @@ class FinancialSimulationService:
             return base_calc_value * p['sales_commission']
         
         elif internal_round == 3:
-            revenue_k3 = (base_calc_value * p['sales_commission']) + p['settlement_bonus']
-            investor.set_base_return(revenue_k3)
-            return revenue_k3
+            investor.set_base_calc_value(base_calc_value)
+            return (base_calc_value * p['sales_commission']) + p['settlement_bonus']
         
-        elif internal_round >= 4:
+        else:  # internal_round >= 4
             # Get the bonus rate for this round, default to 0 if not specified
             bonus_rate = p['round_bonus_rates'].get(internal_round, 0)
             
@@ -202,14 +200,8 @@ class FinancialSimulationService:
             achievement_rate = p['sales_achievement_rates'].get(self.current_company_round, 0)
             additional_revenue = bonus_amount * achievement_rate
             
-            # Add the additional revenue to the base return from round 3
-            if investor.base_return_r3 is not None:
-                return investor.base_return_r3 + additional_revenue
-            else:
-                logger.warning(f"Investor has no base_return_r3 value in round {internal_round}")
-                return additional_revenue
-            
-        return 0
+            base_revenue_r3 = (investor.base_calc_value_r3 * p['sales_commission']) + p['settlement_bonus'] 
+            return base_revenue_r3 + additional_revenue
 
     def _calculate_actual_payment(self, investor: Investor) -> float:
         """
@@ -228,7 +220,9 @@ class FinancialSimulationService:
             min_payment = p['min_payment_re']
         
         # Actual payment is the maximum of scheduled and minimum
-        actual_payment = max(scheduled_payment, min_payment)
+        # actual_payment = max(scheduled_payment, min_payment)
+        # Frontend requests always send scheduled_payment >= min_payment
+        actual_payment = scheduled_payment
         
         return actual_payment
 
