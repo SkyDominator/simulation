@@ -16,6 +16,7 @@ from models.schemas import (
 from constants import PLAN_PARAMETERS
 from simulation_service import FinancialSimulationService
 from fastapi import HTTPException
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,24 @@ def get_supabase_client() -> Client:
         or settings.supabase_publishable_key
     )
     return create_client(settings.supabase_url, key)
+
+def _parse_iso8601(ts: str) -> datetime:
+    # Normalize 'Z' to '+00:00' for fromisoformat
+    sanitized = ts.replace('Z', '+00:00')
+    return datetime.fromisoformat(sanitized)
+
+def _is_timestamp_older(actual: str | None, expected: str) -> bool:
+    """Check if actual timestamp is older than expected. Returns True if older or None."""
+    if actual is None:
+        return True
+    
+    try:
+        dt_expected = _parse_iso8601(str(expected))
+        dt_actual = _parse_iso8601(str(actual))
+        return dt_actual < dt_expected
+    except ValueError:
+        # Fall back to string comparison if parsing fails
+        return str(actual) < str(expected)
 
 class SimulationService:
     def __init__(self, client: Client | None = None) -> None:
@@ -68,23 +87,18 @@ class SimulationService:
         row = SimulationRow.model_validate(row_data)
 
         # Optional optimistic concurrency check using updated_at
-        try:
-            expected = getattr(req, "expected_updated_at", None)
-            if expected is not None:
-                actual = (row_data or {}).get("updated_at")
-                if actual is None or actual < expected:
-                    raise HTTPException(status_code=409, detail="Simulation data not up to date yet. Please retry.")
-        except HTTPException:
-            raise
-        except Exception:
-            # Do not block computation on comparison errors
-            pass
+        expected = getattr(req, "expected_updated_at", None)
+        if expected is not None:
+            actual = (row_data or {}).get("updated_at")
+            if _is_timestamp_older(actual, expected):
+                raise HTTPException(status_code=409, detail="Simulation data not up to date yet. Please retry.")
 
         # Always compute fresh results
         sched_map = scheduled_payment_from_investments(row.investments)
         sched_int = {int(k): v for k, v in sched_map.items()}
         # Convert sales achievement rates percent -> fraction for simulator override
-        sales_rates_fraction = {int(k): (v / 100.0) for k, v in row.sales_achievement_rates.items()}
+        rates_percent = row.sales_achievement_rates or {}
+        sales_rates_fraction = {int(k): (v / 100.0) for k, v in rates_percent.items()}
         simulator = FinancialSimulationService(plan_id=row.plan_id, scheduled_payment=sched_int, sales_achievement_rates=sales_rates_fraction)
         results = simulator.run_simulation(row.simulation_rounds).to_dict()
 
