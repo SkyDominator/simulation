@@ -171,6 +171,13 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
         <Stack direction="row" spacing={1}>
           <Button
             variant="contained"
+            color="primary"
+            onClick={() => setPage("offline-results")}
+          >
+            수당표 보기
+          </Button>
+          <Button
+            variant="contained"
             color="inherit"
             onClick={() => setPage("main")}
           >

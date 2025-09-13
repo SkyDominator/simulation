@@ -1,0 +1,425 @@
+import React from "react";
+import type { SimulationRunResponse, Page } from "../types/types";
+import {
+  Box,
+  Typography,
+  Paper,
+  Stack,
+  Button,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  TableContainer,
+} from "@mui/material";
+
+interface OfflineResultsPageProps {
+  setPage: (page: Page) => void;
+  result: SimulationRunResponse | null;
+}
+
+interface InvestorDetail {
+  investor_start_round: number;
+  investor_internal_round: number;
+  payment: number;
+  revenue: number;
+  investor_type: string;
+}
+
+interface ProcessedRoundData {
+  company_round: number;
+  total_payment: number;
+  total_revenue_before_tax: number;
+  net_profit_after_tax: number;
+  investor_revenues: Record<number, number>; // key: investor_start_round, value: revenue
+}
+
+const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
+  setPage,
+  result,
+}) => {
+  const processedData = React.useMemo(() => {
+    if (!result?.history) return [];
+
+    const data: ProcessedRoundData[] = [];
+
+    for (const round of result.history) {
+      const roundData: ProcessedRoundData = {
+        company_round: round.company_round as number,
+        total_payment: round.total_payment as number,
+        total_revenue_before_tax: round.total_revenue_before_tax as number,
+        net_profit_after_tax: round.net_profit_after_tax as number,
+        investor_revenues: {},
+      };
+
+      // Process investor details if available
+      if (round.investor_details && Array.isArray(round.investor_details)) {
+        for (const detail of round.investor_details as InvestorDetail[]) {
+          roundData.investor_revenues[detail.investor_start_round] =
+            detail.revenue;
+        }
+      }
+
+      data.push(roundData);
+    }
+
+    return data;
+  }, [result]);
+
+  // Get all unique investor start rounds (columns)
+  const investorColumns = React.useMemo(() => {
+    const columns = new Set<number>();
+    for (const round of processedData) {
+      Object.keys(round.investor_revenues).forEach((key) =>
+        columns.add(Number(key))
+      );
+    }
+    return Array.from(columns).sort((a, b) => a - b);
+  }, [processedData]);
+
+  // Calculate totals for each column
+  const columnTotals = React.useMemo(() => {
+    const totals: Record<number, number> = {};
+    let totalPayment = 0;
+    let totalRevenue = 0;
+    let finalNetProfit = 0;
+
+    for (const round of processedData) {
+      totalPayment += round.total_payment;
+      totalRevenue += round.total_revenue_before_tax;
+      finalNetProfit = round.net_profit_after_tax; // Take the last one
+
+      Object.entries(round.investor_revenues).forEach(
+        ([startRound, revenue]) => {
+          const key = Number(startRound);
+          totals[key] = (totals[key] || 0) + revenue;
+        }
+      );
+    }
+
+    return { totals, totalPayment, totalRevenue, finalNetProfit };
+  }, [processedData]);
+
+  const formatValue = (val: number): string => {
+    return val.toLocaleString();
+  };
+
+  const getColumnHeader = (startRound: number): string => {
+    if (startRound === 1) {
+      return "1회차(본코드)";
+    }
+    return `${startRound}회차`;
+  };
+
+  return (
+    <Box
+      sx={{
+        px: { xs: 1, sm: 1.5, md: 2 },
+        py: { xs: 2, md: 3 },
+        width: "100%",
+      }}
+    >
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        spacing={3}
+        justifyContent="space-between"
+        alignItems={{ md: "center" }}
+        mb={4}
+      >
+        <Box>
+          <Typography
+            variant="h4"
+            fontWeight={700}
+            gutterBottom
+            sx={{ fontSize: { xs: "1.75rem", md: "2.125rem" } }}
+          >
+            수당표 보기
+          </Typography>
+        </Box>
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="contained"
+            color="inherit"
+            onClick={() => setPage("results")}
+          >
+            돌아가기
+          </Button>
+        </Stack>
+      </Stack>
+
+      {!result ? (
+        <Paper sx={{ p: 6, textAlign: "center", color: "text.secondary" }}>
+          표시할 결과가 없습니다.
+        </Paper>
+      ) : (
+        <Paper sx={{ p: { xs: 1.5, md: 2 } }}>
+          {processedData.length === 0 ? (
+            <Typography textAlign="center" color="text.secondary" py={6}>
+              히스토리가 없습니다.
+            </Typography>
+          ) : (
+            <TableContainer sx={{ maxHeight: "80vh", overflowX: "auto" }}>
+              <Table size="small" stickyHeader sx={{ minWidth: "max-content" }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell
+                      sx={{
+                        top: 0,
+                        backgroundColor: "background.paper",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                        minWidth: "80px",
+                        position: "sticky",
+                        left: 0,
+                        zIndex: 3,
+                      }}
+                    >
+                      회차
+                    </TableCell>
+                    {investorColumns.map((startRound) => (
+                      <TableCell
+                        key={startRound}
+                        sx={{
+                          top: 0,
+                          backgroundColor: "background.paper",
+                          fontSize: "0.75rem",
+                          fontWeight: 600,
+                          textAlign: "center",
+                          whiteSpace: "nowrap",
+                          minWidth: "120px",
+                        }}
+                      >
+                        {getColumnHeader(startRound)}
+                      </TableCell>
+                    ))}
+                    <TableCell
+                      sx={{
+                        top: 0,
+                        backgroundColor: "background.paper",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                        minWidth: "120px",
+                      }}
+                    >
+                      매출계
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        top: 0,
+                        backgroundColor: "background.paper",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                        minWidth: "120px",
+                      }}
+                    >
+                      수당계(세전)
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        top: 0,
+                        backgroundColor: "background.paper",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                        minWidth: "120px",
+                      }}
+                    >
+                      실납입(세후)
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {/* Header row with payment amounts */}
+                  <TableRow sx={{ backgroundColor: "rgba(0, 0, 0, 0.04)" }}>
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        textAlign: "center",
+                        position: "sticky",
+                        left: 0,
+                        backgroundColor: "rgba(0, 0, 0, 0.04)",
+                        zIndex: 2,
+                      }}
+                    >
+                      매출액
+                    </TableCell>
+                    {investorColumns.map((startRound) => {
+                      return (
+                        <TableCell
+                          key={startRound}
+                          sx={{
+                            textAlign: "right",
+                            fontVariantNumeric: "tabular-nums",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {result.scheduled_payment?.[startRound]
+                            ? formatValue(result.scheduled_payment[startRound])
+                            : ""}
+                        </TableCell>
+                      );
+                    })}
+                    <TableCell
+                      sx={{
+                        textAlign: "right",
+                        fontVariantNumeric: "tabular-nums",
+                        fontWeight: 600,
+                      }}
+                    >
+                      매출계
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        textAlign: "right",
+                        fontVariantNumeric: "tabular-nums",
+                        fontWeight: 600,
+                      }}
+                    >
+                      수당계(세전)
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        textAlign: "right",
+                        fontVariantNumeric: "tabular-nums",
+                        fontWeight: 600,
+                      }}
+                    >
+                      실납입(세후)
+                    </TableCell>
+                  </TableRow>
+
+                  {/* Data rows */}
+                  {processedData.map((round, idx) => (
+                    <TableRow key={idx} hover>
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
+                          textAlign: "center",
+                          position: "sticky",
+                          left: 0,
+                          backgroundColor: "background.paper",
+                          zIndex: 2,
+                        }}
+                      >
+                        {round.company_round}회
+                      </TableCell>
+                      {investorColumns.map((startRound) => (
+                        <TableCell
+                          key={startRound}
+                          sx={{
+                            textAlign: "right",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {round.investor_revenues[startRound]
+                            ? formatValue(round.investor_revenues[startRound])
+                            : ""}
+                        </TableCell>
+                      ))}
+                      <TableCell
+                        sx={{
+                          textAlign: "right",
+                          fontVariantNumeric: "tabular-nums",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {formatValue(round.total_payment)}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          textAlign: "right",
+                          fontVariantNumeric: "tabular-nums",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {formatValue(round.total_revenue_before_tax)}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          textAlign: "right",
+                          fontVariantNumeric: "tabular-nums",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {formatValue(round.net_profit_after_tax)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                  {/* Totals row */}
+                  <TableRow
+                    sx={{ backgroundColor: "rgba(25, 118, 210, 0.08)" }}
+                  >
+                    <TableCell
+                      sx={{
+                        fontWeight: 700,
+                        textAlign: "center",
+                        position: "sticky",
+                        left: 0,
+                        backgroundColor: "rgba(25, 118, 210, 0.08)",
+                        zIndex: 2,
+                      }}
+                    >
+                      합계
+                    </TableCell>
+                    {investorColumns.map((startRound) => (
+                      <TableCell
+                        key={startRound}
+                        sx={{
+                          textAlign: "right",
+                          fontVariantNumeric: "tabular-nums",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {columnTotals.totals[startRound]
+                          ? formatValue(columnTotals.totals[startRound])
+                          : ""}
+                      </TableCell>
+                    ))}
+                    <TableCell
+                      sx={{
+                        textAlign: "right",
+                        fontVariantNumeric: "tabular-nums",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {formatValue(columnTotals.totalPayment)}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        textAlign: "right",
+                        fontVariantNumeric: "tabular-nums",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {formatValue(columnTotals.totalRevenue)}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        textAlign: "right",
+                        fontVariantNumeric: "tabular-nums",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {formatValue(columnTotals.finalNetProfit)}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Paper>
+      )}
+    </Box>
+  );
+};
+
+export default OfflineResultsPage;

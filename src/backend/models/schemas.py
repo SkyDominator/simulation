@@ -28,6 +28,24 @@ class SimulationRunRequest(BaseModel):
     # Optional optimistic concurrency token: client expects to run on or after this updated_at
     expected_updated_at: Optional[str] = None
 
+# Simulation round result schemas
+class InvestorDetail(BaseModel):
+    investor_start_round: int
+    investor_internal_round: int
+    payment: float
+    revenue: float
+    investor_type: str
+
+class SimulationRoundResult(BaseModel):
+    company_round: int
+    investor_count: int
+    total_payment: float
+    total_revenue_before_tax: float
+    total_revenue_after_tax: float
+    net_profit_after_tax: float
+    cumulative_net_profit: float
+    investor_details: List[InvestorDetail]
+
 class SimulationRunResponse(BaseModel):
     simulation_id: str
     plan_id: str
@@ -37,7 +55,7 @@ class SimulationRunResponse(BaseModel):
     scheduled_payment: Dict[str, int]
     # Echo back sales achievement rates actually used (percent form) for transparency
     sales_achievement_rates: Dict[str, int] | None = None
-    history: List[Dict[str, Any]]
+    history: List[SimulationRoundResult]
     message: str
     success: bool
 
