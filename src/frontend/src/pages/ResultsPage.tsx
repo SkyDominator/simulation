@@ -49,6 +49,9 @@ const COLUMN_ORDER: readonly string[] = [
 // Append unlisted keys discovered in data (alphabetically)
 const SHOW_UNLISTED_COLUMNS = true as const;
 
+// Columns that must never be shown in results table
+const EXCLUDED_COLUMNS = new Set<string>(["investor_details"]);
+
 interface ResultsPageProps {
   setPage: (page: Page) => void;
   result: SimulationRunResponse | null;
@@ -82,7 +85,9 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
   const columns = React.useMemo(() => {
     const set = new Set<string>();
     for (const row of history) {
-      Object.keys(row).forEach((k) => set.add(k));
+      Object.keys(row).forEach((k) => {
+        if (!EXCLUDED_COLUMNS.has(k)) set.add(k);
+      });
     }
     const presentOrdered = COLUMN_ORDER.filter((k) => set.has(k));
     const rest = Array.from(set)
