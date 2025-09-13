@@ -25,6 +25,8 @@ from models.schemas import (
     PrivacyPolicyUpdateRequest, PrivacyPolicyUpdateResponse,
     PrivacyPolicyPublishResponse,
     PrivacyPolicyListResponse, PrivacyPolicyDetailResponse,
+    OnboardingLinkRequest, OnboardingLinkResponse,
+    OnboardingStatusResponse,
 )
 from supabase import create_client
 from config.settings import settings
@@ -186,15 +188,15 @@ async def create_privacy_policy(req: PrivacyPolicyCreateRequest, user_id: str = 
         raise HTTPException(status_code=400, detail="Publishing must be done via the publish endpoint")
     # Normalize date fields to ISO strings for JSON serialization
     effective_iso = req.effective_date.isoformat() if req.effective_date else None
-    last_updated_date = req.last_updated or req.effective_date or datetime.now(timezone.utc).date()
-    last_updated_iso = last_updated_date.isoformat()
+    updated_at_date = getattr(req, 'updated_at', None) or req.effective_date or datetime.now(timezone.utc).date()
+    updated_at_iso = updated_at_date.isoformat()
     payload = {
         'version': req.version.strip(),
         'content': req.content,
         'locale': (req.locale or 'ko-KR').strip() or 'ko-KR',
         'published': False,  # new policies are created as unpublished
         'effective_date': effective_iso,
-        'last_updated': last_updated_iso,
+        'updated_at': updated_at_iso,
         'created_by': user_id,
     }
     try:
@@ -227,9 +229,9 @@ async def update_privacy_policy(policy_id: str, req: PrivacyPolicyUpdateRequest,
         except AttributeError:
             # if already a string, leave it
             pass
-    if 'last_updated' in update_fields and update_fields['last_updated'] is not None:
+    if 'updated_at' in update_fields and update_fields['updated_at'] is not None:
         try:
-            update_fields['last_updated'] = update_fields['last_updated'].isoformat()
+            update_fields['updated_at'] = update_fields['updated_at'].isoformat()
         except AttributeError:
             pass
     if not update_fields:
@@ -442,7 +444,7 @@ async def get_privacy_policy(version: str | None = None, locale: str | None = No
     client = _supabase_client()
 
     try:
-        query = client.table("privacy_policies").select("version, locale, content, last_updated, effective_date")
+        query = client.table("privacy_policies").select("version, locale, content, updated_at, effective_date")
         if version:
             query = query.eq("version", version).eq("locale", DEFAULT_LOCALE).limit(1)
         else:
@@ -459,7 +461,7 @@ async def get_privacy_policy(version: str | None = None, locale: str | None = No
             row = resp.data[0]
             return {
                 "version": row.get("version"),
-                "last_updated": row.get("last_updated") or row.get("effective_date"),
+                "updated_at": row.get("updated_at") or row.get("effective_date"),
                 "content": row.get("content", ""),
                 "success": True,
                 "source": "db",
@@ -473,11 +475,11 @@ async def get_privacy_policy(version: str | None = None, locale: str | None = No
         project_root = Path(__file__).resolve().parents[3]
         md_path = project_root / "docs" / "privacy-policy-ko.md"
         content = md_path.read_text(encoding="utf-8")
-        # Derive last_updated from file mtime
-        last_updated = datetime.fromtimestamp(md_path.stat().st_mtime, tz=timezone.utc).date().isoformat()
+        # Derive updated_at from file mtime
+        updated_at = datetime.fromtimestamp(md_path.stat().st_mtime, tz=timezone.utc).date().isoformat()
         return {
             "version": "1.1",
-            "last_updated": last_updated,
+            "updated_at": updated_at,
             "content": content,
             "success": True,
             "source": "static-file",
@@ -500,3 +502,46 @@ async def get_privacy_policy(version: str | None = None, locale: str | None = No
             status_code=500,
             detail="An error occurred while loading the privacy policy. Please try again later."
         )
+
+# ------------------------------- Onboarding/link endpoints -------------------------------
+@router.post("/api/onboarding/link", response_model=OnboardingLinkResponse)
+async def link_onboarding(req: OnboardingLinkRequest, user_id: str = Depends(authenticate_jwt_token)):
+    """Persist onboarding flags for the authenticated user_id (idempotent)."""
+    client = _supabase_client()
+
+    payload = {
+        "user_id": user_id,
+        "whitelist_passed": bool(req.whitelist_passed),
+        "otp_verified": bool(req.otp_verified),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if req.consent_version:
+        payload["consent_version"] = req.consent_version
+
+    try:
+        res = client.table('user_onboarding').upsert(payload, on_conflict='user_id').execute()
+        if not res.data:
+            raise HTTPException(status_code=500, detail='Failed to link onboarding info')
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Onboarding link failed: {e}")
+
+    return OnboardingLinkResponse(user_id=user_id, linked=True, message='Onboarding linked', success=True)
+
+@router.get("/api/onboarding/status", response_model=OnboardingStatusResponse)
+async def get_onboarding_status(user_id: str = Depends(authenticate_jwt_token)):
+    """Return onboarding completion flags for current user."""
+    client = _supabase_client()
+    try:
+        res = client.table('user_onboarding').select('*').eq('user_id', user_id).limit(1).execute()
+        if res.data:
+            row = res.data[0]
+            return {
+                "user_id": user_id,
+                "whitelist_passed": bool(row.get('whitelist_passed')),
+                "otp_verified": bool(row.get('otp_verified')),
+                "consent_version": row.get('consent_version'),
+                "success": True,
+            }
+    except Exception:
+        pass
+    return {"user_id": user_id, "success": True}

@@ -15,6 +15,8 @@ import {
   type OTPVerifyResponse,
   type AdminPrivacyPolicyListResponse,
   type AdminPrivacyPolicyDetailResponse,
+  type OnboardingLinkResponse,
+  type OnboardingStatusResponse,
 } from "../types/types";
 
 // Prefer Vite-provided env var; fall back to the deployed backend URL
@@ -56,6 +58,55 @@ export const api = {
       throw new Error(data?.message || "삭제에 실패했습니다.");
     }
     return data;
+  },
+
+  // Onboarding
+  linkOnboarding: async (
+    token: string,
+    payload: {
+      whitelist_passed?: boolean;
+      otp_verified?: boolean;
+      consent_version?: string;
+    }
+  ): Promise<OnboardingLinkResponse> => {
+    const response = await fetch(url("/onboarding/link"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        /* no-op */
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
+  },
+
+  getOnboardingStatus: async (
+    token: string
+  ): Promise<OnboardingStatusResponse> => {
+    const response = await fetch(url("/onboarding/status"), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`;
+      try {
+        const err = await response.json();
+        msg = err?.detail || msg;
+      } catch {
+        /* no-op */
+      }
+      throw new Error(msg);
+    }
+    return await response.json();
   },
 
   runSimulation: async (

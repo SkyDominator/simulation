@@ -70,6 +70,11 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
 
     try {
       await api.recordConsent(userHash, "privacy_policy", policyVersion);
+      try {
+        sessionStorage.setItem("onboarding.consentVersion", policyVersion);
+      } catch {
+        /* no-op */
+      }
       onAccept();
     } catch (err) {
       console.error("Error recording consent:", err);
@@ -121,7 +126,9 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
         </Box>
 
         <Typography variant="body2" paragraph>
-          이 정보는 오직 인증 목적으로만 사용되며, 제3자와 공유되지 않습니다.
+          위 정보는 오직 인증 및 이용자 요청에 따른 관리자의 데이터 수정
+          목적으로만 사용되며, 제3자와 공유되지 않습니다. <br />
+          <br />
           자세한 내용은{" "}
           <Link
             component="button"
@@ -146,7 +153,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
               onChange={(e) => setCheckboxChecked(e.target.checked)}
             />
           }
-          label="개인정보 수집 및 이용에 동의합니다."
+          label="위 개인정보처리방침에 따른 개인정보 수집 및 이용에 동의합니다."
           sx={{ mb: 3, display: "block" }}
         />
 

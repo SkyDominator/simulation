@@ -15,7 +15,7 @@ interface OtpVerificationPageProps {
   phone: string;
   name: string;
   userHash: string;
-  onVerified: (userHash: string) => void;
+  onVerified: (info: { userHash: string; phone: string }) => void;
   onBack: () => void;
 }
 
@@ -72,10 +72,15 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
     setError("");
 
     try {
-      const result = await api.verifyOtp(phone, otpCode);
+      const result = await api.verifyOtp(phone, otpCode, userHash);
 
       if (result.success) {
-        onVerified(userHash);
+        try {
+          sessionStorage.setItem("onboarding.userHash", userHash);
+        } catch {
+          /* ignore storage */
+        }
+        onVerified({ userHash, phone });
       } else {
         setError(result.message);
       }

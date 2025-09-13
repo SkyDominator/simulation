@@ -172,3 +172,19 @@ export type Page =
   | "plan-editor"
   | "results"
   | "admin-policy";
+
+// Onboarding link/status
+export interface OnboardingLinkResponse {
+  user_id: string;
+  linked: boolean;
+  message: string;
+  success: boolean;
+}
+
+export interface OnboardingStatusResponse {
+  user_id?: string;
+  whitelist_passed: boolean;
+  otp_verified: boolean;
+  consent_version?: string;
+  success: boolean;
+}
