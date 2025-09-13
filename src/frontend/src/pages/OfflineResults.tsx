@@ -281,27 +281,21 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                         fontVariantNumeric: "tabular-nums",
                         fontWeight: 600,
                       }}
-                    >
-                      매출계
-                    </TableCell>
+                    ></TableCell>
                     <TableCell
                       sx={{
                         textAlign: "right",
                         fontVariantNumeric: "tabular-nums",
                         fontWeight: 600,
                       }}
-                    >
-                      수당계(세전)
-                    </TableCell>
+                    ></TableCell>
                     <TableCell
                       sx={{
                         textAlign: "right",
                         fontVariantNumeric: "tabular-nums",
                         fontWeight: 600,
                       }}
-                    >
-                      실납입(세후)
-                    </TableCell>
+                    ></TableCell>
                   </TableRow>
 
                   {/* Data rows */}
