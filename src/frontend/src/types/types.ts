@@ -171,4 +171,5 @@ export type Page =
   | "main"
   | "plan-editor"
   | "results"
+  | "offline-results"
   | "admin-policy";

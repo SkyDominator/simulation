@@ -5,6 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import MainPage from "./pages/MainPage";
 import PlanEditorPage from "./pages/PlanEditor";
 import ResultsPage from "./pages/ResultsPage";
+import OfflineResultsPage from "./pages/OfflineResults.tsx";
 import ConsentPage from "./pages/ConsentPage";
 import AdminPolicyPage from "./pages/AdminPolicyPage";
 import { type Plan, type Page } from "./types/types";
@@ -94,7 +95,7 @@ const AppController = () => {
   );
 
   const mainPages: Record<
-    "main" | "plan-editor" | "results" | "admin-policy",
+    "main" | "plan-editor" | "results" | "offline-results" | "admin-policy",
     React.ReactElement
   > = useMemo(
     () => ({
@@ -110,6 +111,9 @@ const AppController = () => {
         <PlanEditorPage setPage={setPage} editingPlan={editingPlan} />
       ),
       results: <ResultsPage setPage={setPage} result={simulationResult} />,
+      "offline-results": (
+        <OfflineResultsPage setPage={setPage} result={simulationResult} />
+      ),
       "admin-policy": <AdminPolicyPage setPage={setPage} />,
     }),
     [editingPlan, simulationResult, setPage]
@@ -138,6 +142,7 @@ const AppController = () => {
       page === "main" ||
       page === "plan-editor" ||
       page === "results" ||
+      page === "offline-results" ||
       page === "admin-policy"
     ) {
       return mainPages[page];
@@ -173,7 +178,12 @@ const AppController = () => {
       // User logged out
       // If logged out while on a protected page, send to whitelist
       // Don't reset userHash here - it's independent of auth status
-      if (page === "main" || page === "plan-editor" || page === "results") {
+      if (
+        page === "main" ||
+        page === "plan-editor" ||
+        page === "results" ||
+        page === "offline-results"
+      ) {
         setPage("whitelist");
       }
     }

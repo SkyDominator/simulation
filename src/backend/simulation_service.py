@@ -61,6 +61,7 @@ class SimulationRoundResult:
         self.total_revenue_after_tax = total_revenue_after_tax
         self.net_profit_after_tax = net_profit_after_tax
         self.cumulative_net_profit = cumulative_net_profit
+        self.investor_details = []  # List of individual investor details for this round
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert the round result to a dictionary."""
@@ -71,7 +72,8 @@ class SimulationRoundResult:
             "total_revenue_before_tax": self.total_revenue_before_tax,
             "total_revenue_after_tax": self.total_revenue_after_tax,
             "net_profit_after_tax": self.net_profit_after_tax,
-            "cumulative_net_profit": self.cumulative_net_profit
+            "cumulative_net_profit": self.cumulative_net_profit,
+            "investor_details": self.investor_details
         }
 
 
@@ -239,6 +241,7 @@ class FinancialSimulationService:
         total_revenue_this_round = 0
         next_round_investors = []
         graduation_count = 0
+        round_investor_details = []  # Track individual investor details for this round
         
         # Add new investors based on the simulation rules
         if t <= self.max_investor_count:
@@ -263,6 +266,15 @@ class FinancialSimulationService:
             revenue = round(revenue)
             investor.add_revenue(t, revenue)
             total_revenue_this_round += revenue
+            
+            # Store individual investor details for this round
+            round_investor_details.append({
+                'investor_start_round': investor.start_company_round,
+                'investor_internal_round': investor.internal_round,
+                'payment': actual_payment,
+                'revenue': revenue,
+                'investor_type': investor.investor_type
+            })
             
             # Update investor status
             if not investor.is_graduated(self.max_investor_count):
@@ -297,6 +309,9 @@ class FinancialSimulationService:
             net_profit_after_tax=net_profit_after_tax,
             cumulative_net_profit=cumulative_net_profit
         )
+        
+        # Store investor details for this round
+        round_result.investor_details = round_investor_details
         
         # Save results and update investors for next round
         self.results.add_round_result(round_result)
