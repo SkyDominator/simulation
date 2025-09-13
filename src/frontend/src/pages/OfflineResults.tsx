@@ -110,7 +110,9 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
     return { totals, totalPayment, totalRevenue, sumNetProfit };
   }, [processedData]);
 
-  import { formatValue } from "../utils/formatValue";
+  const formatValue = (val: number): string => {
+    return val.toLocaleString();
+  };
 
   const getColumnHeader = (startRound: number): string => {
     if (startRound === 1) {
