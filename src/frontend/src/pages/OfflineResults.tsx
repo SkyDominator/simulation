@@ -367,15 +367,15 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                   <TableRow
                     sx={{ backgroundColor: "rgba(25, 118, 210, 0.08)" }}
                   >
-                      <TableCell
+                    <TableCell
                       sx={{
                         fontWeight: 700,
                         textAlign: "center",
                         position: "sticky",
                         left: 0,
-                          backgroundColor: "background.paper",
-                          zIndex: 4,
-                          boxShadow: "inset -1px 0 0 rgba(0,0,0,0.12)",
+                        backgroundColor: "background.paper",
+                        zIndex: 4,
+                        boxShadow: "inset -1px 0 0 rgba(0,0,0,0.12)",
                       }}
                     >
                       합계
