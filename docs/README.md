@@ -302,7 +302,6 @@ The application uses Supabase with the following tables:
 - `whitelist`: Controls access to the application
 - `notices`: System notifications and announcements
 - `admins`: Administrative user information
-- `user_onboarding`: Stores onboarding flags tied to the authenticated Supabase `user_id`
 
 Row-Level Security (RLS) policies protect all tables to ensure data security.
 
@@ -397,38 +396,3 @@ npm run build; npm run preview
 ```
 
 Open the preview URL in Chrome and choose “Install app”. Serve over HTTPS in production to unlock full PWA capabilities.
-
----
-
-## Onboarding flow (whitelist → OTP → consent → login → main)
-
-A lightweight onboarding link ensures consent is tied to the authenticated Supabase user and OTP is only required once per login session.
-
-What’s included:
-
-- Backend endpoints: `POST /api/onboarding/link`, `GET /api/onboarding/status`
-- Frontend: Persists `user_hash` and phone in sessionStorage across OAuth redirects and links them post-login
-- Logout returns to the Login page (won’t show whitelist by default)
-
-Database migration:
-
-- SQL file: `src/backend/migrations/create_user_onboarding_table.sql`
-- Run it once in your Supabase project (SQL Editor), or via psql. It creates `public.user_onboarding` with:
-   - `user_id UUID PRIMARY KEY`
-   - Flags: `whitelist_passed BOOLEAN`, `otp_verified BOOLEAN`
-   - `consent_version TEXT`
-
-How to apply (one-time):
-
-1) Open Supabase web console → SQL Editor
-2) Paste the contents of `src/backend/migrations/create_user_onboarding_table.sql` and run
-3) If upgrading from a prior schema, run `src/backend/migrations/20250903_alter_user_onboarding_minimal.sql` to drop unused columns and indexes
-4) Verify table exists and has RLS configured as desired (backend uses service key)
-
-End-to-end check:
-
-1) Start backend (port 8000) and frontend (port 5173)
-2) Whitelist page → enter name/phone → receive OTP → verify
-3) Consent page → accept → Login page → social login
-4) After login, you land on Main page; the app links onboarding in the background
-5) Logout brings you to Login page. Re-login skips OTP/consent for the same session
