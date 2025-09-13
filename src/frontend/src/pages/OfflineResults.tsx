@@ -32,13 +32,24 @@ interface ProcessedRoundData {
   total_payment: number;
   total_revenue_before_tax: number;
   net_profit_after_tax: number;
-  investor_revenues: Record<number, number>; // key: investor_start_round, value: revenue
+  investor_details: InvestorDetail[]; // raw details for cell-level rendering
 }
 
 const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
   setPage,
   result,
 }) => {
+  // Normalize scheduled_payment keys to numbers for reliable access
+  const scheduledPaymentByRound = React.useMemo((): Record<number, number> => {
+    const out: Record<number, number> = {};
+    const sp = result?.scheduled_payment;
+    if (!sp) return out;
+    Object.entries(sp).forEach(([k, v]) => {
+      const nk = Number(k);
+      if (!Number.isNaN(nk)) out[nk] = Number(v);
+    });
+    return out;
+  }, [result]);
   const processedData = React.useMemo(() => {
     if (!result?.history) return [];
 
@@ -50,15 +61,13 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
         total_payment: round.total_payment as number,
         total_revenue_before_tax: round.total_revenue_before_tax as number,
         net_profit_after_tax: round.net_profit_after_tax as number,
-        investor_revenues: {},
+        investor_details: [],
       };
 
       // Process investor details if available
       if (round.investor_details && Array.isArray(round.investor_details)) {
-        for (const detail of round.investor_details as InvestorDetail[]) {
-          roundData.investor_revenues[detail.investor_start_round] =
-            detail.revenue;
-        }
+        roundData.investor_details =
+          (round.investor_details as InvestorDetail[]) || [];
       }
 
       data.push(roundData);
@@ -70,35 +79,35 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
   // Get all unique investor start rounds (columns)
   const investorColumns = React.useMemo(() => {
     const columns = new Set<number>();
+    // Prefer scheduled_payment keys to ensure columns are visible even if some rounds have no investor data yet
+    Object.keys(scheduledPaymentByRound).forEach((k) => columns.add(Number(k)));
+    // Also include any columns discovered from investor revenues (defensive)
     for (const round of processedData) {
-      Object.keys(round.investor_revenues).forEach((key) =>
-        columns.add(Number(key))
-      );
+      for (const d of round.investor_details) {
+        columns.add(Number(d.investor_start_round));
+      }
     }
     return Array.from(columns).sort((a, b) => a - b);
-  }, [processedData]);
+  }, [processedData, scheduledPaymentByRound]);
 
   // Calculate totals for each column
   const columnTotals = React.useMemo(() => {
     const totals: Record<number, number> = {};
     let totalPayment = 0;
     let totalRevenue = 0;
-    let finalNetProfit = 0;
+    let sumNetProfit = 0;
 
     for (const round of processedData) {
       totalPayment += round.total_payment;
       totalRevenue += round.total_revenue_before_tax;
-      finalNetProfit = round.net_profit_after_tax; // Take the last one
-
-      Object.entries(round.investor_revenues).forEach(
-        ([startRound, revenue]) => {
-          const key = Number(startRound);
-          totals[key] = (totals[key] || 0) + revenue;
-        }
-      );
+      sumNetProfit += round.net_profit_after_tax; // Sum across all rounds
+      for (const d of round.investor_details) {
+        const key = Number(d.investor_start_round);
+        totals[key] = (totals[key] || 0) + Number(d.revenue);
+      }
     }
 
-    return { totals, totalPayment, totalRevenue, finalNetProfit };
+    return { totals, totalPayment, totalRevenue, sumNetProfit };
   }, [processedData]);
 
   const formatValue = (val: number): string => {
@@ -252,6 +261,7 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                       매출액
                     </TableCell>
                     {investorColumns.map((startRound) => {
+                      const amt = scheduledPaymentByRound[startRound];
                       return (
                         <TableCell
                           key={startRound}
@@ -261,9 +271,7 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                             fontWeight: 500,
                           }}
                         >
-                          {result.scheduled_payment?.[startRound]
-                            ? formatValue(result.scheduled_payment[startRound])
-                            : ""}
+                          {amt !== undefined ? formatValue(amt) : ""}
                         </TableCell>
                       );
                     })}
@@ -311,19 +319,23 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                       >
                         {round.company_round}회
                       </TableCell>
-                      {investorColumns.map((startRound) => (
-                        <TableCell
-                          key={startRound}
-                          sx={{
-                            textAlign: "right",
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          {round.investor_revenues[startRound]
-                            ? formatValue(round.investor_revenues[startRound])
-                            : ""}
-                        </TableCell>
-                      ))}
+                      {investorColumns.map((startRound) => {
+                        const match = round.investor_details.find(
+                          (d) => d.investor_start_round === startRound
+                        );
+                        const v = match?.revenue;
+                        return (
+                          <TableCell
+                            key={startRound}
+                            sx={{
+                              textAlign: "right",
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {v !== undefined ? formatValue(v) : ""}
+                          </TableCell>
+                        );
+                      })}
                       <TableCell
                         sx={{
                           textAlign: "right",
@@ -370,20 +382,21 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                     >
                       합계
                     </TableCell>
-                    {investorColumns.map((startRound) => (
-                      <TableCell
-                        key={startRound}
-                        sx={{
-                          textAlign: "right",
-                          fontVariantNumeric: "tabular-nums",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {columnTotals.totals[startRound]
-                          ? formatValue(columnTotals.totals[startRound])
-                          : ""}
-                      </TableCell>
-                    ))}
+                    {investorColumns.map((startRound) => {
+                      const total = columnTotals.totals[startRound];
+                      return (
+                        <TableCell
+                          key={startRound}
+                          sx={{
+                            textAlign: "right",
+                            fontVariantNumeric: "tabular-nums",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {total !== undefined ? formatValue(total) : ""}
+                        </TableCell>
+                      );
+                    })}
                     <TableCell
                       sx={{
                         textAlign: "right",
@@ -409,7 +422,7 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                         fontWeight: 700,
                       }}
                     >
-                      {formatValue(columnTotals.finalNetProfit)}
+                      {formatValue(columnTotals.sumNetProfit)}
                     </TableCell>
                   </TableRow>
                 </TableBody>
