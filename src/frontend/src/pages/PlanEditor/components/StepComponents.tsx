@@ -21,7 +21,7 @@ import {
 import RemoveIcon from "@mui/icons-material/Remove";
 import AddIcon from "@mui/icons-material/Add";
 import {
-  getPlanLimits,
+  getSimulationRoundLimits,
   getDefaultInvestmentAmount,
 } from "../utils/investmentUtils";
 import type { Investment } from "../types/index";
@@ -38,7 +38,6 @@ interface CompanyRoundSelectorProps {
 
 interface SimulationRoundsSelectorProps {
   simulationRounds: number;
-  planType: string;
   onChange: (value: number) => void;
 }
 
@@ -450,8 +449,8 @@ export const CurrentCompanyRoundSelector: React.FC<
 
 export const SimulationRoundsSelector: React.FC<
   SimulationRoundsSelectorProps
-> = ({ simulationRounds, planType, onChange }) => {
-  const { min, max } = getPlanLimits(planType);
+> = ({ simulationRounds, onChange }) => {
+  const { min, max } = getSimulationRoundLimits();
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">4. 시뮬레이션 총 회차 수 선택</h2>

@@ -232,7 +232,11 @@ const MainPage: React.FC<MainPageProps> = ({
         if (!plan) continue;
 
         // Run the simulation to get the results
-        const result = await api.runSimulation(simId, session.access_token);
+        const result = await api.runSimulation(
+          simId,
+          session.access_token,
+          plan.updated_at
+        );
 
         // Process history like ResultsPage
         const history = injectDerivedHistory(result);
