@@ -1,4 +1,13 @@
-On the Results page, 
+On the Results.tsx page, add "수당표 보기" button right before the "돌아가기" button. The button design should match the "돌아가기" button style (MUI).
+
+When it is clicked, users should be directoed to another version of Result page called "OfflineResults.tsx". This page also has a "돌아가기" button that directs users back to the Results.tsx page.
+
+On the OfflineResults.tsx page, I need to display the similar results (there are some new results in OfflineResults.tsx page and some of the results in Results.tsx will not be displayed) displayed on the Results.tsx page in the different format.
+
+On the OfflineResults.tsx page, you will display the "revenue" for each round for each "investor" in a table format. Here the "revenue" and "investor" are the variables exsiting in `run_single_round` function in the backend (`simulation_service.py`). Like this, the "revenue" data were already calculated in the backend, and they will be sent to the frontend via API. 
+
+For example, if a "P" plan simulation runs for 21 rounds then the table should like this:
+
 
 | 회차 | 1회차(본코드) | 2회차 | 3회차 | 4회차 | 5회차 | 6회차 | 7회차 | 8회차 | 9회차 | 10회차 | 11회차 | 12회차 | 13회차 | 14회차 | 15회차 | 16회차 | 17회차 | 18회차 | 19회차 | 20회차 | 21회차 |  |  |  |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -26,10 +35,16 @@ On the Results page,
 | 21회 |  |  |  | 300,160,000  | 300,322,909  | 210,224,000  | 80,256,000  | 45,288,000  | 20,320,000  | 10,320,000  | 10,640,000  | 10,640,000  | 9,960,000  | 16,600,000  | 23,200,000  | 23,200,000  | 26,400,000  | 26,400,000  | 9,600,000  | 9,600,000  | 9,600,000  | 184,700,000  | 1,142,730,909  | 948,843,421  |
 | 합계 | 1,740,100,000  | 753,528,000  | 753,428,000  | 854,880,000  | 810,225,818  | 355,784,000  | 166,140,000  | 96,432,000  | 56,660,000  | 36,240,000  | 51,340,000  | 40,600,000  | 44,740,000  | 57,800,000  | 82,400,000  | 59,200,000  | 72,000,000  | 45,600,000  | 28,800,000  | 19,200,000  | 9,600,000  | 865,430,000  | 6,134,697,818  | 3,961,802,001  |
 
-company_round: "회차",
-amount: "매출액",
-net_profit_after_tax: "실납입(세후)",
-total_payment: "매출계",
-total_revenue_before_tax: "수당계(세전)",
 
-all sales_achievement_rate is regard as 100%
+where the name of matching variables in the frontend (ResultPage.tsx) in Korean are:
+
+* "회차": `company_round`
+* "매출액": `amount`
+* "실납입(세후)": `net_profit_after_tax`
+* "매출계": `total_payment`
+* "수당계(세전)": `total_revenue_before_tax`
+* 합계: the total of each column
+
+Note that all `sales_achievement_rate` is regarded as 100%
+
+Add or modify codes that fetches the data from the backend API (you may need to create a new API endpoint in the backend that sends the required data to the frontend) and processes the data to be displayed in the table shown above. Construct the table design and UI like we did for the Result table in ResultPage.tsx. The table should be horizontally scrollable if it exceeds the screen width.
