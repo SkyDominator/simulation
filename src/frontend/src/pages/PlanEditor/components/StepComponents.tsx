@@ -303,11 +303,13 @@ const FormattedAmountInput: React.FC<{
       return;
     }
     const numeric = parseInt(rawDigits, 10);
-    if (
-      minValue !== undefined &&
-      (isNaN(numeric) || numeric < minValue || numeric <= 0)
-    ) {
-      applyNumericValue(minValue);
+    // Only auto-adjust if the value is 0 or negative, but allow values below minValue
+    if (isNaN(numeric) || numeric <= 0) {
+      if (minValue !== undefined) {
+        applyNumericValue(minValue);
+      } else {
+        applyNumericValue(0);
+      }
     }
   };
 

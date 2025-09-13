@@ -17,7 +17,11 @@ import {
   SimulationRoundsSelector,
   InvestmentEditor,
 } from "./components";
-import { ConfirmationModal, ValidationModal } from "./modals";
+import {
+  ConfirmationModal,
+  DefaultValueWarningModal,
+  ValidationModal,
+} from "./modals";
 import StartingRoundValidationModal from "./modals/StartingRoundValidationModal";
 import CurrentRoundValidationModal from "./modals/CurrentRoundValidationModal";
 import {
@@ -97,6 +101,15 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   }
   const [plan, setPlan] = useState<Plan>(initialPlan);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [isDefaultValueWarningModalOpen, setDefaultValueWarningModalOpen] =
+    useState(false);
+  const [belowMinInvestments, setBelowMinInvestments] = useState<
+    Array<{
+      round: number;
+      amount: number;
+      minAmount: number;
+    }>
+  >([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isValidationModalOpen, setSimulationRoundsValidationModalOpen] =
     useState(false);
@@ -199,9 +212,36 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
     setSimulationRoundsValidationModalOpen(false);
   };
 
-  const handleSaveClick = () => {
-    // Inputs now auto-correct on blur; just open confirmation
+  const handleDefaultValueWarningCancel = () => {
+    setDefaultValueWarningModalOpen(false);
+    setBelowMinInvestments([]);
+  };
+
+  const handleDefaultValueWarningContinue = () => {
+    setDefaultValueWarningModalOpen(false);
+    setBelowMinInvestments([]);
     setConfirmModalOpen(true);
+  };
+
+  const handleSaveClick = () => {
+    // Check for investments below minimum values
+    const belowMin = (plan.investments || [])
+      .filter((inv) => {
+        const minAmount = getDefaultInvestmentAmount(plan.plan_id, inv.round);
+        return inv.amount < minAmount;
+      })
+      .map((inv) => ({
+        round: inv.round,
+        amount: inv.amount,
+        minAmount: getDefaultInvestmentAmount(plan.plan_id, inv.round),
+      }));
+
+    if (belowMin.length > 0) {
+      setBelowMinInvestments(belowMin);
+      setDefaultValueWarningModalOpen(true);
+    } else {
+      setConfirmModalOpen(true);
+    }
   };
 
   // Confirm starting round validation
@@ -321,6 +361,8 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   const handleBack = () => {
     // Close all modals when going back
     setConfirmModalOpen(false);
+    setDefaultValueWarningModalOpen(false);
+    setBelowMinInvestments([]);
     setSimulationRoundsValidationModalOpen(false);
     setStartingRoundModalOpen(false);
     setCurrentRoundModalOpen(false);
@@ -582,6 +624,8 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         <Button
           onClick={() => {
             setConfirmModalOpen(false);
+            setDefaultValueWarningModalOpen(false);
+            setBelowMinInvestments([]);
             setSimulationRoundsValidationModalOpen(false);
             setStartingRoundModalOpen(false);
             setCurrentRoundModalOpen(false);
@@ -660,6 +704,13 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         value={plan.current_company_round}
         startingCompanyRound={plan.starting_company_round}
         max={100}
+      />
+
+      <DefaultValueWarningModal
+        isOpen={isDefaultValueWarningModalOpen}
+        onClose={handleDefaultValueWarningCancel}
+        onContinue={handleDefaultValueWarningContinue}
+        belowMinInvestments={belowMinInvestments}
       />
 
       {/* InvestmentValidationModal removed (auto-correction in inputs) */}
