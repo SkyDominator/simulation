@@ -67,7 +67,7 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
       // Process investor details if available
       if (round.investor_details && Array.isArray(round.investor_details)) {
         roundData.investor_details =
-          (round.investor_details as InvestorDetail[]) || [];
+          round.investor_details as InvestorDetail[];
       }
 
       data.push(roundData);
