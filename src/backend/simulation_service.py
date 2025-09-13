@@ -101,15 +101,16 @@ class FinancialSimulationService:
     This class handles the dynamic calculation of payments and revenues 
     based on plan parameters, and manages the investor lifecycle.
     """
-
-    def __init__(self, plan_id: str, scheduled_payment: Dict[int, int], sales_achievement_rates: Dict[int, float]):
+    
+    def __init__(self, plan_id: str, scheduled_payment: Optional[Dict[int, int]] = None, sales_achievement_rates: Optional[Dict[int, float]] = None):
         """
         Initialize the financial simulation service.
         
         Args:
             plan_id (str): The plan identifier to use for the simulation
-            scheduled_payment (Dict[int, int]): Custom scheduled payment dict
+            scheduled_payment (Optional[Dict[int, int]]): Custom scheduled payment dict
             sales_achievement_rates (Optional[Dict[int, float]]): Custom sales achievement rates
+            starting_company_round (int): The starting company round
         """
         if plan_id not in PLAN_PARAMETERS:
             logger.error(f"Invalid plan: {plan_id}")
@@ -117,17 +118,20 @@ class FinancialSimulationService:
         
         # Copy all parameters from the default plan
         self.params = PLAN_PARAMETERS[plan_id].copy()
-        self.params['scheduled_payment'] = scheduled_payment
         
-        # sales achievement rates (expected as fractions 0.5-1.0)
-        # Validate and coerce ranges
-        cleaned: Dict[int, float] = {}
-        for k, v in sales_achievement_rates.items():
-            if not (0.5 <= v <= 1.0):
-                continue
-            cleaned[int(k)] = float(v)
-        if cleaned:
-            self.params['sales_achievement_rates'] = cleaned
+        # Override scheduled_payment if provided
+        if scheduled_payment is not None:
+            self.params['scheduled_payment'] = scheduled_payment
+        # Override sales achievement rates (already expected as fractions 0.5-1.0)
+        if sales_achievement_rates is not None:
+            # Validate and coerce ranges
+            cleaned: Dict[int, float] = {}
+            for k, v in sales_achievement_rates.items():
+                if not (0.5 <= v <= 1.0):
+                    continue
+                cleaned[int(k)] = float(v)
+            if cleaned:
+                self.params['sales_achievement_rates'] = cleaned
             
         self.plan_id = plan_id
         self.max_investor_count = self.params['max_investor_count']

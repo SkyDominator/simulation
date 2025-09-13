@@ -13,7 +13,7 @@ import {
 import OtpVerificationPage from "./OtpVerificationPage";
 
 interface WhitelistCheckPageProps {
-  onVerified: (info: { userHash: string; phone: string }) => void;
+  onVerified: (userHash: string) => void;
 }
 
 const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
@@ -87,11 +87,6 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
     setShowOtpVerification(false);
     setUserHash("");
     setError("");
-    try {
-      sessionStorage.removeItem("onboarding.userHash");
-    } catch {
-      /* no-op */
-    }
   };
 
   // If showing OTP verification page
@@ -101,7 +96,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
         phone={phone}
         name={name}
         userHash={userHash}
-        onVerified={(info) => onVerified(info)}
+        onVerified={onVerified}
         onBack={handleBack}
       />
     );
