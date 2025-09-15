@@ -6,6 +6,43 @@ I have further questions.
 3. For the chosen files and codelines for test, how they were chosen? On what criteria?
 
 
+The current table schema of user_onboarding table is:
+```sql
+create table public.user_onboarding (
+  user_id uuid not null,
+  whitelist_passed boolean null default false,
+  otp_verified boolean null default false,
+  consent_version text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  user_hash text null,
+  constraint user_onboarding_pkey primary key (user_id)
+) TABLESPACE pg_default;
+```
+
+Given this, there are some issues in the current codes:
+
+1. sessionStorage.setItem("onboarding.userHash", userHash); should be removed in hadleVerify in OtPVerificationPage since sessionStorage.setItem("onboarding.userHash", userHash); is already and should be only done in whitelistcheck page. It's the marker for passing whitelist check, not that of OPT verification. It should be something that represents the OTP verification success.
+
+2. I think the onVerified in WhitelistCheckPage, OtPVerificationPage, and AppController use phone as argument which seems to be not need. 
+
+3. The page routing logic in AppController page is not working as expected:
+
+Expectation:
+
+The onboarding status should be checked when routing users. If a user's auth session is terminated (logged out),  his onboarding status should be checked to decide which page he should be redirected to. 
+
+If he already passed all the requirements (whitelist check, OTP verification, and consent to the latest version of the privacy policy), he should be redirected to the "login" page.
+
+If he passed OTP verification (it automatically includes whitelist checking in the current logic) but the privacy policy version he consented is not the lastest, he should be redirected to the ConsentPage for getting consent to the latest version. Only after that, he would be redirected to the login page.
+
+If he hadn't gone through OTP verification or the valid time of the OTP verfication (`otp_validity_minutes` in settings.py) was over, he should be redirected to the whitelist check page.
+
+And of course, if there is a valid auth session, he should be routed to the main page.
+
+
+
+
 # 그 외
 
 1. 메모장 밖에 화면 누르면 메모 화면 꺼지는 현상 수정
