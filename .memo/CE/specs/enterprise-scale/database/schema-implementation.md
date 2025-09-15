@@ -334,3 +334,9 @@ ON simulations (user_id, created_at DESC, plan_id);
 - **Real-time Subscriptions**: Consider performance impact of real-time features at scale
 - **Storage Integration**: Use Supabase Storage for large simulation exports/imports
 - **Edge Functions**: Consider Supabase Edge Functions for data processing pipelines
+
+
+## For testing
+- Use mock data generation tools to create realistic datasets for load testing
+- Use mock DB tables to simulate high-concurrency scenarios
+- Implement automated tests for RLS policies
