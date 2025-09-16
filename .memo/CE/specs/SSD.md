@@ -748,10 +748,10 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 **User Data Migration**:
 
 - **Consent Version Tracking**: When privacy policies update, flag users requiring re-consent
-- **Consent Status Migration**: Create user_consent_status records for existing users with current policy version `NEED_VERIFICATION`
+- **Consent Status Migration**: Create user_consent_status records for existing users with current policy version
 - **Simulation Schema Updates**: Preserve historical simulation data while supporting new plan parameters
 - **Whitelist Management**: Support bulk import/export for whitelist hash updates
-- **Retroactive Consent Linking**: Link existing consent_records to user_id for authenticated users `NEED_VERIFICATION`
+- **Retroactive Consent Linking**: Link existing consent_records to user_id for authenticated users
 
 ### 20.3 Rollback Procedures
 
@@ -910,9 +910,7 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 
 **System Recovery**:
 
-- **Graceful Degradation**: Allow read-only access to critical functions if consent service partially unavailable `NEED_VERIFICATION`
-- **Cache Strategy**: Consider consent status caching to reduce database load during high traffic `NEED_VERIFICATION`
-- **Monitoring**: Implement alerts for consent-related errors and user access issues `NEED_VERIFICATION`
+- **Monitoring**: Implement alerts for consent-related errors and user access issues
 
 ---
 
