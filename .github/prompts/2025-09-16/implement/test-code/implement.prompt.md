@@ -6,7 +6,7 @@ Implement new codes or modify existing codes in the codebase (`/src/**`) by exac
 2. If you find any ambiguity or missing details in the plan, mark `NEED_VERIFICATION` on the ambiguous parts on the `/.memo/CE/plans/2025-09-16/test-code/test-code.md` and skip the implementation of those parts for now, so that I can clarify the direction of next steps.
 3. Since the implementation target is the test codes itself, so the test codes cannot be tested by other test codes. Instead, make sure that the implementation is exactly following the plan.
 4. After the implementation, review all your implementation results against the `/.memo/CE/specs/SSD.md` (The Single Source of the Truth) and the original plan.
-5. After reviewing, write the implementation report to `/.memo/CE/implementations/2025-09-16/test-code.md`. Use the following format and style for the notes.
+5. After reviewing, write the implementation report to `/.memo/CE/implement/2025-09-16/test-code.md`. Use the following format and style for the notes.
    * Summary of changes made
    * Any important context or considerations
    * Reference to the original plan (line numbers if applicable)
