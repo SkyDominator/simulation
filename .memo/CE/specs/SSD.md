@@ -11,7 +11,13 @@ Owners: Product, Engineering (Backend/Frontend)
 
 ## 1. Introduction
 
-LOLClub Simulation is a PWA that allows whitelisted users to sign in via Supabase OAuth, manage investment plan simulations, and review results. The app enforces a pre-auth onboarding flow (whitelist + OTP + privacy consent) and provides an admin UI for managing privacy policies and notices. The backend is a FastAPI service integrated with Supabase (Auth, Postgres, Storage), and the frontend is a React/Vite app.
+LOLClub Simulation is a PWA that allows whitelisted users to sign in via Supabase OAuth, manage investment plan simulations, and review results. The app enforces a pre-auth onboarding flow (whitelist + OTP + privacy consent) and provides an admin UI for managing privacy policies and notices. The backend is a FastAPI service integrated with Supabase (Auth,**User Data Migration**:
+
+- **Consent Version Tracking**: When privacy policies update, flag users requiring re-consent
+- **Consent Status Migration**: Create consent_records for existing users with current policy version for retroactive tracking
+- **Simulation Schema Updates**: Preserve historical simulation data while supporting new plan parameters
+- **Whitelist Management**: Support bulk import/export for whitelist hash updates
+- **Retroactive Consent Linking**: Link existing consent_records to user_id for authenticated users during migrationes, Storage), and the frontend is a React/Vite app.
 
 The Goals of this Project:
 
@@ -157,12 +163,7 @@ Core tables (field types reflect actual implementation):
 - **consent_records**
   - id uuid (pk), user_hash text, user_id uuid, consent_type text
   - consent_version text, consent_given_at timestamptz, ip_address text, user_agent text
-  - Note: Links pre-auth consent (user_hash) with post-auth user (user_id) for privacy policy compliance tracking `NEED_VERIFICATION`
-
-- **user_consent_status** (proposed new table) `NEED_VERIFICATION`
-  - user_id uuid (pk, fk to auth.users), latest_consented_version text
-  - last_consent_at timestamptz, requires_consent boolean
-  - Note: Tracks authenticated users' consent status for policy enforcement
+  - Note: Links pre-auth consent (user_hash) with post-auth user (user_id) for privacy policy compliance tracking. Modified to support both pre-auth and authenticated consent flows.
 
 ---
 
@@ -173,9 +174,9 @@ Core tables (field types reflect actual implementation):
 - **CORS**: Allow list includes Cloudflare Tunnel domain and local dev hosts/ports.
 - **Secrets**: SUPABASE_SECRET_KEY used server-side. Publishable key only in frontend. SMS provider keys (Solapi) loaded from env.
 - **PII handling**: Consent recorded against user_hash pre-auth; onboarding links the consent version post-auth via user_id and user_hash.
-- **Privacy Policy Enforcement**: All protected endpoints check user consent status; return 423 (Locked) if latest policy not consented `NEED_VERIFICATION`
-  - **Consent Validation**: Middleware checks user_consent_status table on each authenticated request `NEED_VERIFICATION`
-  - **Grace Period**: Users get X days/hours to consent before access is restricted `NEED_VERIFICATION`
+- **Privacy Policy Enforcement**: All protected endpoints check user consent status; return 423 (Locked) when user hasn't consented to latest policy
+  - **Consent Validation**: Middleware checks latest consent version in consent_records table on each authenticated request
+  - **Zero Grace Period**: Users must consent to latest version immediately or access is restricted
 
 ### 7.1 Core Security Controls
 
@@ -201,10 +202,10 @@ Core tables (field types reflect actual implementation):
 - **Get Policy**: GET /api/privacy-policy?version&locale → returns current or specific version (DB first, static fallback)
 - **Record Consent**: POST /api/consents with user_hash, consent_type, consent_version
 - **Get User Consents**: GET /api/consents/{user_hash} → list of consent records (pre-auth)
-- **Privacy Policy Update Flow**: When privacy policy is updated, system redirects all users (authenticated and pre-auth) to consent page
-  - **Check User Consent Status**: GET /api/user/consent-status (auth) → returns whether user needs to consent to latest policy `NEED_VERIFICATION`
-  - **Force Consent Redirect**: All protected endpoints return 423 (Locked) when user hasn't consented to latest policy `NEED_VERIFICATION`
-  - **Post-auth Consent Recording**: POST /api/user/consents (auth) → records consent for authenticated user with user_id `NEED_VERIFICATION`
+- **Privacy Policy Update Flow**: When privacy policy is updated, system redirects active users to consent page via 423 responses
+  - **Check User Consent Status**: GET /api/user/consent-status (auth) → returns whether user needs to consent to latest policy
+  - **Force Consent Redirect**: All protected endpoints return 423 (Locked) when user hasn't consented to latest policy
+  - **Post-auth Consent Recording**: POST /api/user/consents (auth) → records consent for authenticated user with user_id
 
 ### 8.3 Authentication
 
@@ -314,25 +315,25 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
   res: { id: string, message: string, success: boolean }
 }
 
-// GET /api/user/consent-status (auth) `NEED_VERIFICATION`
+// GET /api/user/consent-status (auth)
 {
   res: { requires_consent: boolean, latest_version: string, 
-         user_consented_version?: string, consent_deadline?: string }
+         user_consented_version?: string }
 }
 
-// POST /api/user/consents (auth) `NEED_VERIFICATION`
+// POST /api/user/consents (auth)
 {
   req: { consent_type: string, consent_version: string },
   res: { user_id: string, consent_type: string, consent_version: string, 
          consent_given_at: string, success: boolean }
 }
 
-// Error response for locked endpoints (423 status) `NEED_VERIFICATION`
+// Error response for locked endpoints (423 status)
 {
   error: { 
     code: "CONSENT_REQUIRED", 
     message: "Privacy policy consent required", 
-    details: { latest_version: string, consent_deadline?: string } 
+    details: { latest_version: string, redirect_to: "consent" } 
   }
 }
 
@@ -429,7 +430,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 **Step 3: ConsentPage** (`page: "consent"`):
 
 - **Layout**: Centered Paper component (max-width: 600px) with structured consent flow
-- **Multi-Context Support**: Handles both pre-auth (user_hash) and authenticated (user_id) consent flows `NEED_VERIFICATION`
+- **Multi-Context Support**: Handles both pre-auth (user_hash) and authenticated (user_id) consent flows
   - **Pre-auth Flow**: Uses existing user_hash-based consent recording
   - **Post-auth Flow**: Records consent with user_id for authenticated users
   - **Context Detection**: Determines flow based on authentication state and calling context
@@ -445,7 +446,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Data Recording**: Records consent with `userHash` (pre-auth) or `user_id` (authenticated), `consent_type: "privacy_policy"`, `policyVersion`
 - **Flow Control**:
   - Accept: Stores `consentVersion` in sessionStorage, proceeds to next step (login for pre-auth, main app for authenticated)
-  - Decline: Returns to previous context (whitelist for pre-auth, logout for authenticated) `NEED_VERIFICATION`
+  - Decline: Returns to previous context (whitelist for pre-auth, logout and redirect to whitelist for authenticated)
 
 **Step 4: LoginPage** (`page: "login"`):
 
@@ -462,19 +463,17 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Persistence**: UI state (page, editingPlan, noticeOpen, simulationResult) in localStorage
 - **Restoration**: On app focus/visibility change, restores state with diff checking
 - **Session Management**: Supabase session auto-refresh maintains authentication
-- **Consent Status Monitoring**: Periodic check for consent requirements on authenticated sessions `NEED_VERIFICATION`
-  - **Background Check**: Check consent status every X minutes for active sessions
-  - **Interrupt Handling**: Gracefully handle 423 responses by redirecting to consent page
-  - **State Preservation**: Maintain user's current task context through consent flow
+- **Consent Flow Handling**: Gracefully handle 423 responses by redirecting to consent page
+  - **Context Preservation**: Maintain user's current task context through consent flow
+  - **Resume After Consent**: Return to interrupted task after successful consent
 
 ### 13.4 Main Application Experience
 
 **MainPage Navigation** (`page: "main"`):
 
-- **Privacy Policy Enforcement**: App checks consent status on load and redirects to consent page if required `NEED_VERIFICATION`
+- **Privacy Policy Enforcement**: App checks consent status on load and redirects to consent page if required
   - **Consent Status Check**: GET /api/user/consent-status on app initialization
   - **Forced Redirect**: If `requires_consent: true`, redirect to ConsentPage with current context preservation
-  - **Access Blocking**: Display consent-required overlay for users with expired consent `NEED_VERIFICATION`
 
 - **Header Actions**:
   - Add simulation button (+ icon) navigates to plan editor
@@ -627,8 +626,8 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 
 - Given a published policy, when GET /api/privacy-policy, then latest published content returned
 - Given user_hash and version, when POST /api/consents, then record exists and GET /api/consents/{user_hash} includes it
-- Given a policy update, when an authenticated user accesses protected endpoints, then 423 (Locked) returned if latest policy not consented `NEED_VERIFICATION`
-- Given an authenticated user, when POST /api/user/consents with latest version, then subsequent API calls succeed without 423 status `NEED_VERIFICATION`
+- Given a policy update, when an authenticated user accesses protected endpoints, then 423 (Locked) returned if latest policy not consented
+- Given an authenticated user, when POST /api/user/consents with latest version, then subsequent API calls succeed without 423 status
 
 ### 17.3 Simulations
 
@@ -685,7 +684,7 @@ When scaling beyond 100 users, refer to [`enterprise-scale/`](enterprise-scale/)
 **Post-login Flow**:
 
 1. **Onboarding Linking**: Automatic backend call to link pre-auth context to authenticated user_id
-2. **Consent Status Validation**: Check if user needs to consent to latest privacy policy version `NEED_VERIFICATION`
+2. **Consent Status Validation**: Check if user needs to consent to latest privacy policy version
    - **Automatic Check**: GET /api/user/consent-status on successful login
    - **Conditional Redirect**: If consent required, redirect to ConsentPage before MainPage
    - **Context Preservation**: Store intended destination to resume after consent
@@ -694,10 +693,9 @@ When scaling beyond 100 users, refer to [`enterprise-scale/`](enterprise-scale/)
    - **Empty States**: Welcome message and CTA for first simulation creation
    - **Bulk Operations**: Multi-select with batch actions (delete, export)
 
-**Ongoing Consent Monitoring**: `NEED_VERIFICATION`
+**Ongoing Consent Monitoring**:
 
 - **API Response Handling**: Listen for 423 (Locked) responses and redirect to consent
-- **Background Validation**: Periodic consent status checks during active sessions
 - **User Notification**: Clear messaging about policy updates and consent requirements
 
 **Simulation Management UX**:
@@ -872,20 +870,20 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 
 ### 24.1 Admin Policy Management
 
-**Policy Update Process**: `NEED_VERIFICATION`
+**Policy Update Process**:
 
 1. **Draft Creation**: Admin creates new policy version via POST /api/admin/privacy-policies
 2. **Review Period**: Policy remains unpublished for internal review and approval
 3. **Publication**: Admin publishes policy via POST /api/admin/privacy-policies/{id}/publish
    - **Automatic Unpublishing**: Previous published policy becomes inactive
-   - **User Notification Trigger**: System flags all users as requiring new consent
+   - **Active User Impact**: System returns 423 (Locked) for users who haven't consented to new version
 4. **Effective Date**: Policy takes effect immediately or on specified `effective_date`
 
-**User Impact Assessment**: `NEED_VERIFICATION`
+**User Impact Assessment**:
 
-- **Scope Determination**: All registered users vs. only active users require consent
-- **Grace Period**: X days/hours before access restrictions begin
-- **Communication Strategy**: Email notifications, in-app alerts, consent deadline warnings
+- **Scope**: Active users (those with current sessions or making API requests) require consent
+- **Zero Grace Period**: Users must consent immediately or access is restricted
+- **Communication Strategy**: In-app consent flow with policy details and acceptance requirement
 
 ### 24.2 User Consent Flow Implementation
 
@@ -895,32 +893,32 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 2. **Session Check**: Periodic validation during active sessions
 3. **API Enforcement**: All protected endpoints check consent before processing
 
-**Consent Collection Process**: `NEED_VERIFICATION`
+**Consent Collection Process**:
 
-- **Mandatory vs. Optional**: Determine if new consent is blocking or advisory
-- **Granular Consent**: Support for different consent types (marketing, analytics, etc.)
-- **Audit Trail**: Complete history of user consent decisions with timestamps
+- **Immediate Enforcement**: New consent is required immediately upon policy publication
+- **Single Consent Type**: Focus on privacy policy consent (can be extended for other types later)
+- **Audit Trail**: Complete history of user consent decisions with timestamps and IP tracking
 
-**Technical Implementation**: `NEED_VERIFICATION`
+**Technical Implementation**:
 
-- **Database Changes**: Create/modify tables for consent tracking
-- **Middleware Updates**: Add consent validation to authentication pipeline
-- **Frontend Changes**: Consent UI components, flow management, error handling
-- **API Modifications**: New endpoints for consent status and recording
+- **Database Changes**: Modify consent_records table to support both user_hash and user_id
+- **Middleware Updates**: Add consent validation to authentication pipeline using consent_records table
+- **Frontend Changes**: Enhanced ConsentPage for both pre-auth and authenticated flows
+- **API Modifications**: New endpoints for authenticated user consent status and recording
 
 ### 24.3 Rollback and Recovery Procedures
 
-**Policy Rollback**: `NEED_VERIFICATION`
+**Policy Rollback**:
 
-- **Emergency Rollback**: Ability to quickly revert to previous policy version
-- **User Communication**: Notification of policy changes and consent implications
-- **Data Retention**: Maintain historical consent records for compliance
+- **Admin-Controlled Rollback**: Admin can republish previous policy version via Supabase privacy_policies table
+- **User Impact**: Users who consented to newer version remain valid, others need to consent to restored version
+- **Data Retention**: Maintain historical consent records for compliance and audit purposes
 
-**System Recovery**: `NEED_VERIFICATION`
+**System Recovery**:
 
-- **Graceful Degradation**: System behavior when consent service unavailable
-- **Cache Strategy**: Consent status caching to reduce database load
-- **Monitoring**: Alerts for consent-related errors and user access issues
+- **Graceful Degradation**: Allow read-only access to critical functions if consent service partially unavailable `NEED_VERIFICATION`
+- **Cache Strategy**: Consider consent status caching to reduce database load during high traffic `NEED_VERIFICATION`
+- **Monitoring**: Implement alerts for consent-related errors and user access issues `NEED_VERIFICATION`
 
 ---
 

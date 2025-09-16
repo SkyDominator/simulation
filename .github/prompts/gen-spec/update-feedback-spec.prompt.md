@@ -16,7 +16,7 @@ Here are my decision and clarifications for `NEED_VERIFICATION`s in SSD.md
 
 # Next Step
 
-Apply the clarifications and decisions above in the SSD. Remove `NEED_VERIFICATION` on clarified elements.
+Apply the clarifications and decisions above in the SSD and schema.md Remove `NEED_VERIFICATION` on clarified elements.
 
 # Note
 

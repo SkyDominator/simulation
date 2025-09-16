@@ -38,13 +38,15 @@ using (
 
 ```sql
 create table public.consent_records (
+  id uuid not null default gen_random_uuid (),
   consent_type text not null,
   consent_version text not null,
   consent_given_at timestamp with time zone null default now(),
   ip_address text null,
   user_agent text null,
-  user_hash text not null,
-  constraint consent_records_pkey primary key (user_hash)
+  user_hash text null,
+  user_id uuid null,
+  constraint consent_records_pkey primary key (id)
 ) TABLESPACE pg_default;
 ```
 
