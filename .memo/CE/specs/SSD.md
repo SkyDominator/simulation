@@ -553,7 +553,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Supabase RLS** should be configured on user-owned tables; admin APIs rely on server checks
 - **Whitelist table** exists with user_hash; seeding/management handled out-of-band
 - **Docker/Cloudflare Tunnel** used for deployment; ports: frontend 5173 (dev), 4173 (preview), backend 8000
-- **Privacy Policy Source of Truth**: Only published DB row counts for consent version (static file not authoritative)
+- **Privacy Policy Source of Truth**: Only published DB row counts for consent version
 
 ---
 
