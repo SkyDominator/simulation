@@ -111,7 +111,7 @@ Implications:
 
 - **Frontend**: React 19 + TypeScript + Vite (vite-plugin-pwa, MUI for UI). Auth via @supabase/supabase-js. State persisted selectively to localStorage/sessionStorage.
 - **Backend**: FastAPI (Python 3.11.6 or later), Pydantic v2 schemas, Supabase client (REST/RPC). JWT verification uses Supabase JWKS.
-- **Data**: Supabase Postgres (tables below). Auth via Supabase; JWT audience "authenticated". No optional static fallback for policy content.
+- **Data**: Supabase Postgres (tables below). Auth via Supabase; JWT audience "authenticated". Privacy policy content is served exclusively from the database (static fallback removed) to preserve version integrity.
 - **Infra**: Dockerized services; Cloudflare Tunnel for public frontend domain; CORS configured for local dev and tunnel domain.
 
 High-level flow:
@@ -168,9 +168,10 @@ Core tables (field types reflect actual implementation):
 - **CORS**: Allow list includes Cloudflare Tunnel domain and local dev hosts/ports.
 - **Secrets**: SUPABASE_SECRET_KEY used server-side. Publishable key only in frontend. SMS provider keys (Solapi) loaded from env.
 - **PII handling**: Consent recorded against user_hash pre-auth; onboarding links the consent version post-auth via user_id and user_hash.
-- **Privacy Policy Enforcement**: All protected endpoints check user consent status; return 423 (Locked) when user hasn't consented to latest policy
-  - **Consent Validation**: Middleware checks latest consent version in consent_records table on each authenticated request
-  - **Zero Grace Period**: Users must consent to latest version immediately or access is restricted
+- **Privacy Policy Enforcement**: All protected endpoints check user consent status; return 423 (Locked) when user hasn't consented to the latest published version.
+  - **Consent Validation**: Middleware (with short-lived cache of latest version) ensures a consent record exists for that exact version (insert-only; new row per version).
+  - **Zero Grace Period**: Users must consent immediately after publication or access is restricted.
+  - **No Published Policy**: If no policy is published, users are blocked from proceeding beyond whitelist/OTP until one is published.
 
 ### 7.1 Core Security Controls
 
@@ -194,13 +195,14 @@ Core tables (field types reflect actual implementation):
 
 ### 8.2 Privacy Policy & Consent
 
-- **Get Policy**: GET /api/privacy-policy?version&locale → returns current or specific version (DB first, no static fallback)
-- **Record Consent**: POST /api/consents with user_hash, consent_type, consent_version
-- **Get User Consents**: GET /api/consents/{user_hash} → list of consent records (pre-auth)
+- **Get Policy**: GET /api/privacy-policy?version&locale → returns current or specific version (DB only; static fallback removed)
+- **Record Consent (Pre-auth)**: POST /api/consents with user_hash, consent_type, consent_version (insert-only per version)
+- **Get User Consents**: GET /api/consents/{user_hash} → list of consent records (pre-auth history)
+- **Link Pre-auth Consents**: POST /api/user/link-consent (auth) with user_hash to associate historical records to user_id
 - **Privacy Policy Update Flow**: When privacy policy is updated, system redirects active users to consent page via 423 responses
-  - **Check User Consent Status**: GET /api/user/consent-status (auth) → returns whether user needs to consent to latest policy
+  - **Check User Consent Status**: GET /api/user/consent-status (auth) → returns whether user needs to consent to latest policy (with latest & current versions)
   - **Force Consent Redirect**: All protected endpoints return 423 (Locked) when user hasn't consented to latest policy
-  - **Post-auth Consent Recording**: POST /api/user/consents (auth) → records consent for authenticated user with user_id
+  - **Post-auth Consent Recording**: POST /api/user/consents (auth) → records consent for authenticated user with user_id (insert-only per version)
 
 ### 8.3 Authentication
 

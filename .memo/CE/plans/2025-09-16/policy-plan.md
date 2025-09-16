@@ -31,10 +31,10 @@ Implement and align the privacy policy & consent system with the SSD (v0.2.0, 20
 
 ## Design Decisions & Clarifications
 
-1. Static fallback removal: SSD says DB is source of truth; fallback may conflict with enforced re-consent if DB down. Marking removal required unless explicit resilience pattern approved. NEED_VERIFICATION
+1. Static fallback removal: Remove fallback entirely (DB is sole source of truth).
 2. Re-consent strategy on publish: immediate; user must be blocked with 423 until consenting. Implement single middleware query per request with in-memory + short TTL cache for latest published policy version to reduce DB load.
 3. Linking pre-auth consent to authenticated user: On first authenticated request after login (or during consent-status check), backfill existing consent row by setting `user_id` where `user_hash` matches and `user_id` is NULL.
-4. Upsert semantics: To maintain audit history we SHOULD NOT overwrite consent records when new version published; instead insert new row per version. Current upsert overwrites same user_hash+type; adjust unique key scope to allow multiple versions. NEED_VERIFICATION (if regulatory logging required).
+4. Upsert semantics: Insert-only model (one row per user per version); retain full audit history.
 5. Locale handling: SSD current scope ko-KR only; omit locale in consent record; future extension may add locale column. Accept current minimal approach.
 
 ## Implementation Phases
@@ -43,14 +43,14 @@ Implement and align the privacy policy & consent system with the SSD (v0.2.0, 20
 
 Tasks:
 
-- Verify existing `consent_records` table structure. If missing columns: add `user_id uuid NULL`.
-- Add (if not present) composite unique constraint `(user_hash, consent_type, consent_version)` to allow multiple versions & prevent duplicate entries for same version.
-- (Optional) Create index on `(user_id, consent_type, consent_version)` for post-auth lookups.
-- Remove or deprecate any triggers conflicting with multi-version storage.
+- Verify existing `consent_records` table structure; ensure `user_id` column present (already in production schema) and nullable.
+- Add composite unique constraint `(user_hash, consent_type, consent_version)` (and optionally `(user_id, consent_type, consent_version)` to prevent duplicates after linking).
+- Create index on `(user_id, consent_type, consent_version)` for post-auth lookups.
+- Remove or deprecate any triggers conflicting with multi-version storage (none currently).
 
 Artifacts:
 
-- New migration: `migrations/alter_consent_records_add_user_id.sql` (idempotent pattern checks existence). NEED_VERIFICATION on production DB state.
+- New migration: `migrations/alter_consent_records_constraints.sql` to add unique constraints/indexes.
 
 ### Phase 2: Backend Middleware & Utilities
 
@@ -65,7 +65,7 @@ Tasks:
 
 Edge Cases:
 
-- If no published policy exists: allow access? SSD implies always one. Decide to allow (no enforcement) but log warning. NEED_VERIFICATION
+- If no published policy exists: block progression beyond whitelist; surface explicit error to user; log critical alert.
 
 ### Phase 3: New Authenticated Endpoints
 
@@ -87,7 +87,7 @@ Endpoints:
 
 Linking Logic:
 
-- On `GET /api/user/consent-status` perform linking: if existing pre-auth row(s) with matching consent_version & NULL user_id & known user_hash mapping to this user (NEED_VERIFICATION: how to map phone OTP or user_hash to user after login—maybe store user_hash in sessionStorage then call a `link` endpoint). If no secure mapping, add explicit endpoint `POST /api/user/link-consent { user_hash }`. NEED_VERIFICATION
+- Provide explicit endpoint `POST /api/user/link-consent { user_hash }` (auth) to associate pre-auth records to user_id (one-time per login as needed). `GET /api/user/consent-status` does not implicitly link.
 
 ### Phase 4: Adjust Existing Consent Endpoints
 
@@ -101,18 +101,17 @@ Changes:
 
 Options:
 
-A) Remove static fallback code; if DB error, return 500 forcing admin resolution.
-B) Retain fallback only for read (not version enforcement) but mark `NEEDS_MANUAL_OVERRIDE` and return header `X-Policy-Source: static`. Since SSD says "No optional static fallback" choose A. NEED_VERIFICATION before removal.
+Remove static fallback code entirely (chosen). DB outage will surface error; users blocked until restored.
 
 Implementation:
 
-- Delete static-file branch in `get_privacy_policy` or guard with feature flag `ALLOW_POLICY_STATIC_FALLBACK=False` in settings.
+- Delete static-file branch in `get_privacy_policy` (no feature flag required per decision).
 
 ### Phase 6: Frontend Updates
 
 Tasks:
 
-- Update `ConsentPage` to support both contexts:
+- Update `ConsentPage` to support both contexts (preauth/auth):
   - Accept props: `mode: 'preauth' | 'auth'`, `userHash?`, `onComplete()`.
   - If `auth` mode: call authenticated endpoints (need new `api.postUserConsent`).
 - Create new API methods:
@@ -128,7 +127,7 @@ Tasks:
 
 Backend Tests:
 
-- Middleware returns 423 when user missing latest consent.
+- Middleware returns 423 when user missing latest consent version.
 - New endpoints contract tests.
 - Publishing a new policy triggers 423 for previously consented user.
 - Multiple consent versions stored; history intact.
@@ -154,12 +153,12 @@ Frontend Tests (Vitest + RTL):
 
 Backend:
 
-- [ ] Migration for consent_records (add user_id, unique constraint) NEED_VERIFICATION
+- [ ] Migration for consent_records (add unique constraints & indexes)
 - [ ] Add consent enforcement middleware
 - [ ] Implement `/api/user/consent-status`
 - [ ] Implement `/api/user/consents`
 - [ ] Adjust `/api/consents` to insert not overwrite
-- [ ] Remove static fallback (or behind flag) NEED_VERIFICATION
+- [ ] Remove static fallback (delete code path & file reference)
 - [ ] Add version caching utility
 - [ ] Add tests (unit + integration) for middleware & endpoints
 
@@ -174,7 +173,7 @@ Frontend:
 
 Docs & Ops:
 
-- [ ] Update documentation for new endpoints & flow
+- [ ] Update documentation for new endpoints & flow (including link-consent)
 - [ ] Provide migration runbook & rollback steps
 
 ## Risk & Mitigation
@@ -187,13 +186,9 @@ Docs & Ops:
 | Duplicate consent records causing confusion | Low | Unique constraint per (user_hash,user_id,consent_type,consent_version) |
 | Lost linking between user_hash and user_id | Medium | Add explicit linking endpoint if needed NEED_VERIFICATION |
 
-## Open Questions / NEED_VERIFICATION
+## Open Items Remaining (No further verification needed for resolved decisions)
 
-1. Should we keep an emergency static fallback behind a flag for catastrophic DB outages? (Default off per SSD)
-2. Do we require immutable audit trail (insert-only) for consents vs current upsert replacement? (Assuming yes)
-3. Mechanism to securely link `user_hash` to authenticated `user_id` after Supabase OAuth (store user_hash client-side and send to new linking endpoint vs server deriving from phone number—currently not stored).
-4. Behavior if no published policy exists (allow or block?).
-5. Required retention of IP/user_agent for privacy compliance (currently stored).
+All previously flagged NEED_VERIFICATION points in this plan have been resolved per decision log. No outstanding ambiguities.
 
 ## Acceptance Criteria (Derived)
 
