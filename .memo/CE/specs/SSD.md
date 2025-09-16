@@ -174,14 +174,14 @@ Core tables (field types reflect actual implementation):
 
 ### 7.1 Core Security Controls
 
-| Control | Status | Notes |
-|---------|--------|-------|
-| JWT validation via JWKS | ✅ Implemented | Cache keys (TTL 5–15m) |
-| Admin server-side check | ✅ Implemented | Table lookup each request |
-| OTP rate limiting | ✅ Basic | 3 sends per 15 min, 6 verify attempts |
-| RLS on user tables | ✅ Basic |  |
-| OTP hashing | ✅ Basic |  |
-| Consent enforcement middleware | ✅ Implemented | 423 Locked if latest policy not consented |
+| Control | Notes |
+|---------|-------|
+| JWT validation via JWKS | Cache keys (TTL 5–15m) |
+| Admin server-side check | Table lookup each request |
+| OTP rate limiting | 3 sends per 15 min, 6 verify attempts |
+| RLS on user tables |  |
+| OTP hashing |  |
+| Consent enforcement middleware | 423 Locked if latest policy not consented |
 
 ---
 
