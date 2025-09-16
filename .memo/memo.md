@@ -6,20 +6,6 @@ I have further questions.
 3. For the chosen files and codelines for test, how they were chosen? On what criteria?
 
 
-The current table schema of user_onboarding table is:
-```sql
-create table public.user_onboarding (
-  user_id uuid not null,
-  whitelist_passed boolean null default false,
-  otp_verified boolean null default false,
-  consent_version text null,
-  created_at timestamp with time zone null default now(),
-  updated_at timestamp with time zone null default now(),
-  user_hash text null,
-  constraint user_onboarding_pkey primary key (user_id)
-) TABLESPACE pg_default;
-```
-
 Given this, there are some issues in the current codes:
 
 1. sessionStorage.setItem("onboarding.userHash", userHash); should be removed in hadleVerify in OtPVerificationPage since sessionStorage.setItem("onboarding.userHash", userHash); is already and should be only done in whitelistcheck page. It's the marker for passing whitelist check, not that of OPT verification. It should be something that represents the OTP verification success.
@@ -96,3 +82,19 @@ And of course, if there is a valid auth session, he should be routed to the main
 
 1. 누가 언제부터 접속해서 어디까지 있었는가 등 사용자 행동 데이터
 2. 사용자 행동 데이터 추적에 따른 약관 업데이트
+
+
+# 배포 시 주의사항
+
+1. origin 변경
+   1. backend CORS 세팅 settings
+   2. frontend API_BASE_URL (backend origin)
+   3. supabase Authentication > URL Configuration : SiteURL, RedirectURL
+2. Supabase key (anon, service_role key, secret) env 설정 변경
+   1. Backend (server-side, secret)
+      1. SUPABASE_URL
+      2. SUPABASE_SECRET_KEY ← new (preferred)
+      3. Optional: SUPABASE_PUBLISHABLE_KEY (not required server-side)
+   2. Frontend (Vite build-time, public)
+      1. VITE_SUPABASE_URL
+      2. VITE_SUPABASE_PUBLISHABLE_KEY
