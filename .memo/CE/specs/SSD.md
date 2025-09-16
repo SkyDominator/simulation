@@ -148,10 +148,6 @@ Core tables (field types reflect actual implementation):
   - provider_msg_id text, client_ip inet, user_agent text
   - indexes: phone, created_at; composite (phone, used, expires_at)
 
-- **user_onboarding**
-  - user_id uuid (pk), whitelist_passed boolean, otp_verified boolean
-  - consent_version text, created_at timestamptz, updated_at timestamptz
-
 - **simulations**
   - id uuid (pk), user_id uuid, plan_id text, starting_company_round int, current_company_round int
   - simulation_rounds int, investments jsonb, sales_achievement_rates jsonb
@@ -188,8 +184,7 @@ Core tables (field types reflect actual implementation):
 
 ### 8.1 Pre-auth Whitelist & OTP
 
-- **Verify User**: POST /api/verify-user with name, phone_number → checks whitelist by sha256(name-phone)
-- **Send OTP**: POST /api/otp/send with name, phone_number → checks whitelist; creates phone_otps; sends via Solapi
+- **Send OTP**: POST /api/otp/send with name, phone_number → checks whitelist automatically; creates phone_otps; sends via Solapi
 - **Verify OTP**: POST /api/otp/verify with phone_number, otp_code → validates against latest unused, unexpired record
 
 ### 8.2 Privacy Policy & Consent
@@ -198,11 +193,9 @@ Core tables (field types reflect actual implementation):
 - **Record Consent**: POST /api/consents with user_hash, consent_type, consent_version
 - **Get User Consents**: GET /api/consents/{user_hash} → list of consent records (pre-auth)
 
-### 8.3 Authentication & Onboarding Link
+### 8.3 Authentication
 
 - **Login**: Supabase OAuth redirects back to app
-- **Link Onboarding**: POST /api/onboarding/link (auth) with whitelist_passed, otp_verified, consent_version
-- **Onboarding Status**: GET /api/onboarding/status (auth) → returns flags and consent_version for gating
 
 ### 8.4 Simulations
 
@@ -238,13 +231,8 @@ Core tables (field types reflect actual implementation):
 All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 
 ```javascript
-// POST /api/verify-user
-{
-  req: { name: string, phone_number: string },
-  res: { is_whitelisted: boolean, user_hash?: string, detail?: string }
-}
 
-// POST /api/otp/send  
+// POST /api/otp/send (includes automatic whitelist check)
 {
   req: { name: string, phone_number: string },
   res: { success: boolean, message: string, expires_in_seconds?: number, user_hash?: string }
@@ -266,21 +254,11 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 
 // GET /api/privacy-policy?version&locale
 {
-  res: { version: string, updated_at: string, content: string, 
+  res: { version: string, last_updated: string, content: string, 
          success: boolean, source: "db" | "static-file" }
 }
 
-// POST /api/onboarding/link (auth)
-{
-  req: { whitelist_passed: boolean, otp_verified: boolean, consent_version?: string },
-  res: { user_id: string, linked: boolean, message: string, success: boolean }
-}
-
-// GET /api/onboarding/status (auth)
-{
-  res: { user_id: string, whitelist_passed: boolean, otp_verified: boolean, 
-         consent_version?: string, success: boolean }
-}
+// Note: No onboarding link/status endpoints - handled client-side via sessionStorage
 
 // POST /api/simulation/create (auth)
 {
@@ -386,8 +364,6 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 **Page Flow Control**: AppController manages page state with persistent UI state in localStorage
 
 - **State Management**: `page` state drives navigation between `whitelist`, `consent`, `login`, and main pages
-- **Session Storage**: Temporary onboarding context (`userHash`, `consentVersion`) stored in sessionStorage
-- **Consent Flow Hook**: `useConsentFlow` automatically drives page transitions based on backend consent status
 
 **Step 1: WhitelistCheckPage** (`page: "whitelist"`):
 
@@ -399,7 +375,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Validation**: Client-side validation for required fields before API call
 - **Loading States**: CircularProgress indicator during API requests
 - **Error Handling**: Alert component for validation and API errors
-- **Submit Action**: "인증번호 받기" button first calls verify-user API, then sends OTP on whitelist confirmation
+- **Submit Action**: "인증번호 받기" button calls POST /api/otp/send (includes automatic whitelist check)
 - **Success Flow**: On verification success, transitions to embedded OtpVerificationPage
 
 **Step 2: OtpVerificationPage** (embedded within WhitelistCheckPage):
@@ -414,7 +390,6 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
   - Disabled: "재전송 M:SS" during countdown period
   - Rate limiting: 3 sends per 15 minutes enforced by backend
 - **Navigation**: "이전으로" button returns to whitelist form with state reset
-- **Success Action**: Stores `userHash` in sessionStorage and triggers parent `onVerified` callback
 
 **Step 3: ConsentPage** (`page: "consent"`):
 
@@ -443,12 +418,6 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 
 ### 13.3 Authentication State Transitions
 
-**Onboarding Linking**: Post-authentication automatic backend synchronization
-
-- **API Call**: `api.linkOnboarding()` with whitelist_passed, otp_verified, consent_version
-- **Context Cleanup**: Removes temporary sessionStorage items after successful linking
-- **Consent Validation**: Checks user consent version against current policy version
-- **Redirect Logic**: Forces consent re-acceptance if versions don't match
 
 **State Restoration**: App visibility change handlers for session recovery
 
@@ -543,6 +512,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Supabase RLS** should be configured on user-owned tables; admin APIs rely on server checks
 - **Whitelist table** exists with user_hash; seeding/management handled out-of-band
 - **Docker/Cloudflare Tunnel** used for deployment; ports: frontend 5173 (dev), 4173 (preview), backend 8000
+- **Static Policy Fallback**: Privacy policy has file-based fallback at `docs/privacy-policy-ko.md`
 
 ---
 
@@ -602,7 +572,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 
 ### 17.1 OTP & Whitelist
 
-- Given a whitelisted name+phone, when POST /api/verify-user, then is_whitelisted=true and user_hash returned
+- Given a whitelisted name+phone, when POST /api/otp/send, then OTP is sent and user_hash returned
 - Given OTP attempts exceed max, when another attempt is made, then success=false and remaining_attempts=0
 
 ### 17.2 Consent & Policy
@@ -610,17 +580,12 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - Given a published policy, when GET /api/privacy-policy, then latest published content returned
 - Given user_hash and version, when POST /api/consents, then record exists and GET /api/consents/{user_hash} includes it
 
-### 17.3 Auth & Onboarding
-
-- Given a valid Supabase session token, when calling /api/onboarding/status, then user flags returned
-- If consent_version != current, app navigates to consent
-
-### 17.4 Simulations
+### 17.3 Simulations
 
 - Given valid inputs, when POST /api/simulation/create, then a simulation row is created with id
 - Given an updated simulation, when PATCH /api/simulations/{id}, then results are invalidated and re-generated on next run
 
-### 17.5 Admin
+### 17.4 Admin
 
 - Given an admin user, when GET /api/admin/me, then is_admin=true
 - Given an admin user, when publishing a policy, then other policies become unpublished

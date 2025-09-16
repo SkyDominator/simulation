@@ -294,28 +294,6 @@ on teams for update using (
 );
 ```
 
-## user_onboarding
-
-### schema
-
-```sql
-
-create table public.user_onboarding (
-  user_id uuid not null,
-  whitelist_passed boolean null default false,
-  otp_verified boolean null default false,
-  consent_version text null,
-  created_at timestamp with time zone null default now(),
-  updated_at timestamp with time zone null default now(),
-  user_hash text null,
-  constraint user_onboarding_pkey primary key (user_id)
-) TABLESPACE pg_default;
-```
-
-### RLS policies
-
-Enabled but no policies defined yet.
-
 ## whitelist
 
 ### schema

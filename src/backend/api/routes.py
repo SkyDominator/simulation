@@ -50,17 +50,6 @@ _sim_service = SimulationService()
 async def root():
     return {"message": "Investment Simulator API is running"}
 
-@router.post("/api/verify-user")
-async def verify_user(request: UserCheckRequest):
-    combined_string = f"{request.name}-{request.phone_number}"
-    hashed_value = hashlib.sha256(combined_string.encode('utf-8')).hexdigest()
-    client = _supabase_client()
-    response = client.table('whitelist').select("user_hash").eq('user_hash', hashed_value).execute()
-    if response.data:
-        # Return the user_hash in the response for use in consent verification
-        return {"is_whitelisted": True, "user_hash": hashed_value}
-    return {"is_whitelisted": False, "detail": "가입 허용 명단에 없는 사용자입니다."}
-
 @router.post("/api/otp/send", response_model=OTPSendResponse)
 async def send_otp(request: OTPSendRequest, client_request: Request):
     """Send OTP to the provided phone number after whitelist check."""
