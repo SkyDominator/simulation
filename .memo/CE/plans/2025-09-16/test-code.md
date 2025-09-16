@@ -19,7 +19,7 @@ Establish a comprehensive multi-layer automated testing system for the LOLClub S
 ## Environment Strategy
 - Local: Real dependencies except Solapi (optional real mode with explicit flag).
 - CI: All external services mocked (Supabase HTTP + Solapi + JWT JWKS) unless contract snapshots executed.
-- Test DB: Use ephemeral Supabase schema clone or local SQLite/pg substitute (NEED_VERIFICATION: chosen approach for integration tests – specify).
+- Test DB: Use ephemeral Supabase schema clone.
 
 ## Global Conventions
 - Python test naming: `test_*.py` with `pytest`.
@@ -93,7 +93,7 @@ Tasks:
 Tasks:
 1. Simulate minimal OTP → consent → main page state transitions with mocked API module.
 2. Ensure storage interactions (localStorage/sessionStorage) set expected keys.
-(NEED_VERIFICATION: abstract navigation controller for easier testing.)
+(abstract navigation controller for easier testing.)
 
 ### 6. E2E Smoke (Deferred Minimal)
 Tasks:
@@ -103,20 +103,20 @@ Tasks:
 Tasks:
 1. Add `tests/perf/` with a Locust or simple Python time benchmark for running simulations across all plans at 100 rounds each (stress variant).
 2. Record baseline metrics JSON output; compare within tolerance ±20% in CI optional stage.
-(NEED_VERIFICATION: Acceptable runtime threshold.)
+(Acceptable runtime threshold: p50 < 100ms, p95 < 300ms, p99 < 1s for interactive UI; API p95 < 500ms, p99 < 1s. Request timeouts: 15s for UI calls, 30s for long-running ops. Provision for 2× concurrency headroom (test at 60 concurrent); aim for CPU < 70% at peak and error-rate < 1%. Verify with load tests and adjust as needed.)
 
 ### 8. Coverage & Reporting
 Tasks:
 1. Enable pytest coverage (`--cov=src/backend --cov-report=xml`).
 2. Vitest coverage via `--coverage` V8 provider.
 3. Add Codecov GitHub Action workflow (upload after both jobs) with status checks thresholds (initial: backend 40%, frontend 25%).
-4. Badge insertion in `docs/README.md` (NEED_VERIFICATION: file target for badges).
+4. Badge insertion in `/.memo/CE/implementations/2025-09-16/sample-readme.md`
 
 ### 9. PII Masking & Test Data Policy
 Tasks:
 1. Add `tests/PII_POLICY.md` describing masking rules.
 2. Implement phone hash helper test ensuring hash format matches production logic using placeholder numbers.
-3. Lint rule (simple regex scan script) to fail on raw 010- patterns outside fixtures (NEED_VERIFICATION: performance acceptability in CI).
+3. Lint rule (simple regex scan script) to fail on raw 010- patterns outside fixtures (ripgrep (rg) one-liner for performance acceptability in CI).
 
 ### 10. Tooling & Automation
 Tasks:
@@ -165,13 +165,6 @@ Tasks:
 - OTP, Consent, Simulation CRUD, Notices, Policy publish flows validated.
 - No unmasked PII literals in repo (scan passes).
 - Documentation present and linked.
-
-## Open NEED_VERIFICATION Items
-1. Choice of integration test DB backend (Supabase test schema vs local substitute).
-2. Navigation abstraction for frontend flow tests.
-3. Runtime performance threshold for load test gate.
-4. Badge target file for Codecov & where to display.
-5. Lint scan performance constraints for PII rule.
 
 ## Future Enhancements (Backlog)
 - Full Playwright E2E with real browser.
