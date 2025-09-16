@@ -18,3 +18,11 @@ Use `/.memo/CE/specs/SSD.md` as the Single Source of Truth (SST) and use `/.memo
 * SSD.md is the single source of truth (SST) for the plan. Go through SSD.md from the beginning to the end, and make sure that every part of the specification regarding the feature is covered in the plan. The current implementation should align with the specifications outlined in SSD.md. 
     * For example, the static fallback of the privacy policy content should be removed in the current codebase because SSD.md specifies that the content must be dynamically retrieved from the database. 
 * If there is any ambiguity or missing details in SSD.md, mark `NEED_VERIFICATION` on the ambiguous parts in the plan file so that I can clarify the direction of next steps.
+* Your plan should include the following parts:
+    2. A breakdown of tasks and subtasks, including:
+        * Frontend tasks
+        * Backend tasks
+        * Database schema changes (if any)
+            * include constraints, indexes, RLS policies, etc.
+        * Testing and validation steps
+    3. Any dependencies or prerequisites needed before starting the implementation.
