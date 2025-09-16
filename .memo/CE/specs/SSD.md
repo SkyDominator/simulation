@@ -11,13 +11,7 @@ Owners: Product, Engineering (Backend/Frontend)
 
 ## 1. Introduction
 
-LOLClub Simulation is a PWA that allows whitelisted users to sign in via Supabase OAuth, manage investment plan simulations, and review results. The app enforces a pre-auth onboarding flow (whitelist + OTP + privacy consent) and provides an admin UI for managing privacy policies and notices. The backend is a FastAPI service integrated with Supabase (Auth,**User Data Migration**:
-
-- **Consent Version Tracking**: When privacy policies update, flag users requiring re-consent
-- **Consent Status Migration**: Create consent_records for existing users with current policy version for retroactive tracking
-- **Simulation Schema Updates**: Preserve historical simulation data while supporting new plan parameters
-- **Whitelist Management**: Support bulk import/export for whitelist hash updates
-- **Retroactive Consent Linking**: Link existing consent_records to user_id for authenticated users during migrationes, Storage), and the frontend is a React/Vite app.
+LOLClub Simulation is a PWA that allows whitelisted users to sign in via Supabase OAuth, manage investment plan simulations, and review results. The app enforces a pre-auth onboarding flow (whitelist + OTP + privacy consent) and provides an admin UI for managing privacy policies and notices. The backend is a FastAPI service integrated with Supabase and the frontend is a React/Vite app.
 
 The Goals of this Project:
 
@@ -163,7 +157,7 @@ Core tables (field types reflect actual implementation):
 - **consent_records**
   - id uuid (pk), user_hash text, user_id uuid, consent_type text
   - consent_version text, consent_given_at timestamptz, ip_address text, user_agent text
-  - Note: Links pre-auth consent (user_hash) with post-auth user (user_id) for privacy policy compliance tracking. Modified to support both pre-auth and authenticated consent flows.
+  - Links pre-auth consent (user_hash) with post-auth user (user_id) for privacy policy compliance tracking; supports both pre-auth and authenticated consent flows.
 
 ---
 
