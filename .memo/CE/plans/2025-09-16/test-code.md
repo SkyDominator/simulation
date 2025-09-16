@@ -19,7 +19,7 @@ Establish a comprehensive multi-layer automated testing system for the LOLClub S
 ## Environment Strategy
 - Local: Real dependencies except Solapi (optional real mode with explicit flag).
 - CI: All external services mocked (Supabase HTTP + Solapi + JWT JWKS) unless contract snapshots executed.
-- Test DB: Use ephemeral Supabase schema clone.
+- Test DB: local Postgres (Supabase local). Nightly: ephemeral schema in real Supabase project (schema-per-run pattern).
 
 ## Global Conventions
 - Python test naming: `test_*.py` with `pytest`.
@@ -71,10 +71,12 @@ Tasks:
    - Admin auth fixture returns admin True.
    - Publish policy toggles previous policies.
 6. Health endpoint returns service structure.
-   1. identify repository interfaces
-   2. ensure services depend on them
-   3. specify required test doubles
-   4. mock repo for unit tests; test DB for integration (A disposable test DB would be ephemeral supabase schema clone.).
+    1. identify repository interfaces
+    2. ensure services depend on them
+    3. specify required test doubles
+    4. mock repo for unit tests; test DB for integration;
+        * a disposable test DB would be local Postgres (Supabase local)
+        * Nightly: ephemeral schema in real Supabase project (schema-per-run pattern).
 
 ### 3. Contract Tests
 Tasks:
