@@ -20,11 +20,11 @@ Comprehensive multi-layer automated testing for LOLClub Simulation (FastAPI back
 - Local: Real dependencies except Solapi (require `ALLOW_REAL_SMS=1` to enable)
 - CI: Mock Supabase HTTP (where feasible), Solapi, JWT JWKS (static fixture) unless running contract snapshot validation
 - Test DB Strategy:
-   - Primary: Local Postgres (Supabase local) with migrations applied
-   - Nightly: Ephemeral schema clone in real Supabase project (schema-per-run) for drift checks
-   - Fallback: Temporary schema `test_temp_<timestamp>` then drop
-   - Migration command (to implement): `invoke apply-migrations` or equivalent script (PENDING: choose tooling)
-   - Isolation: Fresh schema or truncation fixture per integration test module
+      - Primary: Local Postgres (Supabase local) with migrations applied via `invoke db.apply` (wraps `scripts/migrations/apply.py`).
+      - Nightly: Ephemeral schema in CI (schema name `drift_<YYYYMMDD>`) on a Postgres service container; diff against committed snapshot (`docs/schema/schema.snapshot.sql`).
+      - Fallback: Temporary schema `test_temp_<timestamp>` then drop (used by per-module isolation fixture).
+      - Migration command: `invoke db.apply [--schema custom_schema] [--dry-run]` (idempotent, checksum guard, transactional per file).
+      - Isolation: Pytest fixture creates a fresh schema per integration test module (`test_mod_<random>`), applies migrations once, drops on teardown. Heavy suites can opt into shared schema via marker.
 
 ## Global Conventions
 - Python tests: `test_*.py` (pytest)
@@ -43,10 +43,19 @@ Comprehensive multi-layer automated testing for LOLClub Simulation (FastAPI back
 | Consent race conditions | False negatives | Isolated consent repo / DB fixture per test |
 | JWKS network dependency | Test flakiness | Static JWKS fixture file (offline validation) |
 
-## Open Decisions / Pending
- 
-- Migration command tooling (Make / Invoke / Fabric) PENDING
-- Nightly ephemeral Supabase schema automation script PENDING
+## Resolved Previously Pending Decisions
+
+1. Migration Tooling: Adopt lightweight Python runner (`scripts/migrations/apply.py`) using `psycopg` (v3) + checksum tracking table `migration_history` (filename, checksum, applied_at). Driven via Invoke tasks (`tasks.py`). Chosen over Alembic to keep existing raw SQL workflow; can transition later if autogenerate becomes valuable.
+2. Command Surface:
+      - `invoke db.apply` (args: `--schema`, `--dry-run`, `--verbose`).
+      - `invoke db.new name="add_new_table"` creates timestamped stub file under `src/backend/migrations/` with comment header + transactional template.
+      - `invoke schema.snapshot` regenerates `docs/schema/schema.snapshot.sql` from a pristine temp schema (requires `ALLOW_SCHEMA_UPDATE=1`).
+      - `invoke schema.diff` runs apply in temp schema then diffs vs snapshot (exit code 2 on destructive changes, 1 on additive, 0 no diff).
+3. Nightly Schema Drift: GitHub Action `nightly-schema-drift.yml` (cron) spins up Postgres service, runs `invoke schema.diff`. Additive drift: warning + artifact; destructive drift: fail. Developers update snapshot intentionally via `ALLOW_SCHEMA_UPDATE=1 invoke schema.snapshot`.
+4. Makefile: Provided only as thin wrapper for non-Windows contributors; Invoke remains single source of truth (cross-platform, explicit Python env usage).
+5. Supabase Direct Drift Check: Deferred (secrets & risk). Local container diffing is cheaper & deterministic. Revisit when production divergence risk increases.
+6. Fabric / Alembic: Deferred for now; complexity not justified. Criteria to adopt: >30 migrations with conditional branching or frequent column renames.
+7. Rollback Strategy: For failed production migration, create compensating migration (forward-only approach) — keeps tooling simple.
 
 ## Glossary
 
@@ -165,12 +174,14 @@ Tasks:
 
 Tasks:
 
-1. Add PowerShell script `windows-scripts/run_tests.ps1` orchestrating backend + frontend + coverage
-2. Optional Makefile (Linux/macOS contributors) mirroring PS script
-3. Pre-commit doc: fast unit subset (`pytest -m fast` future marker)
-4. Migration application script/target (ties to Environment Strategy) (PENDING tooling choice)
-5. `update-openapi-snapshot` target (guards on env flag)
-6. `pii-scan` target executing ripgrep command
+1. Add PowerShell script `windows-scripts/run_tests.ps1` orchestrating backend (pytest + coverage) + frontend (vitest + coverage) + contract + PII scan; aggregates coverage then prints summary.
+2. Optional Makefile (Unix contributors) with phony targets delegating to `invoke` (non-blocking if absent on Windows).
+3. Pre-commit doc: fast unit subset marker (`pytest -m fast`) — markers introduced gradually; initial config adds marker placeholder to `pytest.ini`.
+4. Migration automation implemented: `scripts/migrations/apply.py`, `tasks.py` exposing `db.apply`, `db.new`, `schema.snapshot`, `schema.diff`.
+5. `update-openapi-snapshot`: implemented as `invoke openapi.snapshot` (requires running app OR uses FastAPI app import) guarded by `ALLOW_SCHEMA_UPDATE=1`.
+6. `pii-scan`: `invoke pii.scan` wrapper executes ripgrep command; fails on first match outside allowlist.
+7. Nightly schema drift GitHub Action scheduled (non-blocking on additive changes, blocking on destructive changes).
+8. Coverage upload GitHub Action includes conditional Codecov step (skipped on draft PRs).
 
 ### 11. Restructuring / Cleanup
 
