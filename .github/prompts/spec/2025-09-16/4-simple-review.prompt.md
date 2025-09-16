@@ -5,7 +5,7 @@ tools: ['codebase', 'usages', 'problems', 'fetch', 'searchResults', 'githubRepo'
 
 # Software Specification Document Review
 
-Given the context discussed here so far, read thoroughly the Software Specification Document (SSD) `.memo/CE/specs/SSD.md` and `.memo/CE/specs/schema/schema.md` again and provide feedbacks on the following review areas. Write your review as `/.memo/CE/specs/SSD-review-{date}.md`. Include suggestions for improvements, changes, or further clarification where necessary.
+Given the context discussed here so far, read thoroughly the Software Specification Document (SSD) `.memo/CE/specs/SSD.md` and `.memo/CE/specs/schema/schema.md` again and provide feedbacks on the following review areas. Write your review as `/.memo/CE/specs/SSD-review-{date}.md`. Include suggestions for improvements, changes, or further clarification where necessary. If there are none, simply state "No issues found".
 
 ## Review Areas
 
