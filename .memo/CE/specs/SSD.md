@@ -111,7 +111,7 @@ Implications:
 
 - **Frontend**: React 19 + TypeScript + Vite (vite-plugin-pwa, MUI for UI). Auth via @supabase/supabase-js. State persisted selectively to localStorage/sessionStorage.
 - **Backend**: FastAPI (Python 3.11.6 or later), Pydantic v2 schemas, Supabase client (REST/RPC). JWT verification uses Supabase JWKS.
-- **Data**: Supabase Postgres (tables below). Auth via Supabase; JWT audience "authenticated". Privacy policy content is served exclusively from the database (static fallback removed) to preserve version integrity.
+- **Data**: Supabase Postgres (tables below). Auth via Supabase; JWT audience "authenticated". Privacy policy content is served exclusively from the database to preserve version integrity.
 - **Infra**: Dockerized services; Cloudflare Tunnel for public frontend domain; CORS configured for local dev and tunnel domain.
 
 High-level flow:
