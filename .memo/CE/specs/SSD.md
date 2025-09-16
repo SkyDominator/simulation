@@ -181,6 +181,7 @@ Core tables (field types reflect actual implementation):
 | OTP rate limiting | ✅ Basic | 3 sends per 15 min, 6 verify attempts |
 | RLS on user tables | ✅ Basic |  |
 | OTP hashing | ✅ Basic |  |
+| Consent enforcement middleware | ✅ Implemented | 423 Locked if latest policy not consented |
 
 ---
 
@@ -552,7 +553,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Supabase RLS** should be configured on user-owned tables; admin APIs rely on server checks
 - **Whitelist table** exists with user_hash; seeding/management handled out-of-band
 - **Docker/Cloudflare Tunnel** used for deployment; ports: frontend 5173 (dev), 4173 (preview), backend 8000
-- **Static Policy Fallback**: Privacy policy has file-based fallback at `docs/privacy-policy-ko.md`
+- **Privacy Policy Source of Truth**: Only published DB row counts for consent version (static file not authoritative)
 
 ---
 
@@ -622,6 +623,8 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - Given user_hash and version, when POST /api/consents, then record exists and GET /api/consents/{user_hash} includes it
 - Given a policy update, when an authenticated user accesses protected endpoints, then 423 (Locked) returned if latest policy not consented
 - Given an authenticated user, when POST /api/user/consents with latest version, then subsequent API calls succeed without 423 status
+- Given an authenticated user declines updated privacy policy, then user session ends and user is redirected to whitelist page
+- Given a pre-auth user declines consent, then user returns to whitelist step and cannot proceed to login until consenting
 
 ### 17.3 Simulations
 
@@ -748,7 +751,7 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 **User Data Migration**:
 
 - **Consent Version Tracking**: When privacy policies update, flag users requiring re-consent
-- **Consent Status Migration**: Create user_consent_status records for existing users with current policy version
+- **Consent Status Migration**: Backfill consent_records for existing authenticated users with current published policy version (one-off script)
 - **Simulation Schema Updates**: Preserve historical simulation data while supporting new plan parameters
 - **Whitelist Management**: Support bulk import/export for whitelist hash updates
 - **Retroactive Consent Linking**: Link existing consent_records to user_id for authenticated users
@@ -860,9 +863,9 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 
 ---
 
-## 24. Privacy Policy Update Workflow
+## 23. Privacy Policy Update Workflow
 
-### 24.1 Admin Policy Management
+### 23.1 Admin Policy Management
 
 **Policy Update Process**:
 
@@ -879,13 +882,12 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 - **Zero Grace Period**: Users must consent immediately or access is restricted
 - **Communication Strategy**: In-app consent flow with policy details and acceptance requirement
 
-### 24.2 User Consent Flow Implementation
+### 23.2 User Consent Flow Implementation
 
 **Consent Requirement Detection**:
 
 1. **Login Check**: Validate consent status immediately after authentication
-2. **Session Check**: Periodic validation during active sessions
-3. **API Enforcement**: All protected endpoints check consent before processing
+2. **API Enforcement**: Protected endpoints enforce consent via middleware (no background polling)
 
 **Consent Collection Process**:
 
@@ -900,7 +902,7 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 - **Frontend Changes**: Enhanced ConsentPage for both pre-auth and authenticated flows
 - **API Modifications**: New endpoints for authenticated user consent status and recording
 
-### 24.3 Rollback and Recovery Procedures
+### 23.3 Rollback and Recovery Procedures
 
 **Policy Rollback**:
 
@@ -914,7 +916,7 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 
 ---
 
-## 25. Glossary
+## 24. Glossary
 
 - **Supabase**: Backend-as-a-Service providing Postgres, Auth, Storage, and APIs
 - **JWKS**: JSON Web Key Set for verifying JWT signatures
@@ -924,6 +926,7 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 - **P95/P99**: 95th and 99th percentile performance metrics
 - **LCP/FID/CLS**: Core Web Vitals performance metrics
 - **RTT**: Round-trip time for network requests
+- **Pre-auth user**: User before completing OTP verification, privacy policy consent, and OAuth authentication
 
 ---
 
