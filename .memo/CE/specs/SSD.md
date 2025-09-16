@@ -111,7 +111,7 @@ Implications:
 
 - **Frontend**: React 19 + TypeScript + Vite (vite-plugin-pwa, MUI for UI). Auth via @supabase/supabase-js. State persisted selectively to localStorage/sessionStorage.
 - **Backend**: FastAPI (Python 3.11.6 or later), Pydantic v2 schemas, Supabase client (REST/RPC). JWT verification uses Supabase JWKS.
-- **Data**: Supabase Postgres (tables below). Auth via Supabase; JWT audience "authenticated". Optional static fallback for policy content.
+- **Data**: Supabase Postgres (tables below). Auth via Supabase; JWT audience "authenticated". No optional static fallback for policy content.
 - **Infra**: Dockerized services; Cloudflare Tunnel for public frontend domain; CORS configured for local dev and tunnel domain.
 
 High-level flow:
@@ -194,7 +194,7 @@ Core tables (field types reflect actual implementation):
 
 ### 8.2 Privacy Policy & Consent
 
-- **Get Policy**: GET /api/privacy-policy?version&locale → returns current or specific version (DB first, static fallback)
+- **Get Policy**: GET /api/privacy-policy?version&locale → returns current or specific version (DB first, no static fallback)
 - **Record Consent**: POST /api/consents with user_hash, consent_type, consent_version
 - **Get User Consents**: GET /api/consents/{user_hash} → list of consent records (pre-auth)
 - **Privacy Policy Update Flow**: When privacy policy is updated, system redirects active users to consent page via 423 responses
@@ -264,7 +264,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 // GET /api/privacy-policy?version&locale
 {
   res: { version: string, last_updated: string, content: string, 
-         success: boolean, source: "db" | "static-file" }
+         success: boolean, source: "db" }
 }
 
 // Note: No onboarding link/status endpoints - handled client-side via sessionStorage
