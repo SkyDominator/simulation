@@ -8,6 +8,7 @@ I want to add a feature that, when the privacy policy was updated, every user (i
 
 ## Notes
 
-* The SSD.md does not include database schema details. For that, read `.memo/CE/specs/schema/schema.md`.
+* Follow the existing style, structure, and format of SSD.md as much as possible.
+* The SSD.md does not include database schema details. For that, read `.memo/CE/specs/schema/schema.md`. You also need to update the schema on `schema.md` if necessary.
 * For updating SSD.md, mark `NEED_VERIFICATION` on all the details if I (=developer and project owner) should decide, define, or confirm first, so that I can clarify the direction of next steps (researching, planning, and actual implementation of ocdes) for this app project.
 * Do not mark "NEW" on the updated parts on SSD.md. I can track them with git diff.
