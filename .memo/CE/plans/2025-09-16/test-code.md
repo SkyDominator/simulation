@@ -71,7 +71,10 @@ Tasks:
    - Admin auth fixture returns admin True.
    - Publish policy toggles previous policies.
 6. Health endpoint returns service structure.
-(NEED_VERIFICATION: actual DB abstraction layer to override — confirm repository/service boundaries.)
+   1. identify repository interfaces
+   2. ensure services depend on them
+   3. specify required test doubles
+   4. mock repo for unit tests; test DB for integration (A disposable test DB would be ephemeral supabase schema clone.).
 
 ### 3. Contract Tests
 Tasks:
