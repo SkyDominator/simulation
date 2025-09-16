@@ -57,6 +57,18 @@ Comprehensive multi-layer automated testing for LOLClub Simulation (FastAPI back
 6. Fabric / Alembic: Deferred for now; complexity not justified. Criteria to adopt: >30 migrations with conditional branching or frequent column renames.
 7. Rollback Strategy: For failed production migration, create compensating migration (forward-only approach) — keeps tooling simple.
 
+## Command Summary
+
+| Command | Purpose | Notes |
+|---------|---------|-------|
+| invoke db.apply | Apply migrations | `--schema`, `--dry-run`, checksum guard |
+| invoke db.new | Create migration stub | Timestamped SQL template |
+| invoke schema.snapshot | Regenerate schema snapshot | Requires `ALLOW_SCHEMA_UPDATE=1` |
+| invoke schema.diff | Diff current vs snapshot | Exit codes 0/1 additive/2 destructive |
+| invoke openapi.snapshot | Refresh OpenAPI snapshot | Guarded by env flag |
+| invoke pii.scan | Run PII regex scan | Fails on first match |
+| invoke perf.run (future) | Run performance harness | Non-gating baseline |
+
 ## Glossary
 
 - JWKS: JSON Web Key Set for JWT signature validation
@@ -107,7 +119,7 @@ Tasks:
 
 1. Generate (if missing) and snapshot OpenAPI to `docs/api/openapi.snapshot.json`
 2. Compare live schema to snapshot; fail on removed path/fields unless `ALLOW_SCHEMA_UPDATE=1`
-3. Add script/Make target `update-openapi-snapshot` guarded by `ALLOW_SCHEMA_UPDATE=1`
+3. Add invoke task `openapi.snapshot` guarded by `ALLOW_SCHEMA_UPDATE=1`
 
 ### 4. Frontend Unit / Component Tests
 
@@ -178,7 +190,7 @@ Tasks:
 2. Optional Makefile (Unix contributors) with phony targets delegating to `invoke` (non-blocking if absent on Windows).
 3. Pre-commit doc: fast unit subset marker (`pytest -m fast`) — markers introduced gradually; initial config adds marker placeholder to `pytest.ini`.
 4. Migration automation implemented: `scripts/migrations/apply.py`, `tasks.py` exposing `db.apply`, `db.new`, `schema.snapshot`, `schema.diff`.
-5. `update-openapi-snapshot`: implemented as `invoke openapi.snapshot` (requires running app OR uses FastAPI app import) guarded by `ALLOW_SCHEMA_UPDATE=1`.
+5. `openapi.snapshot`: implemented as `invoke openapi.snapshot` (requires running app OR uses FastAPI app import) guarded by `ALLOW_SCHEMA_UPDATE=1`.
 6. `pii-scan`: `invoke pii.scan` wrapper executes ripgrep command; fails on first match outside allowlist.
 7. Nightly schema drift GitHub Action scheduled (non-blocking on additive changes, blocking on destructive changes).
 8. Coverage upload GitHub Action includes conditional Codecov step (skipped on draft PRs).
@@ -228,7 +240,7 @@ Tasks:
 
 ## Acceptance Criteria
 
-- All listed tasks implemented or explicitly marked PENDING
+- All listed tasks implemented or any intentionally deferred items explicitly marked Deferred (none currently)
 - Tests green locally and in CI; Codecov reports uploaded
 - Simulation plans A B C D K P R F E each covered by at least one test
 - OTP, consent, simulation CRUD/run (including memo), notices CRUD, policy publish flows validated
