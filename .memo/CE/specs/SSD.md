@@ -504,6 +504,20 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Navigation**: Back to main page with preserved context
 - **Export Functions**: Download simulation results in various formats
 
+**Summary Report Page** (`page: "summary-report"`):
+
+- **Aggregate Data**: Overview of multiple simulations with filtering options
+- **Summary Metrics**: The summary of the result across all plans selected.
+- **Buttons**
+    - "Back to main page" button to return to the main page.
+    - "Offline Result Page" button to navigate to the offline result page.
+
+**Offline Result Page** (`page: "offline-result"`):
+
+- **Result Table**: Displays the simulation results for offline authentication (Here the "offline authentication" means the unique type of authentication process that is not covered in the current scope. It does not mean the opposite of the 'network connected' state.)
+- **Buttons**
+    - "Back to main page" button to return to the main page.
+
 ### 13.5 Mobile-First Responsive Design
 
 **Breakpoint Strategy**: Material-UI responsive design with mobile-first approach
