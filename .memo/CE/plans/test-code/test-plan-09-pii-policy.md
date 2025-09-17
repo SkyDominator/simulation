@@ -15,7 +15,7 @@ Prevent accidental leakage / committing of real phone numbers or other PII throu
 2. Phone hash helper test (matches production hashing logic)
 3. Regex scan script to block raw phone patterns outside allowed paths
 4. Ripgrep command (document + CI):
-`rg -n --no-heading -e '(01[0-9][- ]?\d{3,4}[- ]?\d{4})' -e '[가-힣]{3,100}' -g '!src/backend/tests/fixtures/**' -g '!**/PII_POLICY.md' -g '!**/README*' . && echo FAIL && exit 1 || echo 'PII scan passed'`
+`rg -n --no-heading -e '(01[0-9][- ]?\d{3,4}[- ]?\d{4})' -e '[가-힣]{2,100}' -g '!src/backend/tests/fixtures/**' -g '!**/PII_POLICY.md' -g '!**/README*' . && echo FAIL && exit 1 || echo 'PII scan passed'`
 
 ## 4. Policy Content Outline (`tests/PII_POLICY.md`)
 - Purpose & scope
