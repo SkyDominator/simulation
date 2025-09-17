@@ -1,4 +1,4 @@
-Apply my decisions about the clarity review to the test code plan files:
+Apply my decisions about the Critical Clarifications in clarity review to the test code plan files:
 
 1. test-plan-01-backend-unit.md
 
