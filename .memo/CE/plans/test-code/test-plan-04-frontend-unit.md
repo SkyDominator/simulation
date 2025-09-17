@@ -12,8 +12,6 @@ Validate React components, hooks, utilities, and lightweight service modules in 
 
 ## 3. Tasks (Verbatim from Master Plan with Stable IDs)
 
-Stable IDs (F01–F17) prevent ambiguity if rows are reordered; append new tasks with next free ID rather than renumbering.
-
 | ID | Task |
 |----|------|
 | F01 | Add Vitest + RTL dependencies & `test` script (if absent) |

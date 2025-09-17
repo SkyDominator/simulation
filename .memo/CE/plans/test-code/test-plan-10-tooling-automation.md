@@ -50,6 +50,7 @@ Script loads JSON; fallback to baked-in defaults with warning if missing.
 | `invoke schema.diff` | Diff current vs snapshot (exit codes) |
 | `invoke openapi.snapshot` | Refresh OpenAPI snapshot (guarded) |
 | `invoke pii.scan` | Run PII regex scan |
+| `perf.run` | Forthcoming: Run performance benchmarks |
 
 ## 6. Nightly Drift Action
 - Cron triggers job

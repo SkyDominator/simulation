@@ -32,6 +32,7 @@ PowerShell `windows-scripts/run_tests.ps1`:
   - Run backend tests
   - Run frontend tests
   - Parse XML & lcov to extract line coverage percentages
+    - Use `coverage.xml` parsing via ElementTree and simple regex for lcov lines
   - Print unified table
   - Enforce thresholds (exit non-zero if below)
   - Write artifacts to `/src/test/coverage/` (backend XML: `coverage-backend.xml`, frontend: `lcov.info`, merged summary: `summary.json`)

@@ -29,13 +29,13 @@ Prevent accidental leakage / committing of real phone numbers or other PII throu
 - Rationale (see Section 5)
 - Disallowed examples & why
 - Hashing procedure for phone normalization + SHA256 pattern
-- Allowlist usage (`tests/pii_allowlist.txt` format; justification comment above entry)
+- Allowlist usage
 - Exception process (review + PR approval)
 
 ## 5. Scan Script Behavior & Rationale
 - Exit code 1 on first match (fast fail)
 - Prints offending line path & surrounding context (a few lines) for remediation
-- Allowlist implemented by: (a) glob exclusions for known safe fixture dirs, (b) optional `tests/pii_allowlist.txt` entries
+- Allowlist implemented by: glob exclusions for known safe fixture dirs
 
 ### Rationale Clarifications
 - International phone formats are NOT used (app is Korea-only) – patterns like `+82-10-1234-5678` intentionally excluded to reduce false positives.

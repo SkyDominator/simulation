@@ -59,8 +59,7 @@ The following extend coverage breadth (still pure unit level; no network/DB):
 18. Snapshot versioning: include a `version` field in snapshot fixture; test fails with helpful message if snapshot missing version (forces regeneration procedure discipline). Snapshot ROUNDS constant set to 36 (canonical) and stored with schema version.
 19. JWT helper negative paths: missing `kid`, duplicated `kid`, unsupported `alg`, `aud` mismatch, malformed token segments, invalid base64, expired (`exp` past) and not-yet-valid (`nbf` future) tokens.
 20. Hash/normalization utility: idempotence (normalizing twice unchanged), trimming whitespace, rejecting invalid country/prefix patterns, preserving already hyphenated canonical form.
-21. (Removed – micro-benchmark relocated to performance plan; no direct timing asserts remain in unit layer.)
-22. Determinism guard: if RNG ever introduced later, proactively assert no `random` or `numpy.random` calls during simulation by monkeypatching to raise (locks deterministic design).
+21. Determinism guard: if RNG ever introduced later, proactively assert no `random` or `numpy.random` calls during simulation by monkeypatching to raise (locks deterministic design).
 
 ## 5. Detailed Test Design
 ### 5.1 Fixtures
