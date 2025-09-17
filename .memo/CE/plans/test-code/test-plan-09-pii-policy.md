@@ -10,24 +10,41 @@ Prevent accidental leakage / committing of real phone numbers or other PII throu
 - Automated regex scan gating CI
 - Clear remediation workflow
 
-## 3. Tasks (Verbatim from Master Plan)
+## 3. Tasks (Verbatim from Master Plan + Clarified Scope)
 1. Create `tests/PII_POLICY.md` with masking rules & examples
 2. Phone hash helper test (matches production hashing logic)
-3. Regex scan script to block raw phone patterns outside allowed paths
+3. Regex scan script to block Korean mobile numbers & long Korean names outside allowed paths
 4. Ripgrep command (document + CI):
-`rg -n --no-heading -e '(01[0-9][- ]?\d{3,4}[- ]?\d{4})' -e '[가-힣]{2,100}' -g '!src/backend/tests/fixtures/**' -g '!**/PII_POLICY.md' -g '!**/README*' . && echo FAIL && exit 1 || echo 'PII scan passed'`
+	```bash
+	rg -n --no-heading \
+		-e '(01[016-9][- ]?\d{3,4}[- ]?\d{4})' \
+		-e '[가-힣]{2,100}' \
+		-g '!src/backend/tests/fixtures/**' -g '!**/PII_POLICY.md' -g '!**/README*' . \
+		&& echo FAIL && exit 1 || echo 'PII scan passed'
+	```
+5. Optional allowlist file `tests/pii_allowlist.txt` (initially empty) – lines (exact full phone string or name) ignored by scan script when prefixed with `ALLOW:`.
 
 ## 4. Policy Content Outline (`tests/PII_POLICY.md`)
 - Purpose & scope
-- Allowed synthetic patterns (e.g., 010-0000-0000 reserved dummy)
+- Rationale (see Section 5)
 - Disallowed examples & why
 - Hashing procedure for phone normalization + SHA256 pattern
-- Exception process (add to allowlist file with justification)
+- Allowlist usage (`tests/pii_allowlist.txt` format; justification comment above entry)
+- Exception process (review + PR approval)
 
-## 5. Scan Script Behavior
-- Exit code 1 on first match
-- Print offending line path & surrounding context
-- Allowlist implemented by glob exclusions and explicit safe fixture directories
+## 5. Scan Script Behavior & Rationale
+- Exit code 1 on first match (fast fail)
+- Prints offending line path & surrounding context (a few lines) for remediation
+- Allowlist implemented by: (a) glob exclusions for known safe fixture dirs, (b) optional `tests/pii_allowlist.txt` entries
+
+### Rationale Clarifications
+- International phone formats are NOT used (app is Korea-only) – patterns like `+82-10-1234-5678` intentionally excluded to reduce false positives.
+- Exposed PII surface is restricted to Korean mobile numbers and Korean names only.
+- No default dummy numbers allowed because OTP auth uses real-format numbers; introducing a shared dummy risks logic branches diverging from production behavior.
+- Dot or mixed separator formats (`010.1234.5678`) excluded to keep initial regex narrow; can be added later if real usage appears.
+- Covered prefixes: `010, 011, 016, 017, 018, 019` (legacy + current). Regex uses class `[016-9]` to encapsulate these.
+- Korean name pattern `[가-힣]{2,100}` chosen (2–100 chars) – shorter single-character names usually initials or noise; extends from previous `{3,100}` to catch valid 2‑char names.
+- `tests/pii_allowlist.txt` enables explicit, auditable exceptions (e.g., educational examples) without broadening regex.
 
 ## 6. Acceptance Criteria
 - CI fails when introducing forbidden number pattern in non-allowed file

@@ -16,7 +16,22 @@ Focus on pure, deterministic Python logic in the FastAPI backend codebase: simul
 - Runner: `pytest`
 - File pattern: `src/backend/tests/unit/**/test_*.py`
 - Global flags: `TEST_MODE=1`
-- Use `freezegun` (install and use the latest version)(use datetime injection if freezegun can't be used) to freeze time where expiry matters
+- Time control: `freezegun>=1.5,<2` added to test dependencies; ONLY use freezing for expiry / TTL validation and snapshot determinism tests—do NOT freeze during core simulation performance or numeric logic tests. Fallback: if `freezegun` import fails, a clock fixture will skip time-freeze tests with `pytest.skip('freezegun missing')`.
+- Clock fallback sketch:
+  ```python
+  import pytest
+  try:
+      from freezegun import freeze_time as _freeze
+  except ImportError:  # pragma: no cover
+      _freeze = None
+
+  @pytest.fixture
+  def freeze_jan_1_2025():
+      if _freeze is None:
+          pytest.skip('freezegun missing')
+      with _freeze('2025-01-01T00:00:00Z'):
+          yield
+  ```
 - Faker for synthetic PII; never embed raw phone numbers
 - Static JWKS fixture for JWT decode tests: `src/backend/tests/fixtures/jwks.json`
 
