@@ -16,21 +16,18 @@ Validate React components, hooks, utilities, and lightweight service modules in 
 3. Components: `App` shell render; plan editor step progression; orientation enforcer overlay toggle
 4. Utilities: phone normalization / formatting logic
 5. API service module: privacy policy fetch (success + 423 Locked path handling)
-
-### 3.1 Additional Unit-Only Enhancements (Accepted)
-
-1. OrientationEnforcer: ensure event listeners registered once and cleaned on unmount; overlay has ARIA role/label when active.
-2. Plan Editor Validation: per-step invalid inputs (missing plan type, negative numbers, oversized arrays) surface user-facing errors; switching plan resets dependent fields.
-3. Draft Persistence: simulate editing, unmount/remount, verify draft restored (localStorage mock only—no integration network calls).
-4. Extreme numeric inputs: large values gracefully clamped / rejected with validation message.
-5. Phone formatter: all allowed prefixes (010/011/016/017/018/019), invalid prefix unchanged, short (<10 digits) & long (>11 digits), whitespace & mixed separators.
-6. API service caching: second identical privacy policy fetch returns cached data (spy on fetch to ensure single call).
-7. API service error taxonomy: distinguish handling for 401, 403, 423 (redirect spy only for 423).
-8. Corrupted storage resilience: insert malformed JSON in storage keys before render; component falls back to defaults without crash.
-9. Consent redirect single-fire: multiple sequential 423 responses trigger redirect handler only once (debounce behavior test).
-10. Supabase auth session refresh: mock auto-refresh callback invocation path (pure function/unit harness around wrapper).
-11. Optional global error boundary (if added): simulate thrown error in child → fallback UI rendered & console.error suppressed in test.
-12. Accessibility assertions: key interactive elements have discernible names (buttons via accessible role queries).
+6. OrientationEnforcer: ensure event listeners registered once and cleaned on unmount; overlay has ARIA role/label when active.
+7. Plan Editor Validation: per-step invalid inputs (missing plan type, negative numbers, oversized arrays) surface user-facing errors; switching plan resets dependent fields.
+8. Draft Persistence: simulate editing, unmount/remount, verify draft restored (localStorage mock only—no integration network calls).
+9. Extreme numeric inputs: large values gracefully clamped / rejected with validation message.
+10. Phone formatter: all allowed prefixes (010/011/016/017/018/019), invalid prefix unchanged, short (<10 digits) & long (>11 digits), whitespace & mixed separators.
+11. API service caching: second identical privacy policy fetch returns cached data (spy on fetch to ensure single call).
+12. API service error taxonomy: distinguish handling for 401, 403, 423 (redirect spy only for 423).
+13. Corrupted storage resilience: insert malformed JSON in storage keys before render; component falls back to defaults without crash.
+14. Consent redirect single-fire: multiple sequential 423 responses trigger redirect handler only once (debounce behavior test).
+15. Supabase auth session refresh: mock auto-refresh callback invocation path (pure function/unit harness around wrapper).
+16. Optional global error boundary (if added): simulate thrown error in child → fallback UI rendered & console.error suppressed in test.
+17. Accessibility assertions: key interactive elements have discernible names (buttons via accessible role queries).
 
 ## 4. Detailed Test Design
 
