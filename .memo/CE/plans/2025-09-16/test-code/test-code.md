@@ -3,6 +3,61 @@
 ## Overview
 Comprehensive multi-layer automated testing for LOLClub Simulation (FastAPI backend + React/Vite PWA) aligned with SSD v0.2.0. Initial coverage targets: backend ≥40% (path to 75%), frontend ≥25% (path to 60%). Enforce quality gates (lint, type, contract, PII) and establish scalable foundations.
 
+## Test Layer Index & Cross-Links
+Each test layer below links to a dedicated, self-contained plan file. This master document orchestrates the full strategy while individual files guide day-to-day implementation.
+
+| # | Layer | Plan File | One-Line Purpose |
+|---|-------|-----------|------------------|
+| 1 | Backend Unit | [test-plan-01-backend-unit](./test-plan-01-backend-unit.md) | Validate pure financial & helper logic deterministically |
+| 2 | Backend Integration | [test-plan-02-backend-integration](./test-plan-02-backend-integration.md) | Verify FastAPI endpoint behavior & cross-entity flows |
+| 3 | Contract (OpenAPI) | [test-plan-03-contract](./test-plan-03-contract.md) | Guard public API surface against breaking changes |
+| 4 | Frontend Unit / Component | [test-plan-04-frontend-unit](./test-plan-04-frontend-unit.md) | Assert component rendering & utility correctness |
+| 5 | Frontend Shallow Integration | [test-plan-05-frontend-integration](./test-plan-05-frontend-integration.md) | Exercise onboarding/navigation state machine without full browser stack |
+| 6 | E2E Smoke | [test-plan-06-e2e-smoke](./test-plan-06-e2e-smoke.md) | Minimal deployed environment sanity (shell + health) |
+| 7 | Performance / Load Scaffold | [test-plan-07-performance](./test-plan-07-performance.md) | Establish baseline timing & detect large regressions early |
+| 8 | Coverage & Reporting | [test-plan-08-coverage-reporting](./test-plan-08-coverage-reporting.md) | Aggregate metrics & enforce initial quality gates |
+| 9 | PII Masking & Test Data Policy | [test-plan-09-pii-policy](./test-plan-09-pii-policy.md) | Prevent accidental leakage of real personal data |
+| 10 | Tooling & Automation | [test-plan-10-tooling-automation](./test-plan-10-tooling-automation.md) | Provide cohesive scripts & CI tasks powering all layers |
+| 11 | Restructuring & Documentation | [test-plan-11-restructuring-docs](./test-plan-11-restructuring-docs.md) | Keep repo structure + docs aligned with strategy |
+
+## Rationale: Why Each Layer Exists
+Short justifications tying each layer to risk reduction per SSD scope (small internal PWA with financial simulation logic & consent workflow):
+
+### 1. Backend Unit
+Focuses on deterministic simulation math, tax rules, achievement rate handling, and JWT helper logic. Fast feedback prevents subtle financial regressions that would otherwise require full stack runs to detect.
+
+### 2. Backend Integration
+Validates onboarding gating (whitelist → OTP → consent) and admin/policy flows precisely where most business rules converge. Catches miswired dependencies or schema drift impacts without browser overhead.
+
+### 3. Contract (OpenAPI)
+The frontend (and any future automation or external consumer) relies on a stable JSON contract. Snapshot diffs surface breaking changes early, enabling intentional version bumps instead of silent runtime errors.
+
+### 4. Frontend Unit / Component
+Ensures UI primitives (orientation enforcement, plan editor steps, formatting utilities) behave predictably—critical for a PWA that must guide users through a multi-step onboarding funnel.
+
+### 5. Frontend Shallow Integration
+Exercises navigation + persisted state + consent redirect logic in isolation. Provides high assurance over user journey state transitions without incurring full E2E flakiness (OAuth, SMS timing).
+
+### 6. E2E Smoke
+Tiny safety net confirming a deployed build loads and backend health endpoint responds. Intentionally minimal to avoid slowing CI for a still‑evolving UI while still detecting catastrophic outages.
+
+### 7. Performance / Load Scaffold
+Captures baseline simulation execution times (core value proposition). Early detection of 20%+ regressions prevents accumulating performance debt before a broader user base arrives.
+
+### 8. Coverage & Reporting
+Creates quantitative visibility (initially modest gates) to ensure incremental improvement and discourage untested growth in critical paths.
+
+### 9. PII Masking & Test Data Policy
+Protects against accidental exposure of real phone numbers / user info in a workflow heavily centered on phone-based OTP verification.
+
+### 10. Tooling & Automation
+Unifies tasks (migrations, contract, coverage, PII scan) so contributors have a single entrypoint; reduces friction and divergence across OS environments (notably Windows primary dev context).
+
+### 11. Restructuring & Documentation
+Keeps structure coherent (fixtures, JWKS, snapshot storage) and ensures procedural knowledge (updating snapshots, handling drift) is captured—lowering onboarding time for new contributors.
+
+> Note: Deeper E2E/browser coverage, mutation testing, and advanced load scenarios are intentionally deferred given current internal user scale (SSD Section 2 & load expectations) but have scaffolds (layers 6 & 7) for future expansion.
+
 ## Goals
 - Structured unit, integration, contract, shallow frontend integration, and smoke scaffolds
 - Cover all simulation plans A B C D K P R F E (SSD Section 10)
