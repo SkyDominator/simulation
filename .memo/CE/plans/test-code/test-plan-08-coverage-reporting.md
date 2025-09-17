@@ -28,12 +28,13 @@ Establish consistent multi-language coverage collection (Python + TypeScript), t
 - Output `lcov.info` stored under `coverage/`
 
 ### 4.3 Aggregation Script
-- PowerShell `windows-scripts/run_tests.ps1`:
+PowerShell `windows-scripts/run_tests.ps1`:
   - Run backend tests
   - Run frontend tests
   - Parse XML & lcov to extract line coverage percentages
   - Print unified table
   - Enforce thresholds (exit non-zero if below)
+  - Write artifacts to `/src/test/coverage/` (backend XML: `coverage-backend.xml`, frontend: `lcov.info`, merged summary: `summary.json`)
 
 ### 4.4 CI Workflow
 - Separate jobs for backend & frontend (parallel) produce artifacts

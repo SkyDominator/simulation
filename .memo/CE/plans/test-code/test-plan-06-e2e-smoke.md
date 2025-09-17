@@ -14,10 +14,13 @@ Provide a single (or tiny set) of browser-level smoke tests to assert core app s
 1. Scaffold Playwright config + single health-page smoke (placeholder) — no gating yet
 
 ## 4. Test Design
-- Playwright test navigates to base URL (env `APP_BASE_URL`)
-- Verifies page title or header text present
-- Calls backend `/api/health` via fetch in page context; asserts `status` field is `ok` or `degraded`
-- Optional: Lighthouse performance snapshot (non-gating, stored as artifact) (future)
+Playwright test navigates to base URL (env `APP_BASE_URL`).
+
+* Verifies header element via `data-testid="app-header"` (stable selector). Example front-end markup: `<h1 data-testid="app-header">Welcome to PartnerClub</h1>`
+* Calls backend `/api/health` via fetch in page context; asserts `status` field is `ok` or `degraded`
+* Optional: Lighthouse performance snapshot (non-gating, stored as artifact) (future)
+
+Selector Strategy: All future E2E tests must use `data-testid` attributes rather than text or CSS selectors to reduce brittleness.
 
 ## 5. Tooling
 - Framework: Playwright

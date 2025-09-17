@@ -16,10 +16,10 @@ Lightweight harness to execute simulation plans under controlled load to establi
 
 ## 4. Harness Design
 - Python script `tests/perf/run_baseline.py`
-- For each plan in [A,B,C,D,K,P,R,F,E]:
+For each plan in [A,B,C,D,K,P,R,F,E]:
   - Run simulation service with deterministic inputs & fixed seed
   - Measure wall-clock and (optionally) process CPU time
-  - Record: plan_id, rounds, duration_ms, peak_memory(optional)
+  - Record: plan_id, rounds, duration_ms, peak_memory (collected via `memory_profiler` if installed)
 - Output `output/perf/baseline.json` (if absent) else compare and produce `output/perf/delta.json`
 
 ## 5. Regression Logic
@@ -31,18 +31,21 @@ Lightweight harness to execute simulation plans under controlled load to establi
 - `invoke perf.run` wrapper (future) or direct: `python -m tests.perf.run_baseline`
 - CI optional job (non-blocking)
 
-## 7. Acceptance Criteria
+## 7. Tooling Decisions
+Peak memory measurement: use `memory_profiler` (`pip install memory_profiler`). If module absent, skip memory metric with logged warning; not a test failure.
+
+## 8. Acceptance Criteria
 - Baseline file created on first run
 - Subsequent run with artificial delay shows regression warning line
 - JSON schema stable (documented fields)
 
-## 8. Risks & Mitigations
+## 9. Risks & Mitigations
 | Risk | Mitigation |
 |------|------------|
 | Noisy local environment | Run multiple repetitions & take median |
 | Drift due to unrelated system load | Document guidance: use isolated container | 
 
-## 9. Future Enhancements
+## 10. Future Enhancements
 - Integrate Locust for concurrent user simulation of API endpoints
 - Add percentile stats & CPU/RAM sampling
 - Trend upload to external monitoring store

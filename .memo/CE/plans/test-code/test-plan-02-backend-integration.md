@@ -30,6 +30,36 @@ Exercise FastAPI application endpoints with realistic request/response cycles wh
 7. Unauthorized / forbidden tests: admin endpoints with normal user token (403); protected endpoint without latest consent (423)
 
 ## 5. Detailed Flow Specifications
+### 5.0 Endpoint Mapping (Validated Against `src/backend/api/routes.py`)
+| Path | Method | Purpose | Auth Required | Notes |
+|------|--------|---------|---------------|-------|
+| / | GET | Root sanity | No | Returns message |
+| /api/otp/send | POST | Request OTP | No | Whitelist gate inside handler |
+| /api/otp/verify | POST | Verify OTP | No | Attempts & rate limiting in service |
+| /api/notices | GET | List published notices | No | Public list |
+| /api/notices/{id} | GET | Get single published notice | No | 404 if not published |
+| /api/admin/me | GET | Admin self-check | Yes (admin) | 403 if not admin |
+| /api/admin/notices | POST | Create notice | Yes (admin) | |
+| /api/admin/notices/{id} | PATCH | Update notice | Yes (admin) | |
+| /api/admin/notices/{id} | DELETE | Delete notice | Yes (admin) | |
+| /api/admin/privacy-policies | POST | Create policy | Yes (admin) | Cannot set published directly |
+| /api/admin/privacy-policies/{id} | PATCH | Update policy | Yes (admin) | Publishing blocked here |
+| /api/admin/privacy-policies/{id} | DELETE | Delete policy | Yes (admin) | |
+| /api/admin/privacy-policies/{id}/publish | POST | Publish policy | Yes (admin) | Unpublishes others |
+| /api/admin/privacy-policies | GET | List policies (admin) | Yes (admin) | Ordered desc |
+| /api/admin/privacy-policies/{id} | GET | Get policy (admin) | Yes (admin) | |
+| /api/simulations | GET | List simulations | Yes | User scoped |
+| /api/simulations/{id} | GET | Get simulation details | Yes | 404 if not owned |
+| /api/simulation/create | POST | Create simulation | Yes | |
+| /api/simulation/run | POST | Run simulation | Yes | Persists results |
+| /api/simulations/{id} | PATCH | Update simulation | Yes | Clears results |
+| /api/simulations/{id}/memo | PATCH | Update memo | Yes | Memo only |
+| /api/simulations/{id} | DELETE | Delete simulation | Yes | |
+| /api/simulation/delete | POST | Delete simulation (alt) | Yes | Accepts body |
+| /api/health | GET | Health check | No | Includes supabase status |
+| /api/consents | POST | Record consent | No (pre-auth) | Links whitelist user_hash |
+
+All above table entries confirmed against `routes.py` at edit time.
 ### 5.1 OTP Flow
 - Pre-seed whitelist hash or simulate via helper
 - POST /api/otp/send → 200 JSON includes user_hash + expiry seconds
@@ -71,6 +101,20 @@ Exercise FastAPI application endpoints with realistic request/response cycles wh
 - `app_client(schema)` returns TestClient bound to schema-specific dependencies
 - `create_user_token(is_admin=False, consented_version=None)` produces JWT claims & optionally seeds admin/consent rows
 - `publish_policy(version)` seeds DB row & toggles published flag while unpublishing previous
+
+### 6.1 Config Injection / Overrides
+Override OTP related limits by monkeypatching `config.settings.settings` attributes in a fixture to widen attempt counts or validity for deterministic tests. Example:
+```python
+@pytest.fixture
+def otp_limits(monkeypatch):
+	from config import settings as settings_mod
+	monkeypatch.setattr(settings_mod.settings, 'otp_max_attempts', 6)
+	monkeypatch.setattr(settings_mod.settings, 'otp_resend_limit_per_15min', 4)
+	return settings_mod.settings
+```
+
+### 6.2 Canonical Protected Endpoint for 423
+Use `GET /api/simulations` as canonical protected endpoint to assert 423 Locked when latest consent not granted. Flow: initial consent → publish newer policy → request protected endpoint (expect 423) → submit updated consent → retry (200).
 
 ## 7. Data Isolation Strategy
 - Module scope fixture creates unique schema name → apply migrations → yield → drop schema

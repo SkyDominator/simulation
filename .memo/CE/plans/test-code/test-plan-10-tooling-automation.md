@@ -30,7 +30,18 @@ Steps:
 6. Parse coverage outputs & compute summary table
 7. Enforce thresholds; exit code >0 if failing
 
-## 5. Invoke Tasks Summary
+## 5. Threshold & Config Source
+Thresholds externalized to `windows-scripts/config.json`:
+```json
+{
+	"successThreshold": 90,
+	"errorThreshold": 5,
+	"rationale": "Success threshold based on industry standards; error threshold prevents false positives."
+}
+```
+Script loads JSON; fallback to baked-in defaults with warning if missing.
+
+## 6. Invoke Tasks Summary
 | Command | Purpose |
 |---------|---------|
 | `invoke db.apply` | Apply migrations (schema aware) |

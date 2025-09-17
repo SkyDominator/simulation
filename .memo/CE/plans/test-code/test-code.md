@@ -1,9 +1,11 @@
 # Test Code Implementation Plan
 
 ## Overview
+
 Comprehensive multi-layer automated testing for LOLClub Simulation (FastAPI backend + React/Vite PWA) aligned with SSD v0.2.0. Initial coverage targets: backend ≥40% (path to 75%), frontend ≥25% (path to 60%). Enforce quality gates (lint, type, contract, PII) and establish scalable foundations.
 
 ## Test Layer Index & Cross-Links
+
 Each test layer below links to a dedicated, self-contained plan file. This master document orchestrates the full strategy while individual files guide day-to-day implementation.
 
 | # | Layer | Plan File | One-Line Purpose |
@@ -21,57 +23,73 @@ Each test layer below links to a dedicated, self-contained plan file. This maste
 | 11 | Restructuring & Documentation | [test-plan-11-restructuring-docs](./test-plan-11-restructuring-docs.md) | Keep repo structure + docs aligned with strategy |
 
 ## Rationale: Why Each Layer Exists
+
 Short justifications tying each layer to risk reduction per SSD scope (small internal PWA with financial simulation logic & consent workflow):
 
 ### 1. Backend Unit
+
 Focuses on deterministic simulation math, tax rules, achievement rate handling, and JWT helper logic. Fast feedback prevents subtle financial regressions that would otherwise require full stack runs to detect.
 
 ### 2. Backend Integration
+
 Validates onboarding gating (whitelist → OTP → consent) and admin/policy flows precisely where most business rules converge. Catches miswired dependencies or schema drift impacts without browser overhead.
 
 ### 3. Contract (OpenAPI)
+
 The frontend (and any future automation or external consumer) relies on a stable JSON contract. Snapshot diffs surface breaking changes early, enabling intentional version bumps instead of silent runtime errors.
 
 ### 4. Frontend Unit / Component
+
 Ensures UI primitives (orientation enforcement, plan editor steps, formatting utilities) behave predictably—critical for a PWA that must guide users through a multi-step onboarding funnel.
 
 ### 5. Frontend Shallow Integration
+
 Exercises navigation + persisted state + consent redirect logic in isolation. Provides high assurance over user journey state transitions without incurring full E2E flakiness (OAuth, SMS timing).
 
 ### 6. E2E Smoke
+
 Tiny safety net confirming a deployed build loads and backend health endpoint responds. Intentionally minimal to avoid slowing CI for a still‑evolving UI while still detecting catastrophic outages.
 
 ### 7. Performance / Load Scaffold
+
 Captures baseline simulation execution times (core value proposition). Early detection of 20%+ regressions prevents accumulating performance debt before a broader user base arrives.
 
 ### 8. Coverage & Reporting
+
 Creates quantitative visibility (initially modest gates) to ensure incremental improvement and discourage untested growth in critical paths.
 
 ### 9. PII Masking & Test Data Policy
+
 Protects against accidental exposure of real phone numbers / user info in a workflow heavily centered on phone-based OTP verification.
 
 ### 10. Tooling & Automation
+
 Unifies tasks (migrations, contract, coverage, PII scan) so contributors have a single entrypoint; reduces friction and divergence across OS environments (notably Windows primary dev context).
 
 ### 11. Restructuring & Documentation
+
 Keeps structure coherent (fixtures, JWKS, snapshot storage) and ensures procedural knowledge (updating snapshots, handling drift) is captured—lowering onboarding time for new contributors.
 
 > Note: Deeper E2E/browser coverage, mutation testing, and advanced load scenarios are intentionally deferred given current internal user scale (SSD Section 2 & load expectations) but have scaffolds (layers 6 & 7) for future expansion.
 
 ## Goals
+
 - Structured unit, integration, contract, shallow frontend integration, and smoke scaffolds
 - Cover all simulation plans A B C D K P R F E (SSD Section 10)
 - Mock OTP/SMS + external calls in CI by default
 - Enforce PII masking (no raw user phone numbers)
 - Integrate Codecov with gating thresholds and ratchet policy (explicit increment rule to prevent coverage decrease)
+- Add migration tooling prerequisite tasks (`scripts/migrations/apply.py` + `tasks.py`) prior to starting integration test implementation (hard dependency for schema setup)
 - Provide performance/load benchmark scaffold
 
 ## Out of Scope (Now)
+
 - Full browser E2E across all user flows
 - Chaos / fuzz / mutation testing (backlog)
 - Multi-region latency simulation
 
 ## Environment Strategy
+
 - Local: Real dependencies except Solapi (require `ALLOW_REAL_SMS=1` to enable)
 - CI: Mock Supabase HTTP (where feasible), Solapi, JWT JWKS (static fixture) unless running contract snapshot validation
 - Test DB Strategy:
@@ -82,6 +100,7 @@ Keeps structure coherent (fixtures, JWKS, snapshot storage) and ensures procedur
       - Isolation: Pytest fixture creates a fresh schema per integration test module (`test_mod_<random>`), applies migrations once, drops on teardown. Heavy suites can opt into shared schema via marker.
 
 ## Global Conventions
+
 - Python tests: `test_*.py` (pytest)
 - Frontend tests: `*.test.ts(x)` (Vitest + RTL)
 - Fixtures: `src/backend/tests/fixtures/`
@@ -151,7 +170,7 @@ Tasks:
 ### 2. Backend Integration Tests
 
 Focus: FastAPI endpoints (OTP, consent, simulation CRUD/run, notices, policies, health) using real app with dependency overrides + isolated DB schema.
-Tasks:
+Tasks (prerequisite: migration tooling files `scripts/migrations/apply.py` and root `tasks.py` present / created before implementing tests):
 
 1. App fixture with dependency overrides (DB session, SMS provider, JWKS provider)
 2. OTP Flow: send (whitelist pass), verify success, exceed attempt limit (6), send rate limit (4th send within 15m → 429)

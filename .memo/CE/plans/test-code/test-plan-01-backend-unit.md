@@ -33,7 +33,7 @@ Focus on pure, deterministic Python logic in the FastAPI backend codebase: simul
 The following extend coverage breadth (still pure unit level; no network/DB):
 8. Per-plan invariants: assert each defined `max_investor_count` never exceeded across representative high round run (e.g. rounds == max_investor_count + 10).
 9. Round boundary transitions: explicit tests for rounds 1, 15, 16 (settlement bonus threshold), and highest configured bonus round per plan (e.g. 18 for D/K/P/R/F/E) verifying bonus activation/deactivation.
-10. Large rounds stress: run a high but acceptable round count (e.g. 200) and assert performance (< 2s) & monotonic cumulative values; skip if marked slow via `@pytest.mark.unit_slow` (still unit boundary—no I/O).
+10. Large rounds stress: run a high but acceptable round count (e.g. 200) and assert monotonic cumulative values ONLY (timing assertion removed—performance concerns moved to performance harness). Skip if marked slow via `@pytest.mark.unit_slow` (still unit boundary—no I/O).
 11. Monetary magnitude extremes: inject very large scheduled payment / investment override values and assert no overflow, negative tax, or precision drift (compare recomputed cumulative vs sum of per-round nets within tolerance 1e-6).
 12. `sales_achievement_rates` variants: None, empty dict, shorter than needed, longer than used, and containing non-sequential keys; service should pad/truncate/ignore gracefully (assert documented behavior).
 13. Input sanitation: plan id with lowercase / surrounding whitespace → normalized or raises ValueError (document current expected behavior; lock with test).
@@ -41,10 +41,10 @@ The following extend coverage breadth (still pure unit level; no network/DB):
 15. Scheduled payment mapping: verify conversion to internal `investments` structure preserves ordering, disallows negative entries, and aggregates duplicates if logic applies.
 16. Tax rounding & accumulation: assert sum(round.net_after_tax) approximates cumulative figure (<= 1 unit difference) to catch double-tax or rounding drift.
 17. Investor growth ceiling: fabricate scenario where growth logic would exceed `max_investor_count`; assert clamped.
-18. Snapshot versioning: include a `version` field in snapshot fixture; test fails with helpful message if snapshot missing version (forces regeneration procedure discipline).
+18. Snapshot versioning: include a `version` field in snapshot fixture; test fails with helpful message if snapshot missing version (forces regeneration procedure discipline). Snapshot ROUNDS constant set to 36 (canonical) and stored with schema version.
 19. JWT helper negative paths: missing `kid`, duplicated `kid`, unsupported `alg`, `aud` mismatch, malformed token segments, invalid base64, expired (`exp` past) and not-yet-valid (`nbf` future) tokens.
 20. Hash/normalization utility: idempotence (normalizing twice unchanged), trimming whitespace, rejecting invalid country/prefix patterns, preserving already hyphenated canonical form.
-21. Performance micro-benchmark (optional unit): assert Plan A 100 rounds executes under configurable threshold (e.g. 50 ms median of 5 runs) to detect algorithmic regressions early (skip on CI if too flaky—guarded by marker).
+21. (Removed – micro-benchmark relocated to performance plan; no direct timing asserts remain in unit layer.)
 22. Determinism guard: if RNG ever introduced later, proactively assert no `random` or `numpy.random` calls during simulation by monkeypatching to raise (locks deterministic design).
 
 ## 5. Detailed Test Design
@@ -61,32 +61,73 @@ For each plan:
 - cumulative_profit monotonic non-decreasing
 
 ### 5.3 Multi-Round Snapshot (Plan A)
-- Run canonical input (documented in test) for N rounds (e.g. 10 or 20) and snapshot selected metrics (rounded to 2–4 decimals)
-- Snapshot file stored under `tests/unit/simulation/__snapshots__/plan_a_rounds_20.json` (commit for regression detection)
+
+- Canonical rounds count N = 36 (decision applied from clarity review) ensuring broader coverage of late-round logic while remaining fast.
+- Run canonical input (documented in test) for N rounds and snapshot selected metrics (rounded to 2–4 decimals)
+- Snapshot file stored under `tests/unit/simulation/__snapshots__/plan_a_rounds_36.json` (commit for regression detection)
+- Snapshot JSON schema example:
+
+```json
+{
+    "version": "1.0",              // snapshot schema version – bump on structural field changes
+    "generated_at": "<iso8601>",   // optional informational (ignored in comparison)
+    "plan_id": "A",                // constant for this snapshot
+    "rounds": 36,                   // canonical rounds count
+    "fields": ["investor_count","total_payment","total_revenue_after_tax","cumulative_profit"],
+    "history": [                    // length == rounds
+         {"round":1,"investor_count":1,"total_payment":1000.0,"total_revenue_after_tax":970.0,"cumulative_profit":10.0},
+         {"round":2, ...}
+    ]
+}
+```
+
+Comparison logic ignores `generated_at` and performs tolerant float comparison (absolute diff <=1e-6 after rounding). Version bump rule: increment minor when adding/removing a field inside `fields`; increment major when changing semantic meaning of existing fields.
 
 ### 5.4 Edge Cases
+
 - Invalid plan_id → `ValueError`
 - rounds <= 0 → `ValueError`
-- Extremely high rounds (stress upper bound chosen e.g. 200) executes within performance envelope (<2s) and remains stable (no negative revenue)
+- Extremely high rounds (stress upper bound chosen e.g. 200) remains stable (no negative revenue) (timing not asserted at unit layer)
 
 ### 5.5 Tax Logic
+
 - First round tax application equals `gross * 0.033` (tolerance 1e-6)
 - Subsequent rounds aggregate correctly; ensure no double-taxing cumulative values
 
 ### 5.6 Achievement Rate Overrides
+
 - Provide custom `sales_achievement_rates` array shorter / longer than default — service truncates or pads as specified in implementation (assert documented behavior)
 
 ### 5.7 Settlement Bonus Rule
+
 - After round > 15 settlement bonus disabled (assert metric discontinuity exactly at threshold)
 
 ### 5.8 JWT Decoding Wrapper
+
 - Valid token with matching kid from fixture JWKS
 - Rotated JWKS (kid removed) → verification failure path
-- Expired token → raises / returns structured error
+- Expired token → raises `TokenExpiredException`
+
+Negative path contracts (each test asserts exact exception class + message):
+
+| Negative Path | Exception/Return Contract |
+|---------------|--------------------------|
+| Missing `kid` | Raise `InvalidTokenException` with message "Missing 'kid' in JWT header." |
+| Duplicated `kid` | Raise `InvalidTokenException` with message "Duplicated 'kid' values in JWT header." |
+| Unsupported `alg` | Raise `UnsupportedAlgorithmException` with message "Unsupported algorithm: {alg}." |
+| `aud` mismatch | Raise `AudienceMismatchException` with message "Audience mismatch: expected {expected_aud}, got {actual_aud}." |
+| Malformed token segments | Raise `MalformedTokenException` with message "Malformed JWT token segments." |
+| Invalid base64 | Raise `InvalidBase64Exception` with message "Invalid base64 encoding in JWT." |
+| Expired (`exp` past) | Raise `TokenExpiredException` with message "JWT token has expired." |
+| Not-yet-valid (`nbf` future) | Raise `TokenNotYetValidException` with message "JWT token is not yet valid." |
+
+Tests generate minimal tokens or manipulate headers/payload segments to trigger each branch.
 
 ### 5.9 Extended Validation & Boundary Set (Added)
+
 Maps to enhanced tasks 8–22; each remains isolated pure function/service invocation:
-- Boundary rounds & threshold transitions (tasks 8–10, 11 partly performance) with assertions on bonus flags & cumulative monotonicity.
+
+- Boundary rounds & threshold transitions (tasks 8–10) with assertions on bonus flags & cumulative monotonicity.
 - Achievement rate irregular structures (task 12) verifying defensive normalization.
 - Input sanitation & numeric validation (tasks 13–15) asserting explicit exceptions.
 - Tax accumulation drift (task 16) verifying acceptable epsilon.
@@ -94,23 +135,24 @@ Maps to enhanced tasks 8–22; each remains isolated pure function/service invoc
 - Snapshot versioning (task 18) ensuring snapshot includes explicit schema version string.
 - Comprehensive JWT negative cases (task 19) using pre-built malformed token fixtures.
 - Phone / hash normalization behaviors (task 20).
-- Performance micro-benchmark harness (task 21) skipped by default marker.
 - Determinism guard (task 22) monkeypatching random sources to raise if accessed.
 
 ## 6. Tooling
+
 - `pytest -m unit --maxfail=1 -q`
 - Add marker `@pytest.mark.unit` (optional) for targeted run
 - Coverage collected via `--cov=src/backend --cov-report=term-missing:skip-covered`
 
 ## 7. Acceptance Criteria (Layer-Specific)
+
 - All tasks 1–7 implemented
 - Each plan ID covered by at least one assertion
 - Snapshot test stable across two consecutive runs (no churn)
 - Coverage contribution from unit tests drives backend subtotal toward ≥40% (initial gate) en route to 75%
 - No network calls executed (validate by monkeypatching HTTP clients if necessary)
- - Enhanced tasks 8–22 implemented or explicitly marked skipped with justification in code comments
- - Validation tests confirm improper inputs raise clear exceptions (message contains keyword specifying fault)
- - Determinism guard ensures no unintended randomness (tests would fail if introduced)
+- Enhanced tasks 8–22 implemented (task 21 removed per decision) or explicitly marked skipped with justification in code comments
+- Validation tests confirm improper inputs raise clear exceptions (message contains keyword specifying fault)
+- Determinism guard ensures no unintended randomness (tests would fail if introduced)
 
 ## 8. Risks & Mitigations
 | Risk | Mitigation |

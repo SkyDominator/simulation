@@ -49,10 +49,25 @@ Validate React components, hooks, utilities, and lightweight service modules in 
 
 ### 4.4 API Service Module
 
-- Mock fetch returning policy JSON → resolves & caches version
-- Mock fetch returning 423 → handler invokes consent redirect callback (spy assertion)
-- Mock fetch returning 401/403 ensures distinct error propagation (no redirect)
-- Repeated 423 only fires redirect once
+Contracts by status code (tests assert mapping):
+
+| Status Code | Contract |
+|------------|----------|
+| 200 | Success: parse JSON response and update UI |
+| 400 | Client error: display user-friendly message from response.error field |
+| 401 | Unauthorized: redirect to login page |
+| 403 | Forbidden: show access denied message |
+| 423 | Locked: show consent required message (trigger consent redirect callback once) |
+| 404 | Not found: display not found page |
+| 500 | Server error: show generic error message and log details |
+
+Test Cases:
+1. Mock 200 response caches and returns data; second call doesn't refetch.
+2. Mock 423 response triggers consent redirect callback exactly once across repeated identical failing calls.
+3. Mock 401 response triggers login redirect (different spy) but NOT consent redirect.
+4. Mock 403 response surfaces access denied UI state.
+5. Mock 404 produces not-found component/state.
+6. Mock 500 logs error (spy on console.error) and shows generic message.
 
 ## 5. Coverage Expectations
 
