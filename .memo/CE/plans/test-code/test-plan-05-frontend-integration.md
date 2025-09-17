@@ -29,16 +29,20 @@ Exercise multi-step onboarding/navigation logic within the PWA without launching
 - After auth (mocked session) → `main`
 - Inject 423 while at `main` → transition to `consent` (preserve intended target) → after consent back to previous
 
-#### 4.2.1 Logical State Mapping Table
+#### 4.2.1 Logical State Mapping Table 
 
-| Logical State | Trigger / Entry Condition | Expected Route (example) | Storage Side Effects |
-|---------------|---------------------------|--------------------------|----------------------|
-| whitelist | App load with no prior user hash | /whitelist | localStorage.page="whitelist" |
-| consent | OTP verified OR 423 while at main | /consent | sessionStorage.consentVersion? (if already accepted) |
-| login | Consent accepted pre-auth | /login | localStorage.page="login" |
-| main | Auth session established | /app (or root) | localStorage.page="main" |
-| consent (re-entry) | New policy published while user active | /consent | sessionStorage.consentVersion updated post accept |
-| restore target | After accepting newer policy | previous route | localStorage.page restored |
+| Page State (types.Page) | Rendered Component (file) | Trigger / Entry Condition | Storage Keys Mutated (localStorage) | Notes |
+|-------------------------|---------------------------|---------------------------|--------------------------------------|-------|
+| whitelist | `WhitelistCheckPage` (`pages/WhitelistCheckPage.tsx`) | App load (no user, default) OR logout from protected page | `ui.page="whitelist"` | Also sets transient userHash after OTP send (not persisted) |
+| consent | `ConsentPage` (`pages/ConsentPage.tsx`) | OTP verified sets userHash → consent required OR 423 injected while on main | `ui.page="consent"` | On accept: sets next page to `login` |
+| login | `LoginPage` (`pages/LoginPage.tsx`) | Consent accepted pre-auth OR user navigates back from whitelist to login | `ui.page="login"` | Social OAuth redirect may change location outside SPA flow |
+| main | `MainPage` (`pages/MainPage.tsx`) | Auth session established & not editing | `ui.page="main"` | Parent for simulation table & summary components |
+| plan-editor | `PlanEditorPage` (`pages/PlanEditor/index.tsx`) | User selects create/edit from MainPage | `ui.page="plan-editor"`, `ui.planEditor.plan`, `ui.planEditor.step` | Persisted plan draft & step restored across reload |
+| results | `ResultsPage` (`pages/ResultsPage.tsx`) | Simulation run completes (online) | `ui.page="results"`, `ui.simulationResult` | Back → main clears or preserves result depending on UX decision |
+| offline-results | `OfflineResultsPage` (`pages/OfflineResults.tsx`) | Offline simulation display path | `ui.page="offline-results"`, `ui.simulationResult` | Similar shape to `results` |
+| admin-policy | `AdminPolicyPage` (`pages/AdminPolicyPage.tsx`) | Admin user navigates to policy management | `ui.page="admin-policy"` | Access gated by auth role (future) |
+| consent (re-entry) | `ConsentPage` | New policy version published while user active (server 423) | `ui.page="consent"` | Previous intended page remembered in state (not persisted) |
+| restore target | (dynamic; previous component) | After accepting newer policy | `ui.page=<previous>` | Returns user to prior flow |
 
 ### 4.3 Storage Assertions
 
