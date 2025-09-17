@@ -115,7 +115,7 @@ Keeps structure coherent (fixtures, JWKS, snapshot storage) and ensures procedur
 | Flaky OTP expiry timing | CI instability | Time-freezing (`freezegun`) + deterministic timestamps |
 | Floating precision drift in simulations | Brittle assertions | Round & snapshot selected metrics |
 | Consent race conditions | False negatives | Isolated consent repo / DB fixture per test |
-| JWKS network dependency | Test flakiness | Static JWKS fixture file (offline validation) |
+| JWKS network dependency | Test flakiness | Static JWKS fixture file (offline validation). Rotate JWKS test keys upon adding new key usages. |
 
 ## Resolved Previously Pending Decisions
 
