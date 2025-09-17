@@ -223,6 +223,8 @@ Tasks:
 3. Components: `App` shell render; plan editor step progression; orientation enforcer overlay toggle
 4. Utilities: phone normalization / formatting logic
 5. API service module: privacy policy fetch (success + 423 Locked path handling)
+6. OfflineResultsPage component tests (render populated & empty states, a11y)
+7. AdminPolicyPage component tests (list, create, publish, 403 handling)
 
 ### 5. Frontend Integration (Shallow Flow) Tests
 
@@ -231,6 +233,8 @@ Tasks:
 1. Mock API module to simulate OTP → consent → main page transitions
 2. Assert localStorage/sessionStorage keys (onboarding state, consent version)
 3. Abstract navigation controller (refactor if needed) and test navigation state machine
+4. OfflineResults navigation from summary-report and back preserving state
+5. Admin policy lifecycle (admin create draft of policy → publish → a non-admin user get 423 (Lock) response -> user re-consent → access)
 
 ### 6. E2E Smoke (Deferred Minimal)
 
@@ -244,6 +248,7 @@ Tasks:
 
 1. Add `tests/perf/` (Locust or simple timing harness) running all plans at 100 rounds
 2. Persist baseline metrics JSON; warn (not fail) if regression >20% until thresholds stabilized
+3. UI micro-benchmarks (OfflineResultsPage 100 rows, ResultPage 100 rows, AdminPolicyPage 100 policies)
 
 #### Performance Threshold Targets (Informational Baseline)
 
@@ -344,7 +349,6 @@ Tasks:
 - PII scan passes (no disallowed phone patterns)
 - Documentation (README + TESTING.md + PII_POLICY) present and linked
 - JWKS static fixture used for deterministic JWT validation
-
 ## Future Enhancements (Backlog)
 
 - Full Playwright E2E flows

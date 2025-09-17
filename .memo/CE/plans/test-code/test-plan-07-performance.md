@@ -13,6 +13,8 @@ Lightweight harness to execute simulation plans under controlled load to establi
 ## 3. Tasks (Verbatim from Master Plan)
 1. Add `tests/perf/` (Locust or simple timing harness) running all plans at 100 rounds
 2. Persist baseline metrics JSON; warn (not fail) if regression >20% until thresholds stabilized
+ 3. UI micro-benchmark: render OfflineResultsPage with synthetic 100-row history & measure initial render time (warn if >200ms)
+ 4. Policy list render benchmark: AdminPolicyPage with 100 draft + 1 published policies (warn if >200ms)
 
 ## 4. Harness Design
 - Python script `tests/perf/run_baseline.py`
@@ -45,6 +47,8 @@ Peak memory measurement: use `memory_profiler` (`pip install memory_profiler`). 
 - Baseline file created on first run
 - Subsequent run with artificial delay shows regression warning line
 - JSON schema stable (documented fields)
+- OfflineResultsPage render benchmark outputs metrics JSON (`output/perf/ui_offline_results.json`) (skipped if `UI_PERF=0`)
+- AdminPolicyPage list benchmark outputs metrics JSON (`output/perf/ui_admin_policy.json`)
 
 ## 9. Risks & Mitigations
 

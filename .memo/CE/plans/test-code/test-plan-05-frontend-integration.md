@@ -43,6 +43,8 @@ Exercise multi-step onboarding/navigation logic within the PWA without launching
 | admin-policy | `AdminPolicyPage` (`pages/AdminPolicyPage.tsx`) | Admin user navigates to policy management | `ui.page="admin-policy"` | Access gated by auth role (future) |
 | consent (re-entry) | `ConsentPage` | New policy version published while user active (server 423) | `ui.page="consent"` | Previous intended page remembered in state (not persisted) |
 | restore target | (dynamic; previous component) | After accepting newer policy | `ui.page=<previous>` | Returns user to prior flow |
+| result page → offline-results | `OfflineResultsPage` | From result page "수당표 보기" button | `ui.page="offline-results"` plus preserved selection context | Validates SSD Section 13.4 flow |
+| admin publish triggers consent | `ConsentPage` | Mid-session policy publish by admin (simulated 423 on next protected call) | `ui.page="consent"` | Ensures user forced to re-consent (SSD 8.2 & 13.4) |
 
 ### 4.3 Storage Assertions
 
@@ -60,6 +62,10 @@ Exercise multi-step onboarding/navigation logic within the PWA without launching
 - All tasks 1–3 satisfied
 - 423 injected event results in exactly one redirect
 - Stored state survives component unmount/remount simulation
+- OfflineResults navigation: result page → offline-results → back → result page state intact
+- Admin policy flow: navigate to admin-policy, create draft, publish → mock emits new version; subsequent simulated protected call receives 423 then consent path resumes original target
+- 403 injection while on admin-policy results in redirect intent flag (not immediate nav) (confirm redirect)
+- Test asserts `ui.simulationResult` unchanged after round-trip to offline-results
 
 ## 7. Risks & Mitigations
 

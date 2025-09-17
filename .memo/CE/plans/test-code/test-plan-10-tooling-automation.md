@@ -19,6 +19,8 @@ Provide scripts, invoke tasks, PowerShell orchestration, nightly routines, and d
 6. `pii-scan`: `invoke pii.scan` wrapper executes ripgrep command; fails on first match outside allowlist.
 7. Nightly schema drift GitHub Action scheduled (non-blocking on additive changes, blocking on destructive changes).
 8. Coverage upload GitHub Action includes conditional Codecov step (skipped on draft PRs).
+9. Extend `run_tests.ps1` to parse per-component coverage (OfflineResultsPage, AdminPolicyPage) from lcov & print dedicated row (JSON schema for summary extension)
+10. Add optional `--focus-ui` flag to `run_tests.ps1` to run only frontend unit + integration tests touching these components (filename pattern) (flag name)
 
 ## 4. Script Design – `run_tests.ps1`
 Steps:
@@ -83,6 +85,7 @@ Design Principle: 0 success, 1 informational/non-breaking, 2 gating failure. Kee
 - `run_tests.ps1` exits 0 when all layers pass & coverage above gates
 - Any PII violation or contract break exits non-zero
 - Nightly drift action produces artifact on additive change
+- `run_tests.ps1` prints component coverage table when components present; otherwise clearly states "No component coverage data".
 
 ## 8. Risks & Mitigations
 

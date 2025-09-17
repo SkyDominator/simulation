@@ -16,6 +16,8 @@ Organize test directories, add missing fixtures & JWKS, relocate ad-hoc scripts,
 3. Add fixtures: OTP code factory, consent record factory, simulation input factory
 4. Ensure `__init__.py` in new test package dirs
 5. Add JWKS fixture file `src/backend/tests/fixtures/jwks.json`
+6. Add frontend test fixtures: `src/frontend/tests/fixtures/offline_result.json` & `admin_policies.json`
+7. Create `src/frontend/tests/utils/renderWithProviders.tsx` including convenience helpers for injecting `ui.page` state (per-test helper)
 
 ## 4. Documentation Tasks
 1. Create `docs/TESTING.md` (layers, commands, env vars, coverage, PII policy)
@@ -28,6 +30,7 @@ Organize test directories, add missing fixtures & JWKS, relocate ad-hoc scripts,
 - All directories present & importable (`pytest --collect-only` shows new tests)
 - JWKS fixture consumed by at least one unit & one integration test
 - `docs/TESTING.md` cross-links PII policy & coverage badge
+- New frontend fixture files loadable & imported without TS errors
 
 ## 6. Risks & Mitigations
 | Risk | Mitigation |

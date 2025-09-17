@@ -31,6 +31,13 @@ Validate React components, hooks, utilities, and lightweight service modules in 
 | F15 | Supabase auth session refresh: mock auto-refresh callback path |
 | F16 | Optional global error boundary: thrown child error → fallback UI, console.error suppressed |
 | F17 | Accessibility assertions: interactive elements have discernible names |
+| F18 | OfflineResultsPage: populated render (table rows + back button) |
+| F19 | OfflineResultsPage: empty state (no `ui.simulationResult`) + accessibility landmarks |
+| F20 | AdminPolicyPage: list render (mock policies), loading & error states |
+| F21 | AdminPolicyPage: create new draft validation (version required, min content length) |
+| F22 | AdminPolicyPage: publish action invokes callback & disables publish button post-success |
+| F23 | Permission handling: 403 mock triggers role-gated banner + redirect intent flag (no actual nav) |
+| F24 | a11y: table semantics (role="table" + headers association) for OfflineResultsPage & AdminPolicyPage lists (accessibility test failures should block CI) |
 
 ## 4. Detailed Test Design
 
@@ -45,6 +52,18 @@ Validate React components, hooks, utilities, and lightweight service modules in 
 - `App`: renders header text "생명빛 클럽 시뮬레이션" and main container
 - Orientation Enforcer: simulate portrait media query → overlay visible; change to landscape → overlay removed
 - Plan Editor Stepper: simulate clicking next through steps, assert proper step label highlight & validation gating (use minimal stub data)
+- OfflineResultsPage:
+	- Provide mock `simulationResult` object (minimal history of 18 rounds) via context / prop (align with SSD Section 13.4 results shape)
+	- Assert table renders expected row count & back button `aria-label` present
+	- Empty state path: absence of result shows placeholder text (placeholder: "수당표에 표시할 시뮬레이션이 없습니다.)
+	- Accessibility: role="table", column headers have `scope="col"`
+- AdminPolicyPage:
+	- Mock API module returning: loading -> success with 2 policies (one published, one draft)
+	- Validate published badge visible & draft lacks badge
+	- Error path: mock 500, shows retry button & logs error
+	- Create form: version required, content min length (10 chars)
+	- Publish: clicking publish triggers mock mutation then disables button, updates list marking previous published as unpublished (simulate via updated mock response)
+	- 403 path: mock forbidden response → surfaces role warning component ("권한이 없습니다.") without throwing
 
 ### 4.3 Utilities
 
@@ -76,6 +95,7 @@ Test Cases:
 
 - Contributes initial ≥25% frontend coverage gate (shared with integration & future tests)
 - Lines & branches for core utilities >80%
+- Add per-component minimum lines hit (non-gating initially): OfflineResultsPage ≥70% lines, AdminPolicyPage ≥60% lines (NEED_VERIFICATION: adopt as future gate?)
 
 ## 6. Tooling
 
@@ -89,6 +109,10 @@ Test Cases:
 - All component tests headless deterministic (no timers leaking)
 - Orientation tests pass without real screen APIs (mocked)
 - 423 path reliably triggers redirect spy exactly once
+- OfflineResultsPage tests (F18–F19) pass with both populated & empty states
+- AdminPolicyPage tests (F20–F23) cover list, create, publish, and 403 scenarios
+- Accessibility assertions (F24) either pass or are reported as warnings if gating not yet approved
+- Export test (F25) skipped with explicit message if feature not implemented
 - Additional enhancement tasks (Section 3.1) implemented or explicitly skipped with rationale
 - Storage corruption test proves safe fallback (no uncaught exceptions)
 - API caching test shows fetch call count == 1 for duplicate request

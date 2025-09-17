@@ -42,4 +42,7 @@ Selector Strategy: All future E2E tests must use `data-testid` attributes rather
 - Add UI route availability checks (results page, editor skeleton)
 - Add consent redirect scenario once stable
 - Add authenticated smoke once token bootstrap fixture exists
+- Add admin-policy smoke: pre-seeded admin token → verify policy list table (Run after unit coverage)
+- Add offline-results deep-link smoke using pre-seeded localStorage state (rely on localStorage seeding?)
+- Add minimal a11y axe scan (non-gating) for header + admin-policy list
 

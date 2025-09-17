@@ -17,6 +17,7 @@ Establish consistent multi-language coverage collection (Python + TypeScript), t
 4. Coverage badge in root `README.md`
 5. Add acceptance gating line for thresholds
 6. CI step executes PII scan before upload (fails on matches)
+ 7. Track component-specific coverage deltas for `OfflineResultsPage` & `AdminPolicyPage`; warn if either below 50% (non-gating)
 
 ## 4. Implementation Details
 ### 4.1 Backend
@@ -49,6 +50,7 @@ PowerShell `windows-scripts/run_tests.ps1`:
 - Local script prints summary with both percentages
 - CI fails if coverage below thresholds
 - Badge renders after first successful upload
+- Warning emitted (not failure) if OfflineResultsPage or AdminPolicyPage <50% lines until gating approved
 
 ## 6. Risks & Mitigations
 | Risk | Mitigation |

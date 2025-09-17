@@ -28,6 +28,7 @@ Exercise FastAPI application endpoints with realistic request/response cycles wh
 5. Notices & Admin: create, list (published filter), update, pin/unpin, delete; unauthorized (non-admin) → 403; publish privacy policy toggles previous
 6. Health endpoint: structure contains Supabase status & latency field
 7. Unauthorized / forbidden tests: admin endpoints with normal user token (403); protected endpoint without latest consent (423)
+8. Mid-session policy publish: user with prior consent makes protected request after admin publishes newer version → receives 423 then re-consents and succeeds (forcing the user to re-consent to the new policy immediately and then allows requests after successful re-consent.)
 
 ## 5. Detailed Flow Specifications
 ### 5.0 Endpoint Mapping (Validated Against `src/backend/api/routes.py`)
@@ -73,6 +74,7 @@ All above table entries confirmed against `routes.py` at edit time.
 - Link consent after auth: POST /api/user/link-consent
 - Simulate new policy version publish → prior consent triggers 423 on protected endpoint
 - User POST /api/user/consents with latest version → 200 then access succeeds
+- Mid-session policy publish scenario: After initial consent (v1) & active session, admin publishes v2 (simulate via helper) → next GET /api/simulations returns 423 → force refresh fixture → user POST /api/user/consents v2 → subsequent request 200.
 
 ### 5.3 Simulation Lifecycle
 - Create: capture returned simulation_id

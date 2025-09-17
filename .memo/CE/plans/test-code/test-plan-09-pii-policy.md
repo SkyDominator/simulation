@@ -23,6 +23,8 @@ Prevent accidental leakage / committing of real phone numbers or other PII throu
 		&& echo FAIL && exit 1 || echo 'PII scan passed'
 	```
 5. Optional allowlist file `tests/pii_allowlist.txt` (initially empty). Only explicit full-string entries prefixed with `ALLOW:` are exempt; there are NO pattern wildcards permitted. Any absence from this file = failure if matched by regex.
+6. Add assertion in frontend tests ensuring OfflineResultsPage renders no raw phone numbers or user_id values (use regex scan on rendered HTML fragment) (user_id masking is not applied to admin view)
+7. Add admin policy content lint check: new policy draft content must not include phone patterns (pre-submit hook optional) (enforce at test time)
 
 ## 4. Policy Content Outline (`tests/PII_POLICY.md`)
 - Purpose & scope
@@ -50,6 +52,7 @@ Prevent accidental leakage / committing of real phone numbers or other PII throu
 - CI fails when introducing forbidden number pattern in non-allowed file
 - Hash helper test confirms deterministic output for sample inputs
 - Policy file referenced in `docs/TESTING.md`
+- OfflineResultsPage PII assertion test passes or is skipped with rationale if masking handled upstream
 
 ## 7. Risks & Mitigations
 | Risk | Mitigation |
