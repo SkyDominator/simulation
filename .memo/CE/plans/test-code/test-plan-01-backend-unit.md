@@ -16,7 +16,7 @@ Focus on pure, deterministic Python logic in the FastAPI backend codebase: simul
 - Runner: `pytest`
 - File pattern: `src/backend/tests/unit/**/test_*.py`
 - Global flags: `TEST_MODE=1`
-- Use `freezegun` (or datetime injection) to freeze time where expiry matters
+- Use `freezegun` (install and use the latest version)(use datetime injection if freezegun can't be used) to freeze time where expiry matters
 - Faker for synthetic PII; never embed raw phone numbers
 - Static JWKS fixture for JWT decode tests: `src/backend/tests/fixtures/jwks.json`
 
