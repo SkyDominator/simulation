@@ -106,6 +106,7 @@ Keeps structure coherent (fixtures, JWKS, snapshot storage) and ensures procedur
 - Fixtures: `src/backend/tests/fixtures/`
 - PII: Use Faker / placeholders; never commit real phone numbers
 - Env flags: `TEST_MODE=1`, `CI=1`, optional `ALLOW_SCHEMA_UPDATE=1`, `ALLOW_REAL_SMS=1`
+      - Future addition (Important clarification applied): `RETAIN_TEST_SCHEMA=1` (debug aid) prevents teardown of the last created test schema for manual inspection; never set in CI.
 
 ## Risk & Mitigation Summary
 
@@ -142,6 +143,24 @@ Keeps structure coherent (fixtures, JWKS, snapshot storage) and ensures procedur
 | invoke openapi.snapshot | Refresh OpenAPI snapshot | Guarded by env flag |
 | invoke pii.scan | Run PII regex scan | Fails on first match |
 | invoke perf.run (future) | Run performance harness | Non-gating baseline |
+
+### Command Exit Codes
+
+| Command | Exit Code | Meaning |
+|---------|-----------|---------|
+| invoke schema.diff | 0 | No drift (snapshot matches) |
+| invoke schema.diff | 1 | Additive drift only (new tables/cols) – warning in CI nightly, does NOT fail pipeline |
+| invoke schema.diff | 2 | Destructive / incompatible drift (removed/changed type) – CI failure |
+| invoke openapi.check (future) | 0 | No contract break |
+| invoke openapi.check (future) | 1 | Additive changes only (new fields) |
+| invoke openapi.check (future) | 2 | Breaking removal / type change |
+| invoke pii.scan | 0 | Passed (no forbidden matches) |
+| invoke pii.scan | 1 | First forbidden pattern encountered (fast fail) |
+| invoke perf.run | 0 | Completed; regressions (if any) only logged as warnings (< gating stage) |
+| invoke coverage.merge (future) | 0 | Coverage thresholds met |
+| invoke coverage.merge (future) | 2 | Threshold(s) not met (CI fail) |
+
+Implementation Note: Codes chosen so that 0 always success, 1 non-breaking informational change, 2 breaking/gating failure. Avoids overloading >2 early for simplicity; can extend later.
 
 ## Glossary
 

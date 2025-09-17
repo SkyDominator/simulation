@@ -23,29 +23,38 @@ For each plan in [A,B,C,D,K,P,R,F,E]:
 - Output `output/perf/baseline.json` (if absent) else compare and produce `output/perf/delta.json`
 
 ## 5. Regression Logic
-- If current_duration > baseline_duration * 1.2: classify regression
-- Print summary table; exit code 0 (warn only)
-- Future: escalate after stabilization period
+
+- Repetitions: run each plan 5 times (configurable via `PERF_REPS` env var, default 5) and record each duration.
+- Compute median (p50) duration per plan; ignore max outlier if >2× median (logged).
+- Regression condition: median_current > median_baseline * 1.2 → classify regression (warn only for now).
+- Print table: plan_id | baseline_median_ms | current_median_ms | delta_pct | regress?(Y/N) | reps_used
+- Exit code 0 always (early non-gating stage); CI log highlights regressions.
+- Future escalation: after N (≈10) stable runs without regression, introduce gating with exit code 2 on regression.
 
 ## 6. Invocation
+
 - `invoke perf.run` wrapper (future) or direct: `python -m tests.perf.run_baseline`
 - CI optional job (non-blocking)
 
 ## 7. Tooling Decisions
+
 Peak memory measurement: use `memory_profiler` (`pip install memory_profiler`). If module absent, skip memory metric with logged warning; not a test failure.
 
 ## 8. Acceptance Criteria
+
 - Baseline file created on first run
 - Subsequent run with artificial delay shows regression warning line
 - JSON schema stable (documented fields)
 
 ## 9. Risks & Mitigations
+
 | Risk | Mitigation |
 |------|------------|
 | Noisy local environment | Run multiple repetitions & take median |
-| Drift due to unrelated system load | Document guidance: use isolated container | 
+| Drift due to unrelated system load | Document guidance: use isolated container |
 
 ## 10. Future Enhancements
+
 - Integrate Locust for concurrent user simulation of API endpoints
 - Add percentile stats & CPU/RAM sampling
 - Trend upload to external monitoring store

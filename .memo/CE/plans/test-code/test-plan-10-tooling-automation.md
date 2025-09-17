@@ -52,24 +52,47 @@ Script loads JSON; fallback to baked-in defaults with warning if missing.
 | `invoke pii.scan` | Run PII regex scan |
 | `perf.run` | Forthcoming: Run performance benchmarks |
 
+### 6.1 Exit Code Semantics
+
+| Command | Code | Meaning |
+|---------|------|---------|
+| invoke schema.diff | 0 | No drift |
+| invoke schema.diff | 1 | Additive drift only (warning) |
+| invoke schema.diff | 2 | Destructive / incompatible drift (fail) |
+| invoke openapi.snapshot (generate) | 0 | Snapshot regenerated (requires ALLOW_SCHEMA_UPDATE=1) |
+| invoke openapi.check (future) | 0 | No contract break |
+| invoke openapi.check (future) | 1 | Additive (non-breaking) change |
+| invoke openapi.check (future) | 2 | Breaking change |
+| invoke pii.scan | 0 | Passed (no matches) |
+| invoke pii.scan | 1 | Forbidden pattern encountered |
+| invoke perf.run | 0 | Completed; any regressions logged only |
+| invoke coverage.merge (future) | 0 | Thresholds met |
+| invoke coverage.merge (future) | 2 | Thresholds not met (fail) |
+
+Design Principle: 0 success, 1 informational/non-breaking, 2 gating failure. Keeps simple mental model early.
+
 ## 6. Nightly Drift Action
+
 - Cron triggers job
 - Spins up Postgres service
 - Runs diff; classifies additive vs destructive (failure on destructive)
 - Uploads diff artifact
 
 ## 7. Acceptance Criteria
+
 - `run_tests.ps1` exits 0 when all layers pass & coverage above gates
 - Any PII violation or contract break exits non-zero
 - Nightly drift action produces artifact on additive change
 
 ## 8. Risks & Mitigations
+
 | Risk | Mitigation |
 |------|------------|
 | Script divergence between OSes | Keep Python invoke as single source & PS wrapper thin |
 | Secret exposure in logs | Redact env variables in script output |
 
 ## 9. Future Enhancements
+
 - Pre-commit hook auto-runs fast unit subset
 - Add `invoke quality.all` meta task chaining lint, type, tests, scan
 

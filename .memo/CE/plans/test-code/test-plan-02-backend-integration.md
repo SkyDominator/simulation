@@ -117,19 +117,24 @@ def otp_limits(monkeypatch):
 Use `GET /api/simulations` as canonical protected endpoint to assert 423 Locked when latest consent not granted. Flow: initial consent → publish newer policy → request protected endpoint (expect 423) → submit updated consent → retry (200).
 
 ## 7. Data Isolation Strategy
+
 - Module scope fixture creates unique schema name → apply migrations → yield → drop schema
 - Use transaction rollbacks inside tests for extra speed if practical (nested transactions) else rely on schema teardown
+- Debug aid (local only): set `RETAIN_TEST_SCHEMA=1` to skip teardown of the LAST created schema for manual inspection (never commit with this set; CI ignores).
 
 ## 8. Performance Guardrails
+
 - Fail test if single integration test >5s (pytest timeout plugin configuration) except simulation run stress path (<10s)
 
 ## 9. Acceptance Criteria
+
 - All tasks 1–7 covered by explicit tests
 - Each listed endpoint invoked at least once
 - Introduced failures (e.g., force 423) reproducible deterministically
 - No external network (assert mocks captured 0 outbound calls)
 
 ## 10. Risks
+
 | Risk | Mitigation |
 |------|------------|
 | Schema creation overhead | Cache migration application / reuse within module |
@@ -137,6 +142,7 @@ Use `GET /api/simulations` as canonical protected endpoint to assert 423 Locked 
 | State leakage | Per-schema isolation + teardown |
 
 ## 11. Future Enhancements
+
 - Contract test integration: automatically compare response models vs OpenAPI
 - Add load-focused integration subset (parallel simulation runs)
 

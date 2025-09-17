@@ -22,7 +22,7 @@ Prevent accidental leakage / committing of real phone numbers or other PII throu
 		-g '!src/backend/tests/fixtures/**' -g '!**/PII_POLICY.md' -g '!**/README*' . \
 		&& echo FAIL && exit 1 || echo 'PII scan passed'
 	```
-5. Optional allowlist file `tests/pii_allowlist.txt` (initially empty) – lines (exact full phone string or name) ignored by scan script when prefixed with `ALLOW:`.
+5. Optional allowlist file `tests/pii_allowlist.txt` (initially empty). Only explicit full-string entries prefixed with `ALLOW:` are exempt; there are NO pattern wildcards permitted. Any absence from this file = failure if matched by regex.
 
 ## 4. Policy Content Outline (`tests/PII_POLICY.md`)
 - Purpose & scope
@@ -35,7 +35,7 @@ Prevent accidental leakage / committing of real phone numbers or other PII throu
 ## 5. Scan Script Behavior & Rationale
 - Exit code 1 on first match (fast fail)
 - Prints offending line path & surrounding context (a few lines) for remediation
-- Allowlist implemented by: glob exclusions for known safe fixture dirs
+- Allowlist mechanism: strictly explicit single-line entries OR directory glob exclusions for known safe synthetic fixture dirs; no partial or wildcard matching beyond globbed fixture directory paths.
 
 ### Rationale Clarifications
 - International phone formats are NOT used (app is Korea-only) – patterns like `+82-10-1234-5678` intentionally excluded to reduce false positives.

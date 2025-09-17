@@ -29,27 +29,43 @@ Exercise multi-step onboarding/navigation logic within the PWA without launching
 - After auth (mocked session) → `main`
 - Inject 423 while at `main` → transition to `consent` (preserve intended target) → after consent back to previous
 
+#### 4.2.1 Logical State Mapping Table
+
+| Logical State | Trigger / Entry Condition | Expected Route (example) | Storage Side Effects |
+|---------------|---------------------------|--------------------------|----------------------|
+| whitelist | App load with no prior user hash | /whitelist | localStorage.page="whitelist" |
+| consent | OTP verified OR 423 while at main | /consent | sessionStorage.consentVersion? (if already accepted) |
+| login | Consent accepted pre-auth | /login | localStorage.page="login" |
+| main | Auth session established | /app (or root) | localStorage.page="main" |
+| consent (re-entry) | New policy published while user active | /consent | sessionStorage.consentVersion updated post accept |
+| restore target | After accepting newer policy | previous route | localStorage.page restored |
+
 ### 4.3 Storage Assertions
+
 - `localStorage.page` updated on transitions
 - `sessionStorage.consentVersion` matches latest after acceptance
 - Draft simulation edits (if any stub) preserved across reload (optional stretch)
 
 ## 5. Tooling
+
 - Vitest + RTL
 - Custom render helper wraps root providers & supplies mock Supabase auth context
 
 ## 6. Acceptance Criteria
+
 - All tasks 1–3 satisfied
 - 423 injected event results in exactly one redirect
 - Stored state survives component unmount/remount simulation
 
 ## 7. Risks & Mitigations
+
 | Risk | Mitigation |
 |------|------------|
 | Tight coupling to implementation details | Interact via public navigation API / context rather than internals |
 | Race conditions with async setState | Await next tick / use `findBy*` queries |
 
 ## 8. Future Enhancements
+
 - Add offline (network error) recovery path tests
 - Extend to plan editor multi-step persistence across reload
 

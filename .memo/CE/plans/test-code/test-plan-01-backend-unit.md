@@ -60,6 +60,21 @@ The following extend coverage breadth (still pure unit level; no network/DB):
 19. JWT helper negative paths: missing `kid`, duplicated `kid`, unsupported `alg`, `aud` mismatch, malformed token segments, invalid base64, expired (`exp` past) and not-yet-valid (`nbf` future) tokens.
 20. Hash/normalization utility: idempotence (normalizing twice unchanged), trimming whitespace, rejecting invalid country/prefix patterns, preserving already hyphenated canonical form.
 21. Determinism guard: if RNG ever introduced later, proactively assert no `random` or `numpy.random` calls during simulation by monkeypatching to raise (locks deterministic design).
+    - Scope Narrowing: Only patch RNG inside the simulation module namespace to avoid breaking libraries like Faker.
+    - Implementation sketch:
+      ```python
+      @pytest.fixture
+      def rng_guard(monkeypatch):
+          import services.simulations as sim_mod
+          import random as _r
+          if 'random' in dir(sim_mod):
+              def _blocked():
+                  raise RuntimeError('Unexpected RNG use in simulation path')
+              monkeypatch.setattr(sim_mod.random, 'random', _blocked, raising=True)
+          # Optional: patch numpy if later adopted
+          yield
+      ```
+    - Do NOT globally patch `random.random` for the entire test session.
 
 ## 5. Detailed Test Design
 ### 5.1 Fixtures
