@@ -63,7 +63,7 @@ Keeps structure coherent (fixtures, JWKS, snapshot storage) and ensures procedur
 - Cover all simulation plans A B C D K P R F E (SSD Section 10)
 - Mock OTP/SMS + external calls in CI by default
 - Enforce PII masking (no raw user phone numbers)
-- Integrate Codecov with gating thresholds
+- Integrate Codecov with gating thresholds and ratchet policy (explicit increment rule to prevent coverage decrease)
 - Provide performance/load benchmark scaffold
 
 ## Out of Scope (Now)
@@ -320,6 +320,13 @@ Tasks:
 1. Feature branch incremental commits; early PR after unit + core integration tests stable
 2. Merge with initial coverage gates; ratchet thresholds upward per schedule
 3. Monitor Codecov trends; enforce higher failing threshold when stable
+
+### Ratchet Policy for Coverage Thresholds (Codecov)
+
+- Initial Threshold: Set at 70% line coverage.
+- Increment Schedule: Increase by 3% every 3 months, or after each major release, whichever comes first.
+- Enforcement: Automated checks in CI/CD will block merges if coverage falls below the current threshold. Thresholds only increase; they do not decrease to maintain progress.
+- Exceptions: Approved by team lead for edge cases (e.g., legacy code refactoring).
 
 ## Risk of Not Implementing
 
