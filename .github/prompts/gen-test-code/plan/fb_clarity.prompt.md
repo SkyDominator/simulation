@@ -1,4 +1,4 @@
-Apply me decision on the clarity review on the test code plan files:
+Apply my decisions about the clarity review to the test code plan files:
 
 1. test-plan-01-backend-unit.md
 
@@ -48,7 +48,19 @@ Apply me decision on the clarity review on the test code plan files:
 
 6. test-plan-07-performance.md
 
+* peak_memory method not specified: Use memory_profiler (`pip install memory_profiler`)
 
+7. test-plan-10-tooling-automation.md
 
+* Threshold source unspecified: Use `config.json` in the same directory as the script.
+
+```json
+// filepath: config.json
+{
+  "successThreshold": 90,
+  "errorThreshold": 5,
+  "rationale": "Success threshold based on industry standards; error threshold prevents false positives."
+}
+```
 
 
