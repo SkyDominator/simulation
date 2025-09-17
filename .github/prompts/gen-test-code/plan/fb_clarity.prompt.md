@@ -18,6 +18,8 @@ Apply my decisions about the clarity review to the test code plan files:
 | Expired (`exp` past) | Throw `TokenExpiredException` with message "JWT token has expired." |
 | Not-yet-valid (`nbf` future) | Throw `TokenNotYetValidException` with message "JWT token is not yet valid." |
 
+* 
+
 2. test-code.md
 
 * Add the plan tasks for creating apply.py + tasks.py before integration test implementation.
@@ -63,4 +65,7 @@ Apply my decisions about the clarity review to the test code plan files:
 }
 ```
 
+8. test-plan-06-e2e-smoke.md
 
+* Unstable text selector risk: Adopt `data-testid` attributes in the HTML and use them in selectors.
+    * Example: `<h1 data-testid="app-header">Welcome to PartnerClub</h1>` and use `page.getByTestId('app-header')` in Playwright.
