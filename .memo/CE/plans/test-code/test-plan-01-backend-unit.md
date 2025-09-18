@@ -76,14 +76,33 @@ The following extend coverage breadth (still pure unit level; no network/DB):
       ```
     - Do NOT globally patch `random.random` for the entire test session.
 
+### 4.2 Gap-Driven Pre-Feature Tasks (Continuous Numbering)
+The following tasks extend the numbering above (no renumbering of existing items) and will be added BEFORE implementing new features identified in `SSD-review-2025-09-17.md`.
+
+NOTE: For markdown lint compliance the ordered list below restarts at 1; in parent task index these correspond logically to tasks 22–28.
+
+1. (22) Consent version cache helper: pure function tests for TTL expiry vs manual bust (ensures future middleware can rely on deterministic cache behavior).
+2. (23) Privacy policy loader (DB only) rejects static file fallback: test asserts `PolicyNotFoundError` when no published policy (prevents silent fallback to markdown).
+3. (24) Structured error envelope builder: `build_error(code, message, details=None)` idempotence + shape guard (ensures consistent future API error responses).
+4. (25) OTP verify attempt constant guard: assert `MAX_OTP_VERIFY_ATTEMPTS == 6` (initially added with `xfail(strict=True)` until config updated from current value).
+5. (26) Simulation list normalization utility: given `None` / empty → returns empty list (used by future integration handlers for 200 + []).
+6. (27) Exception hierarchy presence: domain base (e.g. `DomainError`) and specific subclasses (`ConsentError`, `PolicyError`, `OTPError`, `SimulationError`, `JWTError`); tests assert inheritance only.
+7. (28) Policy publish side-effect contract: helper returns structure containing `invalidate_cache=True` (future middleware hook to force consent re-check).
+
+NOTE: Snapshot version semantics (Task 18) and phone/hash normalization (Task 20) already covered—excluded here to avoid redundancy.
+
 ## 5. Detailed Test Design
+
 ### 5.1 Fixtures
+
 - `simulation_service_factory(plan_id, overrides=None)` → returns configured service instance
 - `jwks_keys()` → loads JSON keys; variant fixture rotates order to ensure robust selection logic
 - `plan_parameters()` → parametrize across plan IDs A,B,C,D,K,P,R,F,E
 
 ### 5.2 Simulation Structural Invariants (Round 1)
+
 For each plan:
+
 - investor_count >= 1
 - total_payment >= 0
 - total_revenue_after_tax >= 0
@@ -164,7 +183,8 @@ Maps to enhanced tasks 8–22; each remains isolated pure function/service invoc
 - Snapshot versioning (task 18) ensuring snapshot includes explicit schema version string.
 - Comprehensive JWT negative cases (task 19) using pre-built malformed token fixtures.
 - Phone / hash normalization behaviors (task 20).
-- Determinism guard (task 22) monkeypatching random sources to raise if accessed.
+- Determinism guard (task 21) monkeypatching random sources to raise if accessed.
+    (Gap tasks 22–28 are non-simulation infrastructure; covered separately.)
 
 ## 6. Tooling
 
@@ -174,16 +194,17 @@ Maps to enhanced tasks 8–22; each remains isolated pure function/service invoc
 
 ## 7. Acceptance Criteria (Layer-Specific)
 
-- All tasks 1–7 implemented
-- Each plan ID covered by at least one assertion
-- Snapshot test stable across two consecutive runs (no churn)
-- Coverage contribution from unit tests drives backend subtotal toward ≥40% (initial gate) en route to 75%
-- No network calls executed (validate by monkeypatching HTTP clients if necessary)
-- Enhanced tasks 8–22 implemented (task 21 removed per decision) or explicitly marked skipped with justification in code comments
-- Validation tests confirm improper inputs raise clear exceptions (message contains keyword specifying fault)
-- Determinism guard ensures no unintended randomness (tests would fail if introduced)
+- Tasks 1–21 implemented (or explicitly skipped with justification where marked) plus gap tasks 22–28 added (25 may be `xfail(strict=True)` until constant updated).
+- Each plan ID covered by at least one assertion.
+- Snapshot test stable across two consecutive runs (no churn).
+- Coverage contribution from unit tests drives backend subtotal toward ≥40% (initial gate) en route to 75%.
+- No network calls executed (validated by monkeypatching / absence of network fixtures).
+- Gap tasks 22–28: all present; any intentional temporary `xfail` annotated with rationale comment.
+- Validation tests confirm improper inputs raise clear exceptions (message contains keyword specifying fault).
+- Determinism guard (task 21) ensures no unintended randomness.
 
 ## 8. Risks & Mitigations
+
 | Risk | Mitigation |
 |------|------------|
 | Floating point drift | Round selected snapshot fields |
@@ -191,11 +212,14 @@ Maps to enhanced tasks 8–22; each remains isolated pure function/service invoc
 | Overfitting snapshots | Snapshot only aggregate & key round metrics |
 
 ## 9. Future Enhancements
+
 - Property-based tests (Hypothesis) for parameter ranges
 - Mutation testing (mutmut) once baseline green
 
 ## 10. Appendix
+
 Example snapshot assertion (Plan A):
+
 ```python
 def test_plan_a_round_1_structure(simulation_service_factory):
     svc = simulation_service_factory('A')

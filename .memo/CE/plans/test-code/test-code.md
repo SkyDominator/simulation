@@ -4,6 +4,8 @@
 
 Comprehensive multi-layer automated testing for LOLClub Simulation (FastAPI backend + React/Vite PWA) aligned with SSD v0.2.0. Initial coverage targets: backend ≥40% (path to 75%), frontend ≥25% (path to 60%). Enforce quality gates (lint, type, contract, PII) and establish scalable foundations.
 
+
+
 ## Test Layer Index & Cross-Links
 
 Each test layer below links to a dedicated, self-contained plan file. This master document orchestrates the full strategy while individual files guide day-to-day implementation.
@@ -185,6 +187,13 @@ Tasks:
 6. Achievement rates override injection
 7. Add static JWKS fixture `src/backend/tests/fixtures/jwks.json` + loader test (key rotation simulation)
 
+8. Consent cache helper pure-function tests (TTL + manual bust)
+9. Policy loader rejects static markdown fallback (DB-only) – expect 404/PolicyNotFound
+10. Structured error envelope builder `{error:{code,message,details}}` idempotence
+11. OTP verify attempt constant asserted at 6 (initially xfail until feature change)
+12. Simulation list normalization utility (None/empty → [])
+13. Domain exception base + specific subclasses (hierarchy assertion)
+
  
 ### 2. Backend Integration Tests
 
@@ -198,6 +207,12 @@ Tasks (prerequisite: migration tooling files `scripts/migrations/apply.py` and r
 5. Notices & Admin: create, list (published filter), update, pin/unpin, delete; unauthorized (non-admin) → 403; publish privacy policy toggles previous
 6. Health endpoint: structure contains Supabase status & latency field
 7. Unauthorized / forbidden tests: admin endpoints with normal user token (403); protected endpoint without latest consent (423)
+
+8. 423 Locked on protected access after policy publish until re-consent
+9. 404 when no published policy (no static fallback)
+10. 429 when OTP verify attempts exceed 6
+11. 200 with empty array when user has zero simulations
+12. Error envelope present on 423 / 429 responses
 
 #### Repository Boundary Checklist
 
@@ -242,6 +257,7 @@ Tasks:
 
 1. Scaffold Playwright config + single health-page smoke (placeholder) — no gating yet
 
+<!-- markdownlint-disable-next-line MD024 -->
 ### 7. Performance / Load Scaffold
 
 Tasks:
@@ -259,6 +275,7 @@ Tasks:
 - Concurrency headroom test at 60 concurrent (≈2× peak)
 - CPU < 70% at peak, error rate < 1%
 
+<!-- markdownlint-disable-next-line MD024 -->
 ### 8. Coverage & Reporting
 
 Tasks:
@@ -270,6 +287,7 @@ Tasks:
 5. Add acceptance gating line for thresholds
 6. CI step executes PII scan before upload (fails on matches)
 
+<!-- markdownlint-disable-next-line MD024 -->
 ### 9. PII Masking & Test Data Policy
 
 Tasks:
@@ -280,6 +298,7 @@ Tasks:
 4. Ripgrep command (document + CI):
     `rg -n --no-heading -e '(010[- ]?\d{3,4}[- ]?\d{4})' -g '!src/backend/tests/fixtures/**' -g '!**/PII_POLICY.md' -g '!**/README*' . && echo FAIL && exit 1 || echo 'PII scan passed'`
 
+<!-- markdownlint-disable-next-line MD024 -->
 ### 10. Tooling & Automation
 
 Tasks:
@@ -349,6 +368,7 @@ Tasks:
 - PII scan passes (no disallowed phone patterns)
 - Documentation (README + TESTING.md + PII_POLICY) present and linked
 - JWKS static fixture used for deterministic JWT validation
+
 ## Future Enhancements (Backlog)
 
 - Full Playwright E2E flows
