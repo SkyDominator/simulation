@@ -7,8 +7,8 @@ Focus on pure, deterministic Python logic in the FastAPI backend codebase: simul
 
 ## 2. Objectives
 - Fast feedback (<5s typical layer runtime once warm)
-- High logic branch & edge coverage for financial simulation plans A B C D K P R F E
-- Deterministic snapshots for selected multi‑round outputs (avoid floating drift)
+- High logic branch & edge coverage for financial simulation plans A, B, C, D, K, P, R, F, E
+- Deterministic snapshots for selected multi‑round outputs using stable snapshot comparison (raw float absolute diff <= 1e-6; stored values rounded for readability only)
 - Guardrails for tax calculation, achievement rate overrides, settlement bonus rules
 - Stable fixtures enabling later property / mutation testing
 
@@ -89,8 +89,8 @@ For each plan:
 
 ### 5.3 Multi-Round Snapshot (Plan A)
 
-- Canonical rounds count N = 36 (decision applied from clarity review) ensuring broader coverage of late-round logic while remaining fast.
-- Run canonical input (documented in test) for N rounds and snapshot selected metrics (rounded to 2–4 decimals)
+- Canonical rounds count N = 36 (canonical_rounds constant) ensuring broader coverage of late-round logic while remaining fast.
+- Run canonical input (documented in test) for N rounds and snapshot selected metrics (values stored rounded to 2–4 decimals purely for human diff; comparison uses raw floats with absolute diff <= 1e-6 ignoring `generated_at`).
 - Snapshot file stored under `tests/unit/simulation/__snapshots__/plan_a_rounds_36.json` (commit for regression detection)
 - Snapshot JSON schema example:
 
@@ -108,7 +108,7 @@ For each plan:
 }
 ```
 
-Comparison logic ignores `generated_at` and performs tolerant float comparison (absolute diff <=1e-6 after rounding). Version bump rule: increment minor when adding/removing a field inside `fields`; increment major when changing semantic meaning of existing fields.
+Comparison logic ignores `generated_at` and performs tolerant float comparison on raw values (absolute diff <= 1e-6). Version bump rule: increment minor when adding/removing a field inside `fields`; increment major when changing semantic meaning of existing fields.
 
 ### 5.4 Edge Cases
 
@@ -118,16 +118,17 @@ Comparison logic ignores `generated_at` and performs tolerant float comparison (
 
 ### 5.5 Tax Logic
 
-- First round tax application equals `gross * 0.033` (tolerance 1e-6)
-- Subsequent rounds aggregate correctly; ensure no double-taxing cumulative values
+- Per-round tax: `per_round_tax = round_gross * 0.033` (tolerance 1e-6)
+- Cumulative tax: `cumulative_tax_n = sum(per_round_tax_i for i <= n)`
+- Assert no tax is applied twice (no double-taxing net values) and cumulative profit calculations do not reuse already net amounts.
 
 ### 5.6 Achievement Rate Overrides
 
-- Provide custom `sales_achievement_rates` array shorter / longer than default — service truncates or pads as specified in implementation (assert documented behavior). If override path not yet implemented in codebase, mark test with `xfail` and rationale.
+- Provide custom `sales_achievement_rates` array shorter / longer than default — service behavior TBD (NEED_DECISION). Current tests will document and assert chosen rule once finalized; until then mark with `NEED_DECISION` or `xfail` as appropriate.
 
 ### 5.7 Settlement Bonus Rule
 
-- After round > 15 settlement bonus disabled (assert metric discontinuity exactly at threshold)
+- Rounds 1–15 inclusive: bonus active; rounds >=16: bonus inactive (NEED_DECISION if SSD diverges).
 
 ### 5.8 JWT Decoding Wrapper
 
@@ -155,7 +156,7 @@ Tests generate minimal tokens or manipulate headers/payload segments to trigger 
 Maps to tasks 8–21 (simulation & core utility scope); each remains isolated pure function/service invocation. Tasks 22–28 are infrastructure / domain service helpers validated separately.
 
 - Boundary rounds & threshold transitions (tasks 8–10) with assertions on bonus flags & cumulative monotonicity.
-- Achievement rate irregular structures (task 12) verifying defensive normalization (conditional xfail if feature absent).
+- Achievement rate irregular structures (task 12) verifying defensive normalization (conditional xfail / NEED_DECISION until rule locked).
 - Input sanitation & numeric validation (tasks 13–15) asserting explicit exceptions.
 - Tax accumulation drift (task 16) verifying acceptable epsilon.
 - Investor growth ceiling (task 17) using crafted state injection if needed.
@@ -168,7 +169,7 @@ Maps to tasks 8–21 (simulation & core utility scope); each remains isolated pu
 ## 6. Tooling
 
 - `pytest -m unit --maxfail=1 -q`
-- Add marker `@pytest.mark.unit` (optional) for targeted run
+- Discovery relies on test file pattern; marker `@pytest.mark.unit` is optional and used only for grouping or selective runs.
 - Coverage collected via `--cov=src/backend --cov-report=term-missing:skip-covered`
 
 ## 7. Acceptance Criteria (Layer-Specific)
@@ -176,11 +177,32 @@ Maps to tasks 8–21 (simulation & core utility scope); each remains isolated pu
 - Tasks 1–28 present (task 25 may start as `xfail(strict=True)` until config updated).
 - Each plan ID covered by at least one assertion.
 - Snapshot test stable across two consecutive runs (no churn).
-- Coverage contribution from unit tests drives backend subtotal toward ≥40% (initial gate) en route to 75%.
-- No network calls executed (validated by monkeypatching / absence of network fixtures).
+- Overall backend line coverage >= 40% post-implementation (initial gate) en route to 75%.
+- No network calls executed (validated by monkeypatching outbound socket creation to raise during tests).
 - Temporary `xfail` items annotated with rationale and removal condition.
 - Improper inputs raise clear exceptions (messages include fault keyword).
 - Determinism guard (task 21) prevents unintended RNG usage.
+
+## 7.1 Pending Decisions (NEED_DECISION)
+
+The following items require explicit decisions before corresponding tests move from placeholder / xfail to enforced assertions. Each entry lists the decision needed and proposed default (may be adopted or replaced):
+
+| ID | Topic | Decision Needed | Proposed Default (Optional) |
+|----|-------|-----------------|------------------------------|
+| D1 | Achievement rate override rule | How to handle shorter / longer `sales_achievement_rates` input vs internal expected length | Truncate longer; pad shorter with last provided value |
+| D2 | Settlement bonus threshold | Exact inclusive range for bonus activation | Bonus active rounds 1–15 inclusive; inactive >=16 |
+| D3 | Plan ID normalization | Normalization + validation rule for `plan_id` | Trim whitespace, uppercase, validate in {A,B,C,D,K,P,R,F,E} |
+| D4 | Duplicate scheduled payments aggregation | Behavior when duplicate keys encountered in scheduled payment mapping | Sum duplicates; order by key ascending |
+| D5 | Determinism guard scope | Sources to monkeypatch for randomness detection | Patch `random.random`, `random.randrange`, and `numpy.random.*` if numpy present |
+| D6 | Consent version cache helper | Existence and TTL semantics | Pure function cache TTL = 10 minutes; manual bust invalidates immediately |
+| D7 | OTP send limiter window | Rolling vs fixed 15‑minute window semantics | Rolling window of last 15 minutes |
+| D8 | JWKS cache TTL | Single TTL value for key reuse | Fixed TTL = 10 minutes |
+| D9 | Simulation list normalization function name | Canonical utility name/signature | Function name `normalize_simulation_list(items: list_or_none) -> list` |
+| D10 | Exception base class name | Confirm domain exception inheritance root | Base class `DomainError` (adjust to actual code if different) |
+| D11 | Policy publish side-effect flag | Flag name signaling downstream cache invalidation | `invalidate_cache: True` key in returned dict |
+| D12 | Snapshot rounds constant symbol | Symbolic constant name for canonical rounds | `CANONICAL_SNAPSHOT_ROUNDS = 36` |
+
+Tests referencing these items should remain `xfail` or skipped until decisions are confirmed; once confirmed, update this table (remove Proposed Default column if fully settled) and convert tests to strict assertions.
 
 ## 8. Risks & Mitigations
 
@@ -207,4 +229,5 @@ def test_plan_a_round_1_structure(simulation_service_factory):
     assert r1.investor_count >= 1
     assert r1.total_payment >= 0
     assert r1.total_revenue_after_tax >= 0
+    # Monotonic cumulative profit checked in dedicated multi-round test
 ```
