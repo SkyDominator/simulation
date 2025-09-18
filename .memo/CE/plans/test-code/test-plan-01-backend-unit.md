@@ -50,24 +50,24 @@ Unit tests MUST NOT perform DB or external network I/O; such cases belong to int
 10. Large rounds stress: run high round count (e.g. 200) asserting monotonic cumulative values ONLY (skip via `@pytest.mark.unit_slow` if needed).
 11. Monetary magnitude extremes: very large scheduled payment / investment overrides; assert no overflow, negative tax, or precision drift (tolerance 1e-6).
 12. `sales_achievement_rates` variants: None, empty, shorter, longer, non-sequential; service pads/truncates/ignores gracefully.
-13. Input sanitation: plan id with lowercase / whitespace → normalized or raises ValueError (lock current behavior).
+13. Input sanitation: plan id validation (no implicit normalization). Lowercase or whitespace-variant IDs are rejected with `ValueError` (explicit—backend performs no normalization).
 14. Invalid numeric inputs: negative payment values, non-int (float / string) overrides → ValueError/type guard path.
-15. Scheduled payment mapping: conversion to internal `investments` preserves ordering, disallows negatives, aggregates duplicates if logic applies.
+15. Scheduled payment mapping: conversion to internal `investments` preserves ordering, disallows negatives, and forbids duplicate keys (duplicate round entries cause test failure / explicit rejection expectation).
 16. Tax rounding & accumulation: sum of per-round net_after_tax approx cumulative (<= 1 unit diff) catching double-tax or rounding drift.
 17. Investor growth ceiling: fabricate scenario where growth would exceed `max_investor_count`; assert clamped.
 18. Snapshot versioning: snapshot includes `version`; fail with guidance if missing (ROUNDS constant 36 canonical).
 19. JWT helper negative paths: missing `kid`, duplicated `kid`, unsupported `alg`, `aud` mismatch, malformed segments, invalid base64, expired, not-yet-valid.
 20. Hash/normalization utility: idempotence, trimming, rejection of invalid prefixes, preservation of canonical hyphenated form.
 21. Determinism guard: assert no RNG use in simulation path (patch module-local random/optional numpy only; never global).
-22. Consent version cache helper: pure function tests for TTL expiry vs manual bust.
+22. (Removed – consent version cache helper not in SSD; no tests.)
 23. Privacy policy fallback: simulate DB retrieval failure -> static markdown fallback returned (validate `source == 'static-file'`).
 24. Structured error envelope builder: `build_error(code, message, details=None)` idempotence + shape contract.
 25. OTP verify attempt limits: (a) constant guard `MAX_OTP_VERIFY_ATTEMPTS == 6` (`xfail(strict=True)` until config updated if mismatch) and (b) behavior test exercising attempt boundary then limit rejection path.
-26. OTP send limiter helper logic: enforce 3 sends within 15 minutes -> 4th attempt rejected; use time-freeze / manual clock advancing.
-27. JWKS caching TTL validation: cache hit within 5–15m window; after TTL expiry forces reload (time-freeze based).
-28. Simulation list normalization utility: `None` / empty input → empty list (used by integration layer for 200 + []).
-29. Exception hierarchy: domain base and subclasses (`ConsentError`, `PolicyError`, `OTPError`, `SimulationError`, `JWTError`) inheritance assertions.
-30. Policy publish side-effect contract: helper returns structure including `invalidate_cache=True` to trigger consent re-check.
+26. OTP send limiter helper logic: rolling window of 15 minutes—3 sends allowed; 4th within window rejected. Use time-freeze / manual clock advancing.
+27. JWKS caching TTL validation: follow SSD (current range 5–15m) without enforcing a single fixed duration—test ensures key reuse within early portion (e.g., <5m) and forced refresh after upper bound (>15m simulated). Prioritize SSD wording.
+28. (Out-of-scope) Simulation list normalization utility belongs to integration layer—omit unit coverage.
+29. (Deferred) Exception hierarchy tests skipped—current codebase lacks dedicated domain exception classes (weak error handling acknowledged). Add later when hierarchy introduced.
+30. (Deferred) Policy publish side-effect contract not implemented—placeholder test omitted until feature lands.
 
 Note: Tasks 18 and 20 already cover snapshot version semantics and phone/hash normalization respectively; tasks 22–28 focus on upcoming consent & error model features.
 
@@ -186,23 +186,11 @@ Maps to tasks 8–21 (simulation & core utility scope); each remains isolated pu
 - Temporary `xfail` items annotated with rationale and removal condition.
 - Improper inputs raise clear exceptions (messages include fault keyword).
 - Determinism guard (task 21) prevents unintended RNG usage.
+- Introduce test-local constant `CANONICAL_SNAPSHOT_ROUNDS = 36` for snapshot test clarity (not a production constant).
 
 ## 7.1 Pending Decisions (NEED_DECISION)
 
-Remaining undecided / to-be-validated items (others have been resolved and incorporated):
-
-| ID | Topic | Final Decision Needed |
-|----|-------|-----------------------|
-| D3 | Plan ID normalization | Confirm normalization exactly matches implementation (trim, uppercase, membership) |
-| D4 | Duplicate scheduled payments aggregation | Confirm duplicate key summation & ordering rule |
-| D5 | Determinism guard scope | Confirm patch scope (random + numpy) or extend |
-| D6 | Consent version cache helper | Confirm helper existence & TTL (10m) |
-| D7 | OTP send limiter window | Confirm rolling window semantics enforced server-side |
-| D8 | JWKS cache TTL | Confirm fixed 10m TTL (SSD earlier states 5–15m range) |
-| D9 | Simulation list normalization function name | Confirm function name/signature |
-| D10 | Exception base class name | Confirm base class name present in code |
-| D11 | Policy publish side-effect flag | Confirm final flag key name |
-| D12 | Snapshot rounds constant symbol | Decide whether to introduce symbolic constant in tests (`CANONICAL_SNAPSHOT_ROUNDS`) |
+All prior decision items have been resolved or explicitly deferred/removed. No active NEED_DECISION entries remain.
 
 ## 8. Risks & Mitigations
 
