@@ -10,7 +10,7 @@ $REVIEW_FILE: `review-master-{date}-{idx}.md`
 1. Review Phase: Read thoroughly $TARGET on the review areas (See Review Areas section), and write your review result as $REVIEW_FILE under $REVIEW_DIR.
     * If this is the second or later iteration, the new $REVIEW_FILE should be created with incremented {idx}.
 2. Refine Phase: Once you create the review result (`review-master-{date}-{idx}.md`), refine $TARGET by applying the suggestions in the review result.
-3. Repeat: Goes back to and run 1~2 steps repeatedly, until no suggestion (except `NEED_DECISION` tagged items, See Rules for Generating Suggestions for more details) is found in the new $REVIEW_FILE.
+3. Repeat: Goes back to and run 1~2 steps repeatedly, until no issue-suggestion pair (except `NEED_DECISION` tagged items, See Rules for Generating Suggestions for more details) is found in the new $REVIEW_FILE.
 
 ## Review Instructions
 

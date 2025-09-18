@@ -54,7 +54,7 @@ Minimal deployed safety net: root PWA loads (manifest available) and `/api/healt
 
 ### 7. Performance / Load Scaffold
 
-Captures baseline simulation execution (<2s typical) and API latency (p95 <500ms) per SSD §11; informational early stage.
+Captures baseline simulation execution (<2s typical) and API latency (p95 <500ms) per SSD §22; informational early stage.
 
 ### 8. Coverage & Reporting
 
@@ -91,14 +91,6 @@ Keeps structure coherent (fixtures, JWKS, snapshot storage) and ensures procedur
 - Chaos / fuzz / mutation testing
 - Multi-region latency simulation
 
-## Deferred Items (Implementation Dependent)
-
-Items marked for implementation only if the corresponding features exist in the codebase:
-
-- Achievement rate override functionality testing (if implemented in simulation service)
-- Simulation result cache invalidation testing (if update clears results is implemented)
-- User-auth consent linking endpoints (if post-auth consent linking is implemented)
-
 ## Environment Strategy
 
 - **Local Development**: Supabase connection with test schema; mocked SMS provider (default); real SMS only with `ALLOW_REAL_SMS=1`
@@ -110,7 +102,7 @@ Items marked for implementation only if the corresponding features exist in the 
 - Python tests: `test_*.py` (pytest)
 - Frontend tests: `*.test.ts(x)` (Vitest + RTL)
 - Fixtures: `src/backend/tests/fixtures/`
-- PII: Faker / placeholders only; approved test phone patterns (010-0000-XXXX format)
+- PII: Use Faker library for names; test phone numbers in range 010-0000-1234 to 010-0000-9999 only
 - Env flags: `TEST_MODE=1`, `CI=1`, optional `ALLOW_OPENAPI_UPDATE=1`, `ALLOW_REAL_SMS=1` (local only)
 
 ## Test Data Strategy
@@ -123,7 +115,7 @@ Items marked for implementation only if the corresponding features exist in the 
 
 ### Test Phone Numbers & OTP
 
-- Approved test phone patterns: 010-0000-XXXX where X = test-specific digits
+- Approved test phone patterns: 010-0000-1234 through 010-0000-9999 (test range)
 - Whitelist test entries: SHA256 hash of approved test name+phone combinations
 - OTP test codes: deterministic generation for CI environments
 
@@ -218,12 +210,14 @@ Tasks:
 13. Enhanced consent API: GET /api/consents/{user_hash} returns proper structure with consents array and success boolean
 14. Static fallback mechanism: privacy policy serves static file when database unavailable, includes source field indicating "static-file"
 
-#### Repository Boundary Checklist
+#### Test Isolation Strategy
 
-1. Identify repository interfaces
-2. Service layer depends only on interfaces (no direct global DB)
-3. Provide test doubles for unit tests
-4. Use real test DB (isolated schema) for integration tests
+For integration tests requiring database access:
+
+1. Use isolated test schema within existing Supabase connection
+2. Mock external dependencies (SMS provider, external APIs) via dependency injection
+3. Provide test implementations of service interfaces for unit tests
+4. Use real database for integration tests with test data cleanup
 
 ### 3. Contract Tests
 
