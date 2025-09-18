@@ -2,7 +2,7 @@
 
 ## Overview
 
-Comprehensive multi-layer automated testing for LOLClub Simulation (FastAPI backend + React/Vite PWA) aligned strictly with SSD v0.2.0 (Draft). Initial internal coverage targets: backend ≥40% (path toward 70%); frontend ≥25% (path toward 60%). Quality gates focus on linting, type safety, current API contract stability, and PII hygiene.
+Comprehensive multi-layer automated testing for LOLClub Simulation (FastAPI backend + React/Vite PWA) aligned strictly with SSD v0.2.1. Initial internal coverage targets: backend ≥40% (path toward 70%); frontend ≥25% (path toward 60%). Quality gates focus on linting, type safety, current API contract stability, and PII hygiene.
 
 
 
@@ -34,7 +34,7 @@ Focuses on deterministic simulation math (plans A,B,C,D,K,P,R,F,E), tax (3.3% de
 
 ### 2. Backend Integration
 
-Validates SSD §8 endpoints: OTP send/verify (with whitelist), privacy policy retrieval (including static fallback), consent record creation & retrieval (pre-auth), simulations CRUD/run (inputs & results), notices public & admin, admin privacy policy management, health.
+Validates SSD §8 endpoints: OTP send/verify (with whitelist), privacy policy retrieval (including static fallback), consent record creation & retrieval (pre-auth), simulations CRUD/run (with parameter conversion from scheduled_payment to investments), notices public & admin, comprehensive admin privacy policy management (create/update/delete/publish/list), health.
 
 ### 3. Contract (OpenAPI)
 
@@ -42,11 +42,11 @@ Ensures documented API (SSD §8 + representative §9 examples) remains stable; s
 
 ### 4. Frontend Unit / Component
 
-Ensures UI primitives (orientation enforcement, plan editor steps, formatting utilities) behave predictably—critical for a PWA that must guide users through a multi-step onboarding funnel.
+Ensures UI primitives (orientation enforcement, plan editor steps, formatting utilities, offline results display, admin policy management) behave predictably—critical for a PWA that must guide users through a multi-step onboarding funnel and provide comprehensive admin capabilities.
 
 ### 5. Frontend Shallow Integration
 
-Exercises onboarding flow (Whitelist/OTP → Consent → OAuth hand-off placeholder → MainPage) and state persistence (local/session storage).
+Exercises onboarding flow (Whitelist/OTP → Consent → OAuth hand-off placeholder → MainPage), offline results navigation, admin policy management, and state persistence (local/session storage).
 
 ### 6. E2E Smoke
 
@@ -164,8 +164,10 @@ Tasks:
 8. Privacy policy fallback: simulated DB failure → static markdown returned
 9. OTP verify attempt limit constant (6) assertion (document SSD discrepancy)
 10. OTP send limiter (3 sends / 15m) helper logic
-11. Simulation input normalization (scheduled_payment → internal investments) if function exists
-12. Error envelope structure (if provided) idempotence
+10. Simulation input normalization (scheduled_payment → internal investments jsonb conversion) validation
+11. Error envelope structure (if provided) idempotence
+12. JWKS caching behavior with TTL validation (5-15m cache lifetime)
+13. Enhanced phone input formatting for multiple prefixes (010/011/016/017/018/019)
 
  
 ### 2. Backend Integration Tests
@@ -175,24 +177,18 @@ Tasks:
 
 1. Test client fixture (mock SMS, static JWKS)
 2. OTP: send success (whitelist pass) returns expiry + user_hash; exceed send limit (4th send) → 429; verify success; exceed verify attempts (attempt beyond limit) → 429 (remaining_attempts reflected)
-3. Consent: create pre-auth consent; retrieve consents list; link to authenticated user if endpoint available (else Deferred)
-4. Privacy policy: normal fetch; simulate DB failure → fallback content served
-5. Simulations: create → run → detail → list; update clears previous results (if implemented) → re-run repopulates; memo patch; delete removes entry
+3. Consent: create pre-auth consent; retrieve consents list via GET /api/consents/{user_hash}; link to authenticated user if endpoint available (else Deferred)
+4. Privacy policy: normal fetch; simulate DB failure → fallback content served; verify complete response structure with version, last_updated, content, source fields
+5. Simulations: create with scheduled_payment parameter → run → detail → list; verify scheduled_payment conversion to investments jsonb; update clears previous results (if implemented) → re-run repopulates; memo patch; delete removes entry
 6. Notices public: unpublished not listed; publish then appears; detail accessible
-7. Admin: unauthorized → 403; admin create/update/delete notice; create privacy policy (publish if endpoint exists)
-8. Health: structure includes status and supabase service field(s)
+7. Admin privacy policies: unauthorized → 403; admin create/update/delete policy; list all policies; get policy details; publish policy (unpublishes others); verify complete CRUD lifecycle
+8. Health: structure includes status and supabase service field(s) with ok, latency_ms, and error fields
 9. Empty list cases (simulations, notices) return []
 10. JWT invalid → 401 on protected simulations list
 11. Rate limit responses include standard error envelope (if implemented)
-5. Notices & Admin: create, list (published filter), update, pin/unpin, delete; unauthorized (non-admin) → 403; publish privacy policy toggles previous
-6. Health endpoint: structure contains Supabase status & latency field
-7. Unauthorized / forbidden tests: admin endpoints with normal user token (403); protected endpoint without latest consent (423)
-
-8. 423 Locked on protected access after policy publish until re-consent
-9. 404 when no published policy (no static fallback)
-10. 429 when OTP verify attempts exceed 6
-11. 200 with empty array when user has zero simulations
-12. Error envelope present on 423 / 429 responses
+12. Parameter conversion validation: scheduled_payment in API requests properly converted to investments jsonb in database
+13. Enhanced consent API: GET /api/consents/{user_hash} returns proper structure with consents array and success boolean
+14. Static fallback mechanism: privacy policy serves static file when database unavailable, includes source field indicating "static-file"
 
 #### Repository Boundary Checklist
 
@@ -208,6 +204,11 @@ Tasks:
 1. Snapshot OpenAPI (OTP, consents, privacy-policy, simulations, notices, admin, health)
 2. Diff & fail on breaking removal/type change
 3. Snapshot refresh only with `ALLOW_OPENAPI_UPDATE=1`
+4. Validate API contract alignment with SSD §9 examples
+5. Test parameter conversion documentation: scheduled_payment → investments jsonb
+6. Validate enhanced admin privacy policy endpoints structure
+7. Verify consent API response format with consents array and success boolean
+8. Confirm health endpoint response includes complete structure with services.supabase fields
 
 ### 4. Frontend Unit / Component Tests
 
@@ -215,29 +216,34 @@ Tasks:
 
 1. Ensure Vitest + RTL dependencies & test script
 2. `vitest.config.ts` & `src/setupTests.ts` (jest-dom)
-3. Components: `App` shell render; plan editor step progression; orientation enforcer overlay toggle
-4. Utilities: phone normalization / hashing parity with backend
-5. API service: privacy policy fetch (success + simulated fallback)
-6. OfflineResultsPage (if implemented) populated & empty states
-7. AdminPolicyPage: list, create draft, publish (if endpoint), unauthorized (mock 403)
+3. Components: `App` shell render; plan editor step progression; orientation enforcer overlay toggle; LandscapeEnforcer component with portrait detection and blocking behavior
+4. Utilities: phone normalization / hashing parity with backend; enhanced phone formatting for multiple prefixes (010/011/016/017/018/019)
+5. API service: privacy policy fetch (success + simulated fallback with source field validation)
+6. OfflineResultsPage: component renders properly; populated & empty states; back-to-main navigation
+7. AdminPolicyPage: list display; create draft policy; edit policy; publish policy controls; unauthorized (mock 403) handling; policy version management
+8. App state management: localStorage/sessionStorage persistence; state restoration with diff checking; session recovery patterns
 
 ### 5. Frontend Integration (Shallow Flow) Tests
 
 Tasks:
 
 1. Mock API: OTP send/verify success + rate limit error scenarios
-2. Storage assertions: user_hash & consent captured
+2. Storage assertions: user_hash & consent captured in sessionStorage
 3. Navigation: WhitelistCheck → OtpVerification → Consent → (OAuth placeholder) → MainPage
-4. Offline results navigation retains state (if feature active)
-5. Admin policy lifecycle (draft → publish) without consent lock redirects
+4. Offline results navigation: state preservation and proper back-to-main functionality
+5. Admin policy lifecycle: draft creation → editing → publishing without consent lock redirects
+6. App state restoration: localStorage persistence across page transitions; session recovery on visibility change
+7. Landscape enforcer integration: orientation detection triggers and overlay behavior
+8. Enhanced phone input: formatting validation and prefix support integration
 
 ### 6. E2E Smoke (Minimal)
 
 Tasks:
 
-1. Playwright (or similar) test: load root PWA (title, manifest link)
-2. GET `/api/health` returns status ok
+1. Playwright (or similar) test: load root PWA (title, manifest link, proper manifest structure)
+2. GET `/api/health` returns status ok with complete structure (status, services.supabase fields)
 3. Protected endpoint (simulations list) → 401 without JWT
+4. PWA installability: manifest accessible, proper icons, HTTPS requirement validation
 
 <!-- markdownlint-disable-next-line MD024 -->
 ### 7. Performance / Load Scaffold
@@ -248,10 +254,14 @@ Tasks:
 2. Sample API latency: simulations create+run, notices list, health
 3. Warn (log) if simulation >2s or p95 latency >500ms
 
-#### Performance Threshold Targets (Informational)
+#### Performance Threshold Targets (Aligned with SSD §22)
 
-- Simulation run < 2s typical (SSD)
-- API latency p95 < 500ms (SSD)
+- OTP send: p95 < 2000ms, p99 < 4000ms
+- OTP verify: p95 < 300ms, p99 < 500ms  
+- Simulation create: p95 < 400ms, p99 < 600ms
+- Simulation run: p95 < 1500ms, p99 < 3000ms
+- Simulations list: p95 < 200ms, p99 < 400ms
+- Health endpoint: p95 < 100ms, p99 < 200ms
 - Peak concurrency ≤60 active users (SSD) – optional stress sample
 - Error rate <1% (informational)
 
@@ -311,16 +321,17 @@ Tasks:
 
 ## Detailed Task Breakdown (Chronological)
 
-1. Backend scaffolding (conftest, fixtures, JWKS, SMS mock)
-2. Simulation unit tests (all plans + multi-round Plan A) & edge cases
-3. Core API integration tests (OTP limits, consent, simulations CRUD/run, notices/policies, health, auth failures)
-4. Contract snapshot & diff script
-5. Frontend unit/component tests
-6. Frontend shallow integration tests
-7. Coverage tooling + Codecov + badge
-8. PII masking enforcement (policy + scan + CI)
-9. Performance baseline harness & capture
-10. Documentation updates
+1. Backend scaffolding (conftest, fixtures, JWKS with caching, SMS mock)
+2. Simulation unit tests (all plans + multi-round Plan A) & edge cases; parameter conversion logic validation
+3. Core API integration tests (OTP limits, consent with user_hash retrieval, simulations CRUD/run with scheduled_payment conversion, comprehensive admin privacy policy management, notices/policies, health with complete structure, auth failures)
+4. Contract snapshot & diff script with enhanced API validation
+5. Frontend unit/component tests (including OfflineResultsPage, AdminPolicyPage, LandscapeEnforcer, enhanced phone formatting)
+6. Frontend shallow integration tests (including state management, offline results navigation, admin policy lifecycle)
+7. E2E smoke tests with PWA validation (manifest, installability)
+8. Coverage tooling + Codecov + badge
+9. PII masking enforcement (policy + scan + CI)
+10. Performance baseline harness & capture with SSD-aligned thresholds
+11. Documentation updates reflecting enhanced coverage
 
 ## Dependencies & Prerequisites
 
@@ -338,26 +349,38 @@ Tasks:
 - Tests green locally and in CI; Codecov reports uploaded
 - Simulation plans A B C D K P R F E each covered by one or more tests
 - OTP limits (3 sends / 6 attempts) verified
-- Consent creation + retrieval verified (no 423 lock tests)
-- Simulation CRUD/run (including memo) validated; update clears prior results (if implemented)
-- Notices CRUD & privacy policy admin flows validated (publish if endpoint exists)
+- Consent creation + retrieval verified (no 423 lock tests); GET /api/consents/{user_hash} endpoint validated
+- Simulation CRUD/run (including memo) validated; scheduled_payment to investments jsonb conversion tested; update clears prior results (if implemented)
+- Notices CRUD & privacy policy admin flows validated; comprehensive admin privacy policy management (create/update/delete/publish/list) covered
+- Offline results page component and navigation tested
+- Admin policy page management interface tested  
+- Enhanced phone input formatting with multiple prefix support validated
+- LandscapeEnforcer component orientation detection and blocking behavior tested
+- App state persistence and restoration patterns validated
+- Privacy policy static fallback mechanism with source field validation tested
+- Health endpoint complete response structure validated (status, services.supabase.ok, latency_ms fields)
+- PWA manifest structure and installability requirements validated
 - Unauthorized admin access (403) and rate limit (429) negative paths covered
 - Coverage thresholds met: backend ≥40%, frontend ≥25%
 - Contract snapshot stable or regenerated only with `ALLOW_OPENAPI_UPDATE=1`
 - PII scan passes (no disallowed phone patterns)
 - Documentation (README + TESTING.md + PII_POLICY) updated
-- JWKS static fixture used for deterministic JWT validation
+- JWKS static fixture used for deterministic JWT validation with caching behavior tests
 
 ## Future Enhancements (Backlog)
 
 - Consent enforcement (423) test suite once implemented
-- Full Playwright E2E flows (multi-step onboarding, simulation scenarios)
+- Full Playwright E2E flows (multi-step onboarding, simulation scenarios) beyond smoke tests
 - Synthetic monitoring (cron health + key endpoint probes)
 - Mutation testing (mutmut / Stryker)
 - Property-based simulation parameter tests (Hypothesis / fast-check)
 - Visual regression snapshots (key pages)
 - Migration drift tooling & associated tests (if introduced)
-- Offline-only simulation execution tests (frontend mode)
+- Enhanced offline simulation execution tests (frontend-only mode)
+- Advanced PWA testing (service worker, offline capabilities, push notifications)
+- Performance regression detection and alerting
+- Load testing with realistic user scenarios
+- Cross-browser compatibility testing matrix
 
 ## Rollout Plan
 
@@ -374,8 +397,13 @@ Tasks:
 ## Risk of Not Implementing
 
 - Financial logic regressions undetected
+- Parameter conversion bugs (scheduled_payment → investments) causing data integrity issues
 - Consent/privacy compliance gaps (future enforcement harder)
+- Admin policy management failures affecting compliance workflows
+- PWA installability regressions impacting user experience
+- State management bugs causing user data loss
 - Elevated external SMS costs (no mock enforcement)
+- Performance degradation undetected affecting user satisfaction
 - Reduced release confidence & slower iteration
 
 ## Appendix

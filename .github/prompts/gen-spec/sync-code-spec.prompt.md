@@ -10,7 +10,7 @@ Here are the detailed steps:
 
 3. Given the `SSD-review-{date}-{idx}.md` review, modify the [SSD](/.memo/CE/specs/SSD.md) to make it fully-consistent with the current codebase.
 
-When modifying [SSD](/.memo/CE/specs/SSD.md), maintain the structure, format, and the style used in the original text. Avoid introducing new sections as much as possible that were not present in the original text. Do not mark the changes you made in any way in the final output, unless explicitly instructed to do so. For example, do not add "New" or "Modified" or "Clarified" or any kinds of texts or labels that indicate a change. Do not add any comments or explanations or notes that indicating there were changes made. Just provide the final output as if it was originally written that way.
+When modifying [SSD](/.memo/CE/specs/SSD.md), maintain the structure, format, and the style used in the original text. Avoid introducing new sections as much as possible that were not present in the original text. Do not mark the changes you made in any way in the final output, unless explicitly instructed to do so. For example, do not add "New" or "Modified" or "Clarified" or any kinds of texts or labels that indicate a change. Do not add any comments or explanations (e.g. "updated for implementation consistency", etc.) or notes that indicating there were changes made. Just provide the final output as if it was originally written that way.
 
 If the `SSD-review-{date}-{idx}.md` tells that no gaps are found, break the loop and finish the task.
 
