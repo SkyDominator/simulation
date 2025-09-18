@@ -169,7 +169,6 @@ Core tables (field types reflect actual implementation):
 - **Secrets**: SUPABASE_SECRET_KEY used server-side. Publishable key only in frontend. SMS provider keys (Solapi) loaded from env.
 - **PII handling**: Consent recorded against user_hash pre-auth; onboarding links the consent version post-auth via user_id and user_hash.
 - **Privacy Policy Access**: Users can retrieve the policy; other endpoints are not currently blocked based on consent.
-- **No Enforcement Middleware Yet**: 423 lock responses and version cache are not active.
 - **Static Fallback Active**: If DB fetch fails, a static markdown file is used.
 
 ### 7.1 Core Security Controls
@@ -331,7 +330,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Performance**: API endpoints < 500ms for typical operations; simulation run < 2s for common inputs
 - **Availability**: Health endpoint surfaces dependency issues; tolerate transient Supabase failures gracefully
 - **Security**: JWT validation via JWKS; admin checks via admins table. No secrets in frontend code
-- **Rate limiting**: OTP send limited (3 per 15-min); attempts per code limited (6 attempts)
+- **Rate limiting**: OTP send limited (3 per 15-min); attempts per code limited (3 attempts)
 - **PWA**: Installable manifest and icons; service worker via vite-plugin-pwa (basic)
 
 ---
@@ -431,9 +430,6 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Persistence**: UI state (page, editingPlan, noticeOpen, simulationResult) in localStorage
 - **Restoration**: On app focus/visibility change, restores state with diff checking
 - **Session Management**: Supabase session auto-refresh maintains authentication
-- **Consent Flow Handling**: Gracefully handle 423 responses by redirecting to consent page
-  - **Context Preservation**: Maintain user's current task context through consent flow
-  - **Resume After Consent**: Return to interrupted task after successful consent
 
 ### 13.4 Main Application Experience
 
@@ -651,7 +647,6 @@ When scaling beyond 100 users, refer to [`enterprise-scale/`](enterprise-scale/)
 
 **Ongoing Consent Monitoring**:
 
-- **API Response Handling**: Listen for 423 (Locked) responses and redirect to consent
 - **User Notification**: Clear messaging about policy updates and consent requirements
 
 **Simulation Management UX**:
@@ -812,7 +807,7 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 
 - **Health Endpoint**: Tracks Supabase latency and availability
 - **Client-side Telemetry**: Error rates, page load times via browser performance APIs
-- **Rate Limiting**: OTP endpoints protected (3/15min send, 6 attempts per code)
+- **Rate Limiting**: OTP endpoints protected (3/15min send, 3 attempts per code)
 
 **Scaling Thresholds**:
 
