@@ -34,7 +34,7 @@ Ensure that all contents/items in all sections are coherent, logically structure
 
 1. Any suggestion must qualify (comply with and consistent with) the $SINGLE_SOURCE_OF_TRUTH.
 2. If it qualifies but still has multiple possible interpretations or implementations, follow the best practices, as of today, of the domain or industry given the environments of the application described in the $SINGLE_SOURCE_OF_TRUTH.
-3. If it fully qualifies $SINGLE_SOURCE_OF_TRUTH and follows the best practices, but still has multiple possible interpretations or implementations (which is only the case that the found issue is a type of issue that the next step must be decided by the developer himself in nature), leave it with `NEED_DECISION` tag instead of suggesting a specific solution.
+3. If it fully qualifies $SINGLE_SOURCE_OF_TRUTH and follows the best practices, but still has multiple possible interpretations or implementations (which is only the case that the found issue is a type of issue that the next step must be decided by the developer himself in nature), leave it with `NEED_DECISION` tag instead of suggesting a specific solution. Each `NEED_DECISION` tagged item must include links (line numbers) to the relevant item of the $TARGET for easy reference.
 
 ### Constraints
 
