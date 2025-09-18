@@ -1,0 +1,1 @@
+Maintain the structure, format, and the style used in the original text. Avoid introducing new sections as much as possible that were not present in the original text. Do not mark the changes you made in any way in the final output, unless explicitly instructed to do so. For example, do not add "New" or "Added" or "Clarified" or any labels that indicate a change.
