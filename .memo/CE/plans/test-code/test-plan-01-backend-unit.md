@@ -59,12 +59,14 @@ Focus on pure, deterministic Python logic in the FastAPI backend codebase: simul
 20. Hash/normalization utility: idempotence, trimming, rejection of invalid prefixes, preservation of canonical hyphenated form.
 21. Determinism guard: assert no RNG use in simulation path (patch module-local random/optional numpy only; never global).
 22. Consent version cache helper: pure function tests for TTL expiry vs manual bust.
-23. Privacy policy loader rejects static fallback (DB-only) raising `PolicyNotFoundError` when no published policy.
+23. Privacy policy fallback: simulate DB retrieval failure -> static markdown fallback returned (validate `source == 'static-file'`).
 24. Structured error envelope builder: `build_error(code, message, details=None)` idempotence + shape contract.
-25. OTP verify attempt constant guard: assert `MAX_OTP_VERIFY_ATTEMPTS == 6` (`xfail(strict=True)` until config updated).
-26. Simulation list normalization utility: `None` / empty input → empty list (used by integration layer for 200 + []).
-27. Exception hierarchy: domain base and subclasses (`ConsentError`, `PolicyError`, `OTPError`, `SimulationError`, `JWTError`) inheritance assertions.
-28. Policy publish side-effect contract: helper returns structure including `invalidate_cache=True` to trigger consent re-check.
+25. OTP verify attempt limits: (a) constant guard `MAX_OTP_VERIFY_ATTEMPTS == 6` (`xfail(strict=True)` until config updated if mismatch) and (b) behavior test exercising attempt boundary then limit rejection path.
+26. OTP send limiter helper logic: enforce 3 sends within 15 minutes -> 4th attempt rejected; use time-freeze / manual clock advancing.
+27. JWKS caching TTL validation: cache hit within 5–15m window; after TTL expiry forces reload (time-freeze based).
+28. Simulation list normalization utility: `None` / empty input → empty list (used by integration layer for 200 + []).
+29. Exception hierarchy: domain base and subclasses (`ConsentError`, `PolicyError`, `OTPError`, `SimulationError`, `JWTError`) inheritance assertions.
+30. Policy publish side-effect contract: helper returns structure including `invalidate_cache=True` to trigger consent re-check.
 
 Note: Tasks 18 and 20 already cover snapshot version semantics and phone/hash normalization respectively; tasks 22–28 focus on upcoming consent & error model features.
 
@@ -121,7 +123,7 @@ Comparison logic ignores `generated_at` and performs tolerant float comparison (
 
 ### 5.6 Achievement Rate Overrides
 
-- Provide custom `sales_achievement_rates` array shorter / longer than default — service truncates or pads as specified in implementation (assert documented behavior)
+- Provide custom `sales_achievement_rates` array shorter / longer than default — service truncates or pads as specified in implementation (assert documented behavior). If override path not yet implemented in codebase, mark test with `xfail` and rationale.
 
 ### 5.7 Settlement Bonus Rule
 
@@ -153,13 +155,13 @@ Tests generate minimal tokens or manipulate headers/payload segments to trigger 
 Maps to tasks 8–21 (simulation & core utility scope); each remains isolated pure function/service invocation. Tasks 22–28 are infrastructure / domain service helpers validated separately.
 
 - Boundary rounds & threshold transitions (tasks 8–10) with assertions on bonus flags & cumulative monotonicity.
-- Achievement rate irregular structures (task 12) verifying defensive normalization.
+- Achievement rate irregular structures (task 12) verifying defensive normalization (conditional xfail if feature absent).
 - Input sanitation & numeric validation (tasks 13–15) asserting explicit exceptions.
 - Tax accumulation drift (task 16) verifying acceptable epsilon.
 - Investor growth ceiling (task 17) using crafted state injection if needed.
 - Snapshot versioning (task 18) ensuring snapshot includes explicit schema version string.
 - Comprehensive JWT negative cases (task 19) using pre-built malformed token fixtures.
-- Phone / hash normalization behaviors (task 20).
+- Phone / hash normalization behaviors (task 20) including multi-prefix formatting support for 010/011/016/017/018/019 ensuring normalization & rejection rules.
 - Determinism guard (task 21) monkeypatching random sources to raise if accessed.
     (Gap tasks 22–28 are non-simulation infrastructure; covered separately.)
 
