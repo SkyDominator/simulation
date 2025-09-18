@@ -35,7 +35,8 @@ Focus on pure, deterministic Python logic in the FastAPI backend codebase: simul
 - Faker for synthetic PII; never embed raw phone numbers
 - Static JWKS fixture for JWT decode tests: `src/backend/tests/fixtures/jwks.json`
 
-## 4. Tasks (Verbatim from Master Plan)
+## 4. Tasks
+
 1. Add `conftest.py` with global fixtures (settings override, fake Supabase client, JWKS loader)
 2. `simulation_service.py` tests: per-plan parameter ingestion; 1-round structural invariants; full Plan A multi-round snapshot
 3. Edge cases: invalid plan (ValueError); zero/negative rounds error
@@ -43,53 +44,29 @@ Focus on pure, deterministic Python logic in the FastAPI backend codebase: simul
 5. Tax computation correctness first vs subsequent rounds
 6. Achievement rates override injection
 7. Add static JWKS fixture `src/backend/tests/fixtures/jwks.json` + loader test (key rotation simulation)
-
-### 4.1 Additional Edge / Negative / Boundary Tasks (Enhanced Unit Scope)
-The following extend coverage breadth (still pure unit level; no network/DB):
 8. Per-plan invariants: assert each defined `max_investor_count` never exceeded across representative high round run (e.g. rounds == max_investor_count + 10).
-9. Round boundary transitions: explicit tests for rounds 1, 15, 16 (settlement bonus threshold), and highest configured bonus round per plan (e.g. 18 for D/K/P/R/F/E) verifying bonus activation/deactivation.
-10. Large rounds stress: run a high but acceptable round count (e.g. 200) and assert monotonic cumulative values ONLY (timing assertion removed—performance concerns moved to performance harness). Skip if marked slow via `@pytest.mark.unit_slow` (still unit boundary—no I/O).
-11. Monetary magnitude extremes: inject very large scheduled payment / investment override values and assert no overflow, negative tax, or precision drift (compare recomputed cumulative vs sum of per-round nets within tolerance 1e-6).
-12. `sales_achievement_rates` variants: None, empty dict, shorter than needed, longer than used, and containing non-sequential keys; service should pad/truncate/ignore gracefully (assert documented behavior).
-13. Input sanitation: plan id with lowercase / surrounding whitespace → normalized or raises ValueError (document current expected behavior; lock with test).
-14. Invalid numeric inputs: negative payment values, non-int (float / string) in overrides; expect ValueError or type guard path.
-15. Scheduled payment mapping: verify conversion to internal `investments` structure preserves ordering, disallows negative entries, and aggregates duplicates if logic applies.
-16. Tax rounding & accumulation: assert sum(round.net_after_tax) approximates cumulative figure (<= 1 unit difference) to catch double-tax or rounding drift.
-17. Investor growth ceiling: fabricate scenario where growth logic would exceed `max_investor_count`; assert clamped.
-18. Snapshot versioning: include a `version` field in snapshot fixture; test fails with helpful message if snapshot missing version (forces regeneration procedure discipline). Snapshot ROUNDS constant set to 36 (canonical) and stored with schema version.
-19. JWT helper negative paths: missing `kid`, duplicated `kid`, unsupported `alg`, `aud` mismatch, malformed token segments, invalid base64, expired (`exp` past) and not-yet-valid (`nbf` future) tokens.
-20. Hash/normalization utility: idempotence (normalizing twice unchanged), trimming whitespace, rejecting invalid country/prefix patterns, preserving already hyphenated canonical form.
-21. Determinism guard: if RNG ever introduced later, proactively assert no `random` or `numpy.random` calls during simulation by monkeypatching to raise (locks deterministic design).
-    - Scope Narrowing: Only patch RNG inside the simulation module namespace to avoid breaking libraries like Faker.
-    - Implementation sketch:
-      ```python
-      @pytest.fixture
-      def rng_guard(monkeypatch):
-          import services.simulations as sim_mod
-          import random as _r
-          if 'random' in dir(sim_mod):
-              def _blocked():
-                  raise RuntimeError('Unexpected RNG use in simulation path')
-              monkeypatch.setattr(sim_mod.random, 'random', _blocked, raising=True)
-          # Optional: patch numpy if later adopted
-          yield
-      ```
-    - Do NOT globally patch `random.random` for the entire test session.
+9. Round boundary transitions: explicit tests for rounds 1, 15, 16, and highest configured bonus round per plan verifying bonus activation/deactivation.
+10. Large rounds stress: run high round count (e.g. 200) asserting monotonic cumulative values ONLY (skip via `@pytest.mark.unit_slow` if needed).
+11. Monetary magnitude extremes: very large scheduled payment / investment overrides; assert no overflow, negative tax, or precision drift (tolerance 1e-6).
+12. `sales_achievement_rates` variants: None, empty, shorter, longer, non-sequential; service pads/truncates/ignores gracefully.
+13. Input sanitation: plan id with lowercase / whitespace → normalized or raises ValueError (lock current behavior).
+14. Invalid numeric inputs: negative payment values, non-int (float / string) overrides → ValueError/type guard path.
+15. Scheduled payment mapping: conversion to internal `investments` preserves ordering, disallows negatives, aggregates duplicates if logic applies.
+16. Tax rounding & accumulation: sum of per-round net_after_tax approx cumulative (<= 1 unit diff) catching double-tax or rounding drift.
+17. Investor growth ceiling: fabricate scenario where growth would exceed `max_investor_count`; assert clamped.
+18. Snapshot versioning: snapshot includes `version`; fail with guidance if missing (ROUNDS constant 36 canonical).
+19. JWT helper negative paths: missing `kid`, duplicated `kid`, unsupported `alg`, `aud` mismatch, malformed segments, invalid base64, expired, not-yet-valid.
+20. Hash/normalization utility: idempotence, trimming, rejection of invalid prefixes, preservation of canonical hyphenated form.
+21. Determinism guard: assert no RNG use in simulation path (patch module-local random/optional numpy only; never global).
+22. Consent version cache helper: pure function tests for TTL expiry vs manual bust.
+23. Privacy policy loader rejects static fallback (DB-only) raising `PolicyNotFoundError` when no published policy.
+24. Structured error envelope builder: `build_error(code, message, details=None)` idempotence + shape contract.
+25. OTP verify attempt constant guard: assert `MAX_OTP_VERIFY_ATTEMPTS == 6` (`xfail(strict=True)` until config updated).
+26. Simulation list normalization utility: `None` / empty input → empty list (used by integration layer for 200 + []).
+27. Exception hierarchy: domain base and subclasses (`ConsentError`, `PolicyError`, `OTPError`, `SimulationError`, `JWTError`) inheritance assertions.
+28. Policy publish side-effect contract: helper returns structure including `invalidate_cache=True` to trigger consent re-check.
 
-### 4.2 Gap-Driven Pre-Feature Tasks (Continuous Numbering)
-The following tasks extend the numbering above (no renumbering of existing items) and will be added BEFORE implementing new features identified in `SSD-review-2025-09-17.md`.
-
-NOTE: For markdown lint compliance the ordered list below restarts at 1; in parent task index these correspond logically to tasks 22–28.
-
-1. (22) Consent version cache helper: pure function tests for TTL expiry vs manual bust (ensures future middleware can rely on deterministic cache behavior).
-2. (23) Privacy policy loader (DB only) rejects static file fallback: test asserts `PolicyNotFoundError` when no published policy (prevents silent fallback to markdown).
-3. (24) Structured error envelope builder: `build_error(code, message, details=None)` idempotence + shape guard (ensures consistent future API error responses).
-4. (25) OTP verify attempt constant guard: assert `MAX_OTP_VERIFY_ATTEMPTS == 6` (initially added with `xfail(strict=True)` until config updated from current value).
-5. (26) Simulation list normalization utility: given `None` / empty → returns empty list (used by future integration handlers for 200 + []).
-6. (27) Exception hierarchy presence: domain base (e.g. `DomainError`) and specific subclasses (`ConsentError`, `PolicyError`, `OTPError`, `SimulationError`, `JWTError`); tests assert inheritance only.
-7. (28) Policy publish side-effect contract: helper returns structure containing `invalidate_cache=True` (future middleware hook to force consent re-check).
-
-NOTE: Snapshot version semantics (Task 18) and phone/hash normalization (Task 20) already covered—excluded here to avoid redundancy.
+Note: Tasks 18 and 20 already cover snapshot version semantics and phone/hash normalization respectively; tasks 22–28 focus on upcoming consent & error model features.
 
 ## 5. Detailed Test Design
 
@@ -173,7 +150,7 @@ Tests generate minimal tokens or manipulate headers/payload segments to trigger 
 
 ### 5.9 Extended Validation & Boundary Set (Added)
 
-Maps to enhanced tasks 8–22; each remains isolated pure function/service invocation:
+Maps to tasks 8–21 (simulation & core utility scope); each remains isolated pure function/service invocation. Tasks 22–28 are infrastructure / domain service helpers validated separately.
 
 - Boundary rounds & threshold transitions (tasks 8–10) with assertions on bonus flags & cumulative monotonicity.
 - Achievement rate irregular structures (task 12) verifying defensive normalization.
@@ -194,14 +171,14 @@ Maps to enhanced tasks 8–22; each remains isolated pure function/service invoc
 
 ## 7. Acceptance Criteria (Layer-Specific)
 
-- Tasks 1–21 implemented (or explicitly skipped with justification where marked) plus gap tasks 22–28 added (25 may be `xfail(strict=True)` until constant updated).
+- Tasks 1–28 present (task 25 may start as `xfail(strict=True)` until config updated).
 - Each plan ID covered by at least one assertion.
 - Snapshot test stable across two consecutive runs (no churn).
 - Coverage contribution from unit tests drives backend subtotal toward ≥40% (initial gate) en route to 75%.
 - No network calls executed (validated by monkeypatching / absence of network fixtures).
-- Gap tasks 22–28: all present; any intentional temporary `xfail` annotated with rationale comment.
-- Validation tests confirm improper inputs raise clear exceptions (message contains keyword specifying fault).
-- Determinism guard (task 21) ensures no unintended randomness.
+- Temporary `xfail` items annotated with rationale and removal condition.
+- Improper inputs raise clear exceptions (messages include fault keyword).
+- Determinism guard (task 21) prevents unintended RNG usage.
 
 ## 8. Risks & Mitigations
 
