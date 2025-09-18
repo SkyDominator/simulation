@@ -2,7 +2,7 @@
 
 ## Overview
 
-Comprehensive multi-layer automated testing for LOLClub Simulation (FastAPI backend + React/Vite PWA) aligned strictly with SSD v0.2.1. Initial internal coverage targets: backend ≥40% (path toward 70%); frontend ≥25% (path toward 60%). Quality gates focus on linting, type safety, current API contract stability, and PII hygiene.
+Comprehensive multi-layer automated testing for LOLClub Simulation (FastAPI backend + React/Vite PWA) aligned strictly with SSD v0.2.1. Initial coverage thresholds: backend ≥40%, frontend ≥25%. Long-term progression targets: backend toward 70%, frontend toward 60%. Quality gates focus on linting, type safety, current API contract stability, and PII hygiene.
 
 
 
@@ -82,28 +82,56 @@ Keeps structure coherent (fixtures, JWKS, snapshot storage) and ensures procedur
 - Integrate Codecov gating
 - Provide performance baseline (non-gating)
 
-## Out of Scope (Now)
+## Out of Scope (Current Release)
 
 - Full browser E2E across all user flows
-- Consent 423 enforcement scenarios
+- Consent 423 enforcement scenarios (not yet implemented in SSD)
 - Migration / schema drift automation
 - Offline-only simulation execution
 - Chaos / fuzz / mutation testing
 - Multi-region latency simulation
 
+## Deferred Items (Implementation Dependent)
+
+Items marked for implementation only if the corresponding features exist in the codebase:
+
+- Achievement rate override functionality testing (if implemented in simulation service)
+- Simulation result cache invalidation testing (if update clears results is implemented)
+- User-auth consent linking endpoints (if post-auth consent linking is implemented)
+
 ## Environment Strategy
 
-- Local: Real Supabase (or local equivalent) + mocked SMS provider unless `ALLOW_REAL_SMS=1` is explicitly set.
-- CI: Mock SMS provider; static JWKS (avoid network); use test database/schema.
-- DB: Use existing schema (SSD §6). No custom migration/drift tooling assumed.
+- **Local Development**: Supabase connection with test schema; mocked SMS provider (default); real SMS only with `ALLOW_REAL_SMS=1`
+- **CI Environment**: Mock SMS provider (enforced); static JWKS fixture; isolated test database schema
+- **Database Strategy**: Use existing SSD §6 schema with test data isolation; no custom migration tooling required
 
 ## Global Conventions
 
 - Python tests: `test_*.py` (pytest)
 - Frontend tests: `*.test.ts(x)` (Vitest + RTL)
 - Fixtures: `src/backend/tests/fixtures/`
-- PII: Faker / placeholders only
+- PII: Faker / placeholders only; approved test phone patterns (010-0000-XXXX format)
 - Env flags: `TEST_MODE=1`, `CI=1`, optional `ALLOW_OPENAPI_UPDATE=1`, `ALLOW_REAL_SMS=1` (local only)
+
+## Test Data Strategy
+
+### Test Users & Authentication
+
+- Test JWT tokens generated using static JWKS fixture
+- Admin test users: create via test-specific admin table entries
+- Regular test users: mock user_id values following UUID format
+
+### Test Phone Numbers & OTP
+
+- Approved test phone patterns: 010-0000-XXXX where X = test-specific digits
+- Whitelist test entries: SHA256 hash of approved test name+phone combinations
+- OTP test codes: deterministic generation for CI environments
+
+### Simulation Test Data
+
+- Standard test scenarios for each plan type (A, B, C, D, K, P, R, F, E)
+- Edge case data: zero investments, maximum rounds, boundary conditions
+- Result validation data: pre-calculated expected outcomes for regression testing
 
 ## Risk & Mitigation Summary
 
@@ -122,7 +150,7 @@ Keeps structure coherent (fixtures, JWKS, snapshot storage) and ensures procedur
 | openapi.snapshot | Refresh OpenAPI snapshot | Requires `ALLOW_OPENAPI_UPDATE=1` |
 | openapi.check | Compare live vs snapshot | Fail on breaking removal/type change |
 | pii.scan | Regex scan for disallowed phone patterns | Fails fast |
-| perf.run (future) | Performance harness | Informational warnings only |
+| perf.run | Performance baseline measurement | Informational warnings only (scaffold) |
 
 ### Command Exit Codes
 
@@ -134,8 +162,8 @@ Keeps structure coherent (fixtures, JWKS, snapshot storage) and ensures procedur
 | pii.scan | 0 | Passed |
 | pii.scan | 1 | Forbidden pattern found |
 | perf.run | 0 | Completed (regressions logged) |
-| coverage.merge (future) | 0 | Coverage thresholds met |
-| coverage.merge (future) | 2 | Coverage thresholds not met |
+| coverage.merge | 0 | Coverage thresholds met (future) |
+| coverage.merge | 2 | Coverage thresholds not met (future) |
 
 Implementation Note: Codes chosen so that 0 always success, 1 non-breaking informational change, 2 breaking/gating failure. Avoids overloading >2 early for simplicity; can extend later.
 
@@ -162,12 +190,12 @@ Tasks:
 6. Achievement rate override path (if implemented) else mark Deferred
 7. Static JWKS parse + key selection test
 8. Privacy policy fallback: simulated DB failure → static markdown returned
-9. OTP verify attempt limit constant (6) assertion (document SSD discrepancy)
+9. OTP verify attempt limit validation: 6 attempts per code (per SSD §7.1)
 10. OTP send limiter (3 sends / 15m) helper logic
-10. Simulation input normalization (scheduled_payment → internal investments jsonb conversion) validation
-11. Error envelope structure (if provided) idempotence
-12. JWKS caching behavior with TTL validation (5-15m cache lifetime)
-13. Enhanced phone input formatting for multiple prefixes (010/011/016/017/018/019)
+11. Simulation input normalization (scheduled_payment → internal investments jsonb conversion) validation
+12. Error response structure validation: standard `{ success: boolean, message: string, ... }` format consistency
+13. JWKS caching behavior with TTL validation (5-15m cache lifetime)
+14. Enhanced phone input formatting for multiple prefixes (010/011/016/017/018/019)
 
  
 ### 2. Backend Integration Tests
@@ -246,13 +274,14 @@ Tasks:
 4. PWA installability: manifest accessible, proper icons, HTTPS requirement validation
 
 <!-- markdownlint-disable-next-line MD024 -->
-### 7. Performance / Load Scaffold
+### 7. Performance / Load Scaffold (Baseline Measurement)
 
+Focus: Establish baseline performance metrics aligned with SSD §22 targets. No gating thresholds in initial implementation.
 Tasks:
 
 1. `tests/perf/` timing harness runs each plan (100 rounds) capturing duration
 2. Sample API latency: simulations create+run, notices list, health
-3. Warn (log) if simulation >2s or p95 latency >500ms
+3. Warn (log) if simulation >2s or p95 latency >500ms (informational only)
 
 #### Performance Threshold Targets (Aligned with SSD §22)
 
@@ -280,11 +309,12 @@ Tasks:
 <!-- markdownlint-disable-next-line MD024 -->
 ### 9. PII Masking & Test Data Policy
 
+Focus: Prevent exposure of real personal data in test environments.
 Tasks:
 
-1. `tests/PII_POLICY.md` with masking rules & examples
-2. Phone hash helper parity test
-3. Regex scan script blocking raw phone patterns (allowlist fixtures)
+1. `tests/PII_POLICY.md` with masking rules & examples of allowed test phone patterns (e.g., 010-0000-XXXX format)
+2. Phone hash helper parity test using approved test numbers only
+3. Regex scan script blocking real phone patterns; allowlist for test fixtures with clearly fake numbers
 4. Document ripgrep invocation in policy & TESTING docs
 
 <!-- markdownlint-disable-next-line MD024 -->
@@ -390,8 +420,8 @@ Tasks:
 
 ### Ratchet Policy for Coverage Thresholds (Codecov)
 
-- Backend: start 40% → +5% every 2 months until 60%, then +3% toward 70%+
-- Frontend: start 25% → +5% every 2 months until 45%, then +3% toward 60%
+- Backend: start 40% initial threshold → +5% every 2 months until 60%, then +3% toward 70% final target
+- Frontend: start 25% initial threshold → +5% every 2 months until 45%, then +3% toward 60% final target
 - Thresholds only increase; exceptions documented with justification
 
 ## Risk of Not Implementing
