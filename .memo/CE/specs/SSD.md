@@ -327,6 +327,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Core concepts**:
   - max_investor_count controls growth vs stable phase
   - Tax 3.3% applied to total revenue; net profit and cumulative tracked each round
+  - Settlement bonus active only for company rounds 1–15 inclusive; automatically deactivated starting round 16 and onward.
 - **Service**: FinancialSimulationService(plan_id, scheduled_payment?, sales_achievement_rates?) → run_simulation(rounds) → results.history
 - **Parameter Conversion**: API `scheduled_payment` parameters are converted to database `investments` jsonb format during persistence
 - **Persistence**: results stored in simulations.simulation_results; recalculated on demand if missing or when inputs change

@@ -4,6 +4,7 @@ Canonical master overview: see `test-code.md` in this directory (unchanged). Thi
 
 ## 1. Scope & Purpose
 Focus on pure, deterministic Python logic in the FastAPI backend codebase: simulation engine math, helpers, validation, JWT decoding wrapper, hashing utilities, and parameter transformations. No external I/O (DB, network, Supabase HTTP, SMS providers).
+Unit tests MUST NOT perform DB or external network I/O; such cases belong to integration tests.
 
 ## 2. Objectives
 - Fast feedback (<5s typical layer runtime once warm)
@@ -89,7 +90,7 @@ For each plan:
 
 ### 5.3 Multi-Round Snapshot (Plan A)
 
-- Canonical rounds count N = 36 (canonical_rounds constant) ensuring broader coverage of late-round logic while remaining fast.
+- Canonical rounds count N = 36 (test-level canonical snapshot rounds; not a runtime constant—the application user selects rounds; used here to exercise late-round logic while remaining fast).
 - Run canonical input (documented in test) for N rounds and snapshot selected metrics (values stored rounded to 2–4 decimals purely for human diff; comparison uses raw floats with absolute diff <= 1e-6 ignoring `generated_at`).
 - Snapshot file stored under `tests/unit/simulation/__snapshots__/plan_a_rounds_36.json` (commit for regression detection)
 - Snapshot JSON schema example:
@@ -124,11 +125,14 @@ Comparison logic ignores `generated_at` and performs tolerant float comparison o
 
 ### 5.6 Achievement Rate Overrides
 
-- Provide custom `sales_achievement_rates` array shorter / longer than default — service behavior TBD (NEED_DECISION). Current tests will document and assert chosen rule once finalized; until then mark with `NEED_DECISION` or `xfail` as appropriate.
+- Custom `sales_achievement_rates` handling rule (decided):
+    - Longer than internal expected length → truncated to expected length.
+    - Shorter than internal expected length → padded by repeating the last provided value until length satisfied.
+- Tests: one happy-path override; one shorter (padding) case; one longer (truncation) case; one malformed value outside allowed fraction range (ignored by service). No longer NEED_DECISION.
 
 ### 5.7 Settlement Bonus Rule
 
-- Rounds 1–15 inclusive: bonus active; rounds >=16: bonus inactive (NEED_DECISION if SSD diverges).
+- Confirmed: Rounds 1–15 inclusive the settlement bonus is active; rounds >=16 it is inactive. Aligns with implementation where deactivation occurs after company_round > 15.
 
 ### 5.8 JWT Decoding Wrapper
 
@@ -156,7 +160,7 @@ Tests generate minimal tokens or manipulate headers/payload segments to trigger 
 Maps to tasks 8–21 (simulation & core utility scope); each remains isolated pure function/service invocation. Tasks 22–28 are infrastructure / domain service helpers validated separately.
 
 - Boundary rounds & threshold transitions (tasks 8–10) with assertions on bonus flags & cumulative monotonicity.
-- Achievement rate irregular structures (task 12) verifying defensive normalization (conditional xfail / NEED_DECISION until rule locked).
+- Achievement rate irregular structures (task 12) verifying defensive normalization (now locked: padding/truncation behavior above; remove xfail once implemented if not already).
 - Input sanitation & numeric validation (tasks 13–15) asserting explicit exceptions.
 - Tax accumulation drift (task 16) verifying acceptable epsilon.
 - Investor growth ceiling (task 17) using crafted state injection if needed.
@@ -185,24 +189,20 @@ Maps to tasks 8–21 (simulation & core utility scope); each remains isolated pu
 
 ## 7.1 Pending Decisions (NEED_DECISION)
 
-The following items require explicit decisions before corresponding tests move from placeholder / xfail to enforced assertions. Each entry lists the decision needed and proposed default (may be adopted or replaced):
+Remaining undecided / to-be-validated items (others have been resolved and incorporated):
 
-| ID | Topic | Decision Needed | Proposed Default (Optional) |
-|----|-------|-----------------|------------------------------|
-| D1 | Achievement rate override rule | How to handle shorter / longer `sales_achievement_rates` input vs internal expected length | Truncate longer; pad shorter with last provided value |
-| D2 | Settlement bonus threshold | Exact inclusive range for bonus activation | Bonus active rounds 1–15 inclusive; inactive >=16 |
-| D3 | Plan ID normalization | Normalization + validation rule for `plan_id` | Trim whitespace, uppercase, validate in {A,B,C,D,K,P,R,F,E} |
-| D4 | Duplicate scheduled payments aggregation | Behavior when duplicate keys encountered in scheduled payment mapping | Sum duplicates; order by key ascending |
-| D5 | Determinism guard scope | Sources to monkeypatch for randomness detection | Patch `random.random`, `random.randrange`, and `numpy.random.*` if numpy present |
-| D6 | Consent version cache helper | Existence and TTL semantics | Pure function cache TTL = 10 minutes; manual bust invalidates immediately |
-| D7 | OTP send limiter window | Rolling vs fixed 15‑minute window semantics | Rolling window of last 15 minutes |
-| D8 | JWKS cache TTL | Single TTL value for key reuse | Fixed TTL = 10 minutes |
-| D9 | Simulation list normalization function name | Canonical utility name/signature | Function name `normalize_simulation_list(items: list_or_none) -> list` |
-| D10 | Exception base class name | Confirm domain exception inheritance root | Base class `DomainError` (adjust to actual code if different) |
-| D11 | Policy publish side-effect flag | Flag name signaling downstream cache invalidation | `invalidate_cache: True` key in returned dict |
-| D12 | Snapshot rounds constant symbol | Symbolic constant name for canonical rounds | `CANONICAL_SNAPSHOT_ROUNDS = 36` |
-
-Tests referencing these items should remain `xfail` or skipped until decisions are confirmed; once confirmed, update this table (remove Proposed Default column if fully settled) and convert tests to strict assertions.
+| ID | Topic | Final Decision Needed |
+|----|-------|-----------------------|
+| D3 | Plan ID normalization | Confirm normalization exactly matches implementation (trim, uppercase, membership) |
+| D4 | Duplicate scheduled payments aggregation | Confirm duplicate key summation & ordering rule |
+| D5 | Determinism guard scope | Confirm patch scope (random + numpy) or extend |
+| D6 | Consent version cache helper | Confirm helper existence & TTL (10m) |
+| D7 | OTP send limiter window | Confirm rolling window semantics enforced server-side |
+| D8 | JWKS cache TTL | Confirm fixed 10m TTL (SSD earlier states 5–15m range) |
+| D9 | Simulation list normalization function name | Confirm function name/signature |
+| D10 | Exception base class name | Confirm base class name present in code |
+| D11 | Policy publish side-effect flag | Confirm final flag key name |
+| D12 | Snapshot rounds constant symbol | Decide whether to introduce symbolic constant in tests (`CANONICAL_SNAPSHOT_ROUNDS`) |
 
 ## 8. Risks & Mitigations
 
