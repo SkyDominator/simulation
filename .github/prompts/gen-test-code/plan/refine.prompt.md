@@ -5,12 +5,12 @@ $TARGET: [test-plan-master](/.memo/CE/plans/test-code/test-code-00-master.md)
 $REVIEW_DIR: [review](/.memo/CE/plans/test-code/review/)
 $REVIEW_FILE: `review-master-{date}-{idx}.md`
 
-## Tasks (Refine Loop)
+## Refine Task Loop
 
 1. Review Phase: Read thoroughly $TARGET on the review areas (See Review Areas section), and write your review result as $REVIEW_FILE under $REVIEW_DIR.
     * If this is the second or later iteration, the new $REVIEW_FILE should be created with incremented {idx}.
 2. Refine Phase: Once you create the review result (`review-master-{date}-{idx}.md`), refine $TARGET by applying the suggestions in the review result.
-3. Repeat: Goes back to and run 1~2 steps repeatedly, until no issue-suggestion pair (except `NEED_DECISION` tagged items, See Rules for Generating Suggestions for more details) is found in the new $REVIEW_FILE.
+3. Repeat: Goes back to and run 1~2 steps, repeatedly, until no issue-suggestion pair (except `NEED_DECISION` tagged items, See Rules for Generating Suggestions for more details) is found in the new $REVIEW_FILE. DO NOT BREAK THE LOOP until that condition is met.
 
 ## Review Instructions
 
@@ -33,7 +33,7 @@ Ensure that all contents/items in all sections are coherent, logically structure
 #### Basic Rules for Generating Suggestions
 
 1. Any suggestion must qualify (comply with and consistent with) the $SINGLE_SOURCE_OF_TRUTH.
-2. If it qualifies but still has multiple possible interpretations or implementations, follow the best practices of the domain or industry given the environments of the application described in the $SINGLE_SOURCE_OF_TRUTH.
+2. If it qualifies but still has multiple possible interpretations or implementations, follow the best practices, as of today, of the domain or industry given the environments of the application described in the $SINGLE_SOURCE_OF_TRUTH.
 3. If it fully qualifies $SINGLE_SOURCE_OF_TRUTH and follows the best practices, but still has multiple possible interpretations or implementations (which is only the case that the found issue is a type of issue that the next step must be decided by the developer himself in nature), leave it with `NEED_DECISION` tag instead of suggesting a specific solution.
 
 #### Other Constraints
@@ -47,3 +47,7 @@ Ensure that all contents/items in all sections are coherent, logically structure
 
 * $TARGET is a test plan document so that it is not a low-level implementation spec but a mid-level plan that guides actual test code implementation.
 * It can include some low-level details (e.g., specific test cases, code snippets) but should not be too low-level (e.g., actual code).
+
+### Other Constraints
+
+* Do not add "Deferred Items" section or similar sections unless it is absolutely necessary. The test plan should focus on the current scope and not include too many hypothetical or future items.

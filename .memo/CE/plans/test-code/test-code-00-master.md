@@ -2,7 +2,7 @@
 
 ## Overview
 
-Comprehensive multi-layer automated testing for LOLClub Simulation (FastAPI backend + React/Vite PWA) aligned strictly with SSD v0.2.1. Initial coverage thresholds: backend ≥40%, frontend ≥25%. Long-term progression targets: backend toward 70%, frontend toward 60%. Quality gates focus on linting, type safety, current API contract stability, and PII hygiene.
+Comprehensive multi-layer automated testing for LOLClub Simulation (FastAPI backend + React/Vite PWA) aligned strictly with SSD v0.2.1. Initial coverage thresholds: backend ≥40%, frontend ≥25%. Progression targets: backend toward 70%, frontend toward 60%. Quality gates focus on linting, type safety, current API contract stability, and PII hygiene.
 
 
 
@@ -18,7 +18,7 @@ Each test layer below links to a dedicated, self-contained plan file. This maste
 | 4 | Frontend Unit / Component | [test-plan-04-frontend-unit](./test-plan-04-frontend-unit.md) | Assert component & utility correctness |
 | 5 | Frontend Shallow Integration | [test-plan-05-frontend-integration](./test-plan-05-frontend-integration.md) | Onboarding/navigation without full browser stack |
 | 6 | E2E Smoke | [test-plan-06-e2e-smoke](./test-plan-06-e2e-smoke.md) | Minimal deployed sanity check (PWA + health) |
-| 7 | Performance / Load Scaffold | [test-plan-07-performance](./test-plan-07-performance.md) | Baseline SSD §11 latency & execution timing |
+| 7 | Performance / Load Scaffold | [test-plan-07-performance](./test-plan-07-performance.md) | Baseline SSD §22 latency & execution timing |
 | 8 | Coverage & Reporting | [test-plan-08-coverage-reporting](./test-plan-08-coverage-reporting.md) | Aggregate metrics & enforce gates |
 | 9 | PII Masking & Test Data Policy | [test-plan-09-pii-policy](./test-plan-09-pii-policy.md) | Prevent leakage of real personal data |
 | 10 | Tooling & Automation | [test-plan-10-tooling-automation](./test-plan-10-tooling-automation.md) | Scripts & CI tasks (current scope) |
@@ -102,7 +102,7 @@ Keeps structure coherent (fixtures, JWKS, snapshot storage) and ensures procedur
 - Python tests: `test_*.py` (pytest)
 - Frontend tests: `*.test.ts(x)` (Vitest + RTL)
 - Fixtures: `src/backend/tests/fixtures/`
-- PII: Use Faker library for names; test phone numbers in range 010-0000-1234 to 010-0000-9999 only
+- PII: Use Faker library for names; see Test Data Strategy for phone number specifications
 - Env flags: `TEST_MODE=1`, `CI=1`, optional `ALLOW_OPENAPI_UPDATE=1`, `ALLOW_REAL_SMS=1` (local only)
 
 ## Test Data Strategy
@@ -306,7 +306,7 @@ Tasks:
 Focus: Prevent exposure of real personal data in test environments.
 Tasks:
 
-1. `tests/PII_POLICY.md` with masking rules & examples of allowed test phone patterns (e.g., 010-0000-XXXX format)
+1. `tests/PII_POLICY.md` with masking rules & examples of allowed test phone patterns (010-0000-1234 through 010-0000-9999)
 2. Phone hash helper parity test using approved test numbers only
 3. Regex scan script blocking real phone patterns; allowlist for test fixtures with clearly fake numbers
 4. Document ripgrep invocation in policy & TESTING docs
@@ -414,8 +414,8 @@ Tasks:
 
 ### Ratchet Policy for Coverage Thresholds (Codecov)
 
-- Backend: start 40% initial threshold → +5% every 2 months until 60%, then +3% toward 70% final target
-- Frontend: start 25% initial threshold → +5% every 2 months until 45%, then +3% toward 60% final target
+- Backend: start 40% initial threshold → +5% every 2 months until 60%, then +3% toward 70% target goal
+- Frontend: start 25% initial threshold → +5% every 2 months until 45%, then +3% toward 60% target goal
 - Thresholds only increase; exceptions documented with justification
 
 ## Risk of Not Implementing
