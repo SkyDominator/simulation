@@ -1,6 +1,6 @@
 # Test Plan – Backend Unit Tests
 
-Canonical master overview: see `test-code.md` in this directory (unchanged). This file is a self-contained plan for implementing backend unit tests.
+Canonical master overview: see `test-code-00-master.md` in this directory. This file is a self-contained plan for implementing backend unit tests aligned with SSD v0.2.1.
 
 ## 1. Scope & Purpose
 Focus on pure, deterministic Python logic in the FastAPI backend codebase: simulation engine math, helpers, validation, JWT decoding wrapper, hashing utilities, and parameter transformations. No external I/O (DB, network, Supabase HTTP, SMS providers).
@@ -10,7 +10,7 @@ Unit tests MUST NOT perform DB or external network I/O; such cases belong to int
 - Fast feedback (<5s typical layer runtime once warm)
 - High logic branch & edge coverage for financial simulation plans A, B, C, D, K, P, R, F, E
 - Deterministic snapshots for selected multi‑round outputs using stable snapshot comparison (raw float absolute diff <= 1e-6; stored values rounded for readability only)
-- Guardrails for tax calculation, achievement rate overrides, settlement bonus rules
+- Guardrails for tax calculation, achievement rate overrides (if implemented), settlement bonus rules (§10), OTP limits (§7.1), and mapping logic integrity
 - Stable fixtures enabling later property / mutation testing
 
 ## 3. Environment & Conventions
@@ -43,7 +43,7 @@ Unit tests MUST NOT perform DB or external network I/O; such cases belong to int
 3. Edge cases: invalid plan (ValueError); zero/negative rounds error
 4. Revenue logic: settlement bonus deactivation after round > 15 (SSD financial logic alignment)
 5. Tax computation correctness first vs subsequent rounds
-6. Achievement rates override injection
+6. Achievement rates override injection (if not implemented treat assertions as `xfail` / Deferred without adding new sections)
 7. Add static JWKS fixture `src/backend/tests/fixtures/jwks.json` + loader test (key rotation simulation)
 8. Per-plan invariants: assert each defined `max_investor_count` never exceeded across representative high round run (e.g. rounds == max_investor_count + 10).
 9. Round boundary transitions: explicit tests for rounds 1, 15, 16, and highest configured bonus round per plan verifying bonus activation/deactivation.
@@ -52,12 +52,12 @@ Unit tests MUST NOT perform DB or external network I/O; such cases belong to int
 12. `sales_achievement_rates` variants: None, empty, shorter, longer, non-sequential; service pads/truncates/ignores gracefully.
 13. Input sanitation: plan id validation (no implicit normalization). Lowercase or whitespace-variant IDs are rejected with `ValueError` (explicit—backend performs no normalization).
 14. Invalid numeric inputs: negative payment values, non-int (float / string) overrides → ValueError/type guard path.
-15. Scheduled payment mapping: conversion to internal `investments` preserves ordering, disallows negatives, and forbids duplicate keys (duplicate round entries cause test failure / explicit rejection expectation).
+15. Scheduled payment mapping: conversion to internal `investments` (scheduled_payment → investments jsonb) preserves ordering, disallows negatives, forbids duplicate keys (duplicate round entries cause test failure / explicit rejection expectation), and validates all referenced rounds are numeric integers.
 16. Tax rounding & accumulation: sum of per-round net_after_tax approx cumulative (<= 1 unit diff) catching double-tax or rounding drift.
 17. Investor growth ceiling: fabricate scenario where growth would exceed `max_investor_count`; assert clamped.
 18. Snapshot versioning: snapshot includes `version`; fail with guidance if missing (ROUNDS constant 36 canonical).
 19. JWT helper negative paths: missing `kid`, duplicated `kid`, unsupported `alg`, `aud` mismatch, malformed segments, invalid base64, expired, not-yet-valid.
-20. Hash/normalization utility: idempotence, trimming, rejection of invalid prefixes, preservation of canonical hyphenated form.
+20. Hash/normalization utility: idempotence, trimming, rejection of invalid prefixes, preservation of canonical hyphenated form, and formatting support for prefixes 010/011/016/017/018/019 (multi-prefix coverage per SSD onboarding rules).
 21. Determinism guard: assert no RNG use in simulation path (patch module-local random/optional numpy only; never global).
 22. (Removed – consent version cache helper not in SSD; no tests.)
 23. Privacy policy fallback: simulate DB retrieval failure -> static markdown fallback returned (validate `source == 'static-file'`).
@@ -181,14 +181,14 @@ Maps to tasks 8–21 (simulation & core utility scope); each remains isolated pu
 - Tasks 1–28 present (task 25 may start as `xfail(strict=True)` until config updated).
 - Each plan ID covered by at least one assertion.
 - Snapshot test stable across two consecutive runs (no churn).
-- Overall backend line coverage >= 40% post-implementation (initial gate) en route to 75%.
+- Overall backend line coverage >= 40% post-implementation (initial gate) progressing toward 70% target.
 - No network calls executed (validated by monkeypatching outbound socket creation to raise during tests).
 - Temporary `xfail` items annotated with rationale and removal condition.
 - Improper inputs raise clear exceptions (messages include fault keyword).
 - Determinism guard (task 21) prevents unintended RNG usage.
 - Introduce test-local constant `CANONICAL_SNAPSHOT_ROUNDS = 36` for snapshot test clarity (not a production constant).
 
-## 7.1 Pending Decisions (NEED_DECISION)
+### 7.1 Pending Decisions (NEED_DECISION)
 
 All prior decision items have been resolved or explicitly deferred/removed. No active NEED_DECISION entries remain.
 
