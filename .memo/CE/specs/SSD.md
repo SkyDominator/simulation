@@ -166,7 +166,7 @@ Core tables (field types reflect actual implementation):
 - **CORS**: Allow list includes Cloudflare Tunnel domain and local dev hosts/ports.
 - **Secrets**: SUPABASE_SECRET_KEY used server-side. Publishable key only in frontend. SMS provider keys (Solapi) loaded from env.
 - **PII handling**: Consent recorded against user_hash pre-auth; onboarding links the consent version post-auth via user_id and user_hash.
-- **Privacy Policy Access**: Users can retrieve the policy;
+- **Privacy Policy Access**: Users can retrieve the policy via public endpoint; static file fallback available if database unavailable.
 - **Static Fallback Active**: If DB fetch fails, a static markdown file fallback is attempted.
 
 ### 7.1 Core Security Controls
@@ -175,7 +175,7 @@ Core tables (field types reflect actual implementation):
 |---------|-------|
 | JWT validation via JWKS | Cache keys (TTL 5–15m) |
 | Admin server-side check | Table lookup each request |
-| OTP rate limiting | 3 sends per 15 min, 3 verify attempts |
+| OTP rate limiting | 3 sends per 15 min, 6 verify attempts |
 | RLS on user tables | Implemented |
 | OTP hashing | Implemented |
 
@@ -192,7 +192,7 @@ Core tables (field types reflect actual implementation):
 
 - **Get Policy**: GET /api/privacy-policy?version&locale → DB lookup; static file fallback if DB unavailable.
 - **Record Consent (Pre-auth only)**: POST /api/consents (user_hash, consent_type, consent_version).
-- **Get User Consents**: GET /api/consents/{user_hash}.
+- **Get User Consents**: GET /api/consents/{user_hash} → retrieve all consent records for a user.
 
 ### 8.3 Authentication
 
@@ -253,10 +253,15 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
          consent_given_at: string, ip_address?: string, user_agent?: string }
 }
 
+// GET /api/consents/{user_hash}
+{
+  res: { consents: Array<ConsentRecord>, success: boolean }
+}
+
 // GET /api/privacy-policy?version&locale
 {
   res: { version: string, last_updated: string, content: string, 
-         success: boolean, source: "db" }
+         success: boolean, source: "db" | "static-file", locale?: string }
 }
 
 
@@ -294,6 +299,11 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 // GET /api/admin/privacy-policies (auth, admin)
 {
   res: { policies: Array<PrivacyPolicy>, success: boolean }
+}
+
+// GET /api/admin/privacy-policies/{id} (auth, admin)
+{
+  res: { policy: PrivacyPolicy, success: boolean }
 }
 
 // POST /api/admin/privacy-policies/{id}/publish (auth, admin)
@@ -469,6 +479,13 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Buttons**
   - "Back to main page" button to return to the main page.
 
+**Admin Policy Page** (`page: "admin-policy"`):
+
+- **Policy Management**: Administrative interface for creating, editing, and publishing privacy policies
+- **Policy List**: Displays all policies with version, status, and publication information
+- **Policy Editor**: Form for creating and editing policy content, version, and metadata
+- **Publishing Controls**: Interface for publishing policies and managing active versions
+
 ### 13.5 Mobile-First Responsive Design
 
 **Breakpoint Strategy**: Material-UI responsive design with mobile-first approach
@@ -515,7 +532,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 ## 14. Constraints & Assumptions
 
 - **Environment variables**:
-  - Backend: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SOLAPI_*` for SMS, `OTP_*` limits
+  - Backend: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SOLAPI_*` for SMS, `OTP_VALIDITY_MINUTES`, `OTP_RESEND_LIMIT_PER_15MIN`, `OTP_MAX_ATTEMPTS`
   - Frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_BASE_URL`
 - **Supabase RLS** should be configured on user-owned tables; admin APIs rely on server checks
 - **Whitelist table** exists with user_hash; seeding/management handled out-of-band
