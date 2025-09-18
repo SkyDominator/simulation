@@ -168,10 +168,9 @@ Core tables (field types reflect actual implementation):
 - **CORS**: Allow list includes Cloudflare Tunnel domain and local dev hosts/ports.
 - **Secrets**: SUPABASE_SECRET_KEY used server-side. Publishable key only in frontend. SMS provider keys (Solapi) loaded from env.
 - **PII handling**: Consent recorded against user_hash pre-auth; onboarding links the consent version post-auth via user_id and user_hash.
-- **Privacy Policy Enforcement**: All protected endpoints check user consent status; return 423 (Locked) when user hasn't consented to the latest published version.
-  - **Consent Validation**: Middleware (with short-lived cache of latest version) ensures a consent record exists for that exact version (insert-only; new row per version).
-  - **Zero Grace Period**: Users must consent immediately after publication or access is restricted.
-  - **No Published Policy**: If no policy is published, users are blocked from proceeding beyond whitelist/OTP until one is published.
+- **Privacy Policy Access**: Users can retrieve the policy; other endpoints are not currently blocked based on consent.
+- **No Enforcement Middleware Yet**: 423 lock responses and version cache are not active.
+- **Static Fallback Active**: If DB fetch fails, a static markdown file is used.
 
 ### 7.1 Core Security Controls
 
@@ -179,10 +178,9 @@ Core tables (field types reflect actual implementation):
 |---------|-------|
 | JWT validation via JWKS | Cache keys (TTL 5–15m) |
 | Admin server-side check | Table lookup each request |
-| OTP rate limiting | 3 sends per 15 min, 6 verify attempts |
-| RLS on user tables |  |
-| OTP hashing |  |
-| Consent enforcement middleware | 423 Locked if latest policy not consented |
+| OTP rate limiting | 3 sends per 15 min, 3 verify attempts |
+| RLS on user tables | Implemented |
+| OTP hashing | Implemented |
 
 ---
 
@@ -195,15 +193,9 @@ Core tables (field types reflect actual implementation):
 
 ### 8.2 Privacy Policy & Consent
 
-- **Get Policy**: GET /api/privacy-policy?version&locale → returns current or specific version (DB only; static fallback removed)
-- **Record Consent (Pre-auth)**: POST /api/consents with user_hash, consent_type, consent_version (insert-only per version)
-- **Get User Consents**: GET /api/consents/{user_hash} → list of consent records (pre-auth history)
-- **Link Pre-auth Consents**: POST /api/user/link-consent (auth) with user_hash to associate historical records to user_id
-- **Privacy Policy Update Flow**: When privacy policy is updated, system redirects active users to consent page via 423 responses
-  - **Check User Consent Status**: GET /api/user/consent-status (auth) → returns whether user needs to consent to latest policy (with latest & current versions)
-  - **Force Consent Redirect**: All protected endpoints return 423 (Locked) when user hasn't consented to latest policy
-  - **Post-auth Consent Recording**: POST /api/user/consents (auth) → records consent for authenticated user with user_id (insert-only per version)
-
+- **Get Policy**: GET /api/privacy-policy?version&locale → DB lookup; static file fallback if DB unavailable.
+- **Record Consent (Pre-auth only)**: POST /api/consents (user_hash, consent_type, consent_version).
+- **Get User Consents**: GET /api/consents/{user_hash}.
 ### 8.3 Authentication
 
 - **Login**: Supabase OAuth redirects back to app
@@ -312,27 +304,6 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
   res: { id: string, message: string, success: boolean }
 }
 
-// GET /api/user/consent-status (auth)
-{
-  res: { requires_consent: boolean, latest_version: string, 
-         user_consented_version?: string }
-}
-
-// POST /api/user/consents (auth)
-{
-  req: { consent_type: string, consent_version: string },
-  res: { user_id: string, consent_type: string, consent_version: string, 
-         consent_given_at: string, success: boolean }
-}
-
-// Error response for locked endpoints (423 status)
-{
-  error: { 
-    code: "CONSENT_REQUIRED", 
-    message: "Privacy policy consent required", 
-    details: { latest_version: string, redirect_to: "consent" } 
-  }
-}
 
 // GET /api/health
 {
@@ -504,6 +475,20 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Navigation**: Back to main page with preserved context
 - **Export Functions**: Download simulation results in various formats
 
+**Summary Report Page** (`page: "summary-report"`):
+
+- **Aggregate Data**: Overview of multiple simulations with filtering options
+- **Summary Metrics**: The summary of the result across all plans selected.
+- **Buttons**
+  - "Back to main page" button to return to the main page.
+  - "Offline Result Page" button to navigate to the offline result page.
+
+**Offline Result Page** (`page: "offline-result"`):
+
+- **Result Table**: Displays the simulation results for offline authentication (Here the "offline authentication" means the unique type of authentication process that is not covered in the current scope. It does not mean the opposite of the 'network connected' state.)
+- **Buttons**
+  - "Back to main page" button to return to the main page.
+
 ### 13.5 Mobile-First Responsive Design
 
 **Breakpoint Strategy**: Material-UI responsive design with mobile-first approach
@@ -559,35 +544,10 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 
 ---
 
-## 15. Error Handling (Simplified)
+## 15. Error Handling
 
-### 15.1 Core Error Codes
-
-| Scenario | HTTP | Code | Message |
-|----------|------|------|---------|
-| Consent required | 423 | CONSENT_REQUIRED | Privacy policy consent required. |
-| Not whitelisted | 404 | USER_NOT_WHITELISTED | User not found |
-| OTP rate limit | 429 | OTP_SEND_RATE_LIMIT | Too many requests. Try again later. |
-| Wrong OTP code | 400 | OTP_INVALID | Incorrect code. |
-| OTP expired | 400 | OTP_EXPIRED | Code expired. Request a new one. |
-| Unauthorized | 401 | UNAUTHORIZED | Authentication required. |
-| Forbidden | 403 | FORBIDDEN | Access denied. |
-| Not found | 404 | NOT_FOUND | Resource not found. |
-| Validation error | 400 | VALIDATION_ERROR | Invalid request payload. |
-| Rate limited | 429 | RATE_LIMITED | Too many requests. |
-| Internal error | 500 | INTERNAL_ERROR | Unexpected error occurred. |
-
-### 15.2 Error Response Format
-
-```json
-{
-  "error": {
-    "code": "OTP_INVALID",
-    "message": "The code you entered is incorrect.",
-    "details": { "remaining_attempts": 2 }
-  }
-}
-```
+- OTP & some admin endpoints: `{ success: boolean, message: string, ... }`.
+- Standard FastAPI errors: `{ "detail": "..." }`.
 
 ---
 
@@ -621,12 +581,9 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 
 ### 17.2 Consent & Policy
 
-- Given a published policy, when GET /api/privacy-policy, then latest published content returned
-- Given user_hash and version, when POST /api/consents, then record exists and GET /api/consents/{user_hash} includes it
-- Given a policy update, when an authenticated user accesses protected endpoints, then 423 (Locked) returned if latest policy not consented
-- Given an authenticated user, when POST /api/user/consents with latest version, then subsequent API calls succeed without 423 status
-- Given an authenticated user declines updated privacy policy, then user session ends and user is redirected to whitelist page
-- Given a pre-auth user declines consent, then user returns to whitelist step and cannot proceed to login until consenting
+- Given a policy (DB or fallback), when GET /api/privacy-policy, content is returned.
+- Given user_hash + version, when POST /api/consents, record is stored (idempotent via upsert).
+- Post-auth enforcement & decline flows are not part of current implementation.
 
 ### 17.3 Simulations
 
@@ -865,56 +822,11 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 
 ---
 
-## 23. Privacy Policy Update Workflow
+## 23. Privacy Policy Management
 
-### 23.1 Admin Policy Management
+- Create / update / delete / publish policies (admin endpoints).
+- Fetch policy (public) with DB-first then static-file fallback.
 
-**Policy Update Process**:
-
-1. **Draft Creation**: Admin creates new policy version via POST /api/admin/privacy-policies
-2. **Review Period**: Policy remains unpublished for internal review and approval
-3. **Publication**: Admin publishes policy via POST /api/admin/privacy-policies/{id}/publish
-   - **Automatic Unpublishing**: Previous published policy becomes inactive
-   - **Active User Impact**: System returns 423 (Locked) for users who haven't consented to new version
-4. **Effective Date**: Policy takes effect immediately or on specified `effective_date`
-
-**User Impact Assessment**:
-
-- **Scope**: Active users (those with current sessions or making API requests) require consent
-- **Zero Grace Period**: Users must consent immediately or access is restricted
-- **Communication Strategy**: In-app consent flow with policy details and acceptance requirement
-
-### 23.2 User Consent Flow Implementation
-
-**Consent Requirement Detection**:
-
-1. **Login Check**: Validate consent status immediately after authentication
-2. **API Enforcement**: Protected endpoints enforce consent via middleware (no background polling)
-
-**Consent Collection Process**:
-
-- **Immediate Enforcement**: New consent is required immediately upon policy publication
-- **Single Consent Type**: Focus on privacy policy consent (can be extended for other types later)
-- **Audit Trail**: Complete history of user consent decisions with timestamps and IP tracking
-
-**Technical Implementation**:
-
-- **Database Changes**: Modify consent_records table to support both user_hash and user_id
-- **Middleware Updates**: Add consent validation to authentication pipeline using consent_records table
-- **Frontend Changes**: Enhanced ConsentPage for both pre-auth and authenticated flows
-- **API Modifications**: New endpoints for authenticated user consent status and recording
-
-### 23.3 Rollback and Recovery Procedures
-
-**Policy Rollback**:
-
-- **Admin-Controlled Rollback**: Admin can republish previous policy version via Supabase privacy_policies table
-- **User Impact**: Users who consented to newer version remain valid, others need to consent to restored version
-- **Data Retention**: Maintain historical consent records for compliance and audit purposes
-
-**System Recovery**:
-
-- **Monitoring**: Implement alerts for consent-related errors and user access issues
 
 ---
 

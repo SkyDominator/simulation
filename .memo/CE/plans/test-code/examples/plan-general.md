@@ -2,7 +2,7 @@
 
 ## Overview
 
-Implement comprehensive testing infrastructure for the LOLClub Simulation app to achieve the SSD requirements of ≥75% backend coverage and ≥60% frontend coverage across 5 test layers. Currently, the application has zero automated testing, representing a critical gap that needs immediate attention for the complex financial simulation logic, OTP workflows, and JWT authentication.
+Implement comprehensive testing infrastructure for the LOLClub Simulation app to achieve the `/.memo/CE/specs/SSD` requirements of ≥75% backend coverage and ≥60% frontend coverage across 5 test layers. Currently, the application has zero automated testing, representing a critical gap that needs immediate attention for the complex financial simulation logic, OTP workflows, and JWT authentication.
 
 ## Current State Analysis
 
@@ -34,7 +34,7 @@ Based on the research findings, the codebase has **complete absence of automated
 
 ## Implementation Approach
 
-Follow SSD Section 16.1 Test Layers strategy: start with critical backend unit tests for financial logic and security, add frontend component testing for authentication flows, then build integration tests for complete user journeys. Prioritize highest-risk components first based on business impact.
+Follow the Test Layers strategy in SSD.md: start with critical backend unit tests for financial logic and security, add frontend component testing for authentication flows, then build integration tests for complete user journeys. Prioritize highest-risk components first based on business impact.
 
 ## Phase 1: Backend Testing Foundation - Critical Security & Business Logic
 
