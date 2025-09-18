@@ -1,8 +1,8 @@
 # LOLClub Simulation – Software Specification Document (SSD)
 
-Version: 0.2.0 (Streamlined for Internal Use)  
-Date: 2025-09-09  
-Status: Draft (streamlined from enterprise version)  
+Version: 0.2.1 (Updated for Implementation Consistency)  
+Date: 2025-09-18  
+Status: Draft (updated to reflect current implementation)  
 Owners: Product, Engineering (Backend/Frontend)
 
 > **Note**: For enterprise-scale features (10,000+ users), see [`enterprise-scale/`](enterprise-scale/) documentation.
@@ -18,7 +18,6 @@ The Goals of this Project:
 - Provide an authenticated experience for running configurable financial simulations and storing results per user.
 - Enforce onboarding: whitelist check, OTP verification, and privacy policy consent.
 - Allow admins to manage privacy policies (versioned, publishable) and end-user notices.
-
 ---
 
 ## 2. Scope
@@ -27,9 +26,8 @@ In-scope (current release):
 
 - Pre-auth user validation: OTP send/verify.
   - Whitelist check (name+phone hash) on OTP send request.
-- Privacy policy retrieval (public) and consent recording (pre-auth context).
+- Privacy policy retrieval (public) and consent recording (pre-auth context only).
 - Supabase OAuth login (Google, Kakao) and JWT-based backend auth.
-- Onboarding status (OTP, consent) persistence management (per authenticated user).
 - Simulation plan CRUD and run (persist inputs and results).
 - Public notices list/detail; admin CRUD for notices and privacy policies.
 - PWA shell with basic installability (manifest, icons).
@@ -111,7 +109,7 @@ Implications:
 
 - **Frontend**: React 19 + TypeScript + Vite (vite-plugin-pwa, MUI for UI). Auth via @supabase/supabase-js. State persisted selectively to localStorage/sessionStorage.
 - **Backend**: FastAPI (Python 3.11.6 or later), Pydantic v2 schemas, Supabase client (REST/RPC). JWT verification uses Supabase JWKS.
-- **Data**: Supabase Postgres (tables below). Auth via Supabase; JWT audience "authenticated". Privacy policy content is served exclusively from the database to preserve version integrity.
+- **Data**: Supabase Postgres (tables below). Auth via Supabase; JWT audience "authenticated". Privacy policy content served from database with static file fallback.
 - **Infra**: Dockerized services; Cloudflare Tunnel for public frontend domain; CORS configured for local dev and tunnel domain.
 
 High-level flow:
@@ -157,7 +155,7 @@ Core tables (field types reflect actual implementation):
 - **consent_records**
   - id uuid (pk), user_hash text, user_id uuid, consent_type text
   - consent_version text, consent_given_at timestamptz, ip_address text, user_agent text
-  - Links pre-auth consent (user_hash) with post-auth user (user_id) for privacy policy compliance tracking; supports both pre-auth and authenticated consent flows.
+  - Links pre-auth consent (user_hash) with post-auth user (user_id) for privacy policy compliance tracking; currently supports pre-auth consent flows only.
 
 ---
 
@@ -168,9 +166,8 @@ Core tables (field types reflect actual implementation):
 - **CORS**: Allow list includes Cloudflare Tunnel domain and local dev hosts/ports.
 - **Secrets**: SUPABASE_SECRET_KEY used server-side. Publishable key only in frontend. SMS provider keys (Solapi) loaded from env.
 - **PII handling**: Consent recorded against user_hash pre-auth; onboarding links the consent version post-auth via user_id and user_hash.
-- **Privacy Policy Access**: Users can retrieve the policy; other endpoints are not currently blocked based on consent.
-- **No Enforcement Middleware Yet**: 423 lock responses and version cache are not active.
-- **Static Fallback Active**: If DB fetch fails, a static markdown file is used.
+- **Privacy Policy Access**: Users can retrieve the policy via public endpoint; static file fallback available if database unavailable.
+- **Static Fallback Active**: If DB fetch fails, a static markdown file fallback is attempted.
 
 ### 7.1 Core Security Controls
 
@@ -178,7 +175,7 @@ Core tables (field types reflect actual implementation):
 |---------|-------|
 | JWT validation via JWKS | Cache keys (TTL 5–15m) |
 | Admin server-side check | Table lookup each request |
-| OTP rate limiting | 3 sends per 15 min, 3 verify attempts |
+| OTP rate limiting | 3 sends per 15 min, 6 verify attempts |
 | RLS on user tables | Implemented |
 | OTP hashing | Implemented |
 
@@ -195,7 +192,8 @@ Core tables (field types reflect actual implementation):
 
 - **Get Policy**: GET /api/privacy-policy?version&locale → DB lookup; static file fallback if DB unavailable.
 - **Record Consent (Pre-auth only)**: POST /api/consents (user_hash, consent_type, consent_version).
-- **Get User Consents**: GET /api/consents/{user_hash}.
+- **Get User Consents**: GET /api/consents/{user_hash} → retrieve all consent records for a user.
+
 ### 8.3 Authentication
 
 - **Login**: Supabase OAuth redirects back to app
@@ -255,13 +253,17 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
          consent_given_at: string, ip_address?: string, user_agent?: string }
 }
 
+// GET /api/consents/{user_hash}
+{
+  res: { consents: Array<ConsentRecord>, success: boolean }
+}
+
 // GET /api/privacy-policy?version&locale
 {
   res: { version: string, last_updated: string, content: string, 
-         success: boolean, source: "db" }
+         success: boolean, source: "db" | "static-file", locale?: string }
 }
 
-// Note: No onboarding link/status endpoints - handled client-side via sessionStorage
 
 // POST /api/simulation/create (auth)
 {
@@ -299,6 +301,11 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
   res: { policies: Array<PrivacyPolicy>, success: boolean }
 }
 
+// GET /api/admin/privacy-policies/{id} (auth, admin)
+{
+  res: { policy: PrivacyPolicy, success: boolean }
+}
+
 // POST /api/admin/privacy-policies/{id}/publish (auth, admin)
 {
   res: { id: string, message: string, success: boolean }
@@ -320,6 +327,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Core concepts**:
   - max_investor_count controls growth vs stable phase
   - Tax 3.3% applied to total revenue; net profit and cumulative tracked each round
+  - Settlement bonus active only for company rounds 1–15 inclusive; automatically deactivated starting round 16 and onward.
 - **Service**: FinancialSimulationService(plan_id, scheduled_payment?, sales_achievement_rates?) → run_simulation(rounds) → results.history
 - **Parameter Conversion**: API `scheduled_payment` parameters are converted to database `investments` jsonb format during persistence
 - **Persistence**: results stored in simulations.simulation_results; recalculated on demand if missing or when inputs change
@@ -331,7 +339,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Performance**: API endpoints < 500ms for typical operations; simulation run < 2s for common inputs
 - **Availability**: Health endpoint surfaces dependency issues; tolerate transient Supabase failures gracefully
 - **Security**: JWT validation via JWKS; admin checks via admins table. No secrets in frontend code
-- **Rate limiting**: OTP send limited (3 per 15-min); attempts per code limited (6 attempts)
+- **Rate limiting**: OTP send limited (3 per 15-min); attempts per code limited (3 attempts)
 - **PWA**: Installable manifest and icons; service worker via vite-plugin-pwa (basic)
 
 ---
@@ -398,9 +406,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 **Step 3: ConsentPage** (`page: "consent"`):
 
 - **Layout**: Centered Paper component (max-width: 600px) with structured consent flow
-- **Multi-Context Support**: Handles both pre-auth (user_hash) and authenticated (user_id) consent flows
-  - **Pre-auth Flow**: Uses existing user_hash-based consent recording
-  - **Post-auth Flow**: Records consent with user_id for authenticated users
+- **Pre-auth Flow Support**: Uses user_hash-based consent recording for pre-auth users
   - **Context Detection**: Determines flow based on authentication state and calling context
 - **Privacy Policy Integration**:
   - Fetches current policy version via `api.getPrivacyPolicy()`
@@ -411,10 +417,10 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
   - Checkbox with explicit consent text
   - Two-button layout: "취소" (decline) and "계속하기" (accept)
   - Disabled submit until checkbox is checked
-- **Data Recording**: Records consent with `userHash` (pre-auth) or `user_id` (authenticated), `consent_type: "privacy_policy"`, `policyVersion`
+- **Data Recording**: Records consent with `userHash`, `consent_type: "privacy_policy"`, `policyVersion`
 - **Flow Control**:
-  - Accept: Stores `consentVersion` in sessionStorage, proceeds to next step (login for pre-auth, main app for authenticated)
-  - Decline: Returns to previous context (whitelist for pre-auth, logout and redirect to whitelist for authenticated)
+  - Accept: Stores `consentVersion` in sessionStorage, proceeds to login
+  - Decline: Returns to whitelist check
 
 **Step 4: LoginPage** (`page: "login"`):
 
@@ -431,17 +437,10 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Persistence**: UI state (page, editingPlan, noticeOpen, simulationResult) in localStorage
 - **Restoration**: On app focus/visibility change, restores state with diff checking
 - **Session Management**: Supabase session auto-refresh maintains authentication
-- **Consent Flow Handling**: Gracefully handle 423 responses by redirecting to consent page
-  - **Context Preservation**: Maintain user's current task context through consent flow
-  - **Resume After Consent**: Return to interrupted task after successful consent
 
 ### 13.4 Main Application Experience
 
 **MainPage Navigation** (`page: "main"`):
-
-- **Privacy Policy Enforcement**: App checks consent status on load and redirects to consent page if required
-  - **Consent Status Check**: GET /api/user/consent-status on app initialization
-  - **Forced Redirect**: If `requires_consent: true`, redirect to ConsentPage with current context preservation
 
 - **Header Actions**:
   - Add simulation button (+ icon) navigates to plan editor
@@ -475,19 +474,18 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Navigation**: Back to main page with preserved context
 - **Export Functions**: Download simulation results in various formats
 
-**Summary Report Page** (`page: "summary-report"`):
-
-- **Aggregate Data**: Overview of multiple simulations with filtering options
-- **Summary Metrics**: The summary of the result across all plans selected.
-- **Buttons**
-  - "Back to main page" button to return to the main page.
-  - "Offline Result Page" button to navigate to the offline result page.
-
-**Offline Result Page** (`page: "offline-result"`):
+**Offline Results Page** (`page: "offline-results"`):
 
 - **Result Table**: Displays the simulation results for offline authentication (Here the "offline authentication" means the unique type of authentication process that is not covered in the current scope. It does not mean the opposite of the 'network connected' state.)
 - **Buttons**
   - "Back to main page" button to return to the main page.
+
+**Admin Policy Page** (`page: "admin-policy"`):
+
+- **Policy Management**: Administrative interface for creating, editing, and publishing privacy policies
+- **Policy List**: Displays all policies with version, status, and publication information
+- **Policy Editor**: Form for creating and editing policy content, version, and metadata
+- **Publishing Controls**: Interface for publishing policies and managing active versions
 
 ### 13.5 Mobile-First Responsive Design
 
@@ -535,12 +533,12 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 ## 14. Constraints & Assumptions
 
 - **Environment variables**:
-  - Backend: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SOLAPI_*` for SMS, `OTP_*` limits
+  - Backend: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SOLAPI_*` for SMS, `OTP_VALIDITY_MINUTES`, `OTP_RESEND_LIMIT_PER_15MIN`, `OTP_MAX_ATTEMPTS`
   - Frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_BASE_URL`
 - **Supabase RLS** should be configured on user-owned tables; admin APIs rely on server checks
 - **Whitelist table** exists with user_hash; seeding/management handled out-of-band
 - **Docker/Cloudflare Tunnel** used for deployment; ports: frontend 5173 (dev), 4173 (preview), backend 8000
-- **Privacy Policy Source of Truth**: Only published DB row counts for consent version
+- **Privacy Policy Source of Truth**: Published DB row is primary; static file fallback available if DB unavailable
 
 ---
 
@@ -639,20 +637,10 @@ When scaling beyond 100 users, refer to [`enterprise-scale/`](enterprise-scale/)
 
 **Post-login Flow**:
 
-1. **Onboarding Linking**: Automatic backend call to link pre-auth context to authenticated user_id
-2. **Consent Status Validation**: Check if user needs to consent to latest privacy policy version
-   - **Automatic Check**: GET /api/user/consent-status on successful login
-   - **Conditional Redirect**: If consent required, redirect to ConsentPage before MainPage
-   - **Context Preservation**: Store intended destination to resume after consent
-3. **MainPage Navigation**:
+1. **MainPage Navigation**:
    - **Loading States**: Skeleton loaders for simulation table, progressive data loading
    - **Empty States**: Welcome message and CTA for first simulation creation
    - **Bulk Operations**: Multi-select with batch actions (delete, export)
-
-**Ongoing Consent Monitoring**:
-
-- **API Response Handling**: Listen for 423 (Locked) responses and redirect to consent
-- **User Notification**: Clear messaging about policy updates and consent requirements
 
 **Simulation Management UX**:
 
@@ -812,7 +800,7 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 
 - **Health Endpoint**: Tracks Supabase latency and availability
 - **Client-side Telemetry**: Error rates, page load times via browser performance APIs
-- **Rate Limiting**: OTP endpoints protected (3/15min send, 6 attempts per code)
+- **Rate Limiting**: OTP endpoints protected (3/15min send, 3 attempts per code)
 
 **Scaling Thresholds**:
 
