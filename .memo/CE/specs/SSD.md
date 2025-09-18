@@ -157,6 +157,8 @@ Core tables (field types reflect actual implementation):
   - consent_version text, consent_given_at timestamptz, ip_address text, user_agent text
   - Links pre-auth consent (user_hash) with post-auth user (user_id) for privacy policy compliance tracking; currently supports pre-auth consent flows only.
 
+See [schema](/.memo/CE/specs/schema/schema.md) for the full schema information and relationships.
+
 ---
 
 ## 7. Security & Authentication
