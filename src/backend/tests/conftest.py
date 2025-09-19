@@ -102,15 +102,30 @@ def jwks_keys_rotated(jwks_keys):
 def simulation_service_factory():
     """Factory fixture for creating FinancialSimulationService instances."""
     from simulation_service import FinancialSimulationService
+    from constants import PLAN_PARAMETERS
     
     def _create_service(plan_id: str, overrides: Optional[Dict[str, Any]] = None):
         """Create a FinancialSimulationService instance with optional parameter overrides."""
         scheduled_payment = None
         sales_achievement_rates = None
-        
+        # Apply explicit overrides first (tests can still pass custom data)
         if overrides:
-            scheduled_payment = overrides.get('scheduled_payment')
-            sales_achievement_rates = overrides.get('sales_achievement_rates')
+            scheduled_payment = overrides.get('scheduled_payment')  # rounds -> amount (int)
+            sales_achievement_rates = overrides.get('sales_achievement_rates')  # rounds -> fraction (0.5-1.0)
+
+        # In production flow these come from SimulationCreateRequest (DB row). Our unit tests
+        # instantiate FinancialSimulationService directly, so we emulate that layer here.
+        if plan_id in PLAN_PARAMETERS:
+            plan = PLAN_PARAMETERS[plan_id]
+            # If test didn't supply scheduled_payment, derive a reasonable default using min_payment_new
+            # which mirrors how FE ensures scheduled >= min.
+            if scheduled_payment is None:
+                # Copy all configured new-investor minimums as scheduled payments
+                scheduled_payment = {int(r): int(amt) for r, amt in plan.get('min_payment_new', {}).items()}
+            # If test didn't supply custom sales achievement rates, reuse plan defaults
+            if sales_achievement_rates is None:
+                # Plan stores these already as fractions (1 == 100%) in constants
+                sales_achievement_rates = {int(r): float(v) for r, v in plan.get('sales_achievement_rates', {}).items()}
         
         return FinancialSimulationService(
             plan_id=plan_id,
