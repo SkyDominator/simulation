@@ -63,14 +63,19 @@ def normalize_phone(phone_number: str) -> str:
         else:
             # Invalid prefix
             raise ValueError(f"Invalid Korean phone prefix: {prefix}")
-    
     # If already in international format
-    if digits_only.startswith('82'):
-        return f"+{digits_only}"
-        
-    # Default fallback - just return with + prefix
-    # In production, use proper validation and normalization
-    return f"+{digits_only}"
+    elif digits_only.startswith('82'):
+        # Check for valid Korean mobile prefixes
+        valid_prefixes = ['10', '11', '16', '17', '18', '19']
+        prefix = digits_only[2:4]
+
+        if prefix in valid_prefixes:
+            # Add + sign for E.164 format
+            return f"+82{digits_only[2:]}"
+        else:
+            raise ValueError(f"Invalid Korean phone prefix: {prefix}")
+    else:
+        raise ValueError(f"Invalid Korean phone number: {digits_only}")
 
 def calculate_expiry() -> datetime:
     """Calculate expiry time for OTP."""
