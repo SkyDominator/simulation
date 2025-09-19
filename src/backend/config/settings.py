@@ -57,3 +57,7 @@ class Settings:
             ])
 
 settings = Settings()
+
+# Backward compatibility alias (tests or legacy code may still reference otp_max_attempts)
+if not hasattr(settings, "otp_max_attempts"):
+    object.__setattr__(settings, "otp_max_attempts", settings.otp_max_verification_attempts)  # type: ignore

@@ -86,7 +86,7 @@ Successfully implemented comprehensive backend unit test suite covering all 30 p
 - [x] Task 22: (Removed - consent version cache helper not in SSD)
 - [x] Task 23: Privacy policy fallback simulating DB retrieval failure → static markdown fallback
 - [x] Task 24: Structured error envelope builder with `build_error(code, message, details=None)` contract
-- [x] Task 25: OTP verify attempt limits (constant guard `MAX_OTP_VERIFY_ATTEMPTS == 6` with xfail until config updated)
+- [x] Task 25: OTP verify attempt limits (constant guard `MAX_OTP_VERIFY_ATTEMPTS == 6` now enforced; config aligned no xfail)
 - [x] Task 26: OTP send limiter helper logic (rolling window 15 minutes, 3 sends allowed)
 - [x] Task 27: JWKS caching TTL validation following SSD range (5-15m) with key reuse and forced refresh testing
 - [x] Task 28: (Out-of-scope - simulation list normalization utility belongs to integration layer)
@@ -170,10 +170,10 @@ All 14 backend unit tasks from test-code-00-master.md are represented:
    - **Impact**: Added constants in `constants.py` for MAX_OTP_VERIFY_ATTEMPTS = 6
    - **Verification**: Configuration now properly aligned with SSD §7.1 requirements
 
-2. **Phone Normalization**: Enhanced multi-prefix support requirements  
-   - **Resolution**: Updated `services/otp/utils.py` normalize_phone() to validate multiple Korean prefixes
-   - **Prefixes Supported**: 010, 011, 016, 017, 018, 019 (as required by SSD)
-   - **Validation**: Invalid prefixes now raise ValueError with clear error message
+2. **Phone Normalization**: Enhanced multi-prefix support with strict invalid prefix rejection  
+   - **Resolution**: Updated `services/otp/utils.py` normalize_phone() to validate Korean mobile prefixes
+   - **Prefixes Supported**: 010, 011, 016, 017, 018, 019 (SSD onboarding rules)
+   - **Validation Change**: Invalid prefixes now raise `ValueError` (tests updated to expect this strict behavior)
 
 3. **Test Configuration Alignment**: Test fixtures used old 3-attempt limit
    - **Resolution**: Updated `tests/conftest.py` to use 6 attempts in test settings override

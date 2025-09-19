@@ -20,10 +20,9 @@ class TestOTPConstants:
         from config.settings import settings
         
         # Now that we've updated the config, this should pass without xfail
-        expected_attempts = MAX_OTP_VERIFY_ATTEMPTS
-        actual_attempts = getattr(settings, 'otp_max_attempts', 3)
-        
-        assert actual_attempts == expected_attempts == 6
+    expected_attempts = MAX_OTP_VERIFY_ATTEMPTS
+    actual_attempts = settings.otp_max_verification_attempts
+    assert actual_attempts == expected_attempts == 6
     
     def test_otp_send_rate_limit_constant(self, settings_override):
         """Test OTP send rate limit is 3 per 15 minutes."""
@@ -88,20 +87,16 @@ class TestPhoneNormalizationUtility:
             # Should preserve the prefix information in some form
             assert prefix in normalized or prefix[1:] in normalized  # Either original or without leading 0
     
-    def test_phone_invalid_prefix_rejection(self):
-        """Test that invalid prefixes are handled gracefully."""
+    def test_phone_invalid_prefix_raises(self):
+        """Invalid Korean mobile prefixes should raise ValueError (strict policy)."""
         from services.otp.utils import normalize_phone
-        
-        invalid_numbers = [
-            "020-1234-5678",  # Invalid prefix
-            "012-1234-5678",  # Invalid prefix  
-            "999-1234-5678",  # Invalid prefix
-        ]
-        
-        for number in invalid_numbers:
-            # Should not crash - either normalize or return as-is
-            result = normalize_phone(number)
-            assert result is not None
+
+        with pytest.raises(ValueError):
+            normalize_phone("020-1234-5678")
+        with pytest.raises(ValueError):
+            normalize_phone("012-1234-5678")
+        with pytest.raises(ValueError):
+            normalize_phone("999-1234-5678")
     
     def test_phone_canonical_hyphenated_form_preservation(self):
         """Test preservation of canonical hyphenated form."""
