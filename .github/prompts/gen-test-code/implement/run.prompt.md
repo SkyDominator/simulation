@@ -1,7 +1,5 @@
----
 $TEST_REPORT_DIR = "/.memo/CE/implement/test-code/01-backend-unit/run-report"
 $TEST_REPORT_FILE = "test-01-backend-unit"
----
 
 # Running Tests and Generating Reports
 
@@ -10,14 +8,13 @@ Follow the instructions below to run the unit tests, generate coverage reports, 
 ## 0. Activate virtual environment
 
 ```powershell
-cd c:\Users\raykim\Documents\workspace\partnerclub\simulation
-.\venv\Scripts\Activate.ps1
+cd c:\Users\raykim\Documents\workspace\partnerclub\simulation\src\backend
+.\venv\Scripts\activate.ps1
 ```
 
 ## 1. Run tests with full reporting
 
 ```powershell
-cd c:\Users\raykim\Documents\workspace\partnerclub\simulation\src\backend
 python -m pytest tests/unit/ --cov=. --cov-report=term-missing --cov-report=html --junitxml=test-results.xml -v > test-output.txt 2>&1
 ```
 
