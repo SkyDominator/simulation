@@ -7,16 +7,16 @@ $TEST_REPORT_FILE = "test-01-backend-unit"
 
 Follow the instructions below to run the unit tests, generate coverage reports, and save the results.
 
-## 0. Setup environment (if not already done)
+## 0. Activate virtual environment
 
 ```powershell
+cd c:\Users\raykim\Documents\workspace\partnerclub\simulation\src\backend
 .\venv\Scripts\Activate.ps1
 ```
 
 ## 1. Run tests with full reporting
 
 ```powershell
-cd c:\Users\raykim\Documents\workspace\partnerclub\simulation\src\backend
 python -m pytest tests/unit/ --cov=. --cov-report=term-missing --cov-report=html --junitxml=test-results.xml -v > test-output.txt 2>&1
 ```
 
