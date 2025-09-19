@@ -15,7 +15,7 @@ Implement new codes or modify existing codes on the [backend](/src/backend/) or 
 3. DO NOT GENERATE ANY OTHER CODES THAT ARE NOT PLANNED IN THE $PLAN.
 4. After the implementation, review all your implementation results against the $PLAN, $MASTER_PLAN, and $SSD to ensure that everything is correctly implemented as planned.
 5. If you find any discrepancies/issues during the review, fix them immediately.
-6. Repeat steps 4 and 5 until the review results tell that everything is correctly implemented as planned.
+6. Repeat steps 4 and 5 (review-refine loop) until the review results tell that everything is correctly implemented as planned.
 
 # After the implementation
 
