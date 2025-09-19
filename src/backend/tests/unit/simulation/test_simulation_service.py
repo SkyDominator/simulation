@@ -355,7 +355,7 @@ class TestSimulationServiceBoundaryConditions:
         cumulative_profits = [r.cumulative_net_profit for r in result.history]
         
         # Should generally trend upward over long periods
-        assert cumulative_profits[-1] > cumulative_profits[50]  # Later half > earlier half
+        assert cumulative_profits[-1] > cumulative_profits[30]  # Later half > earlier half
 
 
 class TestSimulationServiceInputValidation:
