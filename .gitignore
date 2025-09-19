@@ -6,8 +6,6 @@ __pycache__/
 
 # Distribution / packaging
 .venv/
-src/backend/backend-venv/
-src/backend/venv/
 src/frontend/node_modules/
 .env
 
@@ -40,6 +38,7 @@ MANIFEST
 
 # Virtual environments
 venv/
+test-venv/
 env/
 ENV/
 env.bak/
