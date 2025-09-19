@@ -45,8 +45,8 @@ class OTPService:
             .gte("created_at", day_ago.isoformat()) \
             .execute()
             
-        # if day_count.count and day_count.count >= settings.otp_resend_limit_per_day:
-        #     return False, f"Daily OTP limit reached. Try again tomorrow."
+        if day_count.count and day_count.count >= settings.otp_resend_limit_per_day:
+            return False, f"Daily OTP limit reached. Try again tomorrow."
         
         # IP-based rate limiting could be added here
         
