@@ -6,6 +6,7 @@ import requests
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt, JWTError
+from jose.exceptions import JWKError
 
 from config.settings import settings
 
@@ -59,14 +60,21 @@ def authenticate_jwt_token(token_result: HTTPAuthorizationCredentials = Depends(
                 public_key = k
                 break
         if not public_key:
-            # invalidate cache & fail
+            # invalidate cache and retry once in case keys have rotated
             _jwks_cache.clear()
-            raise credentials_exception
+            keys_obj = _jwks_client.get_keys()
+            keys_list = keys_obj.get("keys", [])
+            for k in keys_list:
+                if k.get("kid") == kid:
+                    public_key = k
+                    break
+            if not public_key:
+                raise credentials_exception
 
         payload = jwt.decode(token, public_key, algorithms=[alg], audience="authenticated")
         sub = payload.get("sub")
         if not sub:
             raise credentials_exception
         return str(sub)
-    except (JWTError, KeyError, TypeError):  # explicit error types
+    except (JWTError, JWKError, KeyError, TypeError):  # explicit error types
         raise credentials_exception

@@ -49,6 +49,23 @@ def settings_override():
             setattr(mock_settings, key, value)
         yield mock_settings
 
+@pytest.fixture(autouse=True)
+def clear_jwt_cache():
+    """Automatically clear JWT cache before each test to ensure test isolation."""
+    try:
+        from auth.jwt import _jwks_cache
+        _jwks_cache.clear()
+    except ImportError:
+        # Module might not be available in all test contexts
+        pass
+    yield
+    # Optional: Clear again after test if needed
+    try:
+        from auth.jwt import _jwks_cache
+        _jwks_cache.clear()
+    except ImportError:
+        pass
+
 @pytest.fixture
 def fake_supabase_client():
     """Mock Supabase client for testing."""

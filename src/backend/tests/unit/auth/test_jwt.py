@@ -208,10 +208,10 @@ class TestJWTAuthentication:
         assert exc_info.value.status_code == 401
     
     @patch('auth.jwt._jwks_client.get_keys')
-    @patch('auth.jwt.jwt.decode') 
+    @patch('auth.jwt.jwt.decode')
     def test_jwt_audience_mismatch(self, mock_decode, mock_get_keys, jwks_keys):
         """Test JWT with wrong audience raises AudienceMismatchException."""
-        from jose import JWTClaimsError
+        from jose.exceptions import JWTClaimsError
         
         mock_get_keys.return_value = jwks_keys
         mock_decode.side_effect = JWTClaimsError("Invalid audience")
@@ -260,7 +260,8 @@ class TestJWKSCachingBehavior:
     """Test JWKS caching and TTL behavior."""
     
     @patch('auth.jwt.requests.get')
-    def test_jwks_cache_invalidation_on_key_not_found(self, mock_get):
+    @patch('auth.jwt.jwt.decode')  # Mock JWT decode to focus on cache behavior
+    def test_jwks_cache_invalidation_on_key_not_found(self, mock_decode, mock_get):
         """Test that JWKS cache is cleared when key is not found."""
         # First call returns keys, second call after cache clear returns different keys
         mock_response1 = Mock()
@@ -273,13 +274,18 @@ class TestJWKSCachingBehavior:
         
         mock_get.side_effect = [mock_response1, mock_response2]
         
+        # Mock successful JWT decode
+        mock_decode.return_value = {"sub": "test-user-id", "aud": "authenticated"}
+        
         # Create token with kid that won't be found in first JWKS
         token = self._create_test_token_header(kid="new-key")
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
         
-        # This will fetch JWKS, not find the key, clear cache, and fail
-        with pytest.raises(HTTPException):
-            authenticate_jwt_token(credentials)
+        # This will fetch JWKS, not find the key, clear cache, retry, and succeed
+        result = authenticate_jwt_token(credentials)
+        
+        # Verify we got the expected result
+        assert result == "test-user-id"
         
         # Verify cache was cleared and JWKS was fetched twice
         assert mock_get.call_count == 2
