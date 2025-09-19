@@ -1,0 +1,1168 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="37" skipped="4" tests="88" time="6.189" timestamp="2025-09-19T10:12:55.918334+09:00" hostname="raykim-1"><testcase classname="tests.unit.auth.test_jwt.TestJWKSClient" name="test_jwks_keys_loading_from_fixture" time="0.591" /><testcase classname="tests.unit.auth.test_jwt.TestJWKSClient" name="test_jwks_keys_rotation_order" time="0.002" /><testcase classname="tests.unit.auth.test_jwt.TestJWKSClient" name="test_jwks_client_get_keys_success" time="0.002" /><testcase classname="tests.unit.auth.test_jwt.TestJWKSClient" name="test_jwks_client_get_keys_failure" time="0.002"><failure message="Failed: DID NOT RAISE &lt;class 'fastapi.exceptions.HTTPException'&gt;">self = &lt;test_jwt.TestJWKSClient object at 0x0000023DB55C9E50&gt;
+mock_get = &lt;MagicMock name='get' id='2464059382288'&gt;
+
+    @patch('auth.jwt.requests.get')
+    def test_jwks_client_get_keys_failure(self, mock_get):
+        """Test JWKS key retrieval failure handling."""
+        mock_get.side_effect = Exception("Network error")
+    
+        client = JWKSClient("https://test.supabase.co")
+    
+&gt;       with pytest.raises(HTTPException) as exc_info:
+E       Failed: DID NOT RAISE &lt;class 'fastapi.exceptions.HTTPException'&gt;
+
+tests\unit\auth\test_jwt.py:68: Failed</failure></testcase><testcase classname="tests.unit.auth.test_jwt.TestJWKSClient" name="test_jwks_client_caching" time="0.005"><failure message="AssertionError: assert 0 == 1&#10; +  where 0 = &lt;MagicMock name='get' id='2464061296144'&gt;.call_count">self = &lt;test_jwt.TestJWKSClient object at 0x0000023DB55CA510&gt;
+mock_get = &lt;MagicMock name='get' id='2464061296144'&gt;
+
+    @patch('auth.jwt.requests.get')
+    def test_jwks_client_caching(self, mock_get):
+        """Test that JWKS keys are cached and not fetched multiple times."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {"keys": [{"kid": "test", "kty": "RSA"}]}
+        mock_get.return_value = mock_response
+    
+        client = JWKSClient("https://test.supabase.co")
+    
+        # Call twice
+        keys1 = client.get_keys()
+        keys2 = client.get_keys()
+    
+        # Should be same object due to caching
+        assert keys1 is keys2
+    
+        # Should only call requests.get once
+&gt;       assert mock_get.call_count == 1
+E       AssertionError: assert 0 == 1
+E        +  where 0 = &lt;MagicMock name='get' id='2464061296144'&gt;.call_count
+
+tests\unit\auth\test_jwt.py:92: AssertionError</failure></testcase><testcase classname="tests.unit.auth.test_jwt.TestJWTAuthentication" name="test_jwt_authentication_success" time="0.009" /><testcase classname="tests.unit.auth.test_jwt.TestJWTAuthentication" name="test_jwt_missing_kid_in_header" time="0.002" /><testcase classname="tests.unit.auth.test_jwt.TestJWTAuthentication" name="test_jwt_missing_alg_in_header" time="0.002" /><testcase classname="tests.unit.auth.test_jwt.TestJWTAuthentication" name="test_jwt_kid_not_found_in_jwks" time="0.002" /><testcase classname="tests.unit.auth.test_jwt.TestJWTAuthentication" name="test_jwt_malformed_token_segments" time="0.001" /><testcase classname="tests.unit.auth.test_jwt.TestJWTAuthentication" name="test_jwt_invalid_base64_encoding" time="0.001" /><testcase classname="tests.unit.auth.test_jwt.TestJWTAuthentication" name="test_jwt_expired_token" time="0.003" /><testcase classname="tests.unit.auth.test_jwt.TestJWTAuthentication" name="test_jwt_audience_mismatch" time="0.005"><failure message="ImportError: cannot import name 'JWTClaimsError' from 'jose' (C:\Users\raykim\Documents\workspace\partnerclub\simulation\src\backend\venv\Lib\site-packages\jose\__init__.py)">self = &lt;test_jwt.TestJWTAuthentication object at 0x0000023DB55CCC50&gt;
+mock_decode = &lt;MagicMock name='decode' id='2464061192016'&gt;
+mock_get_keys = &lt;MagicMock name='get_keys' id='2464061181392'&gt;
+jwks_keys = {'keys': [{'alg': 'RS256', 'e': 'AQAB', 'kid': 'test-key-id-1', 'kty': 'RSA', ...}, {'alg': 'RS256', 'e': 'AQAB', 'kid': 'test-key-id-2', 'kty': 'RSA', ...}, {'alg': 'RS256', 'e': 'AQAB', 'kid': 'test-key-id-3', 'kty': 'RSA', ...}]}
+
+    @patch('auth.jwt._jwks_client.get_keys')
+    @patch('auth.jwt.jwt.decode')
+    def test_jwt_audience_mismatch(self, mock_decode, mock_get_keys, jwks_keys):
+        """Test JWT with wrong audience raises AudienceMismatchException."""
+&gt;       from jose import JWTClaimsError
+E       ImportError: cannot import name 'JWTClaimsError' from 'jose' (C:\Users\raykim\Documents\workspace\partnerclub\simulation\src\backend\venv\Lib\site-packages\jose\__init__.py)
+
+tests\unit\auth\test_jwt.py:214: ImportError</failure></testcase><testcase classname="tests.unit.auth.test_jwt.TestJWTAuthentication" name="test_jwt_missing_sub_claim" time="0.003" /><testcase classname="tests.unit.auth.test_jwt.TestJWTAuthentication" name="test_jwt_unsupported_algorithm" time="0.003"><failure message="jose.exceptions.JWKError: Incorrect key type. Expected: 'oct', Received: RSA">self = &lt;test_jwt.TestJWTAuthentication object at 0x0000023DB55CD350&gt;
+mock_get_keys = &lt;MagicMock name='get_keys' id='2464061156944'&gt;
+jwks_keys = {'keys': [{'alg': 'RS256', 'e': 'AQAB', 'kid': 'test-key-id-1', 'kty': 'RSA', ...}, {'alg': 'RS256', 'e': 'AQAB', 'kid': 'test-key-id-2', 'kty': 'RSA', ...}, {'alg': 'RS256', 'e': 'AQAB', 'kid': 'test-key-id-3', 'kty': 'RSA', ...}]}
+
+    @patch('auth.jwt._jwks_client.get_keys')
+    def test_jwt_unsupported_algorithm(self, mock_get_keys, jwks_keys):
+        """Test JWT with unsupported algorithm raises exception."""
+        mock_get_keys.return_value = jwks_keys
+    
+        # Create token with unsupported algorithm
+        header = {"typ": "JWT", "alg": "HS256", "kid": "test-key-id-1"}  # Unsupported alg
+        token = self._create_test_token_header(header=header)
+        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+    
+        # This will likely fail during jwt.decode, resulting in 401
+        with pytest.raises(HTTPException) as exc_info:
+&gt;           authenticate_jwt_token(credentials)
+
+tests\unit\auth\test_jwt.py:254: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+auth\jwt.py:66: in authenticate_jwt_token
+    payload = jwt.decode(token, public_key, algorithms=[alg], audience="authenticated")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\jose\jwt.py:159: in decode
+    payload = jws.verify(token, key, algorithms, verify=verify_signature)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\jose\jws.py:77: in verify
+    _verify_signature(signing_input, header, signature, key, algorithms)
+venv\Lib\site-packages\jose\jws.py:263: in _verify_signature
+    if not _sig_matches_keys(keys, signing_input, signature, alg):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\jose\jws.py:212: in _sig_matches_keys
+    key = jwk.construct(key, alg)
+          ^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\jose\jwk.py:79: in construct
+    return key_class(key_data, algorithm)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\jose\backends\cryptography_backend.py:534: in __init__
+    self.prepared_key = self._process_jwk(key)
+                        ^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;jose.backends.cryptography_backend.CryptographyHMACKey object at 0x0000023DB5836F90&gt;
+jwk_dict = {'alg': 'RS256', 'e': 'AQAB', 'kid': 'test-key-id-1', 'kty': 'RSA', ...}
+
+    def _process_jwk(self, jwk_dict):
+        if not jwk_dict.get("kty") == "oct":
+&gt;           raise JWKError("Incorrect key type. Expected: 'oct', Received: %s" % jwk_dict.get("kty"))
+E           jose.exceptions.JWKError: Incorrect key type. Expected: 'oct', Received: RSA
+
+venv\Lib\site-packages\jose\backends\cryptography_backend.py:553: JWKError</failure></testcase><testcase classname="tests.unit.auth.test_jwt.TestJWKSCachingBehavior" name="test_jwks_cache_invalidation_on_key_not_found" time="0.003"><failure message="AssertionError: assert 1 == 2&#10; +  where 1 = &lt;MagicMock name='get' id='2464060253200'&gt;.call_count">self = &lt;test_jwt.TestJWKSCachingBehavior object at 0x0000023DB55CDB90&gt;
+mock_get = &lt;MagicMock name='get' id='2464060253200'&gt;
+
+    @patch('auth.jwt.requests.get')
+    def test_jwks_cache_invalidation_on_key_not_found(self, mock_get):
+        """Test that JWKS cache is cleared when key is not found."""
+        # First call returns keys, second call after cache clear returns different keys
+        mock_response1 = Mock()
+        mock_response1.raise_for_status.return_value = None
+        mock_response1.json.return_value = {"keys": [{"kid": "old-key", "kty": "RSA"}]}
+    
+        mock_response2 = Mock()
+        mock_response2.raise_for_status.return_value = None
+        mock_response2.json.return_value = {"keys": [{"kid": "new-key", "kty": "RSA"}]}
+    
+        mock_get.side_effect = [mock_response1, mock_response2]
+    
+        # Create token with kid that won't be found in first JWKS
+        token = self._create_test_token_header(kid="new-key")
+        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+    
+        # This will fetch JWKS, not find the key, clear cache, and fail
+        with pytest.raises(HTTPException):
+            authenticate_jwt_token(credentials)
+    
+        # Verify cache was cleared and JWKS was fetched twice
+&gt;       assert mock_get.call_count == 2
+E       AssertionError: assert 1 == 2
+E        +  where 1 = &lt;MagicMock name='get' id='2464060253200'&gt;.call_count
+
+tests\unit\auth\test_jwt.py:285: AssertionError</failure></testcase><testcase classname="tests.unit.auth.test_jwt.TestJWKSFixtureValidation" name="test_jwks_fixture_file_exists" time="0.002" /><testcase classname="tests.unit.auth.test_jwt.TestJWKSFixtureValidation" name="test_jwks_fixture_key_structure" time="0.002" /><testcase classname="tests.unit.auth.test_jwt.TestJWKSFixtureValidation" name="test_jwks_fixture_multiple_keys_unique_ids" time="0.002" /><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceStructuralInvariants" name="test_plan_a_round_1_structure" time="0.006"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceStructuralInvariants object at 0x0000023DB5856C10&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572D580&gt;
+
+    def test_plan_a_round_1_structure(self, simulation_service_factory):
+        """Test Plan A round 1 structural invariants."""
+        svc = simulation_service_factory('A')
+&gt;       result = svc.run_simulation(1)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5910710&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5910E10&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceStructuralInvariants" name="test_all_plans_round_1_invariants[A]" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceStructuralInvariants object at 0x0000023DB586C090&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572CD60&gt;
+plan_parameters = 'A'
+
+    def test_all_plans_round_1_invariants(self, simulation_service_factory, plan_parameters):
+        """Test round 1 structural invariants across all plans."""
+        svc = simulation_service_factory(plan_parameters)
+&gt;       result = svc.run_simulation(1)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5624210&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5624BD0&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceStructuralInvariants" name="test_all_plans_round_1_invariants[B]" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceStructuralInvariants object at 0x0000023DB586C110&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572E340&gt;
+plan_parameters = 'B'
+
+    def test_all_plans_round_1_invariants(self, simulation_service_factory, plan_parameters):
+        """Test round 1 structural invariants across all plans."""
+        svc = simulation_service_factory(plan_parameters)
+&gt;       result = svc.run_simulation(1)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB57B7D10&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB57B4510&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceStructuralInvariants" name="test_all_plans_round_1_invariants[C]" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceStructuralInvariants object at 0x0000023DB586C150&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572E660&gt;
+plan_parameters = 'C'
+
+    def test_all_plans_round_1_invariants(self, simulation_service_factory, plan_parameters):
+        """Test round 1 structural invariants across all plans."""
+        svc = simulation_service_factory(plan_parameters)
+&gt;       result = svc.run_simulation(1)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB58FCE90&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB58FF3D0&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceStructuralInvariants" name="test_all_plans_round_1_invariants[D]" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceStructuralInvariants object at 0x0000023DB586CC50&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572E3E0&gt;
+plan_parameters = 'D'
+
+    def test_all_plans_round_1_invariants(self, simulation_service_factory, plan_parameters):
+        """Test round 1 structural invariants across all plans."""
+        svc = simulation_service_factory(plan_parameters)
+&gt;       result = svc.run_simulation(1)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB57DFB90&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB57DD910&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceStructuralInvariants" name="test_all_plans_round_1_invariants[K]" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceStructuralInvariants object at 0x0000023DB586D050&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572D800&gt;
+plan_parameters = 'K'
+
+    def test_all_plans_round_1_invariants(self, simulation_service_factory, plan_parameters):
+        """Test round 1 structural invariants across all plans."""
+        svc = simulation_service_factory(plan_parameters)
+&gt;       result = svc.run_simulation(1)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5A25410&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5A26BD0&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceStructuralInvariants" name="test_all_plans_round_1_invariants[P]" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceStructuralInvariants object at 0x0000023DB586D210&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572E520&gt;
+plan_parameters = 'P'
+
+    def test_all_plans_round_1_invariants(self, simulation_service_factory, plan_parameters):
+        """Test round 1 structural invariants across all plans."""
+        svc = simulation_service_factory(plan_parameters)
+&gt;       result = svc.run_simulation(1)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB592DA90&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB592E890&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceStructuralInvariants" name="test_all_plans_round_1_invariants[R]" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceStructuralInvariants object at 0x0000023DB586DA90&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572D3A0&gt;
+plan_parameters = 'R'
+
+    def test_all_plans_round_1_invariants(self, simulation_service_factory, plan_parameters):
+        """Test round 1 structural invariants across all plans."""
+        svc = simulation_service_factory(plan_parameters)
+&gt;       result = svc.run_simulation(1)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5895C10&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5897C50&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceStructuralInvariants" name="test_all_plans_round_1_invariants[F]" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceStructuralInvariants object at 0x0000023DB586E350&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572D580&gt;
+plan_parameters = 'F'
+
+    def test_all_plans_round_1_invariants(self, simulation_service_factory, plan_parameters):
+        """Test round 1 structural invariants across all plans."""
+        svc = simulation_service_factory(plan_parameters)
+&gt;       result = svc.run_simulation(1)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB56F8850&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB56FA1D0&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceStructuralInvariants" name="test_all_plans_round_1_invariants[E]" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceStructuralInvariants object at 0x0000023DB586D910&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572CD60&gt;
+plan_parameters = 'E'
+
+    def test_all_plans_round_1_invariants(self, simulation_service_factory, plan_parameters):
+        """Test round 1 structural invariants across all plans."""
+        svc = simulation_service_factory(plan_parameters)
+&gt;       result = svc.run_simulation(1)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB574CE10&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB574E110&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceStructuralInvariants" name="test_cumulative_profit_monotonic" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceStructuralInvariants object at 0x0000023DB586DC50&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572F380&gt;
+
+    def test_cumulative_profit_monotonic(self, simulation_service_factory):
+        """Test that cumulative profit is monotonic non-decreasing after initial rounds."""
+        svc = simulation_service_factory('A')
+&gt;       result = svc.run_simulation(5)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB58FF910&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB54A6DD0&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceMultiRoundSnapshot" name="test_plan_a_canonical_snapshot" time="0.003"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceMultiRoundSnapshot object at 0x0000023DB586E7D0&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572F740&gt;
+determinism_guard = None
+
+    def test_plan_a_canonical_snapshot(self, simulation_service_factory, determinism_guard):
+        """Test Plan A with canonical 36 rounds and validate against snapshot."""
+        from conftest import CANONICAL_SNAPSHOT_ROUNDS
+    
+        # Use determinism guard to ensure no randomness
+        svc = simulation_service_factory('A')
+&gt;       result = svc.run_simulation(CANONICAL_SNAPSHOT_ROUNDS)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5813990&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5813E90&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceMultiRoundSnapshot" name="test_settlement_bonus_deactivation_after_round_15" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceMultiRoundSnapshot object at 0x0000023DB586EC50&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572FB00&gt;
+
+    def test_settlement_bonus_deactivation_after_round_15(self, simulation_service_factory):
+        """Test that settlement bonus is deactivated after round 15."""
+        svc = simulation_service_factory('A')
+&gt;       result = svc.run_simulation(20)  # Run past round 15
+                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:125: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5684950&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5684AD0&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceEdgeCases" name="test_invalid_plan_id_raises_error" time="0.001" /><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceEdgeCases" name="test_zero_rounds_raises_error" time="0.001" /><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceEdgeCases" name="test_negative_rounds_raises_error" time="0.001" /><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceTaxLogic" name="test_tax_calculation_first_round" time="0.001"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceTaxLogic object at 0x0000023DB5860190&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB5780400&gt;
+
+    def test_tax_calculation_first_round(self, simulation_service_factory):
+        """Test tax calculation correctness for first round."""
+        svc = simulation_service_factory('A')
+&gt;       result = svc.run_simulation(1)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:169: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB57FA750&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB57F8A10&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceTaxLogic" name="test_tax_calculation_multiple_rounds" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceTaxLogic object at 0x0000023DB58607D0&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB5780720&gt;
+
+    def test_tax_calculation_multiple_rounds(self, simulation_service_factory):
+        """Test tax calculation correctness across multiple rounds."""
+        svc = simulation_service_factory('A')
+&gt;       result = svc.run_simulation(5)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:181: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5807450&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5806FD0&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceTaxLogic" name="test_cumulative_tax_accumulation" time="0.003"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceTaxLogic object at 0x0000023DB5860CD0&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB5780860&gt;
+
+    def test_cumulative_tax_accumulation(self, simulation_service_factory):
+        """Test that cumulative tax calculations don't double-tax."""
+        svc = simulation_service_factory('A')
+&gt;       result = svc.run_simulation(3)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:192: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5894250&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5895890&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceCustomParameters" name="test_custom_scheduled_payment_override" time="0.002" /><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceCustomParameters" name="test_custom_sales_achievement_rates" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceCustomParameters object at 0x0000023DB58618D0&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB5780A40&gt;
+
+    def test_custom_sales_achievement_rates(self, simulation_service_factory):
+        """Test simulation with custom sales achievement rates."""
+        custom_rates = {4: 0.8, 5: 0.9, 6: 0.7}  # Valid range 0.5-1.0
+        svc = simulation_service_factory('A', {'sales_achievement_rates': custom_rates})
+    
+&gt;       result = svc.run_simulation(10)
+                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:227: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB58C3F50&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB58C0C10&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceCustomParameters" name="test_invalid_sales_achievement_rates_filtered" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceCustomParameters object at 0x0000023DB5861B10&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB5781260&gt;
+
+    def test_invalid_sales_achievement_rates_filtered(self, simulation_service_factory):
+        """Test that invalid sales achievement rates are filtered out."""
+        # Mix of valid and invalid rates
+        custom_rates = {4: 0.8, 5: 1.5, 6: 0.3, 7: 0.9}  # 5 and 6 are invalid
+        svc = simulation_service_factory('A', {'sales_achievement_rates': custom_rates})
+    
+        # Should not raise error - invalid rates should be filtered
+&gt;       result = svc.run_simulation(5)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:240: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB55CFAD0&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB55CCE90&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServicePlanSpecificLogic" name="test_plan_d_max_investor_count" time="0.002" /><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServicePlanSpecificLogic" name="test_plan_a_vs_plan_c_max_bonus_difference" time="0.001" /><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationResultsStructure" name="test_simulation_results_to_dict" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationResultsStructure object at 0x0000023DB5863A90&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572CD60&gt;
+
+    def test_simulation_results_to_dict(self, simulation_service_factory):
+        """Test SimulationResults.to_dict() method."""
+        svc = simulation_service_factory('A')
+&gt;       result = svc.run_simulation(3)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:272: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB57A3090&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB57A2290&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationResultsStructure" name="test_round_result_to_dict" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationResultsStructure object at 0x0000023DB5882410&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572FB00&gt;
+
+    def test_round_result_to_dict(self, simulation_service_factory):
+        """Test SimulationRoundResult.to_dict() method."""
+        svc = simulation_service_factory('A')
+&gt;       result = svc.run_simulation(1)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:295: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5894A90&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5896A50&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceBoundaryConditions" name="test_round_boundary_transitions" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceBoundaryConditions object at 0x0000023DB5882950&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572E520&gt;
+
+    def test_round_boundary_transitions(self, simulation_service_factory):
+        """Test explicit boundary transitions for rounds 1, 15, 16."""
+        svc = simulation_service_factory('A')
+&gt;       result = svc.run_simulation(20)
+                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:318: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB58B9850&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB58B8410&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceBoundaryConditions" name="test_investor_growth_ceiling" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceBoundaryConditions object at 0x0000023DB5882D10&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB572E700&gt;
+
+    def test_investor_growth_ceiling(self, simulation_service_factory):
+        """Test that investor count never exceeds max_investor_count."""
+        svc = simulation_service_factory('A')  # max_investor_count = 15
+&gt;       result = svc.run_simulation(25)  # Run well past max
+                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:341: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5624450&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5625C90&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceBoundaryConditions" name="test_high_round_count_stability" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceBoundaryConditions object at 0x0000023DB5883790&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB57811C0&gt;
+
+    def test_high_round_count_stability(self, simulation_service_factory):
+        """Test simulation stability with high round count."""
+        svc = simulation_service_factory('A')
+&gt;       result = svc.run_simulation(100)
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:349: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB57D6050&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB57D4110&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceInputValidation" name="test_plan_id_case_sensitivity" time="0.002" /><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceInputValidation" name="test_scheduled_payment_negative_values_handling" time="0.002"><failure message="assert False&#10; +  where False = all(&lt;generator object TestSimulationServiceInputValidation.test_scheduled_payment_negative_values_handling.&lt;locals&gt;.&lt;genexpr&gt; at 0x0000023DB56105F0&gt;)">self = &lt;test_simulation_service.TestSimulationServiceInputValidation object at 0x0000023DB5880950&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB5780F40&gt;
+
+    def test_scheduled_payment_negative_values_handling(self, simulation_service_factory):
+        """Test handling of negative payment values."""
+        # The service should handle this gracefully by using minimums
+        negative_payments = {1: -100000, 2: 200000}
+        svc = simulation_service_factory('A', {'scheduled_payment': negative_payments})
+    
+        # Should use minimum payment rules instead of negative values
+        result = svc.run_simulation(2)
+        assert len(result.history) == 2
+&gt;       assert all(r.total_payment &gt;= 0 for r in result.history)
+E       assert False
+E        +  where False = all(&lt;generator object TestSimulationServiceInputValidation.test_scheduled_payment_negative_values_handling.&lt;locals&gt;.&lt;genexpr&gt; at 0x0000023DB56105F0&gt;)
+
+tests\unit\simulation\test_simulation_service.py:381: AssertionError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceInputValidation" name="test_scheduled_payment_non_integer_keys_conversion" time="0.002" /><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceMonetaryExtremes" name="test_very_large_payment_values" time="0.002" /><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceMonetaryExtremes" name="test_zero_payment_handling" time="0.002"><failure message="assert 0 &gt; 0&#10; +  where 0 = &lt;simulation_service.SimulationRoundResult object at 0x0000023DB58FD290&gt;.total_payment">self = &lt;test_simulation_service.TestSimulationServiceMonetaryExtremes object at 0x0000023DB5861810&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB5780680&gt;
+
+    def test_zero_payment_handling(self, simulation_service_factory):
+        """Test handling of zero payment values."""
+        zero_payments = {1: 0, 2: 0, 3: 0}
+        svc = simulation_service_factory('A', {'scheduled_payment': zero_payments})
+    
+        result = svc.run_simulation(3)
+    
+        # Should use minimum payment rules instead of zero
+        assert len(result.history) == 3
+        # Payments should fall back to minimums from plan parameters
+        for round_result in result.history:
+&gt;           assert round_result.total_payment &gt; 0  # Should use minimums
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           assert 0 &gt; 0
+E            +  where 0 = &lt;simulation_service.SimulationRoundResult object at 0x0000023DB58FD290&gt;.total_payment
+
+tests\unit\simulation\test_simulation_service.py:427: AssertionError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceAchievementRates" name="test_achievement_rates_padding_behavior" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceAchievementRates object at 0x0000023DB5880690&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB5781620&gt;
+
+    def test_achievement_rates_padding_behavior(self, simulation_service_factory):
+        """Test shorter achievement rates list gets padded."""
+        # Provide rates for only first few rounds
+        short_rates = {4: 0.8, 5: 0.9}  # Missing later rounds
+        svc = simulation_service_factory('A', {'sales_achievement_rates': short_rates})
+    
+&gt;       result = svc.run_simulation(10)
+                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:439: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB57DDD50&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB57DDD90&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceAchievementRates" name="test_achievement_rates_truncation_behavior" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceAchievementRates object at 0x0000023DB5881690&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB5781D00&gt;
+
+    def test_achievement_rates_truncation_behavior(self, simulation_service_factory):
+        """Test longer achievement rates list gets truncated."""
+        # Provide more rates than needed
+        long_rates = {i: 0.8 for i in range(4, 50)}  # Many more than needed
+        svc = simulation_service_factory('A', {'sales_achievement_rates': long_rates})
+    
+&gt;       result = svc.run_simulation(5)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:450: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5812290&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5812550&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceAchievementRates" name="test_achievement_rates_out_of_range_ignored" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceAchievementRates object at 0x0000023DB5881910&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB5781760&gt;
+
+    def test_achievement_rates_out_of_range_ignored(self, simulation_service_factory):
+        """Test that achievement rates outside 0.5-1.0 range are ignored."""
+        invalid_rates = {4: 1.5, 5: 0.3, 6: 0.8}  # Only 6 is valid
+        svc = simulation_service_factory('A', {'sales_achievement_rates': invalid_rates})
+    
+        # Should not raise error and should run simulation
+&gt;       result = svc.run_simulation(10)
+                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:461: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5684910&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5684F90&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceStress" name="test_very_high_round_count" time="0.002"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceStress object at 0x0000023DB5847B50&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB5781A80&gt;
+
+    def test_very_high_round_count(self, simulation_service_factory):
+        """Test simulation with very high round count (200 rounds)."""
+        svc = simulation_service_factory('A')
+&gt;       result = svc.run_simulation(200)
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:472: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB56865D0&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5686010&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceDeterminism" name="test_simulation_determinism" time="0.003"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceDeterminism object at 0x0000023DB5846750&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB5782480&gt;
+determinism_guard = None
+
+    def test_simulation_determinism(self, simulation_service_factory, determinism_guard):
+        """Test that simulation results are deterministic."""
+        # Run same simulation twice with determinism guard
+        svc1 = simulation_service_factory('A')
+&gt;       result1 = svc1.run_simulation(5)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:493: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5935390&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5935CD0&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.simulation.test_simulation_service.TestSimulationServiceDeterminism" name="test_no_random_usage_in_simulation" time="0.003"><failure message="KeyError: 'scheduled_payment'">self = &lt;test_simulation_service.TestSimulationServiceDeterminism object at 0x0000023DB5844E10&gt;
+simulation_service_factory = &lt;function simulation_service_factory.&lt;locals&gt;._create_service at 0x0000023DB5782840&gt;
+determinism_guard = None
+
+    def test_no_random_usage_in_simulation(self, simulation_service_factory, determinism_guard):
+        """Test that simulation doesn't use random functions."""
+        # determinism_guard fixture will raise if random functions are called
+        svc = simulation_service_factory('A')
+&gt;       result = svc.run_simulation(10)
+                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\simulation\test_simulation_service.py:512: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation_service.py:347: in run_simulation
+    self.run_single_round()
+simulation_service.py:260: in run_single_round
+    actual_payment = self._calculate_actual_payment(investor)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;simulation_service.FinancialSimulationService object at 0x0000023DB5933450&gt;
+investor = &lt;simulation_service.Investor object at 0x0000023DB5931150&gt;
+
+    def _calculate_actual_payment(self, investor: Investor) -&gt; float:
+        """
+        Calculate the actual payment amount for an investor based on plan parameters.
+        """
+        p = self.params
+        start_round = investor.start_company_round
+    
+        # Get the scheduled payment amount for this start round
+&gt;       scheduled_payment = p['scheduled_payment'].get(start_round, 0)
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'scheduled_payment'
+
+simulation_service.py:216: KeyError</failure></testcase><testcase classname="tests.unit.utils.test_utils.TestOTPConstants" name="test_max_otp_verify_attempts_constant" time="0.002" /><testcase classname="tests.unit.utils.test_utils.TestOTPConstants" name="test_otp_send_rate_limit_constant" time="0.002" /><testcase classname="tests.unit.utils.test_utils.TestOTPConstants" name="test_otp_validity_minutes_constant" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestPhoneNormalizationUtility" name="test_phone_normalization_idempotence" time="0.041" /><testcase classname="tests.unit.utils.test_utils.TestPhoneNormalizationUtility" name="test_phone_trimming_and_spaces" time="0.002" /><testcase classname="tests.unit.utils.test_utils.TestPhoneNormalizationUtility" name="test_phone_multiple_prefix_support" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestPhoneNormalizationUtility" name="test_phone_invalid_prefix_raises" time="0.002"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">self = &lt;test_utils.TestPhoneNormalizationUtility object at 0x0000023DB5675E10&gt;
+
+    def test_phone_invalid_prefix_raises(self):
+        """Invalid Korean mobile prefixes should raise ValueError (strict policy)."""
+        from services.otp.utils import normalize_phone
+    
+        with pytest.raises(ValueError):
+            normalize_phone("020-1234-5678")
+        with pytest.raises(ValueError):
+            normalize_phone("012-1234-5678")
+&gt;       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\unit\utils\test_utils.py:98: Failed</failure></testcase><testcase classname="tests.unit.utils.test_utils.TestPhoneNormalizationUtility" name="test_phone_canonical_hyphenated_form_preservation" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestHashNormalizationUtility" name="test_whitelist_hash_consistency" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestHashNormalizationUtility" name="test_hash_function_deterministic" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestHashNormalizationUtility" name="test_approved_test_phone_pattern_validation" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestHashNormalizationUtility" name="test_phone_formatting_multi_prefix_coverage" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestStructuredErrorEnvelopeBuilder" name="test_build_error_idempotence" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestStructuredErrorEnvelopeBuilder" name="test_build_error_shape_contract" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestStructuredErrorEnvelopeBuilder" name="test_build_error_without_details" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestOTPLimitsValidation" name="test_otp_verify_attempt_limit_behavior" time="0.002" /><testcase classname="tests.unit.utils.test_utils.TestOTPLimitsValidation" name="test_otp_send_rate_limit_behavior" time="0.159"><skipped type="pytest.skip" message="freezegun not available">C:\Users\raykim\Documents\workspace\partnerclub\simulation\src\backend\tests\unit\utils\test_utils.py:252: freezegun not available</skipped></testcase><testcase classname="tests.unit.utils.test_utils.TestOTPSendLimiterHelper" name="test_rolling_window_15_minutes" time="0.010"><skipped type="pytest.skip" message="freezegun not available">C:\Users\raykim\Documents\workspace\partnerclub\simulation\src\backend\tests\unit\utils\test_utils.py:278: freezegun not available</skipped></testcase><testcase classname="tests.unit.utils.test_utils.TestJWKSCachingTTLValidation" name="test_jwks_reuse_within_early_portion" time="0.009"><skipped type="pytest.skip" message="freezegun not available">C:\Users\raykim\Documents\workspace\partnerclub\simulation\src\backend\tests\unit\utils\test_utils.py:315: freezegun not available</skipped></testcase><testcase classname="tests.unit.utils.test_utils.TestJWKSCachingTTLValidation" name="test_jwks_forced_refresh_after_upper_bound" time="0.009"><skipped type="pytest.skip" message="freezegun not available">C:\Users\raykim\Documents\workspace\partnerclub\simulation\src\backend\tests\unit\utils\test_utils.py:333: freezegun not available</skipped></testcase><testcase classname="tests.unit.utils.test_utils.TestPrivacyPolicyFallback" name="test_policy_fallback_static_file_source_field" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestPrivacyPolicyFallback" name="test_policy_fallback_vs_db_source_distinction" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestScheduledPaymentConversion" name="test_scheduled_payment_to_investments_mapping" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestScheduledPaymentConversion" name="test_scheduled_payment_negative_values_rejected" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestScheduledPaymentConversion" name="test_scheduled_payment_duplicate_rounds_rejection" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestInputSanitationValidation" name="test_plan_id_case_sensitivity_validation" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestInputSanitationValidation" name="test_numeric_input_type_validation" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestMonetaryMagnitudeValidation" name="test_no_overflow_large_values" time="0.001" /><testcase classname="tests.unit.utils.test_utils.TestMonetaryMagnitudeValidation" name="test_precision_drift_tolerance" time="0.001" /></testsuite></testsuites>

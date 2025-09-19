@@ -1,4 +1,4 @@
-$TEST_REPORT_DIR = "/.memo/CE/implement/test-code/01-backend-unit/run-report"
+$TEST_REPORT_DIR = "c:\Users\raykim\Documents\workspace\partnerclub\simulation\.memo\CE\implement\test-code\01-backend-unit\run-report"
 $TEST_REPORT_FILE = "test-01-backend-unit"
 
 # Running Tests and Generating Reports
