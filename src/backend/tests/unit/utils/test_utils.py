@@ -262,21 +262,47 @@ class TestOTPLimitsValidation:
             
             phone = "01012345678"
             
-            # First 3 sends should succeed (mock rate limit check to return low count)
-            fake_supabase_client.table().select().eq().gte().execute.return_value.count = 0
+            # Setup proper mock chain for database queries
+            # For rate limit checks: table("phone_otps").select("count", count="exact").eq().gte().execute()
+            mock_select_chain = Mock()
+            mock_eq_chain = Mock()
+            mock_gte_chain = Mock()
+            mock_execute_result = Mock()
             
+            # Set up the chain: table() -> select() -> eq() -> gte() -> execute()
+            fake_supabase_client.table.return_value = mock_select_chain
+            mock_select_chain.select.return_value = mock_eq_chain
+            mock_eq_chain.eq.return_value = mock_gte_chain
+            mock_gte_chain.gte.return_value = mock_execute_result
+            
+            # Also need to mock update chain for invalidating existing OTPs
+            mock_update_chain = Mock()
+            mock_update_eq1 = Mock()
+            mock_update_eq2 = Mock() 
+            mock_update_execute = Mock()
+            mock_update_execute.execute.return_value = Mock()
+            
+            # Set up update chain: table() -> update() -> eq() -> eq() -> execute()
+            mock_select_chain.update.return_value = mock_update_chain
+            mock_update_chain.eq.return_value = mock_update_eq1
+            mock_update_eq1.eq.return_value = mock_update_eq2
+            mock_update_eq2.execute.return_value = Mock()
+            
+            # Mock insert chain: table() -> insert() -> execute()
+            mock_insert_chain = Mock()
+            mock_select_chain.insert.return_value = mock_insert_chain
+            mock_insert_chain.execute.return_value = Mock(data=[{"id": "test-id"}])
+            
+            # First 3 sends should succeed
             for i in range(3):
-                # Mock database count for rate limiting check (increase each time)
-                fake_supabase_client.table().select().eq().gte().execute.return_value.count = i
-                
-                # Mock successful database insert
-                fake_supabase_client.table().insert().execute.return_value.data = [{"id": f"test-{i}"}]
+                # Mock rate limit count (i requests in 15min window)
+                mock_execute_result.execute.return_value = Mock(count=i)
                 
                 result = otp_service.request_otp(phone)
                 assert result["success"] is True, f"Send {i+1} should succeed"
             
             # 4th send within 15 minutes should fail (rate limit reached)
-            fake_supabase_client.table().select().eq().gte().execute.return_value.count = 3
+            mock_execute_result.execute.return_value = Mock(count=3)
             
             result = otp_service.request_otp(phone)
             assert result["success"] is False
