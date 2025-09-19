@@ -38,7 +38,9 @@ copy test-output.txt $TEST_REPORT_DIR
 
 ## 5. Write custom report
 
-Reorganize the test-results and test-output into the following markdown format, and save as $TEST_REPORT_FILE in the same directory.
+Reorganize the test-results and test-output into the markdown format, and save as $TEST_REPORT_FILE in the same directory. 
+
+Here is the example format of the custom report to follow:
 
 ```markdown
 # Backend Unit Test Execution Report
