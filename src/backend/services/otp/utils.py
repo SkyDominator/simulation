@@ -46,15 +46,23 @@ def normalize_phone(phone_number: str) -> str:
     Normalize phone number to E.164 format.
     For Korean numbers, ensure they start with +82.
     
-    Simplified version - in production use a proper library like phonenumbers.
+    Supports multiple Korean prefixes: 010, 011, 016, 017, 018, 019
     """
     # Remove any non-digit characters
     digits_only = ''.join(c for c in phone_number if c.isdigit())
     
-    # Handle Korean numbers
+    # Handle Korean numbers with multiple prefixes
     if digits_only.startswith('0'):
-        # Remove leading 0 and add +82 for Korea
-        return f"+82{digits_only[1:]}"
+        # Check for valid Korean mobile prefixes
+        valid_prefixes = ['010', '011', '016', '017', '018', '019']
+        prefix = digits_only[:3]
+        
+        if prefix in valid_prefixes:
+            # Remove leading 0 and add +82 for Korea
+            return f"+82{digits_only[1:]}"
+        else:
+            # Invalid prefix
+            raise ValueError(f"Invalid Korean phone prefix: {prefix}")
     
     # If already in international format
     if digits_only.startswith('82'):

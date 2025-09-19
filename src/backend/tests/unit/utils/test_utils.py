@@ -5,26 +5,21 @@ import re
 from unittest.mock import Mock, patch
 from datetime import datetime, timedelta
 
-# Test constants from plan
-MAX_OTP_VERIFY_ATTEMPTS_EXPECTED = 6  # From SSD and plan requirement
+# Import the constants now that they're properly defined
+from constants import MAX_OTP_VERIFY_ATTEMPTS, OTP_RESEND_LIMIT_PER_15MIN, OTP_VALIDITY_MINUTES
 
 class TestOTPConstants:
     """Test OTP-related constants validation."""
     
     def test_max_otp_verify_attempts_constant(self, settings_override):
         """Test that MAX_OTP_VERIFY_ATTEMPTS constant equals 6 as per SSD §7.1."""
-        # This is marked as xfail until config is updated per plan Task 25
         from config.settings import settings
         
-        # Current implementation has otp_max_attempts which should be 6
-        # If this test fails, it indicates a discrepancy from the plan
-        expected_attempts = MAX_OTP_VERIFY_ATTEMPTS_EXPECTED
-        actual_attempts = getattr(settings, 'otp_max_attempts', 3)  # Default to 3 if not found
+        # Now that we've updated the config, this should pass without xfail
+        expected_attempts = MAX_OTP_VERIFY_ATTEMPTS
+        actual_attempts = getattr(settings, 'otp_max_attempts', 3)
         
-        if actual_attempts != expected_attempts:
-            pytest.xfail(f"OTP max attempts is {actual_attempts}, expected {expected_attempts}. Update config to match SSD.")
-        
-        assert actual_attempts == expected_attempts
+        assert actual_attempts == expected_attempts == 6
     
     def test_otp_send_rate_limit_constant(self, settings_override):
         """Test OTP send rate limit is 3 per 15 minutes."""

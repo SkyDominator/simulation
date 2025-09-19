@@ -39,7 +39,7 @@ def settings_override():
         "supabase_secret_key": "test_secret_key",
         "otp_secret_key": "test-secret-key",
         "otp_validity_minutes": 5,
-        "otp_max_attempts": 3,
+        "otp_max_attempts": 6,  # Updated to match SSD §7.1 requirement  
         "otp_resend_limit_per_15min": 3,
         "cors_origins": ["http://localhost:5173"]
     }
