@@ -17,11 +17,11 @@
       "justMyCode": true
     },
     {
-      "name": "Backend: FastAPI (pytest)",
+      "name": "Backend (pytest)",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/tests/unit/simulation/test_simulation_service.py", "--maxfail=1", "-v"],
+      "args": ["tests/unit/simulation/test_simulation_service.py", "--maxfail=1", "-v"],
       "cwd": "${workspaceFolder}/src/backend",
       "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {
