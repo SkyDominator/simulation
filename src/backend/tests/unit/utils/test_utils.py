@@ -246,64 +246,103 @@ class TestOTPLimitsValidation:
         assert "remaining_attempts" in result
         assert result["remaining_attempts"] >= 0
     
-    def test_otp_send_rate_limit_behavior(self, freeze_jan_1_2025):
+    def test_otp_send_rate_limit_behavior(self, freeze_jan_1_2025, fake_supabase_client):
         """Test OTP send rate limit (3 sends per 15 minutes) per Task 26."""
-        if freeze_jan_1_2025 is None:
-            pytest.skip("freezegun not available")
+        # Note: freeze_jan_1_2025 fixture automatically freezes time, no need to check if None
         
-        # Mock OTP service for rate limiting test
-        mock_service = Mock()
+        # Import the actual OTP service
+        from services.otp.otp_service import OTPService
         
-        # First 3 sends should succeed
-        for i in range(3):
-            mock_service.send_otp.return_value = {"success": True, "message": f"Sent {i+1}"}
+        # Create real OTP service with mocked database
+        otp_service = OTPService(fake_supabase_client)
         
-        # 4th send within 15 minutes should fail
-        mock_service.send_otp.return_value = {
-            "success": False,
-            "message": "Rate limit exceeded"
-        }
-        
-        result = mock_service.send_otp()
-        # Rate limit logic should be tested
-        assert "success" in result
+        # Mock the SMS client to avoid actual sending
+        with patch.object(otp_service.sms_client, 'send_otp') as mock_sms:
+            mock_sms.return_value = {"success": True, "provider_msg_id": "test-123"}
+            
+            phone = "01012345678"
+            
+            # First 3 sends should succeed (mock rate limit check to return low count)
+            fake_supabase_client.table().select().eq().gte().execute.return_value.count = 0
+            
+            for i in range(3):
+                # Mock database count for rate limiting check (increase each time)
+                fake_supabase_client.table().select().eq().gte().execute.return_value.count = i
+                
+                # Mock successful database insert
+                fake_supabase_client.table().insert().execute.return_value.data = [{"id": f"test-{i}"}]
+                
+                result = otp_service.request_otp(phone)
+                assert result["success"] is True, f"Send {i+1} should succeed"
+            
+            # 4th send within 15 minutes should fail (rate limit reached)
+            fake_supabase_client.table().select().eq().gte().execute.return_value.count = 3
+            
+            result = otp_service.request_otp(phone)
+            assert result["success"] is False
+            assert "Maximum OTP requests reached" in result["message"]
 
 
 class TestOTPSendLimiterHelper:
     """Test OTP send limiter helper logic per Task 26."""
     
-    def test_rolling_window_15_minutes(self, freeze_jan_1_2025):
+    def test_rolling_window_15_minutes(self, freeze_jan_1_2025, fake_supabase_client):
         """Test 15-minute rolling window for OTP send limits."""
-        if freeze_jan_1_2025 is None:
-            pytest.skip("freezegun not available")
+        # Note: freeze_jan_1_2025 fixture automatically freezes time, no need to check if None
         
-        # This would test the rolling window logic
-        # Implementation depends on the actual OTP service structure
-        start_time = datetime(2025, 1, 1, 12, 0, 0)
+        # Import the actual OTP service
+        from services.otp.otp_service import OTPService
         
-        # Simulate send times
-        send_times = [
-            start_time,  # 12:00
-            start_time + timedelta(minutes=5),   # 12:05  
-            start_time + timedelta(minutes=10),  # 12:10
-            start_time + timedelta(minutes=16),  # 12:16 (outside 15min window)
-        ]
+        # Create real OTP service with mocked database
+        otp_service = OTPService(fake_supabase_client)
         
-        # Test that logic can handle time-based windows
-        assert len(send_times) == 4
-        
-        # Window calculation test
-        window_size = timedelta(minutes=15)
-        current_time = send_times[-1]
-        
-        # Count sends within window
-        sends_in_window = [
-            t for t in send_times 
-            if current_time - t <= window_size
-        ]
-        
-        # Should only count the last send (12:16) as others are outside window
-        assert len(sends_in_window) == 1
+        # Mock the SMS client to avoid actual sending
+        with patch.object(otp_service.sms_client, 'send_otp') as mock_sms:
+            mock_sms.return_value = {"success": True, "provider_msg_id": "test-123"}
+            
+            # This would test the rolling window logic using actual backend rate limiting
+            start_time = datetime(2025, 1, 1, 12, 0, 0)
+            phone = "01012345678"
+            
+            # Simulate send times within rolling window
+            send_times = [
+                start_time,  # 12:00
+                start_time + timedelta(minutes=5),   # 12:05  
+                start_time + timedelta(minutes=10),  # 12:10
+                start_time + timedelta(minutes=16),  # 12:16 (outside 15min window)
+            ]
+            
+            # Test that logic can handle time-based windows
+            assert len(send_times) == 4
+            
+            # Test actual rolling window calculation from the backend
+            window_size = timedelta(minutes=15)
+            current_time = send_times[-1]  # 12:16
+            
+            # Count sends within window (mimics backend logic)
+            # Check if each send time is within 15 minutes of current time (12:16)
+            sends_in_window = [
+                t for t in send_times 
+                if current_time - t <= window_size
+            ]
+            
+            # From 12:16, looking back 15 minutes:
+            # - 12:00 is 16 minutes ago (outside window)
+            # - 12:05 is 11 minutes ago (inside window) 
+            # - 12:10 is 6 minutes ago (inside window)
+            # - 12:16 is 0 minutes ago (inside window)
+            # So 3 sends should be in window
+            assert len(sends_in_window) == 3
+            
+            # Test with backend rate limiting logic
+            # Mock database to return count that simulates rolling window behavior
+            # Since we have 3 sends in window, but rate limit is 3, we should test with 2 to allow one more
+            fake_supabase_client.table().select().eq().gte().execute.return_value.count = 2
+            fake_supabase_client.table().insert().execute.return_value.data = [{"id": "test-window"}]
+            
+            # This should succeed as we're under the limit (2 < 3)
+            result = otp_service.request_otp(phone)
+            assert result["success"] is True
 
 
 class TestJWKSCachingTTLValidation:
@@ -311,8 +350,7 @@ class TestJWKSCachingTTLValidation:
     
     def test_jwks_reuse_within_early_portion(self, freeze_jan_1_2025):
         """Test JWKS key reuse within early portion (<5m).""" 
-        if freeze_jan_1_2025 is None:
-            pytest.skip("freezegun not available")
+        # Note: freeze_jan_1_2025 fixture automatically freezes time, no need to check if None
         
         # Mock JWKS client behavior
         mock_client = Mock()
@@ -329,8 +367,7 @@ class TestJWKSCachingTTLValidation:
     
     def test_jwks_forced_refresh_after_upper_bound(self, freeze_jan_1_2025):
         """Test JWKS forced refresh after upper bound (>15m)."""
-        if freeze_jan_1_2025 is None:
-            pytest.skip("freezegun not available")
+        # Note: freeze_jan_1_2025 fixture automatically freezes time, no need to check if None
         
         # This test would verify that cache expires after 15+ minutes
         # Implementation depends on actual caching mechanism

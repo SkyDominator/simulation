@@ -5,11 +5,7 @@ import json
 from pathlib import Path
 from typing import Dict, Any, Optional
 from unittest.mock import Mock, patch
-
-try:
-    from freezegun import freeze_time as _freeze
-except ImportError:  # pragma: no cover
-    _freeze = None
+from freezegun import freeze_time as _freeze
 
 # Test constants
 CANONICAL_SNAPSHOT_ROUNDS = 36  # Used for snapshot tests only, not production
