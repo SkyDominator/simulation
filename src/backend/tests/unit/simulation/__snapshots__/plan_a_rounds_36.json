@@ -1,0 +1,266 @@
+{
+  "version": "1.0",
+  "generated_at": "2025-09-18T00:00:00Z",
+  "plan_id": "A",
+  "rounds": 36,
+  "fields": [
+    "investor_count",
+    "total_payment",
+    "total_revenue_after_tax",
+    "cumulative_profit"
+  ],
+  "history": [
+    {
+      "round": 1,
+      "investor_count": 1,
+      "total_payment": 110000,
+      "total_revenue_after_tax": 30944.0,
+      "cumulative_profit": -110000
+    },
+    {
+      "round": 2,
+      "investor_count": 2,
+      "total_payment": 330000,
+      "total_revenue_after_tax": 92832.0,
+      "cumulative_profit": -409056.0
+    },
+    {
+      "round": 3,
+      "investor_count": 3,
+      "total_payment": 770000,
+      "total_revenue_after_tax": 313308.0,
+      "cumulative_profit": -1086224.0
+    },
+    {
+      "round": 4,
+      "investor_count": 4,
+      "total_payment": 1320000,
+      "total_revenue_after_tax": 661428.0,
+      "cumulative_profit": -2092916.0
+    },
+    {
+      "round": 5,
+      "investor_count": 5,
+      "total_payment": 1980000,
+      "total_revenue_after_tax": 1137192.0,
+      "cumulative_profit": -3411488.0
+    },
+    {
+      "round": 6,
+      "investor_count": 6,
+      "total_payment": 2750000,
+      "total_revenue_after_tax": 1934000.0,
+      "cumulative_profit": -5024296.0
+    },
+    {
+      "round": 7,
+      "investor_count": 7,
+      "total_payment": 3630000,
+      "total_revenue_after_tax": 2955152.0,
+      "cumulative_profit": -6720296.0
+    },
+    {
+      "round": 8,
+      "investor_count": 8,
+      "total_payment": 4620000,
+      "total_revenue_after_tax": 4394048.0,
+      "cumulative_profit": -8385144.0
+    },
+    {
+      "round": 9,
+      "investor_count": 9,
+      "total_payment": 5720000,
+      "total_revenue_after_tax": 6153988.0,
+      "cumulative_profit": -9711096.0
+    },
+    {
+      "round": 10,
+      "investor_count": 10,
+      "total_payment": 6820000,
+      "total_revenue_after_tax": 8494128.0,
+      "cumulative_profit": -10377108.0
+    },
+    {
+      "round": 11,
+      "investor_count": 11,
+      "total_payment": 9020000,
+      "total_revenue_after_tax": 11627208.0,
+      "cumulative_profit": -10902980.0
+    },
+    {
+      "round": 12,
+      "investor_count": 12,
+      "total_payment": 11220000,
+      "total_revenue_after_tax": 15920688.0,
+      "cumulative_profit": -10495772.0
+    },
+    {
+      "round": 13,
+      "investor_count": 13,
+      "total_payment": 14520000,
+      "total_revenue_after_tax": 22360908.0,
+      "cumulative_profit": -9095084.0
+    },
+    {
+      "round": 14,
+      "investor_count": 14,
+      "total_payment": 20020000,
+      "total_revenue_after_tax": 35608808.0,
+      "cumulative_profit": -6754176.0
+    },
+    {
+      "round": 15,
+      "investor_count": 15,
+      "total_payment": 31020000,
+      "total_revenue_after_tax": 60847508.0,
+      "cumulative_profit": -2165368.0
+    },
+    {
+      "round": 16,
+      "investor_count": 15,
+      "total_payment": 41910000,
+      "total_revenue_after_tax": 89343064.0,
+      "cumulative_profit": 16772140.0
+    },
+    {
+      "round": 17,
+      "investor_count": 15,
+      "total_payment": 63690000,
+      "total_revenue_after_tax": 118968076.0,
+      "cumulative_profit": 42425204.0
+    },
+    {
+      "round": 18,
+      "investor_count": 15,
+      "total_payment": 85250000,
+      "total_revenue_after_tax": 145340100.0,
+      "cumulative_profit": 76143280.0
+    },
+    {
+      "round": 19,
+      "investor_count": 15,
+      "total_payment": 117700000,
+      "total_revenue_after_tax": 171391080.0,
+      "cumulative_profit": 103783380.0
+    },
+    {
+      "round": 20,
+      "investor_count": 15,
+      "total_payment": 117040000,
+      "total_revenue_after_tax": 205050416.0,
+      "cumulative_profit": 158134460.0
+    },
+    {
+      "round": 21,
+      "investor_count": 15,
+      "total_payment": 116270000,
+      "total_revenue_after_tax": 239645808.0,
+      "cumulative_profit": 246914876.0
+    },
+    {
+      "round": 22,
+      "investor_count": 15,
+      "total_payment": 115390000,
+      "total_revenue_after_tax": 293550256.0,
+      "cumulative_profit": 371170684.0
+    },
+    {
+      "round": 23,
+      "investor_count": 15,
+      "total_payment": 114400000,
+      "total_revenue_after_tax": 322281760.0,
+      "cumulative_profit": 550320940.0
+    },
+    {
+      "round": 24,
+      "investor_count": 15,
+      "total_payment": 113300000,
+      "total_revenue_after_tax": 317137320.0,
+      "cumulative_profit": 759302700.0
+    },
+    {
+      "round": 25,
+      "investor_count": 15,
+      "total_payment": 112200000,
+      "total_revenue_after_tax": 292652880.0,
+      "cumulative_profit": 964240020.0
+    },
+    {
+      "round": 26,
+      "investor_count": 15,
+      "total_payment": 110000000,
+      "total_revenue_after_tax": 263024000.0,
+      "cumulative_profit": 1146892900.0
+    },
+    {
+      "round": 27,
+      "investor_count": 15,
+      "total_payment": 107800000,
+      "total_revenue_after_tax": 233395120.0,
+      "cumulative_profit": 1302116900.0
+    },
+    {
+      "round": 28,
+      "investor_count": 15,
+      "total_payment": 104500000,
+      "total_revenue_after_tax": 203456800.0,
+      "cumulative_profit": 1431012020.0
+    },
+    {
+      "round": 29,
+      "investor_count": 15,
+      "total_payment": 99000000,
+      "total_revenue_after_tax": 172899600.0,
+      "cumulative_profit": 1535468820.0
+    },
+    {
+      "round": 30,
+      "investor_count": 15,
+      "total_payment": 88000000,
+      "total_revenue_after_tax": 140795200.0,
+      "cumulative_profit": 1620368420.0
+    },
+    {
+      "round": 31,
+      "investor_count": 15,
+      "total_payment": 77000000,
+      "total_revenue_after_tax": 21660800.0,
+      "cumulative_profit": 1684163620.0
+    },
+    {
+      "round": 32,
+      "investor_count": 15,
+      "total_payment": 55000000,
+      "total_revenue_after_tax": 15472000.0,
+      "cumulative_profit": 1650824420.0
+    },
+    {
+      "round": 33,
+      "investor_count": 15,
+      "total_payment": 33000000,
+      "total_revenue_after_tax": 9283200.0,
+      "cumulative_profit": 1633296420.0
+    },
+    {
+      "round": 34,
+      "investor_count": 15,
+      "total_payment": 0,
+      "total_revenue_after_tax": 0.0,
+      "cumulative_profit": 1642579620.0
+    },
+    {
+      "round": 35,
+      "investor_count": 15,
+      "total_payment": 0,
+      "total_revenue_after_tax": 0.0,
+      "cumulative_profit": 1642579620.0
+    },
+    {
+      "round": 36,
+      "investor_count": 15,
+      "total_payment": 0,
+      "total_revenue_after_tax": 0.0,
+      "cumulative_profit": 1642579620.0
+    }
+  ]
+}
