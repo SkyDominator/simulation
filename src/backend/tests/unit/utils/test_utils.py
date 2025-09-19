@@ -6,7 +6,11 @@ from unittest.mock import Mock, patch
 from datetime import datetime, timedelta
 
 # Import the constants now that they're properly defined
-from constants import MAX_OTP_VERIFY_ATTEMPTS, OTP_RESEND_LIMIT_PER_15MIN, OTP_VALIDITY_MINUTES
+from config.settings import settings
+# OTP Security Constants (per SSD §7.1)
+MAX_OTP_VERIFY_ATTEMPTS = settings.otp_max_verification_attempts  # Maximum verification attempts per OTP code
+OTP_RESEND_LIMIT_PER_15MIN = settings.otp_resend_limit_per_15min  # Maximum OTP send requests per 15 minutes
+OTP_VALIDITY_MINUTES = settings.otp_validity_minutes  # OTP expiration time in minutes
 
 class TestOTPConstants:
     """Test OTP-related constants validation."""

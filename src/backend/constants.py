@@ -1,8 +1,3 @@
-# OTP Security Constants (per SSD §7.1)
-MAX_OTP_VERIFY_ATTEMPTS = 6  # Maximum verification attempts per OTP code
-OTP_RESEND_LIMIT_PER_15MIN = 3  # Maximum OTP send requests per 15 minutes
-OTP_VALIDITY_MINUTES = 5  # OTP expiration time in minutes
-
 # Financial simulation plan parameters
 PLAN_PARAMETERS = {
     "A": {

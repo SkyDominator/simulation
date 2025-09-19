@@ -166,7 +166,7 @@ class OTPService:
         otp_record = otp_records.data[0]
         
         # Check attempts
-        if otp_record["attempts"] >= settings.otp_max_attempts:
+        if otp_record["attempts"] >= settings.otp_max_verification_attempts:
             # Mark as used/expired since max attempts reached
             self.db_client.table("phone_otps") \
                 .update({"used": True}) \
@@ -199,7 +199,7 @@ class OTPService:
                 .eq("id", otp_record["id"]) \
                 .execute()
                 
-            remaining_attempts = settings.otp_max_attempts - new_attempts
+            remaining_attempts = settings.otp_max_verification_attempts - new_attempts
                 
             return {
                 "success": False,
