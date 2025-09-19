@@ -17,6 +17,21 @@
       "justMyCode": true
     },
     {
+      "name": "Backend: FastAPI (pytest)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["tests/tests/unit/simulation/test_simulation_service.py", "--maxfail=1", "-v"],
+      "cwd": "${workspaceFolder}/src/backend",
+      "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src/backend"
+      },
+      "console": "integratedTerminal",
+      "subProcess": true,
+      "justMyCode": true
+    },
+    {
       "name": "Frontend: Chrome (Vite + Breakpoints)",
       "type": "chrome",
       "request": "launch",
