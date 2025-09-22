@@ -11,15 +11,14 @@ These notes help AI coding agents work effectively in this repo. Keep edits smal
 - Frontend: React + Vite PWA (`src/frontend`). Supabase client reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. PWA caches GET `/api/notices` with NetworkFirst.
 
 ## Local dev & runtime
-- Docker Compose drives the full stack (see `docker-compose.yml`). Containers clone this repo at startup via `/entrypoints/common-init.sh` using `REPO_URL` and an optional PAT in `.secrets/github_pat.txt`.
-- Backend container runs `uvicorn main:app --reload` on 8000. Frontend runs Vite on 5173 and depends on backend health.
-- Env: put backend `.env` in repo root for compose (keys below). Frontend `.env.local` is read by Vite at build/dev time.
-- Windows helpers are under `windows-scripts/` (start/stop, NSSM services). VS Code task `frontend:dev` exists for dev server inside Docker.
+- Current deployment: frontend is served via Vite preview on the laptop server (run `npm run preview` in `src/frontend/`; default port 4173). Backend runs locally (Windows) via the helper scripts in `windows-scripts/` or directly with `uvicorn`.
+- Docker Compose exists for full-stack dev, but it is not the active deployment path. If used, containers clone this repo at startup via `/entrypoints/common-init.sh` using `REPO_URL` and optional PAT in `.secrets/github_pat.txt`.
+- Env: backend `.env` in repo root (keys below). Frontend `.env.local` is read by Vite at build/preview time.
+- Windows helpers in `windows-scripts/` manage start/stop and optional NSSM services.
 
 Minimal commands (PowerShell):
-- Start stack: `docker compose up -d`
-- Tail backend logs: `docker compose logs -f backend`
-- Run backend tests (locally): `cd src/backend; python -m pytest -q`
+- Frontend preview: from `src/frontend`, run `npm run preview` (or via service/scripts); default http://localhost:4173
+- Backend tests: `cd src/backend; python -m pytest -q`
 
 ## Configuration keys (backend)
 - Required: `SUPABASE_URL`, (`SUPABASE_SECRET_KEY` preferred) or `SUPABASE_PUBLISHABLE_KEY`.
@@ -39,7 +38,7 @@ Minimal commands (PowerShell):
   ```
 - Auth guard for admin: use `_assert_admin(user_id, client)` which checks `admins.user_id`.
 - Simulation update invalidation: when modifying plan fields, set `simulation_results` to `None` (see `SimulationService.update`).
-- The full schema information on the current implemented models is available in `/.memo/CE/specs/schema/schema.md`
+- The full schema information on the current implemented models is available in `/.memo/CE/specs/schema/schema.md`.
 
 
 ## Adding an endpoint (example)
@@ -65,6 +64,7 @@ Place models in `models/schemas.py` and business logic in `services/`.
 - OTP messages include Korean strings; keep success/remaining_attempts contract unchanged.
 - `get_simulations` returns 404 if none; UI should handle empty state vs 404 accordingly.
 - Privacy policy creation cannot set `published`; use `/api/admin/privacy-policies/{id}/publish` to toggle and auto-unpublish others.
+- SSD alignment: Some SSD-described endpoints (e.g., public privacy-policy GET, consents GET) aren’t present in `api/routes.py` yet; follow `routes.py` as source-of-truth. OTP verify attempts default to 6 via env `otp_max_verification_attempts` (lowercase name) in `settings.py`.
 
 ## Where to look first
 - API: `src/backend/api/routes.py`
