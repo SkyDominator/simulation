@@ -39,6 +39,8 @@ Minimal commands (PowerShell):
   ```
 - Auth guard for admin: use `_assert_admin(user_id, client)` which checks `admins.user_id`.
 - Simulation update invalidation: when modifying plan fields, set `simulation_results` to `None` (see `SimulationService.update`).
+- The full schema information on the current implemented models is available in `/.memo/CE/specs/schema/schema.md`
+
 
 ## Adding an endpoint (example)
 ```python
