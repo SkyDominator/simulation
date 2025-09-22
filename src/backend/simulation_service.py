@@ -6,6 +6,7 @@ for use in the backend API. It accepts custom parameters while using default
 values from configuration for other parameters.
 """
 
+from hmac import new
 import logging
 from typing import Dict, List, Any, Optional, Tuple
 
@@ -150,12 +151,12 @@ class FinancialSimulationService:
     def _check_keys(self, d: Dict[int, Any], name: str) -> None:
         # Check that all keys in the dictionary are integers (convertible).
         # Raise ValueError if any key is not convertible to int.
+        new_d = {}
         for key in d.keys():
-            if not isinstance(key, int):
-                d[int(key)] = d.pop(key)  # Will raise ValueError if not convertible
-        
+            new_d[int(key)] = d[key]  # Will raise ValueError if not convertible
+
         # Now check that all keys are positive integers
-        for key in d.keys():
+        for key in new_d.keys():
             if not isinstance(key, int) or key <= 0:
                 raise ValueError(f"All keys in {name} must be positive integers. Invalid key: {key}")
             

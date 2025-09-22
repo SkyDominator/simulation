@@ -21,7 +21,7 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/unit", "--maxfail=1", "-v"],
+      "args": ["tests/unit/simulation", "--maxfail=1", "-v"],
       "cwd": "${workspaceFolder}/src/backend",
       "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {
