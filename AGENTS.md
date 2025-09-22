@@ -1,0 +1,27 @@
+# My local development environment
+
+OS: Windows 11
+IDE: Visual Studio Code
+Internet Browser: Google Chrome, Screen Size: 1920x1080
+Device: Desktop (LG Gram Notebook)
+Python: 3.11.6 or later
+TypeScript: 5.8.3 or later
+React: 19.1.0 or later
+
+## App test environment
+
+Here is the test environment:
+
+* Desktop: (Windows 11, Google Chrome)
+* Mobile: (iPhone 11 Pro, iOS 18.1.1, Google Chrome)
+
+## App live environment
+
+Here is the live environment:
+
+* Desktop: (Windows 11+, Google Chrome)
+* Mobile: 
+    * iPhone 11+, iOS 18.1.1+, Google Chrome
+    * Samsung Galaxy S21+, Android 12+, Google Chrome
+
+## 
