@@ -41,11 +41,11 @@ class TestSimulationServiceInitialization:
         svc = simulation_service_factory('A', overrides={'sales_achievement_rates': custom_rates})
         
         # Verify rates are stored as floats
-        assert hasattr(svc, 'sales_achievement_rates')
+        assert hasattr(svc.params, 'sales_achievement_rates')
         for round_num, expected_rate in custom_rates.items():
-            assert round_num in svc.sales_achievement_rates
-            assert isinstance(svc.sales_achievement_rates[round_num], float)
-            assert abs(svc.sales_achievement_rates[round_num] - expected_rate) <= 1e-6
+            assert round_num in svc.params.sales_achievement_rates
+            assert isinstance(svc.params.sales_achievement_rates[round_num], float)
+            assert abs(svc.params.sales_achievement_rates[round_num] - expected_rate) <= 1e-6
 
 
 class TestScheduledPaymentSanitization:
