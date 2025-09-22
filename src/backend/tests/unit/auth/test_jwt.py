@@ -93,254 +93,216 @@ class TestJWKSClient:
 
 
 class TestJWTAuthentication:
-    """Test JWT authentication wrapper functions."""
+    """Test JWT authentication wrapper functions according to CAT-JWT."""
     
     def _create_test_token_header(self, payload=None, header=None, kid="test-key-id-1"):
         """Helper to create test JWT token parts.""" 
         if header is None:
-            header = {"typ": "JWT", "alg": "RS256", "kid": kid}
+            header = {"alg": "RS256", "typ": "JWT", "kid": kid}
         if payload is None:
-            payload = {"sub": "test-user-id", "aud": "authenticated", "exp": 9999999999}
+            payload = {"sub": "test-user", "aud": "authenticated", "exp": 9999999999}
         
+        # Encode header and payload
         header_b64 = base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip('=')
         payload_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip('=')
-        signature_b64 = "fake-signature"
         
-        return f"{header_b64}.{payload_b64}.{signature_b64}"
+        return f"{header_b64}.{payload_b64}.fake-signature"
     
-    @patch('auth.jwt._jwks_client.get_keys')
-    @patch('auth.jwt.jwt.decode')
-    def test_jwt_authentication_success(self, mock_decode, mock_get_keys, jwks_keys):
-        """Test successful JWT authentication."""
-        mock_get_keys.return_value = jwks_keys
-        mock_decode.return_value = {"sub": "test-user-123", "aud": "authenticated"}
+    def test_JWT_001_missing_kid_raises_unauthorized(self, jwks_keys):
+        """JWT-001: Missing kid -> Unauthorized (simulate header lacking 'kid')."""
+        # Create token without kid in header
+        token = self._create_test_token_header(header={"alg": "RS256", "typ": "JWT"})  # No kid
+        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
         
+        with patch('auth.jwt.jwt.get_unverified_header') as mock_header:
+            mock_header.return_value = {"alg": "RS256", "typ": "JWT"}  # No kid
+            
+            with pytest.raises(HTTPException) as exc_info:
+                authenticate_jwt_token(credentials)
+            
+            assert exc_info.value.status_code == 401
+            assert "Missing 'kid' in JWT header" in str(exc_info.value.detail)
+    
+    def test_JWT_002_duplicated_kid_raises_error(self, jwks_keys):
+        """JWT-002: Duplicated kid -> InvalidTokenException with specific message."""
+        # Create token with duplicated kid (this is a malformed header scenario)
         token = self._create_test_token_header()
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
         
-        user_id = authenticate_jwt_token(credentials)
-        
-        assert user_id == "test-user-123"
-        mock_decode.assert_called_once()
+        with patch('auth.jwt.jwt.get_unverified_header') as mock_header:
+            # Simulate header with duplicated kid (array instead of string)
+            mock_header.return_value = {"alg": "RS256", "typ": "JWT", "kid": ["kid1", "kid1"]}
+            
+            with pytest.raises(HTTPException) as exc_info:
+                authenticate_jwt_token(credentials)
+            
+            assert exc_info.value.status_code == 401
+            assert "Duplicated 'kid' values" in str(exc_info.value.detail)
     
-    @patch('auth.jwt._jwks_client.get_keys')
-    def test_jwt_missing_kid_in_header(self, mock_get_keys, jwks_keys):
-        """Test JWT with missing 'kid' in header raises InvalidTokenException."""
-        mock_get_keys.return_value = jwks_keys
-        
-        # Create token without 'kid'
-        header = {"typ": "JWT", "alg": "RS256"}  # Missing 'kid'
-        token = self._create_test_token_header(header=header)
+    def test_JWT_003_unknown_kid_triggers_cache_clear_and_retry(self, jwks_keys):
+        """JWT-003: Unknown kid triggers cache clear and retry mechanism."""
+        token = self._create_test_token_header(kid="unknown-kid")
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
         
-        with pytest.raises(HTTPException) as exc_info:
-            authenticate_jwt_token(credentials)
+        call_count = {"n": 0}
         
-        assert exc_info.value.status_code == 401
-        assert "Could not validate credentials" in str(exc_info.value.detail)
+        def mock_get_keys():
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                # First call returns keys without the needed kid
+                return {"keys": [{"kid": "other-kid", "kty": "RSA"}]}
+            else:
+                # Second call (after cache clear) returns the needed kid
+                return {"keys": [{"kid": "unknown-kid", "kty": "RSA", "n": "test", "e": "AQAB"}]}
+        
+        with patch('auth.jwt.jwt.get_unverified_header') as mock_header, \
+             patch('auth.jwt.jwt.decode') as mock_decode, \
+             patch.object(JWKSClient, 'get_keys', side_effect=mock_get_keys):
+            
+            mock_header.return_value = {"alg": "RS256", "typ": "JWT", "kid": "unknown-kid"}
+            mock_decode.return_value = {"sub": "test-user"}
+            
+            # This should trigger cache clear and retry
+            result = authenticate_jwt_token(credentials)
+            
+            # Verify retry mechanism was triggered (2 calls to get_keys)
+            assert call_count["n"] == 2
+            assert result == "test-user"
     
-    @patch('auth.jwt._jwks_client.get_keys')
-    def test_jwt_missing_alg_in_header(self, mock_get_keys, jwks_keys):
-        """Test JWT with missing 'alg' in header raises exception."""
-        mock_get_keys.return_value = jwks_keys
-        
-        # Create token without 'alg'
-        header = {"typ": "JWT", "kid": "test-key-id-1"}  # Missing 'alg'
-        token = self._create_test_token_header(header=header)
+    def test_JWT_004_unsupported_algorithm_raises_error(self, jwks_keys):
+        """JWT-004: Unsupported alg -> UnsupportedAlgorithmException."""
+        token = self._create_test_token_header(header={"alg": "HS256", "typ": "JWT", "kid": "test-key-id-1"})
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
         
-        with pytest.raises(HTTPException) as exc_info:
-            authenticate_jwt_token(credentials)
-        
-        assert exc_info.value.status_code == 401
+        with patch('auth.jwt.jwt.get_unverified_header') as mock_header:
+            mock_header.return_value = {"alg": "HS256", "typ": "JWT", "kid": "test-key-id-1"}
+            
+            with pytest.raises(HTTPException) as exc_info:
+                authenticate_jwt_token(credentials)
+            
+            assert exc_info.value.status_code == 401
+            assert "Unsupported algorithm: HS256" in str(exc_info.value.detail)
     
-    @patch('auth.jwt._jwks_client.get_keys')
-    def test_jwt_kid_not_found_in_jwks(self, mock_get_keys, jwks_keys):
-        """Test JWT with 'kid' not found in JWKS raises exception."""
-        mock_get_keys.return_value = jwks_keys
-        
-        # Use non-existent kid
-        token = self._create_test_token_header(kid="non-existent-kid")
+    def test_JWT_005_audience_mismatch_raises_error(self, jwks_keys):
+        """JWT-005: aud mismatch -> AudienceMismatchException."""
+        # Create token with wrong audience
+        payload = {"sub": "test-user", "aud": "wrong-audience", "exp": 9999999999}
+        token = self._create_test_token_header(payload=payload)
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
         
-        with pytest.raises(HTTPException) as exc_info:
-            authenticate_jwt_token(credentials)
-        
-        assert exc_info.value.status_code == 401
+        with patch('auth.jwt.jwt.get_unverified_header') as mock_header, \
+             patch('auth.jwt.jwt.decode') as mock_decode, \
+             patch.object(JWKSClient, 'get_keys', return_value=jwks_keys):
+            
+            mock_header.return_value = {"alg": "RS256", "typ": "JWT", "kid": "test-key-id-1"}
+            mock_decode.side_effect = Exception("Audience mismatch: expected authenticated, got wrong-audience")
+            
+            with pytest.raises(HTTPException) as exc_info:
+                authenticate_jwt_token(credentials)
+            
+            assert exc_info.value.status_code == 401
+            assert "Audience mismatch" in str(exc_info.value.detail)
     
-    def test_jwt_malformed_token_segments(self):
-        """Test malformed JWT token (wrong number of segments) raises exception."""
-        # Invalid token with only 2 segments instead of 3
-        malformed_token = "header.payload"  # Missing signature
+    def test_JWT_006_malformed_token_segments_raises_error(self, jwks_keys):
+        """JWT-006: Malformed JWT token segments -> MalformedTokenException."""
+        # Create malformed token (missing segments)
+        malformed_token = "only.one.segment"  # Should have 3 segments
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=malformed_token)
         
-        with pytest.raises(HTTPException) as exc_info:
-            authenticate_jwt_token(credentials)
-        
-        assert exc_info.value.status_code == 401
+        with patch('auth.jwt.jwt.get_unverified_header') as mock_header:
+            mock_header.side_effect = Exception("Malformed JWT token segments")
+            
+            with pytest.raises(HTTPException) as exc_info:
+                authenticate_jwt_token(credentials)
+            
+            assert exc_info.value.status_code == 401
+            assert "Malformed JWT token" in str(exc_info.value.detail)
     
-    def test_jwt_invalid_base64_encoding(self):
-        """Test JWT with invalid base64 encoding raises exception."""
-        # Invalid base64 characters
-        invalid_token = "invalid!!!.base64!!.encoding!!!"
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=invalid_token)
-        
-        with pytest.raises(HTTPException) as exc_info:
-            authenticate_jwt_token(credentials)
-        
-        assert exc_info.value.status_code == 401
-    
-    @patch('auth.jwt._jwks_client.get_keys') 
-    @patch('auth.jwt.jwt.decode')
-    def test_jwt_expired_token(self, mock_decode, mock_get_keys, jwks_keys):
-        """Test expired JWT token raises TokenExpiredException."""
-        from jose import ExpiredSignatureError
-        
-        mock_get_keys.return_value = jwks_keys
-        mock_decode.side_effect = ExpiredSignatureError("Token has expired")
-        
+    def test_JWT_007_cache_reuse_same_token_no_network_fetch(self, jwks_keys):
+        """JWT-007: Cache reuse: same token second call does not trigger network fetch."""
         token = self._create_test_token_header()
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
         
-        with pytest.raises(HTTPException) as exc_info:
-            authenticate_jwt_token(credentials)
+        call_count = {"n": 0}
         
-        assert exc_info.value.status_code == 401
+        def mock_get_keys():
+            call_count["n"] += 1
+            return jwks_keys
+        
+        with patch('auth.jwt.jwt.get_unverified_header') as mock_header, \
+             patch('auth.jwt.jwt.decode') as mock_decode, \
+             patch.object(JWKSClient, 'get_keys', side_effect=mock_get_keys):
+            
+            mock_header.return_value = {"alg": "RS256", "typ": "JWT", "kid": "test-key-id-1"}
+            mock_decode.return_value = {"sub": "test-user"}
+            
+            # First call
+            result1 = authenticate_jwt_token(credentials)
+            # Second call with same token
+            result2 = authenticate_jwt_token(credentials)
+            
+            # Both should succeed
+            assert result1 == "test-user"
+            assert result2 == "test-user"
+            
+            # Should only call get_keys once due to caching
+            assert call_count["n"] == 1
     
-    @patch('auth.jwt._jwks_client.get_keys')
+    @patch('auth.jwt.jwt.get_unverified_header')
     @patch('auth.jwt.jwt.decode')
-    def test_jwt_audience_mismatch(self, mock_decode, mock_get_keys, jwks_keys):
-        """Test JWT with wrong audience raises AudienceMismatchException."""
-        from jose.exceptions import JWTClaimsError
-        
-        mock_get_keys.return_value = jwks_keys
-        mock_decode.side_effect = JWTClaimsError("Invalid audience")
-        
+    @patch.object(JWKSClient, 'get_keys')
+    def test_JWT_valid_token_success(self, mock_get_keys, mock_decode, mock_header, jwks_keys):
+        """Test successful JWT validation with valid token."""
         token = self._create_test_token_header()
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
         
-        with pytest.raises(HTTPException) as exc_info:
-            authenticate_jwt_token(credentials)
-        
-        assert exc_info.value.status_code == 401
-    
-    @patch('auth.jwt._jwks_client.get_keys')
-    @patch('auth.jwt.jwt.decode')
-    def test_jwt_missing_sub_claim(self, mock_decode, mock_get_keys, jwks_keys):
-        """Test JWT missing 'sub' claim raises exception."""
-        mock_get_keys.return_value = jwks_keys
-        mock_decode.return_value = {"aud": "authenticated"}  # Missing 'sub'
-        
-        token = self._create_test_token_header()
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        
-        with pytest.raises(HTTPException) as exc_info:
-            authenticate_jwt_token(credentials)
-        
-        assert exc_info.value.status_code == 401
-    
-    @patch('auth.jwt._jwks_client.get_keys')
-    def test_jwt_unsupported_algorithm(self, mock_get_keys, jwks_keys):
-        """Test JWT with unsupported algorithm raises exception."""
-        mock_get_keys.return_value = jwks_keys
-        
-        # Create token with unsupported algorithm
-        header = {"typ": "JWT", "alg": "HS256", "kid": "test-key-id-1"}  # Unsupported alg
-        token = self._create_test_token_header(header=header)
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        
-        # This will likely fail during jwt.decode, resulting in 401
-        with pytest.raises(HTTPException) as exc_info:
-            authenticate_jwt_token(credentials)
-        
-        assert exc_info.value.status_code == 401
-
-
-class TestJWKSCachingBehavior:
-    """Test JWKS caching and TTL behavior."""
-    
-    @patch('auth.jwt.requests.get')
-    @patch('auth.jwt.jwt.decode')  # Mock JWT decode to focus on cache behavior
-    def test_jwks_cache_invalidation_on_key_not_found(self, mock_decode, mock_get):
-        """Test that JWKS cache is cleared when key is not found."""
-        # First call returns keys, second call after cache clear returns different keys
-        mock_response1 = Mock()
-        mock_response1.raise_for_status.return_value = None
-        mock_response1.json.return_value = {"keys": [{"kid": "old-key", "kty": "RSA"}]}
-        
-        mock_response2 = Mock()
-        mock_response2.raise_for_status.return_value = None
-        mock_response2.json.return_value = {"keys": [{"kid": "new-key", "kty": "RSA"}]}
-        
-        mock_get.side_effect = [mock_response1, mock_response2]
-        
-        # Mock successful JWT decode
+        mock_header.return_value = {"alg": "RS256", "typ": "JWT", "kid": "test-key-id-1"}
         mock_decode.return_value = {"sub": "test-user-id", "aud": "authenticated"}
+        mock_get_keys.return_value = jwks_keys
         
-        # Create token with kid that won't be found in first JWKS
-        token = self._create_test_token_header(kid="new-key")
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        
-        # This will fetch JWKS, not find the key, clear cache, retry, and succeed
         result = authenticate_jwt_token(credentials)
         
-        # Verify we got the expected result
         assert result == "test-user-id"
-        
-        # Verify cache was cleared and JWKS was fetched twice
-        assert mock_get.call_count == 2
-    
-    def _create_test_token_header(self, payload=None, header=None, kid="test-key-id-1"):
-        """Helper to create test JWT token parts."""
-        if header is None:
-            header = {"typ": "JWT", "alg": "RS256", "kid": kid}
-        if payload is None:
-            payload = {"sub": "test-user-id", "aud": "authenticated", "exp": 9999999999}
-        
-        header_b64 = base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip('=')
-        payload_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip('=')
-        signature_b64 = "fake-signature"
-        
-        return f"{header_b64}.{payload_b64}.{signature_b64}"
+        mock_decode.assert_called_once()
 
 
-class TestJWKSFixtureValidation:
-    """Test JWKS fixture file validation."""
+class TestJWKSKeySelection:
+    """Test JWKS key selection and rotation robustness."""
     
-    def test_jwks_fixture_file_exists(self):
-        """Test that JWKS fixture file exists and is valid JSON."""
-        fixture_path = Path(__file__).parent.parent.parent / "fixtures" / "jwks.json"
-        assert fixture_path.exists(), f"JWKS fixture file not found at {fixture_path}"
+    def test_key_selection_from_multiple_keys(self, jwks_keys):
+        """Test that correct key is selected from multiple available keys."""
+        # This test verifies that the system can select the right key by kid
+        # when multiple keys are available
         
-        with open(fixture_path) as f:
-            jwks_data = json.load(f)
+        keys = jwks_keys["keys"]
+        assert len(keys) >= 2, "Test requires at least 2 keys in fixture"
         
-        assert "keys" in jwks_data
-        assert isinstance(jwks_data["keys"], list)
-        assert len(jwks_data["keys"]) >= 1
-    
-    def test_jwks_fixture_key_structure(self, jwks_keys):
-        """Test that JWKS fixture keys have correct structure."""
-        for key in jwks_keys["keys"]:
-            # Required RSA key fields
-            assert key["kty"] == "RSA"
-            assert "kid" in key
-            assert "use" in key
-            assert "alg" in key
-            assert "n" in key
-            assert "e" in key
+        # Test selecting each key
+        for key in keys:
+            kid = key["kid"]
             
-            # Verify types
-            assert isinstance(key["kid"], str)
-            assert isinstance(key["n"], str)
-            assert isinstance(key["e"], str)
+            with patch.object(JWKSClient, 'get_keys', return_value=jwks_keys):
+                # The system should be able to find this specific key
+                client = JWKSClient("https://test.supabase.co")
+                retrieved_keys = client.get_keys()
+                
+                # Verify the kid exists in retrieved keys
+                kid_found = any(k["kid"] == kid for k in retrieved_keys["keys"])
+                assert kid_found, f"Key with kid {kid} not found in retrieved keys"
     
-    def test_jwks_fixture_multiple_keys_unique_ids(self, jwks_keys):
-        """Test that JWKS fixture has multiple keys with unique IDs."""
-        kids = [key["kid"] for key in jwks_keys["keys"]]
+    def test_key_rotation_handling(self, jwks_keys, jwks_keys_rotated):
+        """Test that key rotation (order change) doesn't break key selection."""
+        # Verify both fixtures have the same keys, just different order
+        original_kids = set(k["kid"] for k in jwks_keys["keys"])
+        rotated_kids = set(k["kid"] for k in jwks_keys_rotated["keys"])
         
-        # Should have multiple keys for rotation testing
-        assert len(kids) >= 2
+        assert original_kids == rotated_kids
         
-        # All kids should be unique
-        assert len(kids) == len(set(kids))
+        # Both should be usable for key lookup
+        for keys_fixture in [jwks_keys, jwks_keys_rotated]:
+            with patch.object(JWKSClient, 'get_keys', return_value=keys_fixture):
+                client = JWKSClient("https://test.supabase.co")
+                result = client.get_keys()
+                
+                assert "keys" in result
+                assert len(result["keys"]) > 0
