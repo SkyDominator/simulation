@@ -1,9 +1,4 @@
-# Core security / OTP constants (mirrors settings defaults; tests reference these for clarity)
-from config.settings import settings
 
-MAX_OTP_VERIFY_ATTEMPTS: int = settings.otp_max_verification_attempts
-OTP_RESEND_LIMIT_PER_15MIN: int = settings.otp_resend_limit_per_15min
-OTP_VALIDITY_MINUTES: int = settings.otp_validity_minutes
 
 # Financial simulation plan parameters
 PLAN_PARAMETERS = {
