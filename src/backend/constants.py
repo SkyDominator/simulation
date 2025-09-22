@@ -1,3 +1,6 @@
+
+
+# Financial simulation plan parameters
 PLAN_PARAMETERS = {
     "A": {
             'max_investor_count': 15,

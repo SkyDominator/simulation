@@ -19,7 +19,7 @@ class Settings:
     # OTP settings
     otp_secret_key: str = os.getenv("OTP_SECRET_KEY", "your-development-secret-key-replace-in-production")
     otp_validity_minutes: int = int(os.getenv("OTP_VALIDITY_MINUTES", "5"))
-    otp_max_attempts: int = int(os.getenv("OTP_MAX_ATTEMPTS", "3"))
+    otp_max_verification_attempts: int = int(os.getenv("otp_max_verification_attempts", "6"))  # Updated to match SSD §7.1 requirement
     otp_resend_limit_per_15min: int = int(os.getenv("OTP_RESEND_LIMIT_PER_15MIN", "3"))
     otp_resend_limit_per_day: int = int(os.getenv("OTP_RESEND_LIMIT_PER_DAY", "10"))
 

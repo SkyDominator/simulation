@@ -45,8 +45,8 @@ class OTPService:
             .gte("created_at", day_ago.isoformat()) \
             .execute()
             
-        # if day_count.count and day_count.count >= settings.otp_resend_limit_per_day:
-        #     return False, f"Daily OTP limit reached. Try again tomorrow."
+        if day_count.count and day_count.count >= settings.otp_resend_limit_per_day:
+            return False, f"Daily OTP limit reached. Try again tomorrow."
         
         # IP-based rate limiting could be added here
         
@@ -166,7 +166,7 @@ class OTPService:
         otp_record = otp_records.data[0]
         
         # Check attempts
-        if otp_record["attempts"] >= settings.otp_max_attempts:
+        if otp_record["attempts"] >= settings.otp_max_verification_attempts:
             # Mark as used/expired since max attempts reached
             self.db_client.table("phone_otps") \
                 .update({"used": True}) \
@@ -199,7 +199,7 @@ class OTPService:
                 .eq("id", otp_record["id"]) \
                 .execute()
                 
-            remaining_attempts = settings.otp_max_attempts - new_attempts
+            remaining_attempts = settings.otp_max_verification_attempts - new_attempts
                 
             return {
                 "success": False,

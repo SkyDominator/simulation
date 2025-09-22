@@ -110,7 +110,7 @@ Override OTP related limits by monkeypatching `config.settings.settings` attribu
 @pytest.fixture
 def otp_limits(monkeypatch):
 	from config import settings as settings_mod
-	monkeypatch.setattr(settings_mod.settings, 'otp_max_attempts', 6)
+	monkeypatch.setattr(settings_mod.settings, 'otp_max_verification_attempts', 6)
 	monkeypatch.setattr(settings_mod.settings, 'otp_resend_limit_per_15min', 4)
 	return settings_mod.settings
 ```

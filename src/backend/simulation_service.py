@@ -121,9 +121,9 @@ class FinancialSimulationService:
         # Copy all parameters from the default plan
         self.params = PLAN_PARAMETERS[plan_id].copy()
         
-        # Override scheduled_payment if provided
+        # Override scheduled_payment if provided, with sanitation
         if scheduled_payment is not None:
-            self.params['scheduled_payment'] = scheduled_payment
+            self.params['scheduled_payment'] = self._sanitize_scheduled_payment(scheduled_payment, plan_id)
         # Override sales achievement rates (already expected as fractions 0.5-1.0)
         if sales_achievement_rates is not None:
             # Validate and coerce ranges
@@ -144,6 +144,48 @@ class FinancialSimulationService:
         self.original_settlement_bonus = self.params['settlement_bonus']
         
         logger.info(f"Financial simulation initialized with plan '{plan_id}'")
+
+    def _sanitize_scheduled_payment(self, scheduled_payment: Dict[int, int], plan_id: str) -> Dict[int, int]:
+        """
+        Sanitize scheduled payment values by replacing negatives/NaN with plan minimums.
+        
+        Args:
+            scheduled_payment: Raw scheduled payment dictionary
+            plan_id: Plan ID for minimum payment lookup
+            
+        Returns:
+            Sanitized scheduled payment dictionary
+        """
+        plan_params = PLAN_PARAMETERS[plan_id]
+        min_payment_new = plan_params.get('min_payment_new', {})
+        min_payment_re = plan_params.get('min_payment_re', 0)
+        
+        sanitized = {}
+        corrections = []
+        
+        for round_key, amount in scheduled_payment.items():
+            try:
+                # Ensure round key is integer
+                round_num = int(round_key)
+                
+                # Ensure amount is valid integer
+                if amount is None or amount <= 0:  # Include zero as invalid
+                    # Use minimum payment for this round, fallback to re-entry minimum
+                    corrected_amount = min_payment_new.get(round_num, min_payment_re)
+                    corrections.append(f"Round {round_num}: {amount} -> {corrected_amount}")
+                    sanitized[round_num] = corrected_amount
+                else:
+                    sanitized[round_num] = int(amount)
+                    
+            except (ValueError, TypeError):
+                # Invalid round key or amount, skip this entry
+                logger.warning(f"Skipping invalid scheduled payment entry: round={round_key}, amount={amount}")
+                continue
+        
+        if corrections:
+            logger.warning(f"Sanitized scheduled payment for plan {plan_id}: {corrections}")
+        
+        return sanitized
 
     def _add_new_investor(self, investor_type: str = "신규") -> None:
         """
