@@ -73,4 +73,11 @@ Place models in `models/schemas.py` and business logic in `services/`.
 - Models: `src/backend/models/schemas.py`
 - Frontend config: `src/frontend/vite.config.ts`, `src/frontend/src/supabaseClient.ts`
 
+## Testing patterns (quick reference)
+- Backend tests: `cd src/backend; python -m pytest -q` (87 tests currently passing)
+- Mock JWKS in tests: override `JWKSClient.get_keys()` method to avoid network calls
+- OTP rate limiting tests: use `monkeypatch` to set deterministic limits via settings
+- Canonical protected endpoint for 423 testing: `GET /api/simulations` (returns 404 if none)
+- Test fixtures available: `freeze_jan_1_2025`, `fake_supabase_client` for deterministic testing
+
 If anything above seems off or you need deeper conventions (e.g., testing/mocking patterns), ask in PR or ping to refine these notes.

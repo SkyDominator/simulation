@@ -6,6 +6,8 @@ Status: Draft (updated to reflect current implementation)
 Owners: Product, Engineering (Backend/Frontend)
 
 > **Note**: For enterprise-scale features (10,000+ users), see [`enterprise-scale/`](enterprise-scale/) documentation.
+> 
+> **Implementation Status**: This is a brownfield project. The **codebase** (`src/backend/` and `src/frontend/`) is the **single source of truth** for actual functionality. This SSD documents the intended design but may contain endpoints or features not yet implemented. Refer to `src/backend/api/routes.py` for current API surface.
 
 ---
 
@@ -73,7 +75,8 @@ Out-of-scope (deferred):
 
 Notes:
 
-- Primary dev workflow uses Docker Compose (frontend + backend + ancillary services as needed).
+- **Current deployment**: Frontend served via `npm run preview` (Vite preview on port 4173), backend runs locally on Windows via helper scripts or direct uvicorn.
+- Docker Compose available for full-stack dev, but not the active deployment path.
 - Chrome is the reference browser for layout and PWA install behavior during development.
 
 ### 4.2 Test Environment
@@ -110,7 +113,7 @@ Implications:
 - **Frontend**: React 19 + TypeScript + Vite (vite-plugin-pwa, MUI for UI). Auth via @supabase/supabase-js. State persisted selectively to localStorage/sessionStorage.
 - **Backend**: FastAPI (Python 3.11.6 or later), Pydantic v2 schemas, Supabase client (REST/RPC). JWT verification uses Supabase JWKS.
 - **Data**: Supabase Postgres (tables below). Auth via Supabase; JWT audience "authenticated". Privacy policy content served from database with static file fallback.
-- **Infra**: Dockerized services; Cloudflare Tunnel for public frontend domain; CORS configured for local dev and tunnel domain.
+- **Infra**: Current deployment uses laptop server (frontend via Vite preview, backend via Windows scripts); Cloudflare Tunnel for public domain; CORS configured for local dev and tunnel domain. Docker Compose available but not actively used.
 
 High-level flow:
 
@@ -192,7 +195,7 @@ See [schema](/.memo/CE/specs/schema/schema.md) for the full schema information a
 
 ### 8.2 Privacy Policy & Consent
 
-- **Get Policy**: GET /api/privacy-policy?version&locale → DB lookup; static file fallback if DB unavailable.
+- **Get Policy**: GET /api/privacy-policy?version&locale → DB lookup; static file fallback if DB unavailable. *(Note: Not yet implemented; admin endpoints available)*
 - **Record Consent (Pre-auth only)**: POST /api/consents (user_hash, consent_type, consent_version).
 - **Get User Consents**: GET /api/consents/{user_hash} → retrieve all consent records for a user.
 
@@ -539,7 +542,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
   - Frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_BASE_URL`
 - **Supabase RLS** should be configured on user-owned tables; admin APIs rely on server checks
 - **Whitelist table** exists with user_hash; seeding/management handled out-of-band
-- **Docker/Cloudflare Tunnel** used for deployment; ports: frontend 5173 (dev), 4173 (preview), backend 8000
+- **Deployment & Docker**: Current deployment via laptop server (`npm run preview` + Windows scripts); Docker Compose exists for development but not production path. Ports: frontend 4173 (preview), backend 8000
 - **Privacy Policy Source of Truth**: Published DB row is primary; static file fallback available if DB unavailable
 
 ---
@@ -742,7 +745,7 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 **Recovery Time Objectives**:
 
 - **Database Restore**: < 4 hours for complete restoration from backup
-- **Application Recovery**: < 30 minutes for service restoration (Docker container restart)
+- **Application Recovery**: < 30 minutes for service restoration (restart frontend/backend services via Windows scripts)
 - **User Notification**: < 2 hours for incident communication
 
 ### 21.3 Business Continuity
