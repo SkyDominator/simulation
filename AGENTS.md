@@ -23,5 +23,3 @@ Here is the live environment:
 * Mobile: 
     * iPhone 11+, iOS 18.1.1+, Google Chrome
     * Samsung Galaxy S21+, Android 12+, Google Chrome
-
-## 
