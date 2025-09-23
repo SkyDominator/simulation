@@ -5,6 +5,95 @@ I have further questions.
 2. Why the frontend test coverage is only around 20%? 
 3. For the chosen files and codelines for test, how they were chosen? On what criteria?
 
+# Enterpise-level test codes
+
+1. backend
+    1. unit test
+        1. service layer (business logic)
+        2. data access layer (DB interaction)
+        3. utility functions
+        4. auth/JWT validation logic
+    2. integration test
+        1. API endpoints (using test client)
+        2. DB integration (using test database)
+        3. external service integration (SMS/Solapi, Supabase)
+    3. contract testing
+        1. API contracts between frontend/backend
+        2. schema validation tests
+2. frontend
+    1. unit test
+        1. React components (rendering, props, state)
+        2. utility functions
+        3. custom hooks
+    2. integration test
+        1. critical user flows
+        2. API interaction tests (mocked backend)
+    3. E2E test
+        1. major user journeys
+        2. PWA-specific features (offline, install, caching)
+3. performance test
+    1. backend API response times & load testing
+    2. frontend Core Web Vitals (LCP, FID, CLS)
+    3. PWA performance (service worker, cache efficiency)
+4. security test
+    1. authentication/authorization flows
+    2. OWASP Top 10 vulnerabilities
+    3. PII data handling & encryption
+    4. rate limiting (especially OTP endpoints)
+5. accessibility test
+    1. WCAG 2.1 AA compliance
+    2. keyboard navigation
+    3. screen reader compatibility
+6. cross-browser/device test
+    1. desktop browsers (Chrome, Edge, Firefox, Safari)
+    2. mobile browsers (iOS Safari, Chrome Android)
+    3. PWA installation & behavior on different platforms
+7. monitoring & observability
+    1. error tracking (Sentry/Datadog)
+    2. performance monitoring (real user metrics)
+    3. API health checks
+8. test automation
+    1. CI/CD pipeline integration
+    2. automated regression suite
+    3. coverage reports (backend 80%+, frontend 70%+)
+
+# Small app
+
+## MUST-HAVE Tests (Critical Path)
+
+1. backend essentials
+    1. unit tests for critical business logic only
+        - OTP service (rate limiting, validation)
+        - simulation calculations
+        - auth/JWT validation
+    2. basic API smoke tests
+        - happy path for all endpoints
+        - auth protection verification
+
+2. frontend essentials
+    1. smoke tests for main user flows
+        - login/logout flow
+        - core business features (simulation CRUD)
+    2. manual testing checklist
+        - test on 2 browsers (Chrome desktop + mobile)
+        - verify PWA installation works
+
+3. security basics
+    1. auth endpoints are protected
+    2. PII data not exposed in logs/responses
+    3. rate limiting on OTP works
+
+4. simple automation
+    1. pre-commit hooks (linting, basic tests)
+    2. basic CI pipeline (run tests on PR)
+
+5. monitoring
+    1. basic error logging (console or simple service)
+    2. uptime monitoring
+
+6. performance
+    1. manual check of load times
+    2. verify offline mode works for PWA
 
 # 개발 순서 (from scratch)
 
