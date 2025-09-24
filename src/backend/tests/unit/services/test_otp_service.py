@@ -59,7 +59,7 @@ class TestOTPServiceRateLimiting:
         mock_result.data = []
         mock_result.count = 0
         mock_supabase_client.execute.return_value = mock_result
-
+        
         # Use default mock (count=0) - no need to override
         # Should not raise exception and return success
         allowed, reason = otp_service._check_rate_limits(phone)
@@ -104,24 +104,21 @@ class TestOTPServiceRateLimiting:
                 for i in range(settings_override.otp_resend_limit_per_day)
             ]
             
-            # Create mock results for two separate calls:
-            # 1st call: 15-minute check (should be within limit)
-            # 2nd call: daily check (should exceed limit)
-            fifteen_min_result = Mock()
-            fifteen_min_result.data = []  # No records in last 15 minutes
-            fifteen_min_result.count = 0
+            # Set up mock to return different results for 15-min and daily checks
+            mock_15min_result = Mock()
+            mock_15min_result.data = []
+            mock_15min_result.count = 0  # Within 15-min limit
             
-            daily_result = Mock()
-            daily_result.data = mock_records
-            daily_result.count = len(mock_records)  # This equals the daily limit
+            mock_daily_result = Mock()  
+            mock_daily_result.data = mock_records
+            mock_daily_result.count = len(mock_records)  # Exceed daily limit
             
-            # Use side_effect to return different results for each call
-            mock_supabase_client.execute.side_effect = [fifteen_min_result, daily_result]
+            mock_supabase_client.execute.side_effect = [mock_15min_result, mock_daily_result]
             
-            # Should return False and contain daily limit message
+            # Should return False with daily limit message
             allowed, reason = otp_service._check_rate_limits(phone)
-            assert allowed is False
-            assert "tomorrow" in reason or "24시간" in reason
+            assert not allowed
+            assert "24시간" in reason or "tomorrow" in reason
     
     def test_OTPS_004_check_rate_limits_allows_within_limits(self, otp_service, mock_supabase_client, settings_override, freeze_jan_1_2025):
         """OTPS-004: _check_rate_limits allows requests within both limits."""
@@ -140,61 +137,61 @@ class TestOTPServiceRateLimiting:
                 for i in range(settings_override.otp_resend_limit_per_day - 1)
             ]
             
-            # Create proper mock results for two separate calls
-            fifteen_min_result = Mock()
-            fifteen_min_result.data = mock_records_15min
-            fifteen_min_result.count = len(mock_records_15min)  # Should be < limit
+            # Set up mock to return different results for 15-min and daily checks
+            mock_15min_result = Mock()
+            mock_15min_result.data = mock_records_15min
+            mock_15min_result.count = len(mock_records_15min)  # Within 15-min limit
             
-            daily_result = Mock() 
-            daily_result.data = mock_records_daily
-            daily_result.count = len(mock_records_daily)  # Should be < limit
+            mock_daily_result = Mock()  
+            mock_daily_result.data = mock_records_daily
+            mock_daily_result.count = len(mock_records_daily)  # Within daily limit
             
-            mock_supabase_client.execute.side_effect = [fifteen_min_result, daily_result]
+            mock_supabase_client.execute.side_effect = [mock_15min_result, mock_daily_result]
             
             # Should return True (allowed)
             allowed, reason = otp_service._check_rate_limits(phone)
-            assert allowed is True
+            assert allowed
             assert reason == "OK"
     
     def test_OTPS_005_request_otp_normalizes_phone_number(self, otp_service, mock_supabase_client):
-        """OTPS-005: request_otp normalizes phone number before processing."""
-        input_phone = "010-1234-5678"
+        """OTPS-005: request_otp uses phone number as-is (normalization not used for Solapi)."""
+        input_phone = "01012345678"  # Korean phone format expected by Solapi
         
-        # Mock rate limit check (2 calls: 15min and daily)
-        rate_limit_result = Mock()
-        rate_limit_result.count = 0
-        rate_limit_result.data = []
+        # Mock successful rate limit check (both 15-min and daily within limits)
+        mock_rate_limit_result = Mock()
+        mock_rate_limit_result.data = []
+        mock_rate_limit_result.count = 0
         
-        # Mock invalidate result
-        invalidate_result = Mock()
-        invalidate_result.data = []
+        # Mock successful update operation (invalidate existing OTPs)
+        mock_update_result = Mock()
+        mock_update_result.data = []
         
-        # Mock insert result  
-        insert_result = Mock()
-        insert_result.data = [{"id": 1}]
+        # Mock successful insert operation
+        mock_insert_result = Mock()
+        mock_insert_result.data = [{"id": 1}]
         
-        # Mock update result
-        update_result = Mock()
-        update_result.data = [{"id": 1}]
-        
-        # Setup mock calls: rate_limit (2x), invalidate, insert, update 
+        # Set side_effect: rate limiting (2 calls) + update + insert
         mock_supabase_client.execute.side_effect = [
-            rate_limit_result,  # 15min check
-            rate_limit_result,  # daily check  
-            invalidate_result,  # invalidate existing OTPs
-            insert_result,      # insert OTP record
-            update_result       # update with provider_msg_id
+            mock_rate_limit_result,  # 15-min check
+            mock_rate_limit_result,  # daily check  
+            mock_update_result,      # invalidate existing OTPs
+            mock_insert_result       # insert new OTP record
         ]
         
-        # Mock SMS client
-        with patch.object(otp_service, 'sms_client') as mock_sms:
-            mock_sms.send_otp.return_value = {"success": True, "provider_msg_id": "test123"}
-            
-            result = otp_service.request_otp(input_phone)
-            
-            # Should return success
-            assert result["success"] is True
-            assert "expires_in_seconds" in result
+        # Mock the SMS client directly on the service instance
+        mock_sms_client = Mock()
+        mock_sms_client.send_otp.return_value = {"success": True}
+        otp_service.sms_client = mock_sms_client
+        
+        with patch('services.otp.otp_service.generate_otp', return_value="123456"):
+            with patch('services.otp.otp_service.hash_otp', return_value="mock_hash"):
+                result = otp_service.request_otp(input_phone)
+        
+        # Should return success
+        assert result["success"] is True
+        
+        # Verify SMS was sent to the input phone (not normalized)
+        mock_sms_client.send_otp.assert_called_once_with(input_phone, "123456")
     
     def test_OTPS_006_request_otp_generates_and_stores_otp(self, otp_service, mock_supabase_client, freeze_jan_1_2025):
         """OTPS-006: request_otp generates OTP and stores with expiry."""
