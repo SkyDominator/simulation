@@ -7,8 +7,8 @@ class TestPlanParameterIntegrity:
     """Test PLAN-001 to PLAN-006: Plan parameter table integrity."""
     
     def test_PLAN_001_all_expected_plan_ids_present(self):
-        """PLAN-001: All expected plan IDs present set(A,B,C,D,K,P,R,F,E)."""
-        expected_plans = {'A', 'B', 'C', 'D', 'K', 'P', 'R', 'F', 'E'}
+        """PLAN-001: All expected plan IDs present set(A,B,C,D,K,P,R,F,E,G)."""
+        expected_plans = {'A', 'B', 'C', 'D', 'K', 'P', 'R', 'F', 'E', 'G'}
         actual_plans = set(PLAN_PARAMETERS.keys())
         
         assert actual_plans == expected_plans, f"Missing plans: {expected_plans - actual_plans}, Extra plans: {actual_plans - expected_plans}"
