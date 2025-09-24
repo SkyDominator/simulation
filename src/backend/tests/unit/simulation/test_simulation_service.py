@@ -464,7 +464,6 @@ class TestDeterminismGuard:
         # Verify simulation completed successfully
         assert len(result.history) == 5
         assert all(isinstance(r.company_round, int) for r in result.history)
-    """Test structural invariants for single round simulation across all plans."""
     
     def test_plan_a_round_1_structure(self, simulation_service_factory):
         """Test Plan A round 1 structural invariants."""
