@@ -200,7 +200,10 @@ Follow the general guidelines below when writing React, TypeScript, and JavaScri
 - Validate & escape all external input (APIs, query params, localStorage, etc.).
 
 2. Safe State & Props Management
-- Don’t store sensitive data (tokens, passwords) in React state, props, or localStorage.
+- HttpOnly cookies for sensitive tokens (HttpOnly cookies + backend handling).
+    - auth proxy with Supabase edge functions or backend API.
+    - If using Supabase client directly, use RLS policies to restrict data access.
+- Don’t store sensitive data (tokens, passwords) in React state, props, or localStorage. Minimize the use of the local host storage.
 - Assume `.env` variables in the frontend are exposed — don’t put secrets there.
 
 3. Secure API Interaction
