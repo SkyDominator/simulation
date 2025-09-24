@@ -17,7 +17,7 @@
       "justMyCode": true
     },
     {
-      "name": "Backend (test-debug)",
+      "name": "Unit test: backend (debug)",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
@@ -32,7 +32,7 @@
       "justMyCode": true
     },
     {
-      "name": "Backend (test)",
+      "name": "Unit test: backend",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
@@ -77,7 +77,7 @@
     {
       "name": "Full Stack Debug",
       "configurations": [
-        "Backend: FastAPI (launch)",
+        "Backend (launch)",
         "Frontend: Chrome (Vite + Breakpoints)"
       ]
     }
