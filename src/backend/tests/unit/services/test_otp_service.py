@@ -15,13 +15,24 @@ class TestOTPServiceRateLimiting:
     def mock_supabase_client(self):
         """Create mock Supabase client for testing."""
         client = Mock()
+        
+        # Set up method chaining for database queries
         client.table.return_value = client
         client.select.return_value = client
         client.eq.return_value = client
         client.gte.return_value = client
-        client.execute.return_value = Mock(data=[])
+        client.gt.return_value = client
+        client.order.return_value = client
+        client.limit.return_value = client
         client.insert.return_value = client
         client.update.return_value = client
+        
+        # Default execute result with count=0 and empty data
+        default_result = Mock()
+        default_result.data = []
+        default_result.count = 0
+        client.execute.return_value = default_result
+        
         return client
     
     @pytest.fixture
@@ -35,11 +46,7 @@ class TestOTPServiceRateLimiting:
         """OTPS-001: _check_rate_limits allows first request for new phone."""
         phone = "+821012345678"
         
-        # Mock no existing records - need to mock the count attribute properly
-        mock_result = Mock()
-        mock_result.count = 0  # No existing records
-        mock_supabase_client.execute.return_value = mock_result
-        
+        # Use default mock (count=0) - no need to override
         # Should not raise exception and return success
         allowed, reason = otp_service._check_rate_limits(phone)
         assert allowed is True
@@ -58,11 +65,17 @@ class TestOTPServiceRateLimiting:
                 {"created_at": (fifteen_min_ago + timedelta(minutes=i)).isoformat()}
                 for i in range(settings_override.otp_resend_limit_per_15min)
             ]
-            mock_supabase_client.execute.return_value = Mock(data=mock_records)
             
-            # Should raise exception
-            with pytest.raises(Exception, match="15분"):
-                otp_service._check_rate_limits(phone)
+            # Create a proper mock result with both data and count
+            mock_result = Mock()
+            mock_result.data = mock_records
+            mock_result.count = len(mock_records)  # This should exceed the limit
+            mock_supabase_client.execute.return_value = mock_result
+            
+            # Should return False and contain rate limit message
+            allowed, reason = otp_service._check_rate_limits(phone)
+            assert allowed is False
+            assert "few minutes" in reason or "15분" in reason
     
     def test_OTPS_003_check_rate_limits_blocks_exceeded_daily_limit(self, otp_service, mock_supabase_client, settings_override, freeze_jan_1_2025):
         """OTPS-003: _check_rate_limits blocks when daily limit exceeded.""" 
@@ -252,13 +265,24 @@ class TestOTPServiceEdgeCases:
     def mock_supabase_client(self):
         """Create mock Supabase client for testing."""
         client = Mock()
+        
+        # Set up method chaining for database queries
         client.table.return_value = client
         client.select.return_value = client
         client.eq.return_value = client
         client.gte.return_value = client
-        client.execute.return_value = Mock(data=[])
+        client.gt.return_value = client
+        client.order.return_value = client
+        client.limit.return_value = client
         client.insert.return_value = client
         client.update.return_value = client
+        
+        # Default execute result with count=0 and empty data
+        default_result = Mock()
+        default_result.data = []
+        default_result.count = 0
+        client.execute.return_value = default_result
+        
         return client
     
     @pytest.fixture  
