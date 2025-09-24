@@ -21,8 +21,6 @@ def setup_test_environment():
 @pytest.fixture
 def freeze_jan_1_2025():
     """Fixture for freezing time to 2025-01-01 for deterministic tests."""
-    if _freeze is None:
-        pytest.skip('freezegun missing')
     with _freeze('2025-01-01T00:00:00Z'):
         yield
 
