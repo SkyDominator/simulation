@@ -23,6 +23,27 @@
           }
         ]
       }
+    },
+
+    {
+      "label": "run-context7-mcp",
+      "type": "shell",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "isBackground": true,
+      "runOptions": {
+        "runOn": "folderOpen"
+      }
+    },
+    {
+      "label": "run-playwright-mcp",
+      "type": "shell",
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "isBackground": true,
+      "runOptions": {
+        "runOn": "folderOpen"
+      }
     }
   ]
 }
