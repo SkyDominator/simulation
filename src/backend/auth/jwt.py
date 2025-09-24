@@ -6,7 +6,13 @@ import requests
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt, JWTError
-from jose.exceptions import JWKError
+from jose.exceptions import (
+    JWKError, 
+    ExpiredSignatureError,
+    JWTClaimsError,
+    JWSSignatureError, 
+    JWSAlgorithmError
+)
 
 from config.settings import settings
 
@@ -76,5 +82,15 @@ def authenticate_jwt_token(token_result: HTTPAuthorizationCredentials = Depends(
         if not sub:
             raise credentials_exception
         return str(sub)
-    except (JWTError, JWKError, KeyError, TypeError):  # explicit error types
+    except ExpiredSignatureError:
+        raise credentials_exception
+    except JWTClaimsError:
+        raise credentials_exception  
+    except JWSSignatureError:
+        raise credentials_exception
+    except JWSAlgorithmError:
+        raise credentials_exception
+    except JWKError:
+        raise credentials_exception
+    except (JWTError, KeyError, TypeError):
         raise credentials_exception
