@@ -135,7 +135,7 @@ def list_available_plans() -> List[str]:
         return sorted(all_plans)
     except Exception:
         # Fall back to a basic list of common plans
-        return ['A', 'B', 'C', 'D', 'K', 'P', 'R', 'F', 'E']
+        return ['A', 'B', 'C', 'D', 'K', 'P', 'R', 'F', 'E', 'G']
 
 
 def parse_plan_selection(user_input: str, available_plans: List[str]) -> List[str]:

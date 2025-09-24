@@ -363,7 +363,7 @@ export const PlanTypeSelector: React.FC<PlanTypeSelectorProps> = ({
   planType,
   onChange,
 }) => {
-  const options = ["A", "B", "C", "D", "R", "E", "F", "K", "P"];
+  const options = ["A", "B", "C", "D", "R", "E", "F", "K", "P", "G"];
   return (
     <div>
       <Typography variant="h6" fontWeight={600} gutterBottom>
