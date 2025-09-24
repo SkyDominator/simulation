@@ -87,6 +87,7 @@ class TestOTPServiceRateLimiting:
             
             # Mock responses for both rate limit checks
             mock_responses = [Mock(count=within_15min_limit), Mock(count=within_daily_limit)]
+            mock_supabase_client.execute.side_effect = mock_responses
     
     def test_OTPS_005_request_otp_normalizes_phone_number(self, otp_service, mock_supabase_client):
         """OTPS-005: request_otp normalizes phone number before processing."""
