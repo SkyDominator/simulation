@@ -201,7 +201,6 @@ Follow the general guidelines below when writing React, TypeScript, and JavaScri
 
 2. Safe State & Props Management
 - Don’t store sensitive data (tokens, passwords) in React state, props, or localStorage.
-- Use **httpOnly secure cookies** for tokens.
 - Assume `.env` variables in the frontend are exposed — don’t put secrets there.
 
 3. Secure API Interaction
