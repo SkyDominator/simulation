@@ -491,7 +491,7 @@ class TestInputSanitationValidation:
     
     def test_plan_id_case_sensitivity_validation(self):
         """Test plan ID validation rejects incorrect cases."""
-        valid_plans = ["A", "B", "C", "D", "K", "P", "R", "F", "E"]
+        valid_plans = ["A", "B", "C", "D", "K", "P", "R", "F", "E", "G"]
         invalid_plans = ["a", "b", "plan_a", "Plan_A", " A ", "A "]
         
         for plan in valid_plans:
