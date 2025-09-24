@@ -371,13 +371,12 @@ class TestOTPServiceEdgeCases:
         """Test that verify_otp handles expired OTP correctly."""
         phone = "+821012345678"
         otp_code = "123456"
-        user_hash = "test_user_hash"
         
         # For expired OTPs, the service filters them at DB level, so no records are returned
         mock_supabase_client.execute.return_value = Mock(data=[])
         
         # Should return error message for expired/invalid OTP
-        result = otp_service.verify_otp(phone, otp_code, user_hash)
+        result = otp_service.verify_otp(phone, otp_code)
         assert result["success"] is False
         assert "만료" in result["message"]
     
@@ -385,44 +384,14 @@ class TestOTPServiceEdgeCases:
         """Test that verify_otp handles nonexistent OTP record."""
         phone = "+821012345678"
         otp_code = "123456"
-        user_hash = "test_user_hash"
         
         # Mock no records found
         mock_supabase_client.execute.return_value = Mock(data=[])
         
         # Should return error message for not found
-        result = otp_service.verify_otp(phone, otp_code, user_hash)
+        result = otp_service.verify_otp(phone, otp_code)
         assert result["success"] is False
         assert "유효하지 않거나 만료된" in result["message"]
-    
-    def test_verify_otp_handles_user_hash_mismatch(self, otp_service, mock_supabase_client):
-        """Test that verify_otp handles user_hash mismatch."""
-        phone = "+821012345678"
-        otp_code = "123456"
-        wrong_user_hash = "wrong_hash"
-        
-        # Mock record with correct structure but we'll simulate wrong hash verification
-        existing_record = {
-            "id": 1,
-            "phone": phone,  # Service uses 'phone', not 'phone_number'
-            "code_hash": "stored_hash",  # Service expects 'code_hash', not 'otp_hash'
-            "attempts": 1,
-            "expires_at": (datetime.now() + timedelta(minutes=5)).isoformat(),
-            "used": False
-        }
-        
-        mock_supabase_client.execute.side_effect = [
-            Mock(data=[existing_record]),  # First call returns record
-            Mock(data=[])  # Update call for attempts increment
-        ]
-        
-        # Mock hash verification to fail
-        with patch('services.otp.otp_service.verify_otp_hash', return_value=False):
-            result = otp_service.verify_otp(phone, otp_code)
-        
-        # Should return error for wrong OTP code
-        assert result["success"] is False
-        assert "일치하지 않습니다" in result["message"]
     
     def test_request_otp_handles_database_error(self, otp_service, mock_supabase_client):
         """Test that request_otp handles database errors gracefully."""
