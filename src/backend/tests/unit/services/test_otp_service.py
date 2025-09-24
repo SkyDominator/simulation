@@ -75,37 +75,27 @@ class TestOTPServiceRateLimiting:
             assert allowed is False
             assert "Daily OTP limit reached" in reason
     
-    def test_OTPS_004_check_rate_limits_allows_within_limits(self, otp_service, mock_supabase_client, settings_override, freeze_jan_1_2025):
+    def test_OTPS_004_check_rate_limits_allows_within_limits(self, otp_service, mock_supabase_client, settings_override):
         """OTPS-004: _check_rate_limits allows requests within both limits."""
         phone = "+821012345678"
         
-        with freeze_jan_1_2025:
-            now = datetime.now()
+        from freezegun import freeze_time
+        with freeze_time('2025-01-01T00:00:00Z'):
+            # Mock records within limits (less than limits)
+            within_15min_limit = settings_override.otp_resend_limit_per_15min - 1
+            within_daily_limit = settings_override.otp_resend_limit_per_day - 1
             
-            # Mock records within limits (one less than each limit)
-            mock_records_15min = [
-                {"created_at": (now - timedelta(minutes=i)).isoformat()}
-                for i in range(settings_override.otp_resend_limit_per_15min - 1)
-            ]
-            mock_records_daily = [
-                {"created_at": (now - timedelta(hours=i)).isoformat()}
-                for i in range(settings_override.otp_resend_limit_per_day - 1)
-            ]
-            
-            # Use the longer list for the mock
-            mock_data = mock_records_daily if len(mock_records_daily) > len(mock_records_15min) else mock_records_15min
-            mock_supabase_client.execute.return_value = Mock(data=mock_data)
-            
-            # Should not raise exception
-            otp_service._check_rate_limits(phone)
+            # Mock responses for both rate limit checks
+            mock_responses = [Mock(count=within_15min_limit), Mock(count=within_daily_limit)]
     
     def test_OTPS_005_request_otp_normalizes_phone_number(self, otp_service, mock_supabase_client):
         """OTPS-005: request_otp normalizes phone number before processing."""
         input_phone = "010-1234-5678"
         expected_normalized = "+821012345678"
         
-        # Mock successful rate limit check and insert
-        mock_supabase_client.execute.return_value = Mock(data=[])
+        # Mock successful rate limit check (2 calls for _check_rate_limits)
+        mock_responses = [Mock(count=0), Mock(count=0), Mock(data=[{"id": 1}])]
+        mock_supabase_client.execute.side_effect = mock_responses
         
         with patch('services.otp.otp_service.normalize_phone') as mock_normalize:
             mock_normalize.return_value = expected_normalized
