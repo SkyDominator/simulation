@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Backend: FastAPI (launch)",
+      "name": "Backend (launch)",
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
@@ -17,11 +17,11 @@
       "justMyCode": true
     },
     {
-      "name": "Backend (pytest)",
+      "name": "Backend (test)",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/unit/simulation", "--maxfail=1", "-v"],
+      "args": ["tests/unit/auth", "--maxfail=1", "-v"],
       "cwd": "${workspaceFolder}/src/backend",
       "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {
