@@ -231,12 +231,19 @@ export const DEFAULT_INVESTMENT_AMOUNTS = {
       10: 110000,
       11: 220000,
       12: 220000,
+      13: 220000,
+      14: 220000,
+      15: 220000,
+      16: 220000,
+      17: 220000,
+      18: 220000,
+      19: 220000,
     },
   },
 };
 
 // Local version tracking
 export const PARAMETERS_VERSION = {
-  version: "v1.1.1",
-  lastChecked: "2025-09-11",
+  version: "v1.2.0",
+  lastChecked: "2025-09-24",
 };
