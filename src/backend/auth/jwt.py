@@ -6,7 +6,13 @@ import requests
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt, JWTError
-from jose.exceptions import JWKError
+from jose.exceptions import (
+    JWKError, 
+    ExpiredSignatureError,
+    JWTClaimsError,
+    JWSSignatureError, 
+    JWSAlgorithmError
+)
 
 from config.settings import settings
 
@@ -105,27 +111,20 @@ def authenticate_jwt_token(token_result: HTTPAuthorizationCredentials = Depends(
         if not sub:
             raise credentials_exception
         return str(sub)
+      
+    except ExpiredSignatureError:
+        raise credentials_exception
+    except JWTClaimsError:
+        raise credentials_exception  
+    except JWSSignatureError:
+        raise credentials_exception
+    except JWSAlgorithmError:
+        raise credentials_exception
+    except JWKError:
+        raise credentials_exception
+    except (JWTError, KeyError, TypeError):
+        raise credentials_exception
     except HTTPException:
-        # Re-raise HTTPExceptions with specific error messages
         raise
-    except Exception as e:
-        # Handle specific error cases with descriptive messages
-        error_msg = str(e).lower()
-        if "audience mismatch" in error_msg:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Audience mismatch: {str(e)}",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        elif "malformed jwt token" in error_msg:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Malformed JWT token: {str(e)}",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        elif "jwks fetch failed" in error_msg:
-            # Let JWKS errors propagate as-is (503 status)
-            raise
-        else:
-            # Generic fallback
-            raise credentials_exception
+    except Exception:
+        raise

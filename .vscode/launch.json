@@ -21,7 +21,8 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/unit/auth", "--maxfail=5", "-v", ">", "test_results.md"],
+    //   "args": ["tests/unit/auth", "--maxfail=5", "-v", ">", "test_results.md"],
+      "args": ["tests/unit/utils", "-v", ">", "test_unit_utils_results.md"],
       "cwd": "${workspaceFolder}/src/backend",
       "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {

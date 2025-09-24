@@ -21,8 +21,7 @@ def setup_test_environment():
 @pytest.fixture
 def freeze_jan_1_2025():
     """Fixture for freezing time to 2025-01-01 for deterministic tests."""
-    with _freeze('2025-01-01T00:00:00Z'):
-        yield
+    return _freeze('2025-01-01T00:00:00Z')
 
 @pytest.fixture
 def settings_override():
@@ -33,8 +32,9 @@ def settings_override():
         "supabase_secret_key": "test_secret_key",
         "otp_secret_key": "test-secret-key",
         "otp_validity_minutes": 5,
-    "otp_max_verification_attempts": 6,  # Updated to match SSD §7.1 requirement
+        "otp_max_verification_attempts": 6,  # Updated to match SSD §7.1 requirement
         "otp_resend_limit_per_15min": 3,
+        "otp_resend_limit_per_day": 10,  # Added missing setting
         "cors_origins": ["http://localhost:5173"]
     }
     
