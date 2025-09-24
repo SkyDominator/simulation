@@ -86,7 +86,7 @@ Minimal commands (PowerShell):
   ```
 - Auth guard for admin: use `_assert_admin(user_id, client)` which checks `admins.user_id`.
 - Simulation update invalidation: when modifying plan fields, set `simulation_results` to `None` (see `SimulationService.update`).
-- The full schema information on the current implemented models is available in `/.memo/CE/specs/schema/schema.md`.
+- The full schema information on the current implemented models is available in `${WORKSPACE_ROOT}/.memo/CE/specs/schema/schema.md`.
 
 
 ### Adding an endpoint (example)
@@ -106,7 +106,7 @@ async def my_feature(req: MyReq, user_id: str = Depends(authenticate_jwt_token))
 Place models in `models/schemas.py` and business logic in `services/`.
 
 ### Frontend integration notes
-- API base: `VITE_API_BASE_URL` defaults to production in `vite.config.ts`. Set it for local dev, e.g., `http://localhost:8000/api`.
+- API base: `VITE_API_BASE_URL` defaults to production in `vite.config.ts`. Set it for local dev, e.g., `http://localhost:8000/api` (the live environment for backend).
 - Supabase client is created in `src/frontend/src/supabaseClient.ts` and persists sessions; JWTs come from Supabase auth.
 
 ### Gotchas
@@ -203,6 +203,7 @@ Follow the general guidelines below when writing React, TypeScript, and JavaScri
 - HttpOnly cookies for sensitive tokens (HttpOnly cookies + backend handling).
     - auth proxy with Supabase edge functions or backend API.
     - If using Supabase client directly, use RLS policies to restrict data access.
+    - Currently, the frontend uses Supabase client directly. Implement auth proxy or RLS policies when possible.
 - Don’t store sensitive data (tokens, passwords) in React state, props, or localStorage. Minimize the use of the local host storage.
 - Assume `.env` variables in the frontend are exposed — don’t put secrets there.
 
