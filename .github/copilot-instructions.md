@@ -15,7 +15,7 @@ Here are the details of the project environment.
 OS: Windows 11
 IDE: Visual Studio Code
 Internet Browser: Google Chrome, Screen Size: 1920x1080
-Device: Desktop (LG Gram Notebook)
+Device: Desktop
 Python: 3.11.6 or later
 TypeScript: 5.8.3 or later
 React: 19.1.0 or later
@@ -29,6 +29,8 @@ Here is the test environment:
 * Notes:
     * No CI/CD pipelines are set up yet.
     * Testing framework: Pytest for backend, Vitest and Playwright for frontend.
+    * Frontend is tested via Vite dev on a Windows local machine (some other notebook for development machine, 5173 port).
+    * Backend is tested with debugpy on a Windows local machine (some other notebook for development machine, 8001 port).
 
 ### App live environment
 
