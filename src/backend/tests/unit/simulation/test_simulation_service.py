@@ -540,11 +540,11 @@ class TestSimulationServiceMultiRoundSnapshot:
         
         for round_result in result.history:
             snapshot_data["history"].append({
-                "round": round_result.company_round,
+                "company_round": round_result.company_round,
                 "investor_count": round_result.investor_count,
                 "total_payment": round_result.total_payment,
                 "total_revenue_after_tax": round_result.total_revenue_after_tax,
-                "cumulative_profit": round_result.cumulative_net_profit
+                "cumulative_net_profit": round_result.cumulative_net_profit
             })
         
         # Check if snapshot file exists
@@ -565,11 +565,11 @@ class TestSimulationServiceMultiRoundSnapshot:
             assert len(snapshot_data["history"]) == len(expected_snapshot["history"])
             
             for actual, expected in zip(snapshot_data["history"], expected_snapshot["history"]):
-                assert actual["round"] == expected["round"]
+                assert actual["company_round"] == expected["company_round"]
                 assert actual["investor_count"] == expected["investor_count"]
                 assert abs(actual["total_payment"] - expected["total_payment"]) <= 1e-6
                 assert abs(actual["total_revenue_after_tax"] - expected["total_revenue_after_tax"]) <= 1e-6
-                assert abs(actual["cumulative_profit"] - expected["cumulative_profit"]) <= 1e-6
+                assert abs(actual["cumulative_net_profit"] - expected["cumulative_net_profit"]) <= 1e-6
         else:
             # Create snapshot file for future comparisons
             snapshot_path.parent.mkdir(exist_ok=True)
