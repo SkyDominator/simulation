@@ -245,7 +245,7 @@ Follow the general guidelines below when writing React, TypeScript, and JavaScri
 
 > The best PWA doesn't feel like a website in a wrapper. It feels like an app that was delivered through the web.
 
----
+
 
 ##### The Look: Visual Principles 🎨
 
@@ -260,7 +260,7 @@ The visual design must be clean, adaptive, and personal.
     * **Mobile-First:** Design for the smallest screen and scale up.
     * **Modern CSS:** Utilize CSS Grid and Container Queries to create layouts that adapt to their container, not just the viewport. This is crucial for components that need to work anywhere.
 
----
+
 
 ##### The Feel: Interaction & Experience ✨
 
@@ -277,7 +277,7 @@ How the app responds to input is what separates a great PWA from a website.
 * **Installation: Seamless**
     * Design a non-intrusive, custom "Add to Home Screen" prompt within your UI to encourage installation after the user has engaged with the app.
 
----
+
 
 ##### Recommended React Implementation
 
