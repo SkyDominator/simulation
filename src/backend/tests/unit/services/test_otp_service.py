@@ -19,7 +19,11 @@ class TestOTPServiceRateLimiting:
         client.select.return_value = client
         client.eq.return_value = client
         client.gte.return_value = client
-        client.execute.return_value = Mock(data=[])
+        # Configure the execute result to have count=0 by default
+        mock_result = Mock()
+        mock_result.data = []
+        mock_result.count = 0
+        client.execute.return_value = mock_result
         client.insert.return_value = client
         client.update.return_value = client
         return client
@@ -27,18 +31,19 @@ class TestOTPServiceRateLimiting:
     @pytest.fixture
     def otp_service(self, mock_supabase_client, settings_override):
         """Create OTP service instance with mocked dependencies."""
-        with patch('services.otp.otp_service._supabase_client', return_value=mock_supabase_client):
-            service = OTPService()
-            # Inject the mock client
-            service._client = mock_supabase_client
-            return service
+        # OTPService expects a db_client parameter
+        service = OTPService(db_client=mock_supabase_client)
+        return service
     
     def test_OTPS_001_check_rate_limits_allows_first_request(self, otp_service, mock_supabase_client):
         """OTPS-001: _check_rate_limits allows first request for new phone."""
         phone = "+821012345678"
         
-        # Mock no existing records
-        mock_supabase_client.execute.return_value = Mock(data=[])
+        # Mock no existing records with proper count
+        mock_result = Mock()
+        mock_result.data = []
+        mock_result.count = 0
+        mock_supabase_client.execute.return_value = mock_result
         
         # Should not raise exception
         otp_service._check_rate_limits(phone)
@@ -254,7 +259,11 @@ class TestOTPServiceEdgeCases:
         client.select.return_value = client
         client.eq.return_value = client
         client.gte.return_value = client
-        client.execute.return_value = Mock(data=[])
+        # Configure the execute result to have count=0 by default
+        mock_result = Mock()
+        mock_result.data = []
+        mock_result.count = 0
+        client.execute.return_value = mock_result
         client.insert.return_value = client
         client.update.return_value = client
         return client
@@ -262,10 +271,9 @@ class TestOTPServiceEdgeCases:
     @pytest.fixture  
     def otp_service(self, mock_supabase_client, settings_override):
         """Create OTP service instance with mocked dependencies."""
-        with patch('services.otp.otp_service._supabase_client', return_value=mock_supabase_client):
-            service = OTPService()
-            service._client = mock_supabase_client
-            return service
+        # OTPService expects a db_client parameter
+        service = OTPService(db_client=mock_supabase_client)
+        return service
     
     def test_verify_otp_handles_expired_otp(self, otp_service, mock_supabase_client):
         """Test that verify_otp handles expired OTP correctly."""
