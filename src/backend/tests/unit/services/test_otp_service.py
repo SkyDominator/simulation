@@ -21,9 +21,17 @@ class TestOTPServiceRateLimiting:
         client.select.return_value = client
         client.eq.return_value = client
         client.gte.return_value = client
+
+        # Configure the execute result to have count=0 by default
+        mock_result = Mock()
+        mock_result.data = []
+        mock_result.count = 0
+        client.execute.return_value = mock_result
+        
         client.gt.return_value = client
         client.order.return_value = client
-        client.limit.return_value = client
+        client.limit.return_value = client        
+
         client.insert.return_value = client
         client.update.return_value = client
         
@@ -38,7 +46,7 @@ class TestOTPServiceRateLimiting:
     @pytest.fixture
     def otp_service(self, mock_supabase_client, settings_override):
         """Create OTP service instance with mocked dependencies."""
-        # Create service with the mock client directly
+        # OTPService expects a db_client parameter
         service = OTPService(db_client=mock_supabase_client)
         return service
     
@@ -46,6 +54,12 @@ class TestOTPServiceRateLimiting:
         """OTPS-001: _check_rate_limits allows first request for new phone."""
         phone = "+821012345678"
         
+        # Mock no existing records with proper count
+        mock_result = Mock()
+        mock_result.data = []
+        mock_result.count = 0
+        mock_supabase_client.execute.return_value = mock_result
+
         # Use default mock (count=0) - no need to override
         # Should not raise exception and return success
         allowed, reason = otp_service._check_rate_limits(phone)
@@ -326,9 +340,17 @@ class TestOTPServiceEdgeCases:
         client.select.return_value = client
         client.eq.return_value = client
         client.gte.return_value = client
+
+        # Configure the execute result to have count=0 by default
+        mock_result = Mock()
+        mock_result.data = []
+        mock_result.count = 0
+        client.execute.return_value = mock_result
+
         client.gt.return_value = client
         client.order.return_value = client
         client.limit.return_value = client
+
         client.insert.return_value = client
         client.update.return_value = client
         
@@ -343,7 +365,7 @@ class TestOTPServiceEdgeCases:
     @pytest.fixture  
     def otp_service(self, mock_supabase_client, settings_override):
         """Create OTP service instance with mocked dependencies."""
-        # Create service with the mock client directly
+        # OTPService expects a db_client parameter
         service = OTPService(db_client=mock_supabase_client)
         return service
     
