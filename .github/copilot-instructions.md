@@ -60,7 +60,7 @@ These notes help AI coding agents work effectively in this repo. Keep edits smal
 
 ### Local dev & runtime
 - Current deployment: frontend is served via Vite preview on the laptop server (run `npm run preview` in `src/frontend/`; default port 4173). Backend runs locally (Windows) via the helper scripts in `windows-scripts/` or directly with `uvicorn`.
-- Docker Compose exists for full-stack dev, but it is not the active deployment path. If used, containers clone this repo at startup via `/entrypoints/common-init.sh` using `REPO_URL` and optional PAT in `.secrets/github_pat.txt`.
+- Docker Compose exists for full-stack dev, but it is not used for now. It is not the active deployment path. If used later, containers clone this repo at startup via `/entrypoints/common-init.sh` using `REPO_URL` and optional PAT in `.secrets/github_pat.txt`.
 - Env: backend `.env` in repo root (keys below). Frontend `.env.local` is read by Vite at build/preview time.
 - Windows helpers in `windows-scripts/` manage start/stop and optional NSSM services.
 
