@@ -56,8 +56,10 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   const [step, setStep] = useState<number>(() =>
     getJSON<number>("ui.planEditor.step", 1)
   );
-  const getDefaultSimulationRounds = (planType: string) =>
-    ["A", "B", "C", "G"].includes(planType) ? 15 : 18;
+  const getDefaultSimulationRounds = (planType: string) => {
+    if (planType === "G") return 12;
+    return ["A", "B", "C"].includes(planType) ? 15 : 18;
+  };
   const basePlanType = editingPlan?.plan_id || "A";
   const defaultSimRounds = getDefaultSimulationRounds(basePlanType);
   const persistedPlan = getJSON<Plan | null>("ui.planEditor.plan", null);
