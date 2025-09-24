@@ -6,7 +6,6 @@ for use in the backend API. It accepts custom parameters while using default
 values from configuration for other parameters.
 """
 
-from hmac import new
 import logging
 from typing import Dict, List, Any, Optional, Tuple
 
