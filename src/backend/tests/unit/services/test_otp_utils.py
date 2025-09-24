@@ -79,10 +79,12 @@ class TestOTPUtilities:
         # Wrong phone should not verify
         assert verify_otp_hash("+821087654321", otp_code, stored_hash) is False
     
-    def test_OTPU_006_calculate_expiry_returns_correct_time(self, settings_override, freeze_jan_1_2025):
+    def test_OTPU_006_calculate_expiry_returns_correct_time(self, settings_override):
         """OTPU-006: calculate_expiry returns datetime within expected delta."""
         # Test that expiry is calculated based on settings
-        with freeze_jan_1_2025:
+        from freezegun import freeze_time
+        
+        with freeze_time('2025-01-01T00:00:00Z'):
             base_time = datetime.now()
             expiry_time = calculate_expiry()
             
@@ -100,11 +102,11 @@ class TestPhoneNormalization:
         """Test normalization of Korean phone numbers with different prefixes."""
         test_cases = [
             ("010-1234-5678", "+821012345678"),
-            ("011-123-4567", "+821112345678"),  
+            ("011-1234-5678", "+821112345678"),  # Fixed: Korean mobile numbers need 11 digits
             ("016-1234-5678", "+821612345678"),
-            ("017-123-4567", "+821712345678"),
+            ("017-1234-5678", "+821712345678"),  # Fixed: Korean mobile numbers need 11 digits
             ("018-1234-5678", "+821812345678"),
-            ("019-123-4567", "+821912345678"),
+            ("019-1234-5678", "+821912345678"),  # Fixed: Korean mobile numbers need 11 digits
         ]
         
         for input_phone, expected in test_cases:

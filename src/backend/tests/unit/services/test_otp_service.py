@@ -27,58 +27,53 @@ class TestOTPServiceRateLimiting:
     @pytest.fixture
     def otp_service(self, mock_supabase_client, settings_override):
         """Create OTP service instance with mocked dependencies."""
-        with patch('services.otp.otp_service._supabase_client', return_value=mock_supabase_client):
-            service = OTPService()
-            # Inject the mock client
-            service._client = mock_supabase_client
-            return service
+        # Directly pass the mock client to the OTPService constructor
+        service = OTPService(mock_supabase_client)
+        return service
     
     def test_OTPS_001_check_rate_limits_allows_first_request(self, otp_service, mock_supabase_client):
         """OTPS-001: _check_rate_limits allows first request for new phone."""
         phone = "+821012345678"
         
-        # Mock no existing records
-        mock_supabase_client.execute.return_value = Mock(data=[])
+        # Mock no existing records (count=0)
+        mock_supabase_client.execute.return_value = Mock(count=0)
         
-        # Should not raise exception
-        otp_service._check_rate_limits(phone)
+        # Should allow the request
+        allowed, reason = otp_service._check_rate_limits(phone)
+        assert allowed is True
     
-    def test_OTPS_002_check_rate_limits_blocks_exceeded_15min_limit(self, otp_service, mock_supabase_client, settings_override, freeze_jan_1_2025):
+    def test_OTPS_002_check_rate_limits_blocks_exceeded_15min_limit(self, otp_service, mock_supabase_client, settings_override):
         """OTPS-002: _check_rate_limits blocks when 15min limit exceeded."""
         phone = "+821012345678"
         
-        with freeze_jan_1_2025:
+        from freezegun import freeze_time
+        with freeze_time('2025-01-01T00:00:00Z'):
             now = datetime.now()
             fifteen_min_ago = now - timedelta(minutes=15)
             
-            # Mock records showing limit exceeded
-            mock_records = [
-                {"created_at": (fifteen_min_ago + timedelta(minutes=i)).isoformat()}
-                for i in range(settings_override.otp_resend_limit_per_15min)
-            ]
-            mock_supabase_client.execute.return_value = Mock(data=mock_records)
+            # Mock count showing limit exceeded
+            mock_supabase_client.execute.return_value = Mock(count=settings_override.otp_resend_limit_per_15min)
             
-            # Should raise exception
-            with pytest.raises(Exception, match="15분"):
-                otp_service._check_rate_limits(phone)
+            # Should return False and reason
+            allowed, reason = otp_service._check_rate_limits(phone)
+            assert allowed is False
+            assert "Maximum OTP requests reached" in reason
     
-    def test_OTPS_003_check_rate_limits_blocks_exceeded_daily_limit(self, otp_service, mock_supabase_client, settings_override, freeze_jan_1_2025):
+    def test_OTPS_003_check_rate_limits_blocks_exceeded_daily_limit(self, otp_service, mock_supabase_client, settings_override):
         """OTPS-003: _check_rate_limits blocks when daily limit exceeded.""" 
         phone = "+821012345678"
         
-        with freeze_jan_1_2025:
-            now = datetime.now()
+        from freezegun import freeze_time
+        with freeze_time('2025-01-01T00:00:00Z'):
+            # Mock count showing daily limit exceeded - need to configure mock to return different values
+            # First call (15min check) returns 0, second call (daily check) returns limit exceeded
+            mock_responses = [Mock(count=0), Mock(count=settings_override.otp_resend_limit_per_day)]
+            mock_supabase_client.execute.side_effect = mock_responses
             
-            # Mock records showing daily limit exceeded
-            mock_records = [
-                {"created_at": (now - timedelta(hours=i)).isoformat()}
-                for i in range(settings_override.otp_resend_limit_per_day)
-            ]
-            mock_supabase_client.execute.return_value = Mock(data=mock_records)
-            
-            # Should raise exception
-            with pytest.raises(Exception, match="24시간"):
-                otp_service._check_rate_limits(phone)
+            # Should return False and reason
+            allowed, reason = otp_service._check_rate_limits(phone)
+            assert allowed is False
+            assert "Daily OTP limit reached" in reason
     
     def test_OTPS_004_check_rate_limits_allows_within_limits(self, otp_service, mock_supabase_client, settings_override, freeze_jan_1_2025):
         """OTPS-004: _check_rate_limits allows requests within both limits."""
@@ -262,10 +257,9 @@ class TestOTPServiceEdgeCases:
     @pytest.fixture  
     def otp_service(self, mock_supabase_client, settings_override):
         """Create OTP service instance with mocked dependencies."""
-        with patch('services.otp.otp_service._supabase_client', return_value=mock_supabase_client):
-            service = OTPService()
-            service._client = mock_supabase_client
-            return service
+        # Directly pass the mock client to the OTPService constructor
+        service = OTPService(mock_supabase_client)
+        return service
     
     def test_verify_otp_handles_expired_otp(self, otp_service, mock_supabase_client):
         """Test that verify_otp handles expired OTP correctly."""

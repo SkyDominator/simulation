@@ -37,6 +37,7 @@ def settings_override():
         "otp_validity_minutes": 5,
     "otp_max_verification_attempts": 6,  # Updated to match SSD §7.1 requirement
         "otp_resend_limit_per_15min": 3,
+        "otp_resend_limit_per_day": 10,
         "cors_origins": ["http://localhost:5173"]
     }
     
