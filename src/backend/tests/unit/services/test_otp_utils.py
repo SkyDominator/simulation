@@ -100,11 +100,11 @@ class TestPhoneNormalization:
         """Test normalization of Korean phone numbers with different prefixes."""
         test_cases = [
             ("010-1234-5678", "+821012345678"),
-            ("011-123-4567", "+821112345678"),  
+            ("011-123-4567", "+82111234567"),  # Note: 011 numbers are typically shorter
             ("016-1234-5678", "+821612345678"),
-            ("017-123-4567", "+821712345678"),
+            ("017-123-4567", "+82171234567"),  # Note: 017 numbers are typically shorter  
             ("018-1234-5678", "+821812345678"),
-            ("019-123-4567", "+821912345678"),
+            ("019-123-4567", "+82191234567"),  # Note: 019 numbers are typically shorter
         ]
         
         for input_phone, expected in test_cases:
