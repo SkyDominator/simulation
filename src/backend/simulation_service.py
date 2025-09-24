@@ -123,6 +123,8 @@ class FinancialSimulationService:
         
         # Override scheduled_payment if provided, with sanitation
         if scheduled_payment is not None:
+            # check the keys (rounds) in scheduled_payment are positive integers: raise ValueError if not.
+            self._check_keys(scheduled_payment, "scheduled_payment")
             self.params['scheduled_payment'] = self._sanitize_scheduled_payment(scheduled_payment, plan_id)
         # Override sales achievement rates (already expected as fractions 0.5-1.0)
         if sales_achievement_rates is not None:
@@ -145,6 +147,18 @@ class FinancialSimulationService:
         
         logger.info(f"Financial simulation initialized with plan '{plan_id}'")
 
+    def _check_keys(self, d: Dict[int, Any], name: str) -> None:
+        # Check that all keys in the dictionary are integers (convertible).
+        # Raise ValueError if any key is not convertible to int.
+        new_d = {}
+        for key in d.keys():
+            new_d[int(key)] = d[key]  # Will raise ValueError if not convertible
+
+        # Now check that all keys are positive integers
+        for key in new_d.keys():
+            if not isinstance(key, int) or key <= 0:
+                raise ValueError(f"All keys in {name} must be positive integers. Invalid key: {key}")
+            
     def _sanitize_scheduled_payment(self, scheduled_payment: Dict[int, int], plan_id: str) -> Dict[int, int]:
         """
         Sanitize scheduled payment values by replacing negatives/NaN with plan minimums.
