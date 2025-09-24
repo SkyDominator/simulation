@@ -27,21 +27,23 @@ class TestOTPServiceRateLimiting:
     @pytest.fixture
     def otp_service(self, mock_supabase_client, settings_override):
         """Create OTP service instance with mocked dependencies."""
-        with patch('services.otp.otp_service._supabase_client', return_value=mock_supabase_client):
-            service = OTPService()
-            # Inject the mock client
-            service._client = mock_supabase_client
-            return service
+        # Create service with the mock client directly
+        service = OTPService(db_client=mock_supabase_client)
+        return service
     
     def test_OTPS_001_check_rate_limits_allows_first_request(self, otp_service, mock_supabase_client):
         """OTPS-001: _check_rate_limits allows first request for new phone."""
         phone = "+821012345678"
         
-        # Mock no existing records
-        mock_supabase_client.execute.return_value = Mock(data=[])
+        # Mock no existing records - need to mock the count attribute properly
+        mock_result = Mock()
+        mock_result.count = 0  # No existing records
+        mock_supabase_client.execute.return_value = mock_result
         
-        # Should not raise exception
-        otp_service._check_rate_limits(phone)
+        # Should not raise exception and return success
+        allowed, reason = otp_service._check_rate_limits(phone)
+        assert allowed is True
+        assert reason == "OK"
     
     def test_OTPS_002_check_rate_limits_blocks_exceeded_15min_limit(self, otp_service, mock_supabase_client, settings_override, freeze_jan_1_2025):
         """OTPS-002: _check_rate_limits blocks when 15min limit exceeded."""
@@ -262,10 +264,9 @@ class TestOTPServiceEdgeCases:
     @pytest.fixture  
     def otp_service(self, mock_supabase_client, settings_override):
         """Create OTP service instance with mocked dependencies."""
-        with patch('services.otp.otp_service._supabase_client', return_value=mock_supabase_client):
-            service = OTPService()
-            service._client = mock_supabase_client
-            return service
+        # Create service with the mock client directly
+        service = OTPService(db_client=mock_supabase_client)
+        return service
     
     def test_verify_otp_handles_expired_otp(self, otp_service, mock_supabase_client):
         """Test that verify_otp handles expired OTP correctly."""
