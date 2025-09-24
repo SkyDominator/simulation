@@ -148,7 +148,7 @@ def simulation_service_factory():
     
     return _create_service
 
-@pytest.fixture(params=["A", "B", "C", "D", "K", "P", "R", "F", "E"])
+@pytest.fixture(params=["A", "B", "C", "D", "K", "P", "R", "F", "E", "G"])
 def plan_parameters(request):
     """Parametrize across plan IDs for comprehensive testing."""
     return request.param

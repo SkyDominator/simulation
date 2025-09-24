@@ -1,214 +1,39 @@
-# Development environment (local machine)
+# Guidelines for Copilot Agents
 
-OS: Windows 11
-IDE: Visual Studio Code
-Internet Browser: Google Chrome, Screen Size: 1920x1080
-Device: Desktop (LG Gram Notebook)
-Python: 3.11.6 or later
-TypeScript: 5.8.3 or later
-React: 19.1.0 or later
+## Pull Requests
 
-## App test environment
+This document describes how you can create Pull Requests. Before you submit a Pull Request (PR), check that it meets these guidelines:
 
-Here is the test environment:
+### 1. General Guidelines
 
-* Desktop: (Windows 11, Google Chrome)
-* Mobile: (iPhone 11 Pro, iOS 18.1.1, Google Chrome)
+Make sure your PR is small and focused on one change only - avoid adding unrelated changes, mixing adding features and refactoring. Keeping to that rule will make it easier to review your PR and will make it easier for release managers if they decide that your change should be cherry-picked to release it in a bug-fix release. If you want to add a new feature and refactor the code, it's better to split the PR into several smaller PRs. It's also quite a good and common idea to keep a big `Draft` PR if you have a bigger change that you want to make and then create smaller PRs from it that are easier to review and merge and cherry-pick. It takes a long time (and a lot of attention and focus of a reviewer) to review big PRs so by splitting it into smaller PRs you actually speed up the review process and make it easier for your change to be eventually merged.
 
-## App live environment
+### 2. Commit Messages
 
-Here is the live environment:
+Adhere to the following rules for commit messages:
 
-* Desktop: (Windows 11+, Google Chrome)
-* Mobile: 
-    * iPhone 11+, iOS 18.1.1+, Google Chrome
-    * Samsung Galaxy S21+, Android 12+, Google Chrome
+1. **Separate subject from body with a blank line**  
+   - Leave one empty line after the subject before writing the body.
 
-# Back-end Coding Guidelines
+2. **Limit the subject line to ~50 characters**  
+   - Keep the summary short and scannable.  
+   - Git tools assume the first line is a title.
 
-Follow the general guidelines below when writing Python codes.
+3. **Capitalize the subject line**  
+   - Start with an uppercase letter.
 
-## General Guidelines
+4. **Do not end the subject line with a period**  
+   - Avoid trailing punctuation in the summary.
 
-1. **Code Quality**: Ensure the code is clean, well-structured, and follows Python best practices. 
-   - Use meaningful variable and function names.
-   - Keep functions short and focused on a single task. Try to make each function "pure", meaning it should not have side effects and should return the same output for the same input.
-   - Avoid deep nesting of code blocks.
-   - Use logging instead of print statements for debugging and information output.
-   - Use type hints to improve code readability and help with static analysis.
-   - use context7.
-2. **Documentation**: Add docstrings to functions and classes, and inline comments where necessary to explain complex logic.
-3. **Error Handling**: Implement appropriate error handling to manage exceptions gracefully.
-4. **Performance**: Optimize code for performance where applicable, but prioritize readability and maintainability.
-5. **Dependencies**: If new libraries are introduced, ensure they are documented and included in the requirements file. 
-6. **Security**: Be mindful of security best practices, especially when handling user input or sensitive data.
-7. **Refactoring**: If you encounter code that can be improved, refactor it while ensuring existing functionality remains intact.
-8. **Functionality**: Ensure that the code meets the specified requirements and behaves as expected.
+5. **Use the imperative mood in the subject line**  
+   - Example: `Add feature`, `Fix bug`, `Update docs`.  
+   - Test it by filling in the blank:  
+     _“If applied, this commit will **<subject>**”._
 
-# Front-end Coding Guidelines
+6. **Wrap the body at 72 characters**  
+   - Improves readability in terminals and tools.
 
-Follow the general guidelines below when writing React, TypeScript, and JavaScript code.
-
-## Core Principles of React Coding (TypeScript + Vite + React)
-
-### 1. Embrace Functional Components and Hooks
-- Prefer **functional components** over class components for cleaner, more modern code. Hooks like `useState`, `useEffect`, and custom hooks keep logic modular and reusable.
-- Follow React’s foundational **Rules of Hooks**:
-  - Always call hooks at the top level (no loops or conditionals).
-  - Only call hooks from React function components or custom hooks.
-
-### 2. Single Responsibility & SOLID Principles
-- Apply the **Single Responsibility Principle (SRP)**: each component (or hook) should focus on one clear task—rendering UI, fetching data, etc.
-- Adopt broader **SOLID** principles for modular and maintainable code:
-  - **OCP**: Open for extension, closed for modification  
-  - **LSP**: Subtypes should work in place of base types  
-  - **ISP**: Interfaces should be lean and focused  
-  - **DIP**: Depend on abstractions, not concrete implementations
-
-### 3. Thoughtful Component Design & Structure
-- Break UI into **small, focused components**—think “smart” vs. “dumb” components or container vs. presentational.
-- Organize file/folder structure by **features or domains**, not types—this keeps the codebase intuitive and scalable.
-- Leverage **composition**: React’s strength lies in building complex UIs by nesting simpler components without introducing ripple effects.
-
-### 4. Maintain Clean Code & Conventions
-- Adopt consistent **naming**—use PascalCase for components and camelCase for variables and functions.
-- Enforce code style with tools like **Prettier** and **ESLint** to improve readability and reduce friction.
-- Keep code simple and avoid duplications (DRY principle). Overly complex logic invites bugs and frustration.
-
-### 5. Optimize Performance Mindfully
-- Use **unique keys** when rendering lists to help React track elements efficiently.
-- Apply **memoization** (`React.memo`, `useMemo`, `useCallback`) to avoid unnecessary re-renders—only when needed.
-- Implement **lazy loading** of components with `React.lazy` and `Suspense` to speed up initial load.
-
-### 6. Type Safety & Props Integrity
-- Use **TypeScript (or PropTypes)** to enforce prop types and catch errors early.
-- Treat props as **immutable**, and avoid modifying them inside components to maintain predictable behavior.
-
-### 7. State Management
-- Simplify the state management as much as possible. Minimize the use of the local host storage. Use backend API calls to manage state and persist data.
-- For the existing data in backend, use backend API calls to get the data. Do not re-create the same data in the frontend side.
-
-### 8. Security
-- Strictly follow the [security principles](#security-principles) described below.
-
-## Security principles { #security-principles }
-
-## 1. Prevent Cross-Site Scripting (XSS)
-- Never trust user input — React escapes JSX, but dangerous sinks exist.
-- Avoid `dangerouslySetInnerHTML`. If necessary → sanitize with **DOMPurify**.
-- Validate & escape all external input (APIs, query params, localStorage, etc.).
-
-## 2. Safe State & Props Management
-- Don’t store sensitive data (tokens, passwords) in React state, props, or localStorage.
-- Use **httpOnly secure cookies** for tokens.
-- Assume `.env` variables in the frontend are exposed — don’t put secrets there.
-
-## 3. Secure API Interaction
-- Always use **HTTPS**.
-- Protect against **CSRF** (tokens or SameSite cookies).
-- Validate backend responses before rendering.
-
-## 4. Authentication & Authorization
-- Enforce auth **server-side** — frontend checks are cosmetic only.
-- Use short-lived JWTs + refresh tokens (rotate securely).
-- Keep only minimal session state on the client.
-
-## 5. Avoid Leaking Sensitive Data
-- Don’t log sensitive info in console or error boundaries.
-- Minimize data exposure in API responses (watch Redux/React Query caches).
-
-## 6. Dependency & Build Security
-- Keep dependencies updated (`npm audit`).
-- Use **SRI** for CDN-loaded scripts.
-- Lock dependency versions with `package-lock.json` / `yarn.lock`.
-
-## 7. Content Security Policy (CSP)
-- Set strict CSP headers:
-  - Block inline scripts (`'unsafe-inline'`).
-  - Whitelist trusted sources for scripts/styles/images.
-
-## 8. Avoid Insecure Patterns
-- Don’t embed secrets (API keys, DB creds) in frontend code — use backend proxy.
-- Avoid `eval`, `Function()`, or dynamic script execution.
-- Don’t attach inline event handlers in HTML.
-
-## 9. Clickjacking Protection
-- Configure server headers:
-  - `X-Frame-Options: DENY`
-  - `Content-Security-Policy: frame-ancestors 'none';`
-
-## 10. Error Handling & Monitoring
-- Use React **Error Boundaries**, but don’t expose stack traces to users.
-- Monitor with tools like Sentry or Datadog.
-
-
-## PWA UI/UX Design Guide for this React App
-
-*This is a guide to creating user-friendly Progressive Web Apps with a native look and feel, leveraging modern design principles and React tooling.*
-
-> The best PWA doesn't feel like a website in a wrapper. It feels like an app that was delivered through the web.
-
----
-
-### The Look: Visual Principles 🎨
-
-The visual design must be clean, adaptive, and personal.
-
-* **Foundation: Material Design 3 (MD3)**
-    * Google's latest design system is the gold standard for PWAs.
-    * **Key Features:** Dynamic color theming, updated component styles, and enhanced accessibility.
-    * **Implementation:** Use a component library like **MUI for React** which has excellent MD3 support.
-
-* **Layout: Adaptive & Responsive**
-    * **Mobile-First:** Design for the smallest screen and scale up.
-    * **Modern CSS:** Utilize CSS Grid and Container Queries to create layouts that adapt to their container, not just the viewport. This is crucial for components that need to work anywhere.
-
----
-
-### The Feel: Interaction & Experience ✨
-
-How the app responds to input is what separates a great PWA from a website.
-
-* **Navigation: Platform-Aware**
-    * **Mobile:** Use a persistent **Bottom Tab Bar** for primary navigation.
-    * **Desktop/Tablet:** Transition to a **Side Navigation Rail** or a traditional header to make use of screen real estate.
-
-* **Performance: Instant & Smooth**
-    * **Animations:** Use performant CSS properties like `transform` and `opacity` for smooth, GPU-accelerated animations.
-    * **Offline UX:** Design clear UI states for offline mode. Use banners or toasts to inform the user of their connection status and enable optimistic UI updates.
-
-* **Installation: Seamless**
-    * Design a non-intrusive, custom "Add to Home Screen" prompt within your UI to encourage installation after the user has engaged with the app.
-
----
-
-### Recommended React Implementation
-
-```jsx
-// A basic shell component structure for a PWA
-import { Box } from '@mui/material';
-import MobileNavigation from './MobileNavigation';
-import DesktopNavigation from './DesktopNavigation';
-import useIsMobile from '../hooks/useIsMobile';
-
-function AppShell({ children }) {
-  const isMobile = useIsMobile();
-
-  return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
-      {isMobile ? <MobileNavigation /> : <DesktopNavigation />}
-      
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        {/* Main content goes here */}
-        {children}
-      </Box>
-    </Box>
-  );
-}
-```
-
-### Key Libraries:
-
-* UI Components: @mui/material
-* Data & State Management: @tanstack/react-query (for handling loading/error states and offline caching)
-* PWA Service Worker: workbox-precaching
+7. **Use the body to explain *what* and *why*, not *how***  
+   - The diff already shows *how*.  
+   - Explain the context, purpose, and reasoning behind the change.  
+   - Optionally, reference related issues or PRs at the bottom.
