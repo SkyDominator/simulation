@@ -17,12 +17,26 @@
       "justMyCode": true
     },
     {
+      "name": "Backend (test-debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["tests/unit", "-v", ">", "test_unit_results.md"],
+      "cwd": "${workspaceFolder}/src/backend",
+      "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src/backend"
+      },
+      "console": "integratedTerminal",
+      "subProcess": true,
+      "justMyCode": true
+    },
+    {
       "name": "Backend (test)",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-    //   "args": ["tests/unit/auth", "--maxfail=5", "-v", ">", "test_results.md"],
-      "args": ["tests/unit/utils", "-v", ">", "test_unit_utils_results.md"],
+      "args": ["tests/unit", "--maxfail=5", "-v"],
       "cwd": "${workspaceFolder}/src/backend",
       "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {
