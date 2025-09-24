@@ -83,11 +83,22 @@ class TestOTPServiceRateLimiting:
                 {"created_at": (now - timedelta(hours=i)).isoformat()}
                 for i in range(settings_override.otp_resend_limit_per_day)
             ]
-            mock_supabase_client.execute.return_value = Mock(data=mock_records)
             
-            # Should raise exception
-            with pytest.raises(Exception, match="24시간"):
-                otp_service._check_rate_limits(phone)
+            # Set up mock to return different results for 15-min and daily checks
+            mock_15min_result = Mock()
+            mock_15min_result.data = []
+            mock_15min_result.count = 0  # Within 15-min limit
+            
+            mock_daily_result = Mock()  
+            mock_daily_result.data = mock_records
+            mock_daily_result.count = len(mock_records)  # Exceed daily limit
+            
+            mock_supabase_client.execute.side_effect = [mock_15min_result, mock_daily_result]
+            
+            # Should return False with daily limit message
+            allowed, reason = otp_service._check_rate_limits(phone)
+            assert not allowed
+            assert "24시간" in reason or "tomorrow" in reason
     
     def test_OTPS_004_check_rate_limits_allows_within_limits(self, otp_service, mock_supabase_client, settings_override, freeze_jan_1_2025):
         """OTPS-004: _check_rate_limits allows requests within both limits."""
@@ -106,12 +117,21 @@ class TestOTPServiceRateLimiting:
                 for i in range(settings_override.otp_resend_limit_per_day - 1)
             ]
             
-            # Use the longer list for the mock
-            mock_data = mock_records_daily if len(mock_records_daily) > len(mock_records_15min) else mock_records_15min
-            mock_supabase_client.execute.return_value = Mock(data=mock_data)
+            # Set up mock to return different results for 15-min and daily checks
+            mock_15min_result = Mock()
+            mock_15min_result.data = mock_records_15min
+            mock_15min_result.count = len(mock_records_15min)  # Within 15-min limit
             
-            # Should not raise exception
-            otp_service._check_rate_limits(phone)
+            mock_daily_result = Mock()  
+            mock_daily_result.data = mock_records_daily
+            mock_daily_result.count = len(mock_records_daily)  # Within daily limit
+            
+            mock_supabase_client.execute.side_effect = [mock_15min_result, mock_daily_result]
+            
+            # Should return True (allowed)
+            allowed, reason = otp_service._check_rate_limits(phone)
+            assert allowed
+            assert reason == "OK"
     
     def test_OTPS_005_request_otp_normalizes_phone_number(self, otp_service, mock_supabase_client):
         """OTPS-005: request_otp normalizes phone number before processing."""
