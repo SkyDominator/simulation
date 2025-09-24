@@ -55,8 +55,37 @@ def authenticate_jwt_token(token_result: HTTPAuthorizationCredentials = Depends(
         unverified_header = jwt.get_unverified_header(token)
         kid = unverified_header.get("kid")
         alg = unverified_header.get("alg")
-        if not kid or not alg:
-            raise credentials_exception
+        
+        # Specific validation checks with descriptive error messages
+        if not kid:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing 'kid' in JWT header",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        if not alg:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing algorithm in JWT header",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Check for duplicated kid (if kid is a list/array)
+        if isinstance(kid, list):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Duplicated 'kid' values in JWT header",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Check for unsupported algorithm
+        if alg not in ["RS256", "RS512", "ES256"]:  # Common supported algorithms
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Unsupported algorithm: {alg}",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
         keys_obj = _jwks_client.get_keys()
         keys_list = keys_obj.get("keys", [])
@@ -82,6 +111,7 @@ def authenticate_jwt_token(token_result: HTTPAuthorizationCredentials = Depends(
         if not sub:
             raise credentials_exception
         return str(sub)
+      
     except ExpiredSignatureError:
         raise credentials_exception
     except JWTClaimsError:
@@ -94,3 +124,7 @@ def authenticate_jwt_token(token_result: HTTPAuthorizationCredentials = Depends(
         raise credentials_exception
     except (JWTError, KeyError, TypeError):
         raise credentials_exception
+    except HTTPException:
+        raise
+    except Exception:
+        raise
