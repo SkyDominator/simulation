@@ -78,7 +78,7 @@ class TestOTPServiceRateLimiting:
             assert "few minutes" in reason or "15분" in reason
     
     def test_OTPS_003_check_rate_limits_blocks_exceeded_daily_limit(self, otp_service, mock_supabase_client, settings_override, freeze_jan_1_2025):
-        """OTPS-003: _check_rate_limits blocks when daily limit exceeded.""" 
+        """OTPS-003: _check_rate_limits blocks when daily limit exceeded."""
         phone = "+821012345678"
         
         with freeze_jan_1_2025:
@@ -89,11 +89,25 @@ class TestOTPServiceRateLimiting:
                 {"created_at": (now - timedelta(hours=i)).isoformat()}
                 for i in range(settings_override.otp_resend_limit_per_day)
             ]
-            mock_supabase_client.execute.return_value = Mock(data=mock_records)
             
-            # Should raise exception
-            with pytest.raises(Exception, match="24시간"):
-                otp_service._check_rate_limits(phone)
+            # Create mock results for two separate calls:
+            # 1st call: 15-minute check (should be within limit)
+            # 2nd call: daily check (should exceed limit)
+            fifteen_min_result = Mock()
+            fifteen_min_result.data = []  # No records in last 15 minutes
+            fifteen_min_result.count = 0
+            
+            daily_result = Mock()
+            daily_result.data = mock_records
+            daily_result.count = len(mock_records)  # This equals the daily limit
+            
+            # Use side_effect to return different results for each call
+            mock_supabase_client.execute.side_effect = [fifteen_min_result, daily_result]
+            
+            # Should return False and contain daily limit message
+            allowed, reason = otp_service._check_rate_limits(phone)
+            assert allowed is False
+            assert "tomorrow" in reason or "24시간" in reason
     
     def test_OTPS_004_check_rate_limits_allows_within_limits(self, otp_service, mock_supabase_client, settings_override, freeze_jan_1_2025):
         """OTPS-004: _check_rate_limits allows requests within both limits."""
@@ -209,23 +223,26 @@ class TestOTPServiceRateLimiting:
         """OTPS-008: verify_otp blocks verification after max attempts reached."""
         phone = "+821012345678"
         otp_code = "123456"
-        user_hash = "test_user_hash"
         
         # Mock record with max attempts reached
         existing_record = {
             "id": 1,
-            "phone_number": phone,
-            "otp_hash": "stored_hash",
-            "attempts": settings_override.otp_max_verification_attempts,
+            "phone": phone,
+            "code_hash": "stored_hash",
+            "attempts": settings_override.otp_max_verification_attempts,  # Already at max
             "expires_at": (datetime.now() + timedelta(minutes=5)).isoformat(),
-            "user_hash": user_hash
+            "used": False
         }
         
-        mock_supabase_client.execute.return_value = Mock(data=[existing_record])
+        # Create proper mock result with data
+        mock_result = Mock()
+        mock_result.data = [existing_record]
+        mock_supabase_client.execute.return_value = mock_result
         
-        # Should raise exception
-        with pytest.raises(Exception, match="최대 시도 횟수"):
-            otp_service.verify_otp(phone, otp_code, user_hash)
+        # Should return failure with max attempts message
+        result = otp_service.verify_otp(phone, otp_code)
+        assert result["success"] is False
+        assert "시도 횟수" in result["message"] or "새 인증번호" in result["message"]
     
     def test_OTPS_009_verify_otp_success_resets_attempts(self, otp_service, mock_supabase_client):
         """OTPS-009: verify_otp resets attempts counter on successful verification."""
