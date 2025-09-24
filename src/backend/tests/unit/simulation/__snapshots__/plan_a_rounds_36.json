@@ -3,13 +3,12 @@
   "generated_at": "2025-09-22T00:00:00Z",
   "plan_id": "A",
   "rounds": 36,
-  "fields": [
-    "company_round",
-    "investor_count",
-    "total_payment",
-    "total_revenue_after_tax",
-    "cumulative_net_profit"
-  ],
+  "fields": ["company_round", 
+            "cumulative_net_profit",
+            "investor_count",
+            "total_payment",
+            "total_revenue_after_tax"
+            ],
   "history": [
     {
       "company_round": 1,

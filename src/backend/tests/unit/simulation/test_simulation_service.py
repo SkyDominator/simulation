@@ -269,7 +269,12 @@ class TestSimulationSnapshots:
             "generated_at": "2025-09-22T00:00:00Z",
             "plan_id": "A",
             "rounds": CANONICAL_SNAPSHOT_ROUNDS,
-            "fields": ["company_round", "investor_count", "total_payment", "total_revenue_after_tax", "cumulative_net_profit"],
+            "fields": ["company_round", 
+                       "cumulative_net_profit",
+                       "investor_count",
+                       "total_payment",
+                       "total_revenue_after_tax",
+                   ],
             "history": []
         }
         
@@ -349,7 +354,12 @@ class TestSimulationSnapshots:
             "version": "1.0",
             "plan_id": "A", 
             "rounds": CANONICAL_SNAPSHOT_ROUNDS,
-            "fields": ["company_round", "investor_count", "total_payment", "total_revenue_after_tax", "cumulative_net_profit"],
+            "fields": ["company_round", 
+                       "cumulative_net_profit",
+                       "investor_count",
+                       "total_payment",
+                       "total_revenue_after_tax",
+                   ],
             "history": []
         }
         
@@ -519,7 +529,12 @@ class TestSimulationServiceMultiRoundSnapshot:
             "generated_at": "2025-09-18T00:00:00Z",  # Will be ignored in comparison
             "plan_id": "A",
             "rounds": CANONICAL_SNAPSHOT_ROUNDS,
-            "fields": ["investor_count", "total_payment", "total_revenue_after_tax", "cumulative_profit"],
+            "fields": ["company_round", 
+                       "cumulative_net_profit",
+                       "investor_count",
+                       "total_payment",
+                       "total_revenue_after_tax",
+                   ],
             "history": []
         }
         
