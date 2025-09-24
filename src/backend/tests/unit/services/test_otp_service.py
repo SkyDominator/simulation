@@ -66,11 +66,12 @@ class TestOTPServiceRateLimiting:
         assert allowed is True
         assert reason == "OK"
     
-    def test_OTPS_002_check_rate_limits_blocks_exceeded_15min_limit(self, otp_service, mock_supabase_client, settings_override, freeze_jan_1_2025):
+    def test_OTPS_002_check_rate_limits_blocks_exceeded_15min_limit(self, otp_service, mock_supabase_client, settings_override):
         """OTPS-002: _check_rate_limits blocks when 15min limit exceeded."""
         phone = "+821012345678"
         
-        with freeze_jan_1_2025:
+        from freezegun import freeze_time
+        with freeze_time('2025-01-01T00:00:00Z'):
             now = datetime.now()
             fifteen_min_ago = now - timedelta(minutes=15)
             
@@ -120,7 +121,7 @@ class TestOTPServiceRateLimiting:
             assert not allowed
             assert "24시간" in reason or "tomorrow" in reason
     
-    def test_OTPS_004_check_rate_limits_allows_within_limits(self, otp_service, mock_supabase_client, settings_override, freeze_jan_1_2025):
+    def test_OTPS_004_check_rate_limits_allows_within_limits(self, otp_service, mock_supabase_client, settings_override):
         """OTPS-004: _check_rate_limits allows requests within both limits."""
         phone = "+821012345678"
         
@@ -178,6 +179,10 @@ class TestOTPServiceRateLimiting:
             mock_insert_result       # insert new OTP record
         ]
         
+        # Mock successful rate limit check (2 calls for _check_rate_limits)
+        mock_responses = [Mock(count=0), Mock(count=0), Mock(data=[{"id": 1}])]
+        mock_supabase_client.execute.side_effect = mock_responses
+
         # Mock the SMS client directly on the service instance
         mock_sms_client = Mock()
         mock_sms_client.send_otp.return_value = {"success": True}

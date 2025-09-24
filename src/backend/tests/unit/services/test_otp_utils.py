@@ -79,9 +79,10 @@ class TestOTPUtilities:
         # Wrong phone should not verify
         assert verify_otp_hash("+821087654321", otp_code, stored_hash) is False
     
-    def test_OTPU_006_calculate_expiry_returns_correct_time(self, settings_override, freeze_jan_1_2025):
+    def test_OTPU_006_calculate_expiry_returns_correct_time(self, settings_override):
         """OTPU-006: calculate_expiry returns datetime within expected delta."""
         # Test that expiry is calculated based on settings
+
         # The freeze_jan_1_2025 fixture is already active
         base_time = datetime.now()
         expiry_time = calculate_expiry()
