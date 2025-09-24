@@ -134,25 +134,44 @@ class TestOTPServiceRateLimiting:
             assert reason == "OK"
     
     def test_OTPS_005_request_otp_normalizes_phone_number(self, otp_service, mock_supabase_client):
-        """OTPS-005: request_otp normalizes phone number before processing."""
-        input_phone = "010-1234-5678"
-        expected_normalized = "+821012345678"
+        """OTPS-005: request_otp uses phone number as-is (normalization not used for Solapi)."""
+        input_phone = "01012345678"  # Korean phone format expected by Solapi
         
-        # Mock successful rate limit check and insert
-        mock_supabase_client.execute.return_value = Mock(data=[])
+        # Mock successful rate limit check (both 15-min and daily within limits)
+        mock_rate_limit_result = Mock()
+        mock_rate_limit_result.data = []
+        mock_rate_limit_result.count = 0
         
-        with patch('services.otp.otp_service.normalize_phone') as mock_normalize:
-            mock_normalize.return_value = expected_normalized
-            
-            with patch('services.otp.otp_service.generate_otp', return_value="123456"):
-                with patch('services.otp.otp_service.hash_otp', return_value="mock_hash"):
-                    result = otp_service.request_otp(input_phone)
-            
-            # Should call normalize_phone with input
-            mock_normalize.assert_called_once_with(input_phone)
-            
-            # Should return normalized phone in result
-            assert result["user_hash"]  # Should contain some hash-like value
+        # Mock successful update operation (invalidate existing OTPs)
+        mock_update_result = Mock()
+        mock_update_result.data = []
+        
+        # Mock successful insert operation
+        mock_insert_result = Mock()
+        mock_insert_result.data = [{"id": 1}]
+        
+        # Set side_effect: rate limiting (2 calls) + update + insert
+        mock_supabase_client.execute.side_effect = [
+            mock_rate_limit_result,  # 15-min check
+            mock_rate_limit_result,  # daily check  
+            mock_update_result,      # invalidate existing OTPs
+            mock_insert_result       # insert new OTP record
+        ]
+        
+        # Mock the SMS client directly on the service instance
+        mock_sms_client = Mock()
+        mock_sms_client.send_otp.return_value = {"success": True}
+        otp_service.sms_client = mock_sms_client
+        
+        with patch('services.otp.otp_service.generate_otp', return_value="123456"):
+            with patch('services.otp.otp_service.hash_otp', return_value="mock_hash"):
+                result = otp_service.request_otp(input_phone)
+        
+        # Should return success
+        assert result["success"] is True
+        
+        # Verify SMS was sent to the input phone (not normalized)
+        mock_sms_client.send_otp.assert_called_once_with(input_phone, "123456")
     
     def test_OTPS_006_request_otp_generates_and_stores_otp(self, otp_service, mock_supabase_client, freeze_jan_1_2025):
         """OTPS-006: request_otp generates OTP and stores with expiry."""
