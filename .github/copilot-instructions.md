@@ -160,6 +160,14 @@ Follow the general guidelines below when writing Python codes.
     - Implement logging for errors to aid in debugging and monitoring.
     - Use try-except blocks to handle exceptions gracefully and provide meaningful error messages.
     - Implement appropriate status codes for API responses to indicate success or failure.
+        - 200: Successful GET operations
+        - 201: Successful POST/PUT operations
+        - 400: Business logic validation errors
+        - 401: Missing or invalid authentication
+        - 403: Insufficient permissions (admin required)
+        - 404: Resource not found
+        - 422: Request validation errors
+        - 500: Server errors
 5. Performance
     - Optimize code for performance where applicable, but prioritize readability and maintainability.
 6. Dependencies

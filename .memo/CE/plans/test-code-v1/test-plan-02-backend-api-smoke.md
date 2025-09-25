@@ -6,7 +6,14 @@ Target: All endpoints in `src/backend/api/routes.py` with focus on critical path
 
 --------------------------------------------------------------------------------
 1. Scope & Principles
---------------------------------------------------------------------------------
+------| SIM | 16 | High | Mock auth |
+| ADMIN | 24 | High | Mock admin auth |
+| CONSENT | 5 | Medium | Mock auth |
+| VALID | 10 | Medium | Request validation |
+| ERROR | 5 | Medium | Error response validation |
+| SEC | 7 | High | Security fixtures |
+
+**Total: 82 test cases**-------------------------------------------------------------------
 
 **In Scope:**
 * Happy path testing for all API endpoints
@@ -51,25 +58,34 @@ Target: All endpoints in `src/backend/api/routes.py` with focus on critical path
     - OTP-006: POST /api/otp/verify with exhausted attempts returns failure
 
 2.3 Public Content Endpoints (CAT-CONTENT)
-* Why: Verify public content retrieval works
+* Why: Verify public content retrieval works and returns proper status codes
 * Targets: `/api/notices`, `/api/notices/{id}`
 * Cases:
-    - CONT-001: GET /api/notices returns published notices list
-    - CONT-002: GET /api/notices/{id} returns specific notice details
+    - CONT-001: GET /api/notices returns 200 with published notices list
+    - CONT-002: GET /api/notices/{id} returns 200 with specific notice details
     - CONT-003: GET /api/notices/{id} with non-existent ID returns 404
+    - CONT-004: GET /api/notices/{id} with invalid UUID format returns 422
 
 2.4 Protected Simulation Endpoints (CAT-SIM)
-* Why: Core business functionality requires authentication
+* Why: Core business functionality requires authentication and proper error handling
 * Targets: `/api/simulations/*`, `/api/simulation/*`
 * Cases:
     - SIM-001: GET /api/simulations without auth returns 401
-    - SIM-002: GET /api/simulations with valid auth returns user simulations
-    - SIM-003: POST /api/simulation/create without auth returns 401
-    - SIM-004: POST /api/simulation/create with valid auth creates simulation
-    - SIM-005: POST /api/simulation/run without auth returns 401
-    - SIM-006: POST /api/simulation/run with valid auth runs simulation
-    - SIM-007: DELETE /api/simulations/{id} without auth returns 401
-    - SIM-008: DELETE /api/simulations/{id} with valid auth deletes simulation
+    - SIM-002: GET /api/simulations with valid auth returns 200 with user simulations
+    - SIM-003: GET /api/simulations/{id} with non-existent ID returns 404
+    - SIM-004: GET /api/simulations/{id} accessing other user's simulation returns 404
+    - SIM-005: POST /api/simulation/create without auth returns 401
+    - SIM-006: POST /api/simulation/create with valid auth returns 201 and creates simulation
+    - SIM-007: POST /api/simulation/create with invalid data returns 422
+    - SIM-008: POST /api/simulation/run without auth returns 401
+    - SIM-009: POST /api/simulation/run with valid auth returns 200 with results
+    - SIM-010: POST /api/simulation/run with non-existent simulation returns 404
+    - SIM-011: PATCH /api/simulations/{id} without auth returns 401
+    - SIM-012: PATCH /api/simulations/{id} with non-existent ID returns 404
+    - SIM-013: PATCH /api/simulations/{id} accessing other user's simulation returns 404
+    - SIM-014: DELETE /api/simulations/{id} without auth returns 401
+    - SIM-015: DELETE /api/simulations/{id} with valid auth returns 200 and deletes simulation
+    - SIM-016: DELETE /api/simulations/{id} with non-existent ID returns 404
 
 2.5 Admin Endpoints (CAT-ADMIN)
 * Why: Administrative functions require proper authorization
@@ -107,13 +123,28 @@ Target: All endpoints in `src/backend/api/routes.py` with focus on critical path
     - CONS-001: POST /api/consents without auth returns 401
     - CONS-002: POST /api/consents with valid auth records consent
 
-2.7 Request Validation (CAT-VALID)
-* Why: Ensure proper request validation and error responses
+2.7 Request Validation & Error Handling (CAT-VALID)
+* Why: Ensure proper request validation and comprehensive error responses
 * Cases:
     - VAL-001: Invalid JSON in request body returns 422
     - VAL-002: Missing required fields returns 422 with field details
     - VAL-003: Invalid field types returns 422 with type validation error
     - VAL-004: Invalid phone number format in OTP requests returns 422
+    - VAL-005: Invalid UUID format in path parameters returns 422
+    - VAL-006: Empty request body when required returns 422
+    - VAL-007: Oversized request payload returns 413
+    - VAL-008: Invalid content type returns 415
+    - VAL-009: Malformed request headers return appropriate errors
+    - VAL-010: Business logic validation errors return 400 with details
+
+2.8 Error Response Format (CAT-ERROR)
+* Why: Ensure consistent error response format across all endpoints
+* Cases:
+    - ERR-001: All 4xx errors include "detail" field in response
+    - ERR-002: All 5xx errors include appropriate error message
+    - ERR-003: Error messages don't leak sensitive information
+    - ERR-004: Validation errors include field-specific details
+    - ERR-005: Authentication errors return consistent format
 
 --------------------------------------------------------------------------------
 3. Fixtures & Infrastructure
@@ -416,14 +447,37 @@ While comprehensive security testing is separate, these smoke tests include:
 - SEC-007: Rate limiting prevents abuse of OTP endpoints
 
 --------------------------------------------------------------------------------
+8. Test Summary
+--------------------------------------------------------------------------------
+
+**Total Test Cases: 76 across 8 categories**
+
+* **Public endpoints**: 2 cases (no auth required)
+* **OTP verification**: 9 cases (guest access + rate limiting)
+* **Content management**: 4 cases (admin operations + validation)
+* **Simulation management**: 16 cases (authenticated CRUD + admin operations)
+* **Admin operations**: 24 cases (comprehensive admin functionality)
+* **Consent & Terms**: 5 cases (legal acceptance flows)
+* **Request validation**: 10 cases (comprehensive input validation)
+* **Error response format**: 5 cases (consistent error handling)
+* **Security validation**: 7 cases (basic security checks)
+
+**Coverage Focus:**
+* Authentication and authorization patterns (JWT + admin checks)
+* HTTP status code validation (200, 201, 400, 401, 403, 404, 422, 500)
+* Request/response format validation
+* Business logic error handling
+* Security boundary validation
+
+--------------------------------------------------------------------------------
 9. Implementation Checklist
 --------------------------------------------------------------------------------
 
 | Category | Cases Count | Priority | Dependencies |
 |----------|-------------|----------|--------------|
 | PUBLIC | 2 | High | TestClient setup |
-| OTP | 6 | High | Mock OTP service, Supabase |
-| CONTENT | 3 | High | Mock Supabase |
+| OTP | 9 | High | Mock OTP service, Supabase |
+| CONTENT | 4 | High | Mock Supabase |
 | SIM | 8 | High | Mock auth, Supabase |
 | ADMIN | 24 | High | Mock admin auth |
 | CONSENT | 2 | Medium | Mock auth |
