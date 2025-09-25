@@ -1,3 +1,16 @@
+# Best prompt patterns
+
+1. Raise question
+    1. If there are things that need to be clarified by myself (when there are multiple best practice options or when it is a matter of taste, of future environment, or of future implementation, etc.), stop writing plan and just raise me questions with the listing and the explanations for each list item about the possible best options.
+2. Tag `NEED_VERIFICATION` on ambiguous parts
+    1. If there are things that need to be clarified by myself (when there are multiple best practice options or when it is a matter of taste, of future environment, or of future implementation, etc.), stop writing plan and just tag `NEED_VERIFICATION` on the ambiguous items.
+3. Refine loop
+    1. There are 3 steps in total, and you will loop through them until no issue-suggestion pair (except `NEED_DECISION` tagged items) is found in the new $REVIEW_FILE.
+        1. Review
+        2. Refinement
+        3. Goes back to Step 1, and repeat Steps 1~3
+4. Format consistency
+    1. When modifying [SSD](/.memo/CE/specs/SSD.md), maintain the structure, format, and the style used in the original text. After the suggested change was applied to the original contents, the contents structure and flow should be natural as it was created as it is, not modified interim. So, do not use the expressions that emphasize the changes you made in any way, unless explicitly instructed to do so. Provide the final output as if it was originally written that way.
 
 I have further questions.
 
