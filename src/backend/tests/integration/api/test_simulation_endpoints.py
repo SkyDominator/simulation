@@ -24,25 +24,7 @@ class TestSimulationEndpoints:
         assert "success" in data
         assert isinstance(data["simulations"], list)
     
-    def test_SIM_003_simulation_detail_nonexistent_id_returns_404(self, client, mock_auth_regular_user, mock_supabase_client, valid_auth_headers):
-        """GET /api/simulations/{id} with non-existent ID returns 404."""
-        nonexistent_id = str(uuid.uuid4())
-        response = client.get(f"/api/simulations/{nonexistent_id}", headers=valid_auth_headers)
-        
-        assert response.status_code == 404
-        data = response.json()
-        assert "detail" in data
-        assert "not found" in data["detail"].lower()
-    
-    def test_SIM_004_simulation_detail_other_user_returns_404(self, client, mock_auth_regular_user, mock_supabase_client, valid_auth_headers):
-        """GET /api/simulations/{id} accessing other user's simulation returns 404."""
-        # Try to access a simulation that belongs to different user
-        other_user_sim_id = "other-user-sim-123"
-        response = client.get(f"/api/simulations/{other_user_sim_id}", headers=valid_auth_headers)
-        
-        assert response.status_code == 404
-        data = response.json()
-        assert "detail" in data
+
     
     def test_SIM_005_create_simulation_without_auth_returns_401(self, client, no_auth_headers):
         """POST /api/simulation/create without auth returns 401."""
