@@ -47,6 +47,21 @@
       "justMyCode": true
     },
     {
+      "name": "API contract test: backend (debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["tests/integration", "-v", ">", "test_integration_results.md"],
+      "cwd": "${workspaceFolder}/src/backend",
+      "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src/backend"
+      },
+      "console": "integratedTerminal",
+      "subProcess": true,
+      "justMyCode": true
+    },
+    {
       "name": "Frontend: Chrome (Vite + Breakpoints)",
       "type": "chrome",
       "request": "launch",
