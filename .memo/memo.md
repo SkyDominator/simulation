@@ -87,6 +87,8 @@ I have further questions.
     1. pre-commit hooks (linting, basic tests)
     2. basic CI pipeline (run tests on PR)
 
+## If time allows: (Non-Critical Path)
+
 5. monitoring
     1. basic error logging (console or simple service)
     2. uptime monitoring
