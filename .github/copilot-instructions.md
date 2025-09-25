@@ -156,6 +156,10 @@ Follow the general guidelines below when writing Python codes.
     - Add docstrings to functions and classes, and inline comments where necessary to explain complex logic.
 4. Error Handling
     - Implement detailed, structured, and categorized exceptions for appropriate error handling, ease of debugging, and ease of test code implementation.
+    - Implement custom error classes where appropriate to represent specific error conditions.
+    - Implement logging for errors to aid in debugging and monitoring.
+    - Use try-except blocks to handle exceptions gracefully and provide meaningful error messages.
+    - Implement appropriate status codes for API responses to indicate success or failure.
 5. Performance
     - Optimize code for performance where applicable, but prioritize readability and maintainability.
 6. Dependencies
