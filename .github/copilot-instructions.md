@@ -159,6 +159,7 @@ Follow the general guidelines below when writing Python codes.
     - Implement custom error classes where appropriate to represent specific error conditions.
     - Implement logging for errors to aid in debugging and monitoring.
     - Use try-except blocks to handle exceptions gracefully and provide meaningful error messages.
+5. API Status handling
     - Implement appropriate status codes for API responses to indicate success or failure.
         - 200: Successful GET operations
         - 201: Successful POST/PUT operations
