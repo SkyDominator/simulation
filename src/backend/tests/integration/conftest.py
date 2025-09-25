@@ -105,7 +105,10 @@ def mock_supabase_client(monkeypatch):
             self.order_desc = False
             self.limit_count = None
         
-        def select(self, columns="*"):
+        def select(self, columns="*", count=None):
+            # Store count parameter for later use in execute()
+            if count is not None:
+                self._count_mode = count
             return self
         
         def insert(self, data):
@@ -131,6 +134,19 @@ def mock_supabase_client(monkeypatch):
             self.filters[f"neq_{column}"] = value
             return self
         
+        def gt(self, column, value):
+            self.filters[f"gt_{column}"] = value
+            return self
+        
+        def gte(self, column, value):
+            self.filters[f"gte_{column}"] = value
+            return self
+        
+        def upsert(self, data):
+            # Simulate successful upsert - return self for chaining
+            self._upsert_data = data
+            return self
+        
         def order(self, field, desc=False):
             self.order_field = field
             self.order_desc = desc
@@ -150,6 +166,12 @@ def mock_supabase_client(monkeypatch):
                 inserted_data['id'] = f"mock-id-{len(table_data)}"
                 return MockResponse(data=[inserted_data])
             
+            # If this was an upsert operation  
+            if hasattr(self, '_upsert_data'):
+                upserted_data = self._upsert_data.copy()
+                upserted_data['id'] = f"mock-id-{len(table_data)}"
+                return MockResponse(data=[upserted_data])
+            
             # If this was an update operation  
             if hasattr(self, '_update_data'):
                 return MockResponse(data=[self._update_data])
@@ -167,6 +189,18 @@ def mock_supabase_client(monkeypatch):
                 table_data = [item for item in table_data if item.get('published') == self.filters['published']]
             if 'user_hash' in self.filters:
                 table_data = [item for item in table_data if item.get('user_hash') == self.filters['user_hash']]
+            # Handle gt/gte (greater than) filters - commonly used for time-based queries
+            for key, value in self.filters.items():
+                if key.startswith('gt_'):
+                    column = key[3:]  # Remove 'gt_' prefix
+                    table_data = [item for item in table_data if item.get(column, 0) > value]
+                elif key.startswith('gte_'):
+                    column = key[4:]  # Remove 'gte_' prefix
+                    table_data = [item for item in table_data if item.get(column, '') >= str(value)]
+            
+            # Handle count mode queries (used for rate limiting)
+            if hasattr(self, '_count_mode'):
+                return MockResponse(data=table_data, count=len(table_data))
                 
             return MockResponse(data=table_data, count=len(table_data))
 
@@ -174,7 +208,9 @@ def mock_supabase_client(monkeypatch):
         def __init__(self):
             self.mock_data = {
                 'whitelist': [
-                    {'user_hash': 'valid-hash-123'}
+                    {'user_hash': 'valid-hash-123'},
+                    # Add hash for test user
+                    {'user_hash': 'c22cb6dc935a6f9f7cb1b4528e31cad0ed4532ea6cf143c9b3049ed351b39cf5'}  # Hash for "Test User-01012345678"
                 ],
                 'phone_otps': [],
                 'notices': [
@@ -242,7 +278,7 @@ def mock_otp_service(monkeypatch):
             return {
                 "success": True,
                 "expires_in_seconds": 300,
-                "message": "OTP sent successfully"
+                "message": "인증번호가 발송되었습니다."
             }
         
         def verify_otp(self, phone, code, client_ip=None):
@@ -272,6 +308,17 @@ def mock_otp_service(monkeypatch):
                 "message": "Invalid or expired OTP",
                 "remaining_attempts": max(0, remaining)
             }
+    
+    # Mock both the SMS client and OTP service at the same time
+    class MockSMSClient:
+        def send_otp(self, phone, otp_code):
+            return {
+                "success": True,
+                "provider_msg_id": "mock-msg-id-123"
+            }
+    
+    # Mock the SMS client import 
+    monkeypatch.setattr("services.otp.otp_service.SolapiSMSClient", MockSMSClient)
     
     # Mock the OTP service instance creation
     def mock_otp_service_factory(*args, **kwargs):

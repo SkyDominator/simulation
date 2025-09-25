@@ -25,7 +25,7 @@ class TestConsentEndpoints:
         assert "consent_given_at" in result
     
     def test_CONS_002_record_consent_invalid_user_hash_returns_404(self, client, mock_supabase_client):
-        """POST /api/consents with invalid user_hash returns 404."""
+        """POST /api/consents with invalid user_hash returns 400."""
         data = {
             "user_hash": "invalid-hash-999",
             "consent_type": "privacy_policy", 
@@ -36,10 +36,11 @@ class TestConsentEndpoints:
         
         response = client.post("/api/consents", json=data)
         
-        assert response.status_code == 404
+        # WhitelistError returns 400 for invalid user_hash
+        assert response.status_code == 400
         result = response.json()
         assert "detail" in result
-        assert "not found" in result["detail"].lower()
+        assert "허용 명단" in result["detail"]  # Korean message for whitelist error
     
     def test_CONS_003_get_user_consents_valid_hash_returns_200(self, client, mock_supabase_client):
         """GET /api/consents/{user_hash} with valid hash returns 200."""
@@ -54,15 +55,16 @@ class TestConsentEndpoints:
         assert isinstance(result["consents"], list)
     
     def test_CONS_004_get_user_consents_invalid_hash_returns_404(self, client, mock_supabase_client):
-        """GET /api/consents/{user_hash} with invalid hash returns 404."""
+        """GET /api/consents/{user_hash} with invalid hash returns 400."""
         invalid_hash = "invalid-hash-999"
         
         response = client.get(f"/api/consents/{invalid_hash}")
         
-        assert response.status_code == 404
+        # WhitelistError returns 400 for invalid user_hash
+        assert response.status_code == 400
         result = response.json()
         assert "detail" in result
-        assert "not found" in result["detail"].lower()
+        assert "허용 명단" in result["detail"]  # Korean message for whitelist error
     
     def test_CONS_005_record_consent_missing_fields_returns_422(self, client):
         """POST /api/consents with missing required fields returns 422."""
