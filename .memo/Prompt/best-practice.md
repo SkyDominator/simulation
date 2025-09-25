@@ -11,9 +11,11 @@
         1. Review
         2. Refinement
         3. Goes back to Step 1, and repeat Steps 1~3
-5. Format consistency
+5. Review Plan
+   1. I'm reviewing plans. Go through my reviews and apply my reviews only if they are reasonable. If not, stop and raise questions. If you are 100% sure of your original plan contents, you can ignore my reviews with providing some explanations.
+6. Format consistency
     1. When modifying [SSD](/.memo/CE/specs/SSD.md), maintain the structure, format, and the style used in the original text. After the suggested change was applied to the original contents, the contents structure and flow should be natural as it was created as it is, not modified interim. So, do not use the expressions that emphasize the changes you made in any way, unless explicitly instructed to do so. Provide the final output as if it was originally written that way.
-6. Completeness of documents
+7. Completeness of documents
     1. Within-page 
         1. consistency
             1. Ensure that all contents within the document page are consistent with each other. They should not contradict each other or there should be no ambiguity.
