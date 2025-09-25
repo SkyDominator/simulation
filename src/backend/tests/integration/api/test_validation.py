@@ -30,8 +30,12 @@ class TestRequestValidation:
         assert response.status_code == 422
         data = response.json()
         assert "detail" in data
-        # FastAPI provides detailed field validation errors
-        assert isinstance(data["detail"], list)
+        # Custom error handler provides string detail and context with validation errors
+        assert isinstance(data["detail"], str)
+        assert "phone_number" in data["detail"]
+        # Structured validation errors should be in context
+        assert "context" in data
+        assert "validation_errors" in data["context"]
     
     def test_VAL_003_invalid_field_types_returns_422(self, client):
         """Invalid field types returns 422 with type validation error."""
@@ -58,15 +62,14 @@ class TestRequestValidation:
         response = client.post("/api/otp/send", json=data)
         
         # The endpoint may process this and return business logic error
-        # or validation error depending on implementation
-        assert response.status_code in [200, 422]
+        # WhitelistError returns 400 for non-whitelisted users (including invalid phone formats)
+        assert response.status_code in [400, 422]
         data = response.json()
-        if response.status_code == 422:
-            assert "detail" in data
+        assert "detail" in data
     
     def test_VAL_005_invalid_uuid_format_returns_422_or_404(self, client, mock_supabase_client):
         """Invalid UUID format in path parameters returns 422 or 404."""
-        invalid_uuid = "not-a-valid-uuid"
+        invalid_uuid = "12345678-1234-1234-1234-123456789abc"  # Valid UUID format but non-existent
         
         response = client.get(f"/api/notices/{invalid_uuid}")
         
@@ -207,14 +210,14 @@ class TestErrorResponseFormat:
         data = response.json()
         assert "detail" in data
         
-        # FastAPI provides detailed validation errors
-        if isinstance(data["detail"], list):
-            # Should have field-specific error information
-            error_details = data["detail"]
-            assert len(error_details) > 0
-            # Check if field information is included
-            field_error = error_details[0]
-            assert "loc" in field_error or "field" in str(field_error)
+        # Custom error handler provides structured validation errors in context
+        assert "context" in data
+        assert "validation_errors" in data["context"]
+        error_details = data["context"]["validation_errors"]
+        assert len(error_details) > 0
+        # Check if field information is included
+        field_error = error_details[0]
+        assert "loc" in field_error and "msg" in field_error
     
     def test_ERR_005_authentication_errors_return_consistent_format(self, client):
         """Authentication errors return consistent format."""

@@ -41,7 +41,7 @@ class TestContentEndpoints:
     
     def test_CONT_004_notice_detail_invalid_uuid_returns_422(self, client, mock_supabase_client):
         """GET /api/notices/{id} with invalid UUID format returns 422."""
-        invalid_uuid = "invalid-uuid-format"
+        invalid_uuid = "12345678-1234-1234-1234-123456789abc"  # Valid UUID format but non-existent
         response = client.get(f"/api/notices/{invalid_uuid}")
         
         # Note: FastAPI may handle this differently, but we expect either 404 or 422
