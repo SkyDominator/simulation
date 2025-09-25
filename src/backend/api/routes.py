@@ -1,6 +1,6 @@
 """API route registrations separated from application setup."""
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
@@ -29,6 +29,12 @@ from models.schemas import (
 from supabase import create_client
 from config.settings import settings
 from time import perf_counter
+from exceptions import (
+    NoticeNotFoundError, PrivacyPolicyNotFoundError, AdminPrivilegesRequiredError,
+    NoFieldsToUpdateError, PublishingConstraintError, WhitelistError,
+    DatabaseError, InvalidDataError, SimulationNotFoundError, ResourceNotFoundError,
+    InternalServerError, handle_database_exception
+)
 
 router = APIRouter()
 
@@ -65,12 +71,12 @@ async def send_otp(request: OTPSendRequest, client_request: Request):
     response = _otp_service.db_client.table('whitelist').select("user_hash").eq('user_hash', hashed_value).execute()
     
     if not response.data:
-        return {"success": False, "message": "가입 허용 명단에 없는 사용자입니다."}
+        raise WhitelistError()
     
     # User is whitelisted, proceed with OTP
     result = _otp_service.request_otp(
         normalized_phone, 
-        client_ip=str(client_request.client.host),
+        client_ip=str(client_request.client.host) if client_request.client else "unknown",
         user_agent=client_request.headers.get("user-agent")
     )
     
@@ -86,7 +92,7 @@ async def verify_otp(request: OTPVerifyRequest, client_request: Request):
     result = _otp_service.verify_otp(
         request.phone_number,
         request.otp_code,
-        client_ip=str(client_request.client.host)
+        client_ip=str(client_request.client.host) if client_request.client else "unknown"
     )
     return result
 
@@ -103,7 +109,7 @@ async def get_notice(notice_id: str):
     client = _supabase_client()
     resp = client.table('notices').select('*').eq('id', notice_id).eq('published', True).limit(1).execute()
     if not resp.data:
-        raise HTTPException(status_code=404, detail="Notice not found")
+        raise NoticeNotFoundError(notice_id)
     return {"notice": resp.data[0], "success": True}
 
 
@@ -117,7 +123,7 @@ def _assert_admin(user_id: str, client) -> None:
     except Exception:
         # fall through to 403 if table lookup fails
         pass
-    raise HTTPException(status_code=403, detail="Admin privileges required")
+    raise AdminPrivilegesRequiredError()
 
 @router.get('/api/admin/me')
 async def admin_me(user_id: str = Depends(authenticate_jwt_token)):
@@ -137,7 +143,7 @@ async def create_notice(req: NoticeCreateRequest, user_id: str = Depends(authent
     }
     ins = client.table('notices').insert(payload).execute()
     if not ins.data:
-        raise HTTPException(status_code=500, detail='Failed to create notice')
+        raise DatabaseError("insert", "notices")
     return NoticeCreateResponse(id=ins.data[0]['id'], message='Notice created', success=True)
 
 @router.patch('/api/admin/notices/{notice_id}', response_model=NoticeUpdateResponse)
@@ -150,10 +156,10 @@ async def update_notice(notice_id: str, req: NoticeUpdateRequest, user_id: str =
     if 'content' in update_fields:
         update_fields['content'] = update_fields['content'].strip()
     if not update_fields:
-        raise HTTPException(status_code=400, detail='No fields to update')
+        raise NoFieldsToUpdateError()
     upd = client.table('notices').update(update_fields).eq('id', notice_id).execute()
     if not upd.data:
-        raise HTTPException(status_code=404, detail='Notice not found')
+        raise NoticeNotFoundError(notice_id)
     return NoticeUpdateResponse(id=notice_id, message='Notice updated', success=True)
 
 @router.delete('/api/admin/notices/{notice_id}', response_model=NoticeDeleteResponse)
@@ -162,7 +168,7 @@ async def delete_notice(notice_id: str, user_id: str = Depends(authenticate_jwt_
     _assert_admin(user_id, client)
     del_resp = client.table('notices').delete().eq('id', notice_id).execute()
     if not del_resp.data:
-        raise HTTPException(status_code=404, detail='Notice not found')
+        raise NoticeNotFoundError(notice_id)
     return NoticeDeleteResponse(id=notice_id, message='Notice deleted', success=True)
 
 # ----------------------- Admin (protected) Privacy Policy CRUD -----------------------
@@ -172,7 +178,7 @@ async def create_privacy_policy(req: PrivacyPolicyCreateRequest, user_id: str = 
     _assert_admin(user_id, client)
     # Enforce centralized publishing via publish endpoint only
     if req.published:
-        raise HTTPException(status_code=400, detail="Publishing must be done via the publish endpoint")
+        raise PublishingConstraintError()
     # Normalize date fields to ISO strings for JSON serialization
     effective_iso = req.effective_date.isoformat() if req.effective_date else None
     last_updated_date = req.last_updated or req.effective_date or datetime.now(timezone.utc).date()
@@ -188,10 +194,12 @@ async def create_privacy_policy(req: PrivacyPolicyCreateRequest, user_id: str = 
     }
     try:
         ins = client.table('privacy_policies').insert(payload).execute()
+        if not ins.data:
+            raise DatabaseError("insert", "privacy_policies")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to create policy: {e}")
-    if not ins.data:
-        raise HTTPException(status_code=500, detail='Failed to create policy')
+        if isinstance(e, DatabaseError):
+            raise
+        handle_database_exception(e, "insert", "privacy_policies")
     return PrivacyPolicyCreateResponse(id=ins.data[0]['id'], message='Policy created', success=True)
 
 @router.patch('/api/admin/privacy-policies/{policy_id}', response_model=PrivacyPolicyUpdateResponse)
@@ -201,7 +209,8 @@ async def update_privacy_policy(policy_id: str, req: PrivacyPolicyUpdateRequest,
     update_fields = {k: v for k, v in req.model_dump().items() if v is not None}
     # Enforce centralized publishing via publish endpoint only
     if 'published' in update_fields:
-        raise HTTPException(status_code=400, detail='Publishing state cannot be changed here; use the publish endpoint')
+        if req.published is not None:
+            raise PublishingConstraintError('Publishing state cannot be changed here; use the publish endpoint')
     if 'version' in update_fields:
         update_fields['version'] = str(update_fields['version']).strip()
     if 'locale' in update_fields and update_fields['locale']:
@@ -222,13 +231,15 @@ async def update_privacy_policy(policy_id: str, req: PrivacyPolicyUpdateRequest,
         except AttributeError:
             pass
     if not update_fields:
-        raise HTTPException(status_code=400, detail='No fields to update')
+        raise NoFieldsToUpdateError()
     try:
         upd = client.table('privacy_policies').update(update_fields).eq('id', policy_id).execute()
+        if not upd.data:
+            raise PrivacyPolicyNotFoundError(policy_id)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to update policy: {e}")
-    if not upd.data:
-        raise HTTPException(status_code=404, detail='Policy not found')
+        if isinstance(e, PrivacyPolicyNotFoundError):
+            raise
+        handle_database_exception(e, "update", "privacy_policies")
     return PrivacyPolicyUpdateResponse(id=policy_id, message='Policy updated', success=True)
 
 @router.delete('/api/admin/privacy-policies/{policy_id}', response_model=PrivacyPolicyUpdateResponse)
@@ -237,10 +248,12 @@ async def delete_privacy_policy(policy_id: str, user_id: str = Depends(authentic
     _assert_admin(user_id, client)
     try:
         del_resp = client.table('privacy_policies').delete().eq('id', policy_id).execute()
+        if not del_resp.data:
+            raise PrivacyPolicyNotFoundError(policy_id)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to delete policy: {e}")
-    if not del_resp.data:
-        raise HTTPException(status_code=404, detail='Policy not found')
+        if isinstance(e, PrivacyPolicyNotFoundError):
+            raise
+        handle_database_exception(e, "delete", "privacy_policies")
     return PrivacyPolicyUpdateResponse(id=policy_id, message='Policy deleted', success=True)
 
 @router.post('/api/admin/privacy-policies/{policy_id}/publish', response_model=PrivacyPolicyPublishResponse)
@@ -257,10 +270,12 @@ async def publish_privacy_policy(policy_id: str, user_id: str = Depends(authenti
             pass
         # Publish this policy
         upd = client.table('privacy_policies').update({'published': True}).eq('id', policy_id).execute()
+        if not upd.data:
+            raise PrivacyPolicyNotFoundError(policy_id)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to publish policy: {e}")
-    if not upd.data:
-        raise HTTPException(status_code=404, detail='Policy not found')
+        if isinstance(e, PrivacyPolicyNotFoundError):
+            raise
+        handle_database_exception(e, "update", "privacy_policies")
     return PrivacyPolicyPublishResponse(id=policy_id, message='Policy published', success=True)
 
 @router.get('/api/admin/privacy-policies', response_model=PrivacyPolicyListResponse)
@@ -283,7 +298,7 @@ async def get_privacy_policy_admin(policy_id: str, user_id: str = Depends(authen
     _assert_admin(user_id, client)
     resp = client.table('privacy_policies').select('*').eq('id', policy_id).limit(1).execute()
     if not resp.data:
-        raise HTTPException(status_code=404, detail='Policy not found')
+        raise PrivacyPolicyNotFoundError(policy_id)
     return {"policy": resp.data[0], "success": True}
 
 @router.get("/api/simulations")
@@ -295,7 +310,7 @@ async def get_simulation_details(simulation_id: str, user_id: str = Depends(auth
     client = _sim_service.client
     response = client.table('simulations').select("*").eq('id', simulation_id).eq('user_id', user_id).execute()
     if not response.data:
-        raise HTTPException(status_code=404, detail=f"Simulation with ID {simulation_id} not found")
+        raise SimulationNotFoundError(simulation_id)
     return response.data[0]
 
 @router.post("/api/simulation/create", response_model=SimulationCreateResponse)
@@ -355,7 +370,7 @@ async def health():
 @router.post("/api/consents", response_model=ConsentRecordResponse)
 async def record_consent(
     request: ConsentRecordRequest,
-    client_request: Request = None
+    client_request: Request
 ):
     """
     Record a user's consent to data collection and privacy policy.
@@ -368,7 +383,7 @@ async def record_consent(
     # Verify user_hash exists in whitelist first
     whitelist_check = client.table('whitelist').select("user_hash").eq('user_hash', request.user_hash).execute()
     if not whitelist_check.data:
-        raise HTTPException(status_code=404, detail="User not found in whitelist")
+        raise WhitelistError()
     
     # Get client IP if not provided (through headers or direct connection)
     ip_address = request.ip_address
@@ -388,7 +403,7 @@ async def record_consent(
     response = client.table('consent_records').upsert(consent_data).execute()
     
     if not response.data:
-        raise HTTPException(status_code=500, detail="Failed to record consent")
+        raise DatabaseError("upsert", "consent_records")
     
     result = response.data[0]
     return ConsentRecordResponse(
@@ -411,7 +426,7 @@ async def get_user_consents(user_hash: str):
     # First verify the user_hash exists in whitelist
     whitelist_check = client.table('whitelist').select("user_hash").eq('user_hash', user_hash).execute()
     if not whitelist_check.data:
-        raise HTTPException(status_code=404, detail="User not found in whitelist")
+        raise WhitelistError()
     
     # Then get consent records
     response = client.table('consent_records').select("*").eq('user_hash', user_hash).execute()
@@ -473,19 +488,19 @@ async def get_privacy_policy(version: str | None = None, locale: str | None = No
         }
     except FileNotFoundError as e:
         settings.logger.error(f"Privacy policy file not found: {e}")
-        raise HTTPException(
-            status_code=404,
-            detail="Privacy policy document not found. Please contact support."
+        raise ResourceNotFoundError(
+            "Privacy policy document",
+            error_context={"detail": "Please contact support."}
         )
     except PermissionError as e:
         settings.logger.error(f"Permission denied accessing privacy policy: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to access privacy policy. Please try again later."
+        raise InternalServerError(
+            detail="Unable to access privacy policy. Please try again later.",
+            error_code="FILE_ACCESS_ERROR"
         )
     except Exception as e:
         settings.logger.error(f"Unexpected error loading privacy policy: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail="An error occurred while loading the privacy policy. Please try again later."
+        raise InternalServerError(
+            detail="An error occurred while loading the privacy policy. Please try again later.",
+            error_code="PRIVACY_POLICY_LOAD_ERROR"
         )

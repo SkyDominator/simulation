@@ -1,7 +1,7 @@
 """Simulation DB interaction and orchestration service."""
 from __future__ import annotations
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List
 from supabase import Client, create_client
 
 from config.settings import settings
@@ -15,7 +15,10 @@ from models.schemas import (
 )
 from constants import PLAN_PARAMETERS
 from simulation_service import FinancialSimulationService
-from fastapi import HTTPException
+from exceptions import (
+    SimulationNotFoundError, InvalidDataError, DatabaseError, 
+    SimulationServiceError, handle_database_exception, handle_service_exception
+)
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -54,7 +57,12 @@ class SimulationService:
 
     def create(self, req: SimulationCreateRequest, user_id: str) -> SimulationCreateResponse:
         if req.plan_id not in PLAN_PARAMETERS:
-            raise HTTPException(status_code=400, detail=f"Invalid plan type: {req.plan_id}")
+            raise InvalidDataError(
+                detail=f"Invalid plan type: {req.plan_id}",
+                field="plan_id",
+                error_context={"valid_plans": list(PLAN_PARAMETERS.keys())}
+            )
+            
         # Build investments list (only round & amount) now that sales_achievement_rates is normalized
         investments = [{"round": int(r), "amount": amt} for r, amt in req.scheduled_payment.items()]
 
@@ -67,22 +75,34 @@ class SimulationService:
             "investments": investments,
             "sales_achievement_rates": req.sales_achievement_rates,
         }
-        db_response = self.client.table("simulations").insert(plan_data).execute()
-        if not db_response or not db_response.data:
-            logger.error("Failed to save plan: %s", db_response)
-            raise HTTPException(status_code=500, detail="Failed to save plan to database")
-        created = db_response.data[0]
-        return SimulationCreateResponse(
-            simulation_id=created['id'],
-            plan_id=req.plan_id,
-            message="Simulation request saved successfully",
-            success=True,
-        )
+        
+        try:
+            db_response = self.client.table("simulations").insert(plan_data).execute()
+            if not db_response or not db_response.data:
+                logger.error("Failed to save plan: %s", db_response)
+                raise DatabaseError("insert", "simulations")
+                
+            created = db_response.data[0]
+            return SimulationCreateResponse(
+                simulation_id=created['id'],
+                plan_id=req.plan_id,
+                message="Simulation request saved successfully",
+                success=True,
+            )
+        except Exception as e:
+            if isinstance(e, DatabaseError):
+                raise
+            handle_database_exception(e, "insert", "simulations")
 
     def run(self, req: SimulationRunRequest, user_id: str) -> SimulationRunResponse:
-        db_response = self.client.table("simulations").select("*").eq("id", req.simulation_id).eq("user_id", user_id).execute()
+        try:
+            db_response = self.client.table("simulations").select("*").eq("id", req.simulation_id).eq("user_id", user_id).execute()
+        except Exception as e:
+            handle_database_exception(e, "select", "simulations")
+            
         if not db_response.data:
-            raise HTTPException(status_code=404, detail=f"Plan with ID {req.simulation_id} not found")
+            raise SimulationNotFoundError(req.simulation_id)
+            
         row_data = db_response.data[0]
         row = SimulationRow.model_validate(row_data)
 
@@ -91,7 +111,11 @@ class SimulationService:
         if expected is not None:
             actual = (row_data or {}).get("updated_at")
             if _is_timestamp_older(actual, expected):
-                raise HTTPException(status_code=409, detail="Simulation data not up to date yet. Please retry.")
+                from exceptions import BusinessLogicError
+                raise BusinessLogicError(
+                    detail="Simulation data not up to date yet. Please retry.",
+                    error_code="STALE_DATA_CONFLICT"
+                )
 
         # Always compute fresh results
         sched_map = scheduled_payment_from_investments(row.investments)
@@ -125,10 +149,20 @@ class SimulationService:
 
     def update(self, simulation_id: str, req: SimulationUpdateRequest, user_id: str) -> SimulationUpdateResponse:
         if req.plan_id not in PLAN_PARAMETERS:
-            raise HTTPException(status_code=400, detail=f"Invalid plan type: {req.plan_id}")
-        existing = self.client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
+            raise InvalidDataError(
+                detail=f"Invalid plan type: {req.plan_id}",
+                field="plan_id",
+                error_context={"valid_plans": list(PLAN_PARAMETERS.keys())}
+            )
+            
+        try:
+            existing = self.client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
+        except Exception as e:
+            handle_database_exception(e, "select", "simulations")
+            
         if not existing.data:
-            raise HTTPException(status_code=404, detail=f"Simulation with ID {simulation_id} not found")
+            raise SimulationNotFoundError(simulation_id)
+            
         investments = [{"round": int(r), "amount": amt} for r, amt in req.scheduled_payment.items()]
         payload = {
             "plan_id": req.plan_id,
@@ -139,9 +173,16 @@ class SimulationService:
             "sales_achievement_rates": req.sales_achievement_rates,
             "simulation_results": None,
         }
-        upd = self.client.table("simulations").update(payload).eq("id", simulation_id).eq("user_id", user_id).execute()
-        if not upd.data:
-            raise HTTPException(status_code=500, detail="Failed to update simulation")
+        
+        try:
+            upd = self.client.table("simulations").update(payload).eq("id", simulation_id).eq("user_id", user_id).execute()
+            if not upd.data:
+                raise DatabaseError("update", "simulations")
+        except Exception as e:
+            if isinstance(e, DatabaseError):
+                raise
+            handle_database_exception(e, "update", "simulations")
+            
         return SimulationUpdateResponse(
             simulation_id=simulation_id,
             plan_id=req.plan_id,
@@ -151,10 +192,19 @@ class SimulationService:
         )
 
     def delete(self, simulation_id: str, user_id: str) -> SimulationDeleteResponse:
-        check = self.client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
+        try:
+            check = self.client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
+        except Exception as e:
+            handle_database_exception(e, "select", "simulations")
+            
         if not check.data:
-            raise HTTPException(status_code=404, detail=f"Simulation with ID {simulation_id} not found")
-        _ = self.client.table("simulations").delete().eq("id", simulation_id).eq("user_id", user_id).execute()
+            raise SimulationNotFoundError(simulation_id)
+            
+        try:
+            _ = self.client.table("simulations").delete().eq("id", simulation_id).eq("user_id", user_id).execute()
+        except Exception as e:
+            handle_database_exception(e, "delete", "simulations")
+            
         return SimulationDeleteResponse(
             simulation_id=simulation_id,
             message="Simulation deleted",
@@ -162,19 +212,35 @@ class SimulationService:
         )
 
     def list_for_user(self, user_id: str):  # return raw supabase rows for now
-        resp = self.client.table('simulations').select("id, starting_company_round, current_company_round, investments, sales_achievement_rates, simulation_rounds, created_at, updated_at, plan_id, memo").eq('user_id', user_id).execute()
+        try:
+            resp = self.client.table('simulations').select("id, starting_company_round, current_company_round, investments, sales_achievement_rates, simulation_rounds, created_at, updated_at, plan_id, memo").eq('user_id', user_id).execute()
+        except Exception as e:
+            handle_database_exception(e, "select", "simulations")
+            
         if not resp.data:
-            raise HTTPException(status_code=404, detail="No simulations found for this user")
+            from exceptions import ResourceNotFoundError
+            raise ResourceNotFoundError("Simulations", error_context={"user_id": user_id})
         return resp.data
 
     def update_memo(self, simulation_id: str, req: SimulationMemoUpdateRequest, user_id: str) -> SimulationMemoUpdateResponse:
         # Ensure the simulation exists and belongs to user
-        existing = self.client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
+        try:
+            existing = self.client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
+        except Exception as e:
+            handle_database_exception(e, "select", "simulations")
+            
         if not existing.data:
-            raise HTTPException(status_code=404, detail=f"Simulation with ID {simulation_id} not found")
-        upd = self.client.table("simulations").update({"memo": (req.memo or '').strip() if req.memo is not None else None}).eq("id", simulation_id).eq("user_id", user_id).execute()
-        if not upd.data:
-            raise HTTPException(status_code=500, detail="Failed to update memo")
+            raise SimulationNotFoundError(simulation_id)
+            
+        try:
+            upd = self.client.table("simulations").update({"memo": (req.memo or '').strip() if req.memo is not None else None}).eq("id", simulation_id).eq("user_id", user_id).execute()
+            if not upd.data:
+                raise DatabaseError("update", "simulations")
+        except Exception as e:
+            if isinstance(e, DatabaseError):
+                raise
+            handle_database_exception(e, "update", "simulations")
+            
         return SimulationMemoUpdateResponse(
             simulation_id=simulation_id,
             memo=upd.data[0].get('memo'),

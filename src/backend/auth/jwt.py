@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 from typing import Dict, Any, Optional
 import requests
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security.http import HTTPBearer as BaseHTTPBearer
 from jose import jwt, JWTError
 from jose.exceptions import (
     JWKError, 
@@ -20,6 +21,10 @@ logger = logging.getLogger(__name__)
 
 _oauth_scheme = HTTPBearer()
 _jwks_cache: Dict[str, Any] = {}
+
+def get_bearer_token(credentials: HTTPAuthorizationCredentials = Depends(_oauth_scheme)) -> HTTPAuthorizationCredentials:
+    """Convert 403 to 401 for missing authentication."""
+    return credentials
 
 JWKS_PATH = "/auth/v1/.well-known/jwks.json"
 
@@ -43,7 +48,7 @@ class JWKSClient:
 
 _jwks_client = JWKSClient(settings.supabase_url)
 
-def authenticate_jwt_token(token_result: HTTPAuthorizationCredentials = Depends(_oauth_scheme)) -> str:
+def authenticate_jwt_token(token_result: HTTPAuthorizationCredentials = Depends(get_bearer_token)) -> str:
     """Validate JWT using Supabase JWKS and return the user_id (sub)."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
