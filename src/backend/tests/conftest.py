@@ -177,8 +177,13 @@ def determinism_guard():
 
 # Mock network access to prevent outbound calls during tests
 @pytest.fixture(autouse=True)
-def mock_network_access():
+def mock_network_access(request):
     """Prevent network calls during tests by patching socket creation."""
+    # Skip network mocking for integration tests that need TestClient
+    if "integration" in str(request.fspath) or "api" in str(request.fspath):
+        yield
+        return
+        
     import socket
     original_socket = socket.socket
     
