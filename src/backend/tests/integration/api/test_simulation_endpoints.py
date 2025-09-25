@@ -61,9 +61,11 @@ class TestSimulationEndpoints:
         """POST /api/simulation/create with valid auth returns 201 and creates simulation."""
         data = {
             "plan_id": "A",
-            "name": "Test Simulation",
+            "starting_company_round": 1,
+            "current_company_round": 1,
+            "simulation_rounds": 3,
             "scheduled_payment": {"1": 100000},
-            "sales_achievement_rates": {"1": 0.8}
+            "sales_achievement_rates": {"1": 80}  # Should be int according to schema
         }
         
         response = client.post("/api/simulation/create", json=data, headers=valid_auth_headers)
@@ -146,7 +148,11 @@ class TestSimulationEndpoints:
         """PATCH /api/simulations/{id} with non-existent ID returns 404."""
         nonexistent_id = str(uuid.uuid4())
         data = {
-            "name": "Updated Name"
+            "plan_id": "A",
+            "starting_company_round": 1,
+            "current_company_round": 1,
+            "simulation_rounds": 3,
+            "scheduled_payment": {"1": 100000}
         }
         
         response = client.patch(f"/api/simulations/{nonexistent_id}", json=data, headers=valid_auth_headers)
@@ -158,7 +164,11 @@ class TestSimulationEndpoints:
         """PATCH /api/simulations/{id} accessing other user's simulation returns 404."""
         other_user_sim_id = "other-user-sim"
         data = {
-            "name": "Updated Name"
+            "plan_id": "B",
+            "starting_company_round": 1,
+            "current_company_round": 1,
+            "simulation_rounds": 3,
+            "scheduled_payment": {"1": 200000}
         }
         
         response = client.patch(f"/api/simulations/{other_user_sim_id}", json=data, headers=valid_auth_headers)

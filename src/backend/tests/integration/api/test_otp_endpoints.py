@@ -104,12 +104,14 @@ class TestOTPEndpoints:
     
     def test_OTP_006_verify_otp_exhausted_attempts_returns_failure(self, client, mock_supabase_client, mock_otp_service):
         """POST /api/otp/verify with exhausted attempts returns failure."""
-        # Set up mock to have exhausted attempts
-        otp_instance = mock_otp_service()
-        otp_instance.verification_attempts["01012345678"] = 7  # Beyond max attempts
-        
+        # Set up mock OTP record with exhausted attempts in the database
+        # Update the mock OTP record to have 6 attempts (max reached)
+        for record in mock_supabase_client.mock_data.get("phone_otps", []):
+            if record.get("phone") == "01012345678":
+                record["attempts"] = 6  # Max attempts reached
+
         data = {
-            "phone_number": "010-1234-5678", 
+            "phone_number": "010-1234-5678",
             "otp_code": "123456"
         }
         
@@ -118,9 +120,10 @@ class TestOTPEndpoints:
         assert response.status_code == 200
         result = response.json()
         assert "success" in result
+        assert result["success"] is False
         assert "message" in result
-        if "remaining_attempts" in result:
-            assert result["remaining_attempts"] == 0
+        # Should indicate max attempts reached
+        assert "시도 횟수" in result["message"]
     
     def test_OTP_007_send_otp_missing_fields_returns_422(self, client):
         """POST /api/otp/send with missing required fields returns 422."""
