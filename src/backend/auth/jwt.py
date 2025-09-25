@@ -5,7 +5,6 @@ from typing import Dict, Any, Optional
 import requests
 from fastapi import HTTPException, status, Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from fastapi.security.http import HTTPBearer as BaseHTTPBearer
 from jose import jwt, JWTError
 from jose.exceptions import (
     JWKError, 
