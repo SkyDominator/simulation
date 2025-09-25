@@ -6,6 +6,7 @@ export const mockFetchResponse = (data: any, ok = true, status = 200) => {
     ok,
     status,
     json: async () => data,
+    text: async () => JSON.stringify(data),
   } as Response)
 }
 
@@ -27,6 +28,9 @@ export const mockMobileViewport = () => {
     configurable: true,
     value: 667,
   })
+  
+  // Trigger resize event
+  window.dispatchEvent(new Event('resize'))
 }
 
 // Mock desktop viewport
@@ -42,10 +46,18 @@ export const mockDesktopViewport = () => {
     configurable: true,
     value: 1080,
   })
+  
+  // Trigger resize event
+  window.dispatchEvent(new Event('resize'))
 }
 
 // Reset viewport
 export const resetViewport = () => {
   delete (window as any).innerWidth
   delete (window as any).innerHeight
+}
+
+// Simulate act for async state updates
+export const waitForReactUpdate = () => {
+  return new Promise(resolve => setTimeout(resolve, 0))
 }
