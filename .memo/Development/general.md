@@ -1,3 +1,7 @@
+# Important Notes
+
+* Detailed error categorization
+
 # 개발 순서 (from scratch)
 
 1. Write SDD draft
