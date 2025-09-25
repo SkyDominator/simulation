@@ -111,7 +111,7 @@ class TestSimulationEndpoints:
         assert response.status_code == 200
         result = response.json()
         assert "simulation_id" in result
-        assert "results" in result
+        assert "history" in result
         assert "success" in result
     
     def test_SIM_010_run_simulation_nonexistent_returns_404(self, client, mock_auth_regular_user, mock_simulation_service, valid_auth_headers):

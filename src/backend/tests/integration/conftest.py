@@ -109,20 +109,19 @@ def mock_supabase_client(monkeypatch):
             return self
         
         def insert(self, data):
-            # Simulate successful insert
-            if isinstance(data, dict):
-                inserted_data = data.copy()
-                inserted_data['id'] = f"mock-id-{len(self.mock_data.get(self.name, []))}"
-                return MockResponse(data=[inserted_data])
-            return MockResponse(data=[data])
+            # Simulate successful insert - return self for chaining
+            self._insert_data = data
+            return self
         
         def update(self, data):
-            # Simulate successful update
-            return MockResponse(data=[data])
+            # Simulate successful update - return self for chaining
+            self._update_data = data
+            return self
         
         def delete(self):
-            # Simulate successful delete  
-            return MockResponse(data=[{"id": "deleted-id"}])
+            # Simulate successful delete - return self for chaining
+            self._delete_flag = True
+            return self
         
         def eq(self, column, value):
             self.filters[column] = value
@@ -145,6 +144,20 @@ def mock_supabase_client(monkeypatch):
             # Return mock data based on table name and filters
             table_data = self.mock_data.get(self.name, [])
             
+            # If this was an insert operation
+            if hasattr(self, '_insert_data'):
+                inserted_data = self._insert_data.copy()
+                inserted_data['id'] = f"mock-id-{len(table_data)}"
+                return MockResponse(data=[inserted_data])
+            
+            # If this was an update operation  
+            if hasattr(self, '_update_data'):
+                return MockResponse(data=[self._update_data])
+            
+            # If this was a delete operation
+            if hasattr(self, '_delete_flag'):
+                return MockResponse(data=[{"id": "deleted-id"}])
+                
             # Apply basic filtering for common test cases
             if 'id' in self.filters:
                 table_data = [item for item in table_data if item.get('id') == self.filters['id']]
@@ -273,7 +286,14 @@ def mock_simulation_service(monkeypatch):
     """Mock SimulationService for simulation endpoints."""
     class MockSimulationService:
         def __init__(self):
+            # Create a mock client for the simulation service
             self.client = Mock()
+            # Mock table method to return a mock table with execute method
+            mock_table = Mock()
+            mock_table.select.return_value = mock_table
+            mock_table.eq.return_value = mock_table
+            mock_table.execute.return_value = Mock(data=[])
+            self.client.table.return_value = mock_table
             
         def list_for_user(self, user_id):
             if user_id == "test-user-123":
@@ -292,6 +312,7 @@ def mock_simulation_service(monkeypatch):
         def create(self, request, user_id):
             return {
                 "simulation_id": "new-sim-123",
+                "plan_id": request.plan_id,
                 "message": "Simulation created successfully",
                 "success": True
             }
@@ -299,7 +320,32 @@ def mock_simulation_service(monkeypatch):
         def run(self, request, user_id):
             return {
                 "simulation_id": request.simulation_id,
-                "results": {"total_revenue": 1000000},
+                "plan_id": "A",
+                "starting_company_round": 1,
+                "current_company_round": 1,
+                "simulation_rounds": 1,
+                "scheduled_payment": {"1": 100000},
+                "sales_achievement_rates": {"1": 80},
+                "history": [
+                    {
+                        "company_round": 1,
+                        "investor_count": 1,
+                        "total_payment": 100000.0,
+                        "total_revenue_before_tax": 120000.0,
+                        "total_revenue_after_tax": 110000.0,
+                        "net_profit_after_tax": 10000.0,
+                        "cumulative_net_profit": 10000.0,
+                        "investor_details": [
+                            {
+                                "investor_start_round": 1,
+                                "investor_internal_round": 1,
+                                "payment": 100000.0,
+                                "revenue": 110000.0,
+                                "investor_type": "new"
+                            }
+                        ]
+                    }
+                ],
                 "message": "Simulation completed",
                 "success": True
             }
