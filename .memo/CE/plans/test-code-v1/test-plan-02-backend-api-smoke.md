@@ -79,10 +79,26 @@ Target: All endpoints in `src/backend/api/routes.py` with focus on critical path
     - ADM-002: GET /api/admin/me with non-admin auth returns 403
     - ADM-003: GET /api/admin/me with admin auth returns admin info
     - ADM-004: POST /api/admin/notices without auth returns 401
-    - ADM-005: POST /api/admin/notices with admin auth creates notice
-    - ADM-006: DELETE /api/admin/notices/{id} with admin auth deletes notice
-    - ADM-007: POST /api/admin/privacy-policies with admin auth creates policy
-    - ADM-008: POST /api/admin/privacy-policies/{id}/publish with admin auth publishes policy
+    - ADM-005: POST /api/admin/notices with non-admin auth returns 403
+    - ADM-006: POST /api/admin/notices with admin auth creates notice
+    - ADM-007: DELETE /api/admin/notices/{id} without auth returns 401
+    - ADM-008: DELETE /api/admin/notices/{id} with non-admin auth returns 403
+    - ADM-009: DELETE /api/admin/notices/{id} with admin auth deletes notice
+    - ADM-010: POST /api/admin/privacy-policies without auth returns 401
+    - ADM-011: POST /api/admin/privacy-policies with non-admin auth returns 403
+    - ADM-012: POST /api/admin/privacy-policies with admin auth creates policy
+    - ADM-013: DELETE /api/admin/privacy-policies/{id} without auth returns 401
+    - ADM-014: DELETE /api/admin/privacy-policies/{id} with non-admin auth returns 403
+    - ADM-015: DELETE /api/admin/privacy-policies/{id} with admin auth deletes policy
+    - ADM-016: POST /api/admin/privacy-policies/{id}/publish without auth returns 401
+    - ADM-017: POST /api/admin/privacy-policies/{id}/publish with non-admin auth returns 403
+    - ADM-018: POST /api/admin/privacy-policies/{id}/publish with admin auth publishes policy
+    - ADM-019: GET /api/admin/privacy-policies without auth returns 401
+    - ADM-020: GET /api/admin/privacy-policies with non-admin auth returns 403
+    - ADM-021: GET /api/admin/privacy-policies with admin auth returns policies list
+    - ADM-022: GET /api/admin/privacy-policies/{id} without auth returns 401
+    - ADM-023: GET /api/admin/privacy-policies/{id} with non-admin auth returns 403
+    - ADM-024: GET /api/admin/privacy-policies/{id} with admin auth returns policy details
 
 2.6 Consent Endpoints (CAT-CONSENT)
 * Why: Privacy compliance requires proper consent handling
@@ -409,12 +425,12 @@ While comprehensive security testing is separate, these smoke tests include:
 | OTP | 6 | High | Mock OTP service, Supabase |
 | CONTENT | 3 | High | Mock Supabase |
 | SIM | 8 | High | Mock auth, Supabase |
-| ADMIN | 8 | High | Mock admin auth |
+| ADMIN | 24 | High | Mock admin auth |
 | CONSENT | 2 | Medium | Mock auth |
 | VALID | 4 | Medium | Request validation |
 | SEC | 7 | High | Security fixtures |
 
-**Total: 40 test cases**
+**Total: 56 test cases**
 
 --------------------------------------------------------------------------------
 10. Next Steps After Plan Approval
