@@ -209,7 +209,7 @@ async def update_privacy_policy(policy_id: str, req: PrivacyPolicyUpdateRequest,
     update_fields = {k: v for k, v in req.model_dump().items() if v is not None}
     # Enforce centralized publishing via publish endpoint only
     if 'published' in update_fields:
-        if req.published is not None:
+        if req.published:
             raise PublishingConstraintError('Publishing state cannot be changed here; use the publish endpoint')
     if 'version' in update_fields:
         update_fields['version'] = str(update_fields['version']).strip()
