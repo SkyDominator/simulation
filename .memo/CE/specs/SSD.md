@@ -174,13 +174,15 @@ See [schema](/.memo/CE/specs/schema/schema.md) for the full schema information a
 
 ### 7.1 Core Security Controls
 
-| Control | Notes |
-|---------|-------|
-| JWT validation via JWKS | Cache keys (TTL 5–15m) |
-| Admin server-side check | Table lookup each request |
-| OTP rate limiting | 3 sends per 15 min, 6 verify attempts |
-| RLS on user tables | Implemented |
-| OTP hashing | Implemented |
+| Control | Implementation Details |
+|---------|----------------------|
+| JWT validation via JWKS | Fetches from `/auth/v1/.well-known/jwks.json`, uses python-jose library, 5s timeout, global cache |
+| Admin server-side check | Table lookup against `admins.user_id` on each request via `_assert_admin()` |
+| OTP rate limiting | 3 sends per 15 min (default), 6 verify attempts (configurable), tracked per phone number |
+| OTP hashing | Uses HMAC with `OTP_SECRET_KEY` for secure code storage |
+| RLS on user tables | Implemented via Supabase Row Level Security policies |
+| Exception handling | Structured with `BaseAPIException`, automatic logging with context |
+| Bearer token auth | Uses FastAPI `HTTPBearer()` scheme with 401/403 distinction |
 
 ---
 
@@ -640,8 +642,20 @@ All plans share common structure with the following parameters:
 
 ## 15. Error Handling
 
-- OTP & some admin endpoints: `{ success: boolean, message: string, ... }`.
-- Standard FastAPI errors: `{ "detail": "..." }`.
+- **Structured Exception System**: Custom `BaseAPIException` class with error codes, context, and structured logging
+- **HTTP Status Code Mapping**:
+  - 401: `AuthenticationError` - Missing or invalid authentication  
+  - 403: `AdminPrivilegesRequiredError`, `AuthorizationError` - Insufficient permissions
+  - 404: `ResourceNotFoundError`, `SimulationNotFoundError`, `NoticeNotFoundError`, `PrivacyPolicyNotFoundError` - Resource not found
+  - 400: `WhitelistError`, `InvalidDataError`, `NoFieldsToUpdateError` - Business logic validation errors
+  - 409: `PublishingConstraintError` - Conflict errors (e.g., policy publishing constraints)
+  - 422: FastAPI request validation errors
+  - 500: `DatabaseError`, `InternalServerError` - Server errors
+- **Response Formats**:
+  - OTP & admin endpoints: `{ success: boolean, message: string, ... }`
+  - Standard FastAPI errors: `{ "detail": "..." }`
+- **Error Context**: Exceptions include optional `error_code` and `error_context` for debugging
+- **Logging**: All exceptions automatically logged with structured context for monitoring
 
 ---
 
