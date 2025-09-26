@@ -1,0 +1,35 @@
+{
+  "total_failures": 4,
+  "test_code_issues": [],
+  "codebase_issues": [],
+  "configuration_issues": [],
+  "dependency_issues": [],
+  "unclear_issues": [
+    {
+      "test_name": "unauthorized",
+      "error_type": "Unknown",
+      "description": "Unable to classify failure in unauthorized",
+      "confidence": 0.3
+    },
+    {
+      "test_name": "error",
+      "error_type": "Unknown",
+      "description": "Unable to classify failure in error",
+      "confidence": 0.3
+    },
+    {
+      "test_name": "failure",
+      "error_type": "Unknown",
+      "description": "Unable to classify failure in failure",
+      "confidence": 0.3
+    },
+    {
+      "test_name": "vars",
+      "error_type": "Unknown",
+      "description": "Unable to classify failure in vars",
+      "confidence": 0.3
+    }
+  ],
+  "fixes_applied": 0,
+  "github_issues": []
+}
