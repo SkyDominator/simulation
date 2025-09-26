@@ -302,73 +302,22 @@ src/
 - **Manifest**: Configured for "Light of Life Club Simulation" with proper icons
 - **Installation**: Custom prompts and native "Add to Home Screen" support
 
-### Gotchas & Important Implementation Details
-
-**Testing & Mocking**:
-- **JWKS Network Calls**: Tests should mock `JWKSClient.get_keys()` to avoid real HTTP requests
-- **Test Environment**: Backend requires environment variables; use test fixtures and mocks
-
-**OTP & SMS Integration**:
-- **Korean Language**: OTP messages include Korean strings - maintain existing contract
-- **Rate Limiting**: Enforced at service level with database tracking
-- **Verification Attempts**: Default 6 attempts via `otp_max_verification_attempts` (lowercase in `settings.py`)
-
-**Simulation Behavior**:
-- **Empty State**: `get_simulations` returns 404 when no simulations exist - UI handles empty vs 404
-- **Result Caching**: Simulation results cached in database; cleared automatically on plan updates
-- **Financial Calculations**: Complex revenue algorithm in `simulation_service.py` with multiple plan types
-
-**Admin & Privacy Policy Management**:
-- **Publishing Constraint**: Creating privacy policy cannot set `published=true`  
-- **Publishing Workflow**: Use `/api/admin/privacy-policies/{id}/publish` to publish (auto-unpublishes others)
-- **Admin Authentication**: All admin endpoints require `_assert_admin()` check
-
-**Frontend Security & State**:
-- **Minimal Local Storage**: Avoid storing sensitive data; prefer backend API calls
-- **JWT Handling**: Tokens managed by Supabase client, not manually stored
-- **Error Boundaries**: Implement proper error handling for failed API calls
-
-**Database & Schema**:
-- **RLS Policies**: All tables protected by Row Level Security - respect user isolation
-- **Schema Documentation**: Full schema available in `.memo/CE/specs/schema/schema.md`
-- **Migration Pattern**: Schema changes should consider existing data and RLS policies
-
-**Development Environment**:
-- **Windows Primary**: Development optimized for Windows with PowerShell scripts
-- **Port Configuration**: Frontend dev (5173), frontend preview (4173), backend (8000)
-- **Cloudflare Tunnel**: Production frontend served via tunnel at `simulation.lightoflifeclub.com`
-
-**API Contract Alignment**:
-- **Source of Truth**: `api/routes.py` is authoritative over specification documents  
-- **Endpoint Coverage**: Some SSD-described endpoints may not be implemented yet
-- **Backwards Compatibility**: Maintain existing API contracts for stability
+### Gotchas
+- JWKS fetch is networked; tests should mock `JWKSClient.get_keys()` to avoid real HTTP.
+- OTP messages include Korean strings; keep success/remaining_attempts contract unchanged.
+- `get_simulations` returns 404 if none; UI should handle empty state vs 404 accordingly.
+- Privacy policy creation cannot set `published`; use `/api/admin/privacy-policies/{id}/publish` to toggle and auto-unpublish others.
+- SSD alignment: Some SSD-described endpoints (e.g., public privacy-policy GET, consents GET) aren’t present in `api/routes.py` yet; follow `routes.py` as source-of-truth. OTP verify attempts default to 6 via env `otp_max_verification_attempts` (lowercase name) in `settings.py`.
 
 ### Where to look first
-
-**Core Backend Files**:
-- **API Endpoints**: `src/backend/api/routes.py` (507+ lines) - all REST endpoints
-- **Business Logic**: `src/backend/services/simulations.py` - simulation CRUD operations  
-- **Financial Engine**: `src/backend/simulation_service.py` - core calculation logic
-- **Plan Configuration**: `src/backend/constants.py` - 10 investment plan parameters
-- **Authentication**: `src/backend/auth/jwt.py` - JWT validation and Supabase JWKS
-- **Data Models**: `src/backend/models/schemas.py` - Pydantic request/response models
-- **Configuration**: `src/backend/config/settings.py` - environment and app settings
-- **Error Handling**: `src/backend/exceptions.py` - structured exception hierarchy
-
-**Core Frontend Files**:
-- **App Controller**: `src/frontend/src/AppController.tsx` - main application orchestrator
-- **Vite Config**: `src/frontend/vite.config.ts` - PWA, build, and development configuration
-- **Supabase Setup**: `src/frontend/src/supabaseClient.ts` - authentication and API client
-- **Main Pages**: `src/frontend/src/pages/` - WhitelistCheckPage, MainPage, PlanEditor, etc.
-- **Context**: `src/frontend/src/context/` - React context providers for state management
-- **API Services**: `src/frontend/src/services/` - backend API communication layer
-
-**Documentation & Schema**:
-- **Database Schema**: `.memo/CE/specs/schema/schema.md` - complete table definitions and RLS policies
-- **API Specification**: `.memo/CE/specs/SSD.md` - software specification document
-- **Test Plans**: `.memo/CE/plans/test-code-v1/` - comprehensive testing strategy and implementation
+- API: `src/backend/api/routes.py`
+- Core domain: `src/backend/services/simulations.py`, `src/backend/simulation_service.py`, `src/backend/constants.py`
+- Auth: `src/backend/auth/jwt.py`
+- Models: `src/backend/models/schemas.py`
+- Frontend config: `src/frontend/vite.config.ts`, `src/frontend/src/supabaseClient.ts`
 
 If anything above seems off or you need deeper conventions (e.g., testing/mocking patterns), ask in PR or ping to refine these notes.
+
 ## Back-end Coding Guidelines
 
 Follow the general guidelines below when writing Python codes.
