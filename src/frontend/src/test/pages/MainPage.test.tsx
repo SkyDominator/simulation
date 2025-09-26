@@ -6,13 +6,21 @@ import { mockFetchResponse, mockFetchError } from '../utils/testUtils'
 import { mockApiResponses } from '../mocks/api'
 import MainPage from '../../pages/MainPage'
 
-// Mock the API module
-vi.mock('../../services/api', () => ({
-  api: {
-    getSimulations: vi.fn(),
-    deleteSimulation: vi.fn(),
-  }
-}))
+// Mock fetch globally
+global.fetch = vi.fn()
+
+// Create mock functions for MainPage props
+const mockSetPage = vi.fn()
+const mockSetEditingPlan = vi.fn()  
+const mockSetSimulationResult = vi.fn()
+const mockOpenNotice = vi.fn()
+
+const defaultProps = {
+  setPage: mockSetPage,
+  setEditingPlan: mockSetEditingPlan,
+  setSimulationResult: mockSetSimulationResult,
+  openNotice: mockOpenNotice,
+}
 
 describe('MainPage', () => {
   beforeEach(() => {
@@ -41,7 +49,7 @@ describe('MainPage', () => {
 
       mockFetchResponse(mockSimulations)
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(() => {
         expect(screen.getByText(/Test simulation 1/i)).toBeInTheDocument()
@@ -60,7 +68,7 @@ describe('MainPage', () => {
 
       mockFetchResponse(mockSimulations)
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(() => {
         expect(screen.getByText(/Investment Plan A/i)).toBeInTheDocument()
@@ -74,7 +82,7 @@ describe('MainPage', () => {
     it('should show empty state when no simulations exist', async () => {
       mockFetchResponse([])
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(() => {
         expect(screen.getByText(/시뮬레이션이 없습니다/i)).toBeInTheDocument()
@@ -86,7 +94,7 @@ describe('MainPage', () => {
       const user = userEvent.setup()
       mockFetchResponse([])
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(() => {
         const createButton = screen.getByRole('button', { name: /새 시뮬레이션 만들기/i })
@@ -104,7 +112,7 @@ describe('MainPage', () => {
 
       mockFetchResponse(mockSimulations)
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(() => {
         expect(screen.getByLabelText(/정렬/i)).toBeInTheDocument()
@@ -120,7 +128,7 @@ describe('MainPage', () => {
 
       mockFetchResponse(mockSimulations)
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(async () => {
         const sortSelect = screen.getByLabelText(/정렬/i)
@@ -138,7 +146,7 @@ describe('MainPage', () => {
     it('should render navigation elements', async () => {
       mockFetchResponse([])
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /새 시뮬레이션/i })).toBeInTheDocument()
@@ -150,7 +158,7 @@ describe('MainPage', () => {
       const user = userEvent.setup()
       mockFetchResponse([])
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(async () => {
         const createButton = screen.getByRole('button', { name: /새 시뮬레이션/i })
@@ -166,7 +174,7 @@ describe('MainPage', () => {
     it('should show notice button when notices are available', async () => {
       mockFetchResponse([])
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /공지사항/i })).toBeInTheDocument()
@@ -177,7 +185,7 @@ describe('MainPage', () => {
       const user = userEvent.setup()
       mockFetchResponse([])
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(async () => {
         const noticeButton = screen.getByRole('button', { name: /공지사항/i })
@@ -192,7 +200,7 @@ describe('MainPage', () => {
     it('should show error message when API fails', async () => {
       mockFetchError(500)
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(() => {
         expect(screen.getByText(/오류가 발생했습니다/i)).toBeInTheDocument()
@@ -203,7 +211,7 @@ describe('MainPage', () => {
       const user = userEvent.setup()
       mockFetchError(500)
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(async () => {
         expect(screen.getByText(/오류가 발생했습니다/i)).toBeInTheDocument()
@@ -219,7 +227,7 @@ describe('MainPage', () => {
     it('should handle network connectivity changes', async () => {
       mockFetchResponse([])
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       // Simulate going offline
       Object.defineProperty(navigator, 'onLine', {
@@ -247,7 +255,7 @@ describe('MainPage', () => {
 
       mockFetchResponse(mockSimulations)
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(async () => {
         const deleteButton = screen.getByRole('button', { name: /삭제/i })
@@ -269,7 +277,7 @@ describe('MainPage', () => {
 
       mockFetchResponse(mockSimulations)
       
-      renderWithProviders(<MainPage />)
+      renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(async () => {
         const editButton = screen.getByRole('button', { name: /메모 수정/i })
