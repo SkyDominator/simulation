@@ -61,7 +61,7 @@ Here is the live environment:
 
 ## Project details
 
-For the project details, refer to the [the project details](/.github/instructions/project-details.md).
+For the project details, refer to the [project details](.github/instructions/project-details.md).
 
 ## Back-end Coding Guidelines
 
