@@ -36,7 +36,7 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/unit", "--maxfail=5", "-v"],
+      "args": ["tests/unit", "-v"],
       "cwd": "${workspaceFolder}/src/backend",
       "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {
@@ -52,6 +52,21 @@
       "request": "launch",
       "module": "pytest",
       "args": ["tests/integration", "-v", ">", "test_integration_results.md"],
+      "cwd": "${workspaceFolder}/src/backend",
+      "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src/backend"
+      },
+      "console": "integratedTerminal",
+      "subProcess": true,
+      "justMyCode": true
+    },
+    {
+      "name": "API contract test: backend",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["tests/integration", "-v"],
       "cwd": "${workspaceFolder}/src/backend",
       "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {
