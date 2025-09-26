@@ -4,7 +4,7 @@ This file provides instructions and context for AI coding assistants to help the
 
 ## Basic behavioral patterns for ALL AI coding assistants (agents)
 
-Adhere to the instructions in [agents.md](.github/instructions/agents.md) for basic behavioral patterns.
+Adhere to the instructions in `.github/instructions/agents.md` for basic behavioral patterns.
 
 ## Project overview
 
@@ -61,13 +61,13 @@ Here is the live environment:
 
 ## Project details
 
-For the project details, refer to the [project details](.github/instructions/project-details.md).
+For the project details, refer to the `.github/instructions/project-details.md`.
 
 ## Back-end Coding Guidelines
 
-For the back-end coding guidelines, refer to the [back-end coding guidelines](.github/instructions/backend-coding.md).
+For the back-end coding guidelines, refer to the `.github/instructions/backend-coding.md`.
 
 
 ## Front-end Coding Guidelines
 
-For the front-end coding guidelines, refer to the [front-end coding guidelines](.github/instructions/frontend-coding.md).
+For the front-end coding guidelines, refer to the `.github/instructions/frontend-coding.md`.
