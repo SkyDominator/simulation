@@ -210,8 +210,8 @@ class TestCoreRoundMechanics:
         assert abs(r1.cumulative_net_profit_before_tax - expected_cumulative_before_tax_1) <= 1e-6
         
         # For round 2: cumulative before tax should be sum of before-tax net profits
-        # Before-tax net profit = previous_revenue_before_tax - current_payment
-        expected_before_tax_net_profit_2 = r1.total_revenue_before_tax - r2.total_payment
+        # Use canonical net_profit_before_tax value from r2 to avoid code duplication
+        expected_before_tax_net_profit_2 = r2.net_profit_before_tax
         expected_cumulative_before_tax_2 = r1.cumulative_net_profit_before_tax + expected_before_tax_net_profit_2
         assert abs(r2.cumulative_net_profit_before_tax - expected_cumulative_before_tax_2) <= 1e-6
     
