@@ -8,7 +8,7 @@ Adhere to the instructions in [agents.md](/.github/instructions/agents.md) for b
 
 ## Project overview
 
-**LOLClub Simulation** is a sophisticated Progressive Web App (PWA) that provides comprehensive financial simulation services for investment plan analysis. The application consists of a FastAPI backend with Python 3.11+ and a React 19+ frontend with TypeScript, integrated with Supabase for database, authentication, and storage.
+**Light of Life Club Simulation** is a sophisticated Progressive Web App (PWA) that provides comprehensive financial simulation services for investment plan analysis. The application consists of a FastAPI backend with Python 3.11+ and a React 19+ frontend with TypeScript, integrated with Supabase for database, authentication, and storage.
 
 **Core Features:**
 - **Financial Simulation Engine**: 10 distinct investment plans (A, B, C, D, K, P, R, F, E, G) with varying parameters, investor lifecycles, and revenue calculations
@@ -43,7 +43,7 @@ Here is the test environment:
     * No CI/CD pipelines are set up yet.
     * Testing framework: Pytest for backend, Vitest and Playwright for frontend.
     * Frontend is tested via Vite dev on a Windows local machine (some other notebook for development machine, 5173 port).
-    * Backend is tested with debugpy on a Windows local machine (some other notebook for development machine, 8001 port).
+    * Backend is tested with debugpy on a Windows local machine (some other notebook for development machine, 8000 port).
 
 ### App live environment
 
@@ -225,7 +225,7 @@ def _supabase_client():
 
 **Simulation Business Rules**:
 - **Result Invalidation**: When modifying plan fields, set `simulation_results` to `None`
-- **Plan Parameters**: Reference `constants.py` for the 10 investment plans (A-G)
+- **Plan Parameters**: Reference `constants.py` for the 10 investment plans (A, B, C, D, E, F, G, K, P, R)
 - **Service Integration**: `SimulationService.update()` pattern shows result cache clearing
 
 **Database Access Patterns**:
@@ -691,7 +691,7 @@ const updatePage = (newPage: Page) => {
     - auth proxy with Supabase edge functions or backend API.
     - If using Supabase client directly, use RLS policies to restrict data access.
     - Currently, the frontend uses Supabase client directly. Implement auth proxy or RLS policies when possible.
-- Don't store sensitive data (tokens, passwords) in React state, props, or localStorage. Minimize the use of the local host storage.
+- Don't store sensitive data (tokens, passwords) in React state, props, or localStorage. Minimize the use of local storage.
 - Assume `.env` variables in the frontend are exposed — don't put secrets there.
 
 3. Secure API Interaction
@@ -794,5 +794,5 @@ function AppShell({ children }) {
 ### Key Libraries
 
 * UI Components: @mui/material
-* Data & State Management: @tanstack/react-query (for handling loading/error states and offline caching)
+* State Management: React Context + custom hooks (as implemented in this codebase)  
 * PWA Service Worker: workbox-precaching
