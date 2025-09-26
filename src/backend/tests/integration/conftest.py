@@ -445,7 +445,9 @@ def mock_simulation_service(monkeypatch, mock_supabase_client):
                         "total_payment": 100000.0,
                         "total_revenue_before_tax": 120000.0,
                         "total_revenue_after_tax": 110000.0,
+                        "net_profit_before_tax": 20000.0,
                         "net_profit_after_tax": 10000.0,
+                        "cumulative_net_profit_before_tax": 20000.0,
                         "cumulative_net_profit": 10000.0,
                         "investor_details": [
                             {

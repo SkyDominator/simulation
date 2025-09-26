@@ -1,7 +1,7 @@
-# LOLClub Simulation – Software Specification Document (SSD)
+# Partners Club Simulation – Software Specification Document (SSD)
 
 Version: 0.2.1 (Updated for Implementation Consistency)  
-Date: 2025-09-18  
+Date: 2025-01-20  
 Status: Draft (updated to reflect current implementation)  
 Owners: Product, Engineering (Backend/Frontend)
 
@@ -11,7 +11,7 @@ Owners: Product, Engineering (Backend/Frontend)
 
 ## 1. Introduction
 
-LOLClub Simulation is a PWA that allows whitelisted users to sign in via Supabase OAuth, manage investment plan simulations, and review results. The app enforces a pre-auth onboarding flow (whitelist + OTP + privacy consent) and provides an admin UI for managing privacy policies and notices. The backend is a FastAPI service integrated with Supabase and the frontend is a React/Vite app.
+Partners Club Simulation is a PWA that allows whitelisted users to sign in via Supabase OAuth, manage investment plan simulations, and review results. The app enforces a pre-auth onboarding flow (whitelist + OTP + privacy consent) and provides an admin UI for managing privacy policies and notices. The backend is a FastAPI service integrated with Supabase and the frontend is a React/Vite app.
 
 The Goals of this Project:
 
@@ -66,7 +66,7 @@ Out-of-scope (deferred):
 | OS | Windows 11 |
 | IDE | Visual Studio Code |
 | Browser | Google Chrome (1920x1080) |
-| Device | Desktop (LG Gram Notebook) |
+| Device | Desktop |
 | Python | 3.11.6 or later (backend runtime; container may pin 3.12 in future) |
 | TypeScript | 5.8.3 or later |
 | React | 19.1.0 or later |
@@ -107,10 +107,11 @@ Implications:
 
 ## 5. System Architecture
 
-- **Frontend**: React 19 + TypeScript + Vite (vite-plugin-pwa, MUI for UI). Auth via @supabase/supabase-js. State persisted selectively to localStorage/sessionStorage.
-- **Backend**: FastAPI (Python 3.11.6 or later), Pydantic v2 schemas, Supabase client (REST/RPC). JWT verification uses Supabase JWKS.
+- **Frontend**: React 19.1.0+ + TypeScript 5.8.3+ + Vite 5.4.10+ (vite-plugin-pwa 0.20.0, MUI 5.14.0+ for UI, Tailwind CSS 3.4.4+). Auth via @supabase/supabase-js 2.51.0+. State persisted selectively to localStorage/sessionStorage.
+- **Backend**: FastAPI 0.116.1+ (Python 3.11.6 or later), Pydantic v2 schemas, Supabase client 2.16.0+ (REST/RPC). JWT verification uses Supabase JWKS.
 - **Data**: Supabase Postgres (tables below). Auth via Supabase; JWT audience "authenticated". Privacy policy content served from database with static file fallback.
-- **Infra**: Dockerized services; Cloudflare Tunnel for public frontend domain; CORS configured for local dev and tunnel domain.
+- **Infra**: Dockerized services; Cloudflare Tunnel for public frontend domain (`simulation.lightoflifeclub.com`); CORS configured for local dev and tunnel domain.
+- **Deployment**: Frontend served via Vite preview on port 4173; Backend FastAPI on port 8000; Development uses port 5173 for frontend.
 
 High-level flow:
 
@@ -173,13 +174,15 @@ See [schema](/.memo/CE/specs/schema/schema.md) for the full schema information a
 
 ### 7.1 Core Security Controls
 
-| Control | Notes |
-|---------|-------|
-| JWT validation via JWKS | Cache keys (TTL 5–15m) |
-| Admin server-side check | Table lookup each request |
-| OTP rate limiting | 3 sends per 15 min, 6 verify attempts |
-| RLS on user tables | Implemented |
-| OTP hashing | Implemented |
+| Control | Implementation Details |
+|---------|----------------------|
+| JWT validation via JWKS | Fetches from `/auth/v1/.well-known/jwks.json`, uses python-jose library, 5s timeout, global cache |
+| Admin server-side check | Table lookup against `admins.user_id` on each request via `_assert_admin()` |
+| OTP rate limiting | 3 sends per 15 min (default), 6 verify attempts (configurable), tracked per phone number |
+| OTP hashing | Uses HMAC with `OTP_SECRET_KEY` for secure code storage |
+| RLS on user tables | Implemented via Supabase Row Level Security policies |
+| Exception handling | Structured with `BaseAPIException`, automatic logging with context |
+| Bearer token auth | Uses FastAPI `HTTPBearer()` scheme with 401/403 distinction |
 
 ---
 
@@ -313,6 +316,21 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
   res: { id: string, message: string, success: boolean }
 }
 
+// DELETE /api/admin/privacy-policies/{id} (auth, admin)
+{
+  res: { id: string, message: string, success: boolean }
+}
+
+// POST /api/simulation/delete (auth) - Alternative delete endpoint
+{
+  req: { simulation_id: string },
+  res: { simulation_id: string, message: string, success: boolean }
+}
+
+// DELETE /api/simulations/{id} (auth) - RESTful delete endpoint
+{
+  res: { simulation_id: string, message: string, success: boolean }
+}
 
 // GET /api/health
 {
@@ -325,7 +343,7 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 
 ## 10. Simulation Engine (Business Logic)
 
-- **Plans**: A, B, C, D, K, P, R, F, E with defined parameters
+- **Plans**: A, B, C, D, K, P, R, F, E, G with detailed parameters (see specifications below)
 - **Core concepts**:
   - max_investor_count controls growth vs stable phase
   - Tax 3.3% applied to total revenue; net profit and cumulative tracked each round
@@ -334,6 +352,71 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Parameter Conversion**: API `scheduled_payment` parameters are converted to database `investments` jsonb format during persistence
 - **Persistence**: results stored in simulations.simulation_results; recalculated on demand if missing or when inputs change
 
+### 10.1 Plan Parameter Specifications
+
+All plans share common structure with the following parameters:
+
+**Plan A** (max_investor_count: 15):
+- min_payment_new: {1: 110000, 2: 220000, 3: 440000, ..., 19: 33000000}
+- min_payment_re: 11000000
+- max_bonus: 30000000
+- round_bonus_rates: {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12: 10, 13: 20, 14: 50, 15: 100}
+
+**Plan B** (max_investor_count: 15):
+- Same parameters as Plan A
+
+**Plan C** (max_investor_count: 15):
+- Same min_payment structure as Plans A & B
+- max_bonus: 50000000
+
+**Plan D** (max_investor_count: 18):
+- Same min_payment structure as Plans A, B, C
+- min_payment_re: 33000000
+- max_bonus: 100000000
+- round_bonus_rates: Extended to {4: 1, ..., 15: 100, 16: 300, 17: 1000, 18: 1000}
+- sales_achievement_rates: Extended to rounds 4-36
+
+**Plan K** (max_investor_count: 18):
+- min_payment_new: {1: 330000, 2: 330000, 3: 440000, ..., 19: 33000000}
+- min_payment_re: 33000000
+- max_bonus: 300000000
+- round_bonus_rates: Same as Plan D (4-18)
+- sales_achievement_rates: Rounds 4-30
+
+**Plan P** (max_investor_count: 18):
+- Same parameters as Plan K
+- sales_achievement_rates: Extended to rounds 4-36
+
+**Plan R** (max_investor_count: 18):
+- min_payment_new: Same as Plans A, B, C (starting at 110000)
+- min_payment_re: 33000000
+- max_bonus: 100000000
+- round_bonus_rates: Same as Plan D (4-18)
+- sales_achievement_rates: Extended to rounds 4-36
+
+**Plan F** (max_investor_count: 18):
+- Same parameters as Plan K
+- sales_achievement_rates: Extended to rounds 4-36
+
+**Plan E** (max_investor_count: 18):
+- min_payment_new: Same as Plans A, B, C (starting at 110000)
+- min_payment_re: 33000000
+- max_bonus: 100000000
+- round_bonus_rates: Same as Plan D (4-18)
+- sales_achievement_rates: Extended to rounds 4-36
+
+**Plan G** (max_investor_count: 12):
+- min_payment_new: {1-12: 110000} (flat 110000 for all rounds)
+- min_payment_re: 220000
+- max_bonus: 30000000
+- round_bonus_rates: {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12: 10}
+- sales_achievement_rates: Rounds 4-12
+
+**Common Parameters (All Plans)**:
+- revenue_base_divisor: 1.1
+- sales_commission: 0.32 (32%)
+- settlement_bonus: 100000
+
 ---
 
 ## 11. Non-Functional Requirements
@@ -341,17 +424,26 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 - **Performance**: API endpoints < 500ms for typical operations; simulation run < 2s for common inputs
 - **Availability**: Health endpoint surfaces dependency issues; tolerate transient Supabase failures gracefully
 - **Security**: JWT validation via JWKS; admin checks via admins table. No secrets in frontend code
-- **Rate limiting**: OTP send limited (3 per 15-min); attempts per code limited (3 attempts)
+- **Rate limiting**: OTP send limited (3 per 15-min); attempts per code limited (6 attempts)
 - **PWA**: Installable manifest and icons; service worker via vite-plugin-pwa (basic)
 
 ---
 
 ## 12. PWA Requirements
 
-- **Manifest**: name, icons (192–512 maskable). Start URL index.html; theme/background colors per UI theme
-- **Service Worker**: Provided via vite-plugin-pwa defaults
-- **UX**: Mobile-first, responsive layout using MUI theme
+- **Manifest**: 
+  - Name: "Light of Life Club Simulation", short_name: "Simulation"
+  - Icons: 192x192, 384x384, 512x512 (standard), 192x192 and 512x512 (maskable)
+  - Start URL: "/", scope: "/", display: "standalone"
+  - Theme color: "#1976d2", background color: "#ffffff"
+  - Orientation: "landscape" (preferred for simulation tables)
+- **Service Worker**: Provided via vite-plugin-pwa 0.20.0 with workbox
+  - Network-first caching for `/api/notices` endpoints (3s timeout, 1h expiration)
+  - Stale-while-revalidate for images (png, svg, jpg, jpeg, gif, webp)
+  - Auto-update registration type
+- **UX**: Mobile-first, responsive layout using MUI theme + Tailwind CSS
 - **Installability**: HTTPS required; Cloudflare Tunnel domain supported
+- **Landscape Enforcer**: Mobile-specific component that detects portrait orientation and shows rotation instruction overlay
 
 ---
 
@@ -460,10 +552,10 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 **PlanEditor Multi-step Wizard** (`page: "plan-editor"`):
 
 - **Step Navigation**: Material-UI Stepper component with 5 steps:
-  1. Plan Type Selector (A, B, C, D, K, P, R, F, E)
+  1. Plan Type Selector (A, B, C, D, K, P, R, F, E, G)
   2. Starting Company Round
   3. Current Company Round (must be ≥ starting round)
-  4. Simulation Rounds (plan-specific defaults: A/B/C=15, others=18)
+  4. Simulation Rounds (plan-specific defaults: A/B/C/G=12-15, others=18)
   5. Investment Schedule Editor with round-by-round investment input
 - **Validation Modals**: Step-specific validation with detailed error messages
 - **State Persistence**: Draft plans saved to localStorage for session recovery
@@ -535,19 +627,34 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 ## 14. Constraints & Assumptions
 
 - **Environment variables**:
-  - Backend: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SOLAPI_*` for SMS, `OTP_VALIDITY_MINUTES`, `OTP_RESEND_LIMIT_PER_15MIN`, `otp_max_verification_attempts`
-  - Frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_BASE_URL`
+  - Backend: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (preferred) or `SUPABASE_PUBLISHABLE_KEY`, `OTP_SECRET_KEY`, `OTP_VALIDITY_MINUTES` (default: 5), `OTP_RESEND_LIMIT_PER_15MIN` (default: 3), `otp_max_verification_attempts` (default: 6), `OTP_RESEND_LIMIT_PER_DAY` (default: 10)
+  - SMS Provider: `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_SENDER_NUMBER` (primary); Legacy: `NHN_CLOUD_APPKEY`, `NHN_CLOUD_SECRET_KEY`, `NHN_CLOUD_SENDER_NUMBER`
+  - Frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_BASE_URL` (default: `https://simulation.lightoflifeclub.com/api`)
+- **CORS Configuration**: Includes `simulation.lightoflifeclub.com`, localhost and 127.0.0.1 on ports 5173 (dev), 4173 (preview), plus local IP addresses `10.10.113.129`, `172.30.1.39`
 - **Supabase RLS** should be configured on user-owned tables; admin APIs rely on server checks
 - **Whitelist table** exists with user_hash; seeding/management handled out-of-band
-- **Docker/Cloudflare Tunnel** used for deployment; ports: frontend 5173 (dev), 4173 (preview), backend 8000
+- **Docker/Cloudflare Tunnel** used for deployment; ports: frontend 5173 (dev), 4173 (preview), backend 8000 (production), 8001 (development)
 - **Privacy Policy Source of Truth**: Published DB row is primary; static file fallback available if DB unavailable
+- **PWA Manifest**: Name "Light of Life Club Simulation", landscape orientation preferred, theme color #1976d2
 
 ---
 
 ## 15. Error Handling
 
-- OTP & some admin endpoints: `{ success: boolean, message: string, ... }`.
-- Standard FastAPI errors: `{ "detail": "..." }`.
+- **Structured Exception System**: Custom `BaseAPIException` class with error codes, context, and structured logging
+- **HTTP Status Code Mapping**:
+  - 401: `AuthenticationError` - Missing or invalid authentication  
+  - 403: `AdminPrivilegesRequiredError`, `AuthorizationError` - Insufficient permissions
+  - 404: `ResourceNotFoundError`, `SimulationNotFoundError`, `NoticeNotFoundError`, `PrivacyPolicyNotFoundError` - Resource not found
+  - 400: `WhitelistError`, `InvalidDataError`, `NoFieldsToUpdateError` - Business logic validation errors
+  - 409: `PublishingConstraintError` - Conflict errors (e.g., policy publishing constraints)
+  - 422: FastAPI request validation errors
+  - 500: `DatabaseError`, `InternalServerError` - Server errors
+- **Response Formats**:
+  - OTP & admin endpoints: `{ success: boolean, message: string, ... }`
+  - Standard FastAPI errors: `{ "detail": "..." }`
+- **Error Context**: Exceptions include optional `error_code` and `error_context` for debugging
+- **Logging**: All exceptions automatically logged with structured context for monitoring
 
 ---
 
@@ -802,7 +909,7 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 
 - **Health Endpoint**: Tracks Supabase latency and availability
 - **Client-side Telemetry**: Error rates, page load times via browser performance APIs
-- **Rate Limiting**: OTP endpoints protected (3/15min send, 3 attempts per code)
+- **Rate Limiting**: OTP endpoints protected (3/15min send, 6 attempts per code)
 
 **Scaling Thresholds**:
 
