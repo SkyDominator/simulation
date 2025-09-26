@@ -15,7 +15,7 @@ export const mockFetchError = (status = 500, statusText = 'Internal Server Error
   mockFetch.mockRejectedValueOnce(new Error(`${status} ${statusText}`))
 }
 
-// Mock mobile viewport
+// Improved mock mobile viewport that works with Material-UI useMediaQuery
 export const mockMobileViewport = () => {
   Object.defineProperty(window, 'innerWidth', {
     writable: true,
@@ -29,11 +29,26 @@ export const mockMobileViewport = () => {
     value: 667,
   })
   
+  // Mock matchMedia for Material-UI useMediaQuery
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation(query => ({
+      matches: query.includes('max-width') ? true : false, // Simulate mobile breakpoint
+      media: query,
+      onchange: null,
+      addListener: vi.fn(), // Deprecated
+      removeListener: vi.fn(), // Deprecated
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  })
+  
   // Trigger resize event
   window.dispatchEvent(new Event('resize'))
 }
 
-// Mock desktop viewport
+// Improved mock desktop viewport
 export const mockDesktopViewport = () => {
   Object.defineProperty(window, 'innerWidth', {
     writable: true,
@@ -47,6 +62,21 @@ export const mockDesktopViewport = () => {
     value: 1080,
   })
   
+  // Mock matchMedia for Material-UI useMediaQuery  
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation(query => ({
+      matches: query.includes('max-width') ? false : true, // Simulate desktop breakpoint
+      media: query,
+      onchange: null,
+      addListener: vi.fn(), // Deprecated
+      removeListener: vi.fn(), // Deprecated
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  })
+  
   // Trigger resize event
   window.dispatchEvent(new Event('resize'))
 }
@@ -55,6 +85,19 @@ export const mockDesktopViewport = () => {
 export const resetViewport = () => {
   delete (window as any).innerWidth
   delete (window as any).innerHeight
+  delete (window as any).matchMedia
+}
+
+// Mock navigator.onLine for network status tests
+export const mockOnlineStatus = (isOnline: boolean) => {
+  Object.defineProperty(navigator, 'onLine', {
+    writable: true,
+    value: isOnline,
+  })
+  
+  // Dispatch the appropriate event
+  const event = new Event(isOnline ? 'online' : 'offline')
+  window.dispatchEvent(event)
 }
 
 // Simulate act for async state updates
