@@ -53,13 +53,15 @@ class SimulationRoundResult:
     """
     def __init__(self, company_round, investor_count, total_payment,
                  total_revenue_before_tax, total_revenue_after_tax,
-                 net_profit_after_tax, cumulative_net_profit):
+                 net_profit_before_tax, net_profit_after_tax, cumulative_net_profit_before_tax, cumulative_net_profit):
         self.company_round = company_round
         self.investor_count = investor_count
         self.total_payment = total_payment
         self.total_revenue_before_tax = total_revenue_before_tax
         self.total_revenue_after_tax = total_revenue_after_tax
+        self.net_profit_before_tax = net_profit_before_tax
         self.net_profit_after_tax = net_profit_after_tax
+        self.cumulative_net_profit_before_tax = cumulative_net_profit_before_tax
         self.cumulative_net_profit = cumulative_net_profit
         self.investor_details = []  # List of individual investor details for this round
     
@@ -71,7 +73,9 @@ class SimulationRoundResult:
             "total_payment": self.total_payment,
             "total_revenue_before_tax": self.total_revenue_before_tax,
             "total_revenue_after_tax": self.total_revenue_after_tax,
+            "net_profit_before_tax": self.net_profit_before_tax,
             "net_profit_after_tax": self.net_profit_after_tax,
+            "cumulative_net_profit_before_tax": self.cumulative_net_profit_before_tax,
             "cumulative_net_profit": self.cumulative_net_profit,
             "investor_details": self.investor_details
         }
@@ -348,9 +352,18 @@ class FinancialSimulationService:
         # Net profit calculation
         if t == 1:
             net_profit_after_tax = -total_payment_this_round
+            net_profit_before_tax = -total_payment_this_round
             cumulative_net_profit = net_profit_after_tax
+            cumulative_net_profit_before_tax = net_profit_before_tax
         else:
             prev_round_result = self.results.history[-1]
+
+            # Before tax calculations
+            prev_revenue_before_tax = prev_round_result.total_revenue_before_tax
+            net_profit_before_tax = prev_revenue_before_tax - total_payment_this_round
+            cumulative_net_profit_before_tax = prev_round_result.cumulative_net_profit_before_tax + net_profit_before_tax
+            
+            # After tax calculations
             prev_revenue_after_tax = prev_round_result.total_revenue_after_tax
             net_profit_after_tax = prev_revenue_after_tax - total_payment_this_round
             cumulative_net_profit = prev_round_result.cumulative_net_profit + net_profit_after_tax
@@ -362,8 +375,10 @@ class FinancialSimulationService:
             total_payment=total_payment_this_round,
             total_revenue_before_tax=total_revenue_this_round,
             total_revenue_after_tax=total_revenue_after_tax,
+            net_profit_before_tax=net_profit_before_tax,
             net_profit_after_tax=net_profit_after_tax,
-            cumulative_net_profit=cumulative_net_profit
+            cumulative_net_profit_before_tax=cumulative_net_profit_before_tax,
+            cumulative_net_profit=cumulative_net_profit,
         )
         
         # Store investor details for this round

@@ -203,6 +203,17 @@ class TestCoreRoundMechanics:
         r2 = result.history[1]
         expected_cumulative_2 = r1.net_profit_after_tax + r2.net_profit_after_tax
         assert abs(r2.cumulative_net_profit - expected_cumulative_2) <= 1e-6
+        
+        # Test before-tax cumulative profit calculation
+        # For round 1: before-tax net profit equals after-tax (no revenue yet)
+        expected_cumulative_before_tax_1 = r1.net_profit_after_tax  # Same as after tax for first round
+        assert abs(r1.cumulative_net_profit_before_tax - expected_cumulative_before_tax_1) <= 1e-6
+        
+        # For round 2: cumulative before tax should be sum of before-tax net profits
+        # Use canonical net_profit_before_tax value from r2 to avoid code duplication
+        expected_before_tax_net_profit_2 = r2.net_profit_before_tax
+        expected_cumulative_before_tax_2 = r1.cumulative_net_profit_before_tax + expected_before_tax_net_profit_2
+        assert abs(r2.cumulative_net_profit_before_tax - expected_cumulative_before_tax_2) <= 1e-6
     
     def test_RND_008_investor_count_bounded_by_max(self, simulation_service_factory):
         """RND-008: Investor count never exceeds max_investor_count."""
@@ -759,7 +770,7 @@ class TestSimulationResultsStructure:
         required_fields = [
             'company_round', 'investor_count', 'total_payment',
             'total_revenue_before_tax', 'total_revenue_after_tax',
-            'net_profit_after_tax', 'cumulative_net_profit',
+            'net_profit_before_tax', 'net_profit_after_tax', 'cumulative_net_profit_before_tax', 'cumulative_net_profit',
             'investor_details'
         ]
         
