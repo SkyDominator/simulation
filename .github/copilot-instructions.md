@@ -439,49 +439,205 @@ Follow the general guidelines below when writing Python codes.
 
 ## Front-end Coding Guidelines
 
-Follow the general guidelines below when writing React, TypeScript, and JavaScript code.
+Follow the guidelines below when writing React, TypeScript, and JavaScript code for this PWA application.
 
-### Core Principles of React Coding (TypeScript + Vite + React)
+### Core Architecture Patterns
 
-1. Embrace Functional Components and Hooks
-- Prefer **functional components** over class components for cleaner, more modern code. Hooks like `useState`, `useEffect`, and custom hooks keep logic modular and reusable.
-- Follow React’s foundational **Rules of Hooks**:
-  - Always call hooks at the top level (no loops or conditionals).
-  - Only call hooks from React function components or custom hooks.
+**Application Structure**:
+- **App Controller Pattern**: `AppController.tsx` orchestrates page navigation, state persistence, and UI flow
+- **Context-Based State**: Authentication and global state managed via React Context (`AuthContext.tsx`)
+- **Custom Hooks**: Business logic extracted into reusable hooks (`useAuth`, `useMainPageState`, `useSimulationActions`)
+- **Service Layer**: Backend communication centralized in `services/api.ts` with proper error handling
 
-2. Single Responsibility & SOLID Principles
-- Apply the **Single Responsibility Principle (SRP)**: each component (or hook) should focus on one clear task—rendering UI, fetching data, etc.
-- Adopt broader **SOLID** principles for modular and maintainable code:
-  - **OCP**: Open for extension, closed for modification  
-  - **LSP**: Subtypes should work in place of base types  
-  - **ISP**: Interfaces should be lean and focused  
-  - **DIP**: Depend on abstractions, not concrete implementations
+**Component Organization**:
+```
+src/
+├── pages/           # Route-level components (MainPage, WhitelistCheckPage, etc.)
+├── components/      # Reusable UI components with domain-specific folders
+├── context/         # React context providers and hooks
+├── hooks/           # Custom business logic hooks  
+├── services/        # API communication layer
+├── types/           # TypeScript type definitions
+└── utils/           # Pure utility functions
+```
 
-3. Thoughtful Component Design & Structure
-- Break UI into **small, focused components**—think “smart” vs. “dumb” components or container vs. presentational.
-- Organize file/folder structure by **features or domains**, not types—this keeps the codebase intuitive and scalable.
-- Leverage **composition**: React’s strength lies in building complex UIs by nesting simpler components without introducing ripple effects.
+**State Management Philosophy**:
+- **Minimize Client State**: Prefer backend API calls over local state management
+- **Selective Persistence**: Use localStorage/sessionStorage sparingly and only for UI state
+- **Context for Global State**: Authentication and cross-component state via Context API
+- **Derived State**: Calculate derived values in components rather than storing them
 
-4. Maintain Clean Code & Conventions
-- Adopt consistent **naming**—use PascalCase for components and camelCase for variables and functions.
-- Enforce code style with tools like **Prettier** and **ESLint** to improve readability and reduce friction.
-- Keep code simple and avoid duplications (DRY principle). Overly complex logic invites bugs and frustration.
+### Component Design Principles
 
-5. Optimize Performance Mindfully
-- Use **unique keys** when rendering lists to help React track elements efficiently.
-- Apply **memoization** (`React.memo`, `useMemo`, `useCallback`) to avoid unnecessary re-renders—only when needed.
-- Implement **lazy loading** of components with `React.lazy` and `Suspense` to speed up initial load.
+**1. Functional Components & Modern Hooks**:
+```tsx
+// Prefer functional components with hooks
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/useAuth';
+import type { Plan } from '../types/types';
 
-6. Type Safety & Props Integrity
-- Use **TypeScript (or PropTypes)** to enforce prop types and catch errors early.
-- Treat props as **immutable**, and avoid modifying them inside components to maintain predictable behavior.
+export const MyComponent: React.FC<{ plan: Plan }> = ({ plan }) => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  
+  // Component logic here
+  return <div>{/* JSX */}</div>;
+};
+```
 
-7. State Management
-- Simplify the state management as much as possible. Minimize the use of the local host storage. Use backend API calls to manage state and persist data.
-- For the existing data in backend, use backend API calls to get the data. Do not re-create the same data in the frontend side.
+**2. TypeScript Integration**:
+- **Strict Type Safety**: All props, state, and API responses properly typed
+- **Import Types**: Use `import type` for type-only imports to optimize bundle size
+- **Interface Definition**: Types centralized in `src/types/types.ts`
+- **Generic Components**: Leverage TypeScript generics for reusable components
 
-8. Security
-- Strictly follow the [security principles](#security-principles) described below.
+**3. Material-UI + Tailwind Integration**:
+```tsx
+import { Container, Paper, Typography, Stack } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+
+// Combine MUI components with Tailwind classes
+<Container maxWidth="lg" className="p-4">
+  <Paper className="p-6">
+    <Typography variant="h4">Title</Typography>
+  </Paper>
+</Container>
+```
+
+### Established Patterns to Follow
+
+**Authentication Integration**:
+```tsx
+// Use the established auth hook
+import { useAuth } from '../context/useAuth';
+
+const MyComponent = () => {
+  const { user, session, signOut } = useAuth();
+  
+  if (!user) {
+    return <div>Please log in</div>;
+  }
+  // Component with authenticated user
+};
+```
+
+**API Communication**:
+```tsx
+// Use the centralized API service
+import { api } from '../services/api';
+
+const handleApiCall = async () => {
+  try {
+    setLoading(true);
+    const result = await api.createSimulation(data, token);
+    // Handle success
+  } catch (error) {
+    // Handle error with user feedback
+    console.error('API Error:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+**Custom Hooks Pattern**:
+```tsx
+// Business logic extracted into custom hooks
+export const useSimulationActions = () => {
+  const { session } = useAuth();
+  
+  const deleteSimulation = useCallback(async (id: string) => {
+    if (!session?.access_token) throw new Error('No session');
+    return await api.deleteSimulation(id, session.access_token);
+  }, [session?.access_token]);
+  
+  return { deleteSimulation };
+};
+```
+
+**Component Composition**:
+```tsx
+// Break complex components into smaller, focused pieces
+import SimulationTable from '../components/MainPage/SimulationTable';
+import SummaryReport from '../components/MainPage/SummaryReport';
+
+export const MainPage = () => {
+  return (
+    <Container>
+      <SimulationTable onSelectionChange={handleSelection} />
+      <SummaryReport data={summaryData} />
+    </Container>
+  );
+};
+```
+
+### PWA & Performance Considerations
+
+**Service Worker Integration**:
+- **Automated Setup**: PWA functionality configured via `vite-plugin-pwa`
+- **Caching Strategy**: NetworkFirst for API calls, StaleWhileRevalidate for assets
+- **Offline Handling**: Graceful degradation when network unavailable
+
+**Bundle Optimization**:
+```tsx
+// Use dynamic imports for code splitting
+const AdminPolicyPage = React.lazy(() => import('./pages/AdminPolicyPage'));
+
+// Wrap with Suspense
+<Suspense fallback={<div>Loading...</div>}>
+  <AdminPolicyPage />
+</Suspense>
+```
+
+**State Persistence Pattern**:
+```tsx
+// Selective localStorage usage (from AppController pattern)
+import { getJSON, setJSON } from './utils/persist';
+
+const [page, setPage] = useState<Page>(() => 
+  getJSON<Page>('ui.page', 'whitelist')
+);
+
+// Update both state and localStorage
+const updatePage = (newPage: Page) => {
+  setPage(newPage);
+  setJSON('ui.page', newPage);
+};
+```
+
+### Error Handling & User Experience
+
+**Error Boundaries**:
+- Implement error boundaries for graceful error recovery
+- Don't expose technical details to users
+- Provide actionable error messages
+
+**Loading States**:
+- Always provide loading indicators for async operations
+- Use skeleton loaders for better perceived performance
+- Handle empty states explicitly
+
+**Responsive Design**:
+- **Mobile-First**: Design for mobile, enhance for desktop
+- **Landscape Enforcement**: Use `LandscapeEnforcer.tsx` component where needed
+- **MUI Breakpoints**: Leverage Material-UI responsive utilities
+
+### Security Best Practices
+
+**Token Management**:
+- JWTs handled exclusively by Supabase client
+- Never store tokens in localStorage manually  
+- Use session objects from auth context for API calls
+
+**Data Validation**:
+- Validate all user inputs before sending to backend
+- Sanitize any dynamic content rendering
+- Use TypeScript for compile-time type safety
+
+**API Security**:
+- Always include proper Authorization headers
+- Handle 401/403 responses appropriately
+- Implement proper CORS handling in development
 
 ### Security principles { #security-principles }
 
@@ -495,8 +651,8 @@ Follow the general guidelines below when writing React, TypeScript, and JavaScri
     - auth proxy with Supabase edge functions or backend API.
     - If using Supabase client directly, use RLS policies to restrict data access.
     - Currently, the frontend uses Supabase client directly. Implement auth proxy or RLS policies when possible.
-- Don’t store sensitive data (tokens, passwords) in React state, props, or localStorage. Minimize the use of the local host storage.
-- Assume `.env` variables in the frontend are exposed — don’t put secrets there.
+- Don't store sensitive data (tokens, passwords) in React state, props, or localStorage. Minimize the use of the local host storage.
+- Assume `.env` variables in the frontend are exposed — don't put secrets there.
 
 3. Secure API Interaction
 - Always use **HTTPS**.
@@ -509,7 +665,7 @@ Follow the general guidelines below when writing React, TypeScript, and JavaScri
 - Keep only minimal session state on the client.
 
 5. Avoid Leaking Sensitive Data
-- Don’t log sensitive info in console or error boundaries.
+- Don't log sensitive info in console or error boundaries.
 - Minimize data exposure in API responses (watch Redux/React Query caches).
 
 6. Dependency & Build Security
@@ -523,9 +679,9 @@ Follow the general guidelines below when writing React, TypeScript, and JavaScri
   - Whitelist trusted sources for scripts/styles/images.
 
 8. Avoid Insecure Patterns
-- Don’t embed secrets (API keys, DB creds) in frontend code — use backend proxy.
+- Don't embed secrets (API keys, DB creds) in frontend code — use backend proxy.
 - Avoid `eval`, `Function()`, or dynamic script execution.
-- Don’t attach inline event handlers in HTML.
+- Don't attach inline event handlers in HTML.
 
 9. Clickjacking Protection
 - Configure server headers:
@@ -533,7 +689,7 @@ Follow the general guidelines below when writing React, TypeScript, and JavaScri
   - `Content-Security-Policy: frame-ancestors 'none';`
 
 10. Error Handling & Monitoring
-- Use React **Error Boundaries**, but don’t expose stack traces to users.
+- Use React **Error Boundaries**, but don't expose stack traces to users.
 - Monitor with tools like Sentry or Datadog.
 
 ## UI/UX Design Guideline
