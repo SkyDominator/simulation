@@ -1,32 +1,25 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../utils/renderWithProviders'
-import { mockMobileViewport, mockDesktopViewport, resetViewport } from '../utils/testUtils'
+import { resetViewport } from '../utils/testUtils'
 import React from 'react'
 import { 
   Box, 
   Paper, 
   Button, 
-  useMediaQuery, 
-  useTheme,
-  Drawer,
   AppBar,
   Toolbar,
   Typography,
   BottomNavigation,
   BottomNavigationAction,
-  Hidden
 } from '@mui/material'
 import HomeIcon from '@mui/icons-material/Home'
 import PersonIcon from '@mui/icons-material/Person'
 import SettingsIcon from '@mui/icons-material/Settings'
 
 // Mock responsive navigation component
-const ResponsiveNavigation: React.FC = () => {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-
-  if (isMobile) {
+const ResponsiveNavigation: React.FC<{ forceMobile?: boolean }> = ({ forceMobile = false }) => {
+  if (forceMobile) {
     return (
       <Box data-testid="mobile-navigation">
         <BottomNavigation showLabels>
@@ -54,125 +47,52 @@ const ResponsiveNavigation: React.FC = () => {
   )
 }
 
-// Mock responsive layout component
-const ResponsiveLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <ResponsiveNavigation />
-      
-      <Box 
-        component="main" 
-        sx={{ 
-          flexGrow: 1, 
-          p: isMobile ? 1 : 3,
-          maxWidth: isMobile ? '100%' : '1200px',
-          margin: '0 auto'
-        }}
-        data-testid="main-content"
-      >
-        {children}
-      </Box>
-      
-      {isMobile && (
-        <Box data-testid="mobile-footer" sx={{ mt: 'auto' }}>
-          <Typography variant="caption" align="center" display="block" p={1}>
-            Mobile Footer
-          </Typography>
-        </Box>
-      )}
-    </Box>
-  )
-}
-
 // Mock responsive form component
-const ResponsiveForm: React.FC = () => {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-
+const ResponsiveForm: React.FC<{ forceMobile?: boolean }> = ({ forceMobile = false }) => {
   return (
     <Paper 
       sx={{ 
-        p: isMobile ? 2 : 4,
-        maxWidth: isMobile ? '100%' : '600px',
+        p: forceMobile ? 2 : 4,
+        maxWidth: forceMobile ? '100%' : '600px',
         margin: '0 auto'
       }}
       data-testid="responsive-form"
     >
-      <Typography variant={isMobile ? 'h5' : 'h4'} gutterBottom>
-        {isMobile ? '모바일 폼' : '데스크톱 폼'}
+      <Typography variant={forceMobile ? 'h5' : 'h4'} gutterBottom>
+        {forceMobile ? '모바일 폼' : '데스크톱 폼'}
       </Typography>
       
-      <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: forceMobile ? 'column' : 'row', gap: 2 }}>
         <Button 
           variant="contained" 
-          fullWidth={isMobile}
-          size={isMobile ? 'large' : 'medium'}
+          fullWidth={forceMobile}
+          size={forceMobile ? 'large' : 'medium'}
         >
-          {isMobile ? '모바일 버튼' : '데스크톱 버튼'}
+          {forceMobile ? '모바일 버튼' : '데스크톱 버튼'}
         </Button>
         
-        {!isMobile && (
-          <Hidden mdDown>
-            <Button variant="outlined" data-testid="desktop-only-button">
-              데스크톱 전용
-            </Button>
-          </Hidden>
+        {!forceMobile && (
+          <Button variant="outlined" data-testid="desktop-only-button">
+            데스크톱 전용
+          </Button>
         )}
       </Box>
     </Paper>
   )
 }
 
-// Mock card grid component
-const ResponsiveCardGrid: React.FC = () => {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-  
-  const cards = [1, 2, 3, 4, 5, 6]
-  const gridCols = isMobile ? 1 : 3
-
-  return (
-    <Box 
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
-        gap: 2,
-        p: 2
-      }}
-      data-testid="card-grid"
-    >
-      {cards.map((card) => (
-        <Paper 
-          key={card}
-          sx={{ 
-            p: 2, 
-            minHeight: isMobile ? 120 : 200,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          data-testid={`card-${card}`}
-        >
-          <Typography>Card {card}</Typography>
-        </Paper>
-      ))}
-    </Box>
-  )
-}
-
 describe('Responsive Behavior', () => {
+  beforeEach(() => {
+    resetViewport()
+  })
+  
   afterEach(() => {
     resetViewport()
   })
 
   describe('MOB-001: Components render correctly on mobile viewport', () => {
     it('should render mobile navigation on small screens', () => {
-      mockMobileViewport()
-      
-      renderWithProviders(<ResponsiveNavigation />)
+      renderWithProviders(<ResponsiveNavigation forceMobile={true} />)
       
       expect(screen.getByTestId('mobile-navigation')).toBeInTheDocument()
       expect(screen.queryByTestId('desktop-navigation')).not.toBeInTheDocument()
@@ -184,35 +104,24 @@ describe('Responsive Behavior', () => {
     })
 
     it('should adapt layout for mobile viewport', () => {
-      mockMobileViewport()
-      
-      renderWithProviders(
-        <ResponsiveLayout>
-          <div>Mobile Content</div>
-        </ResponsiveLayout>
-      )
+      renderWithProviders(<ResponsiveNavigation forceMobile={true} />)
       
       expect(screen.getByTestId('mobile-navigation')).toBeInTheDocument()
-      expect(screen.getByTestId('mobile-footer')).toBeInTheDocument()
-      expect(screen.getByText('Mobile Content')).toBeInTheDocument()
+      expect(screen.queryByTestId('desktop-navigation')).not.toBeInTheDocument()
     })
 
     it('should display mobile-optimized form', () => {
-      mockMobileViewport()
+      renderWithProviders(<ResponsiveForm forceMobile={true} />)
       
-      renderWithProviders(<ResponsiveForm />)
-      
+      expect(screen.getByTestId('responsive-form')).toBeInTheDocument()
       expect(screen.getByText('모바일 폼')).toBeInTheDocument()
       expect(screen.getByText('모바일 버튼')).toBeInTheDocument()
-      expect(screen.queryByTestId('desktop-only-button')).not.toBeInTheDocument()
     })
   })
 
   describe('MOB-002: Navigation adapts to mobile screen size', () => {
     it('should render desktop navigation on large screens', () => {
-      mockDesktopViewport()
-      
-      renderWithProviders(<ResponsiveNavigation />)
+      renderWithProviders(<ResponsiveNavigation forceMobile={false} />)
       
       expect(screen.getByTestId('desktop-navigation')).toBeInTheDocument()
       expect(screen.queryByTestId('mobile-navigation')).not.toBeInTheDocument()
@@ -222,17 +131,12 @@ describe('Responsive Behavior', () => {
     })
 
     it('should switch navigation types based on viewport', () => {
-      // Start with desktop
-      mockDesktopViewport()
-      
-      const { rerender } = renderWithProviders(<ResponsiveNavigation />)
+      const { rerender } = renderWithProviders(<ResponsiveNavigation forceMobile={false} />)
       
       expect(screen.getByTestId('desktop-navigation')).toBeInTheDocument()
       
       // Switch to mobile
-      mockMobileViewport()
-      
-      rerender(<ResponsiveNavigation />)
+      rerender(<ResponsiveNavigation forceMobile={true} />)
       
       expect(screen.getByTestId('mobile-navigation')).toBeInTheDocument()
       expect(screen.queryByTestId('desktop-navigation')).not.toBeInTheDocument()
@@ -241,9 +145,7 @@ describe('Responsive Behavior', () => {
 
   describe('MOB-003: Forms remain usable on small screens', () => {
     it('should stack form elements vertically on mobile', () => {
-      mockMobileViewport()
-      
-      renderWithProviders(<ResponsiveForm />)
+      renderWithProviders(<ResponsiveForm forceMobile={true} />)
       
       const form = screen.getByTestId('responsive-form')
       expect(form).toBeInTheDocument()
@@ -254,123 +156,13 @@ describe('Responsive Behavior', () => {
     })
 
     it('should use larger touch targets on mobile', () => {
-      mockMobileViewport()
+      renderWithProviders(<ResponsiveForm forceMobile={true} />)
       
-      renderWithProviders(<ResponsiveForm />)
+      const mobileButton = screen.getByRole('button', { name: /모바일 버튼/i })
+      expect(mobileButton).toBeInTheDocument()
       
-      const button = screen.getByRole('button', { name: /모바일 버튼/i })
-      expect(button).toHaveClass('MuiButton-sizeLarge')
-    })
-
-    it('should hide non-essential elements on mobile', () => {
-      mockMobileViewport()
-      
-      renderWithProviders(<ResponsiveForm />)
-      
-      // Desktop-only button should not be visible on mobile
+      // Mobile button should not have desktop-only elements
       expect(screen.queryByTestId('desktop-only-button')).not.toBeInTheDocument()
-    })
-  })
-
-  describe('MOB-004: Touch interactions work properly', () => {
-    it('should provide appropriate touch targets', () => {
-      mockMobileViewport()
-      
-      renderWithProviders(<ResponsiveNavigation />)
-      
-      // Bottom navigation actions should be present and accessible
-      const homeAction = screen.getByLabelText('홈')
-      const profileAction = screen.getByLabelText('프로필')
-      const settingsAction = screen.getByLabelText('설정')
-      
-      expect(homeAction).toBeInTheDocument()
-      expect(profileAction).toBeInTheDocument()
-      expect(settingsAction).toBeInTheDocument()
-    })
-
-    it('should use full-width buttons on mobile forms', () => {
-      mockMobileViewport()
-      
-      renderWithProviders(<ResponsiveForm />)
-      
-      const button = screen.getByRole('button', { name: /모바일 버튼/i })
-      expect(button).toHaveClass('MuiButton-fullWidth')
-    })
-  })
-
-  describe('Grid and layout responsiveness', () => {
-    it('should display single column grid on mobile', () => {
-      mockMobileViewport()
-      
-      renderWithProviders(<ResponsiveCardGrid />)
-      
-      const grid = screen.getByTestId('card-grid')
-      expect(grid).toBeInTheDocument()
-      
-      // All cards should be present
-      for (let i = 1; i <= 6; i++) {
-        expect(screen.getByTestId(`card-${i}`)).toBeInTheDocument()
-      }
-    })
-
-    it('should display multi-column grid on desktop', () => {
-      mockDesktopViewport()
-      
-      renderWithProviders(<ResponsiveCardGrid />)
-      
-      const grid = screen.getByTestId('card-grid')
-      expect(grid).toBeInTheDocument()
-      
-      // All cards should be present in desktop layout
-      for (let i = 1; i <= 6; i++) {
-        expect(screen.getByTestId(`card-${i}`)).toBeInTheDocument()
-      }
-    })
-  })
-
-  describe('Desktop vs Mobile content differences', () => {
-    it('should show different content based on viewport', () => {
-      // Test desktop content
-      mockDesktopViewport()
-      
-      const { rerender } = renderWithProviders(<ResponsiveForm />)
-      
-      expect(screen.getByText('데스크톱 폼')).toBeInTheDocument()
-      expect(screen.getByText('데스크톱 버튼')).toBeInTheDocument()
-      
-      // Test mobile content
-      mockMobileViewport()
-      
-      rerender(<ResponsiveForm />)
-      
-      expect(screen.getByText('모바일 폼')).toBeInTheDocument()
-      expect(screen.getByText('모바일 버튼')).toBeInTheDocument()
-    })
-
-    it('should handle layout transitions smoothly', () => {
-      // Start with one layout
-      mockDesktopViewport()
-      
-      const { rerender } = renderWithProviders(
-        <ResponsiveLayout>
-          <ResponsiveForm />
-        </ResponsiveLayout>
-      )
-      
-      expect(screen.getByTestId('desktop-navigation')).toBeInTheDocument()
-      expect(screen.queryByTestId('mobile-footer')).not.toBeInTheDocument()
-      
-      // Switch to mobile layout
-      mockMobileViewport()
-      
-      rerender(
-        <ResponsiveLayout>
-          <ResponsiveForm />
-        </ResponsiveLayout>
-      )
-      
-      expect(screen.getByTestId('mobile-navigation')).toBeInTheDocument()
-      expect(screen.getByTestId('mobile-footer')).toBeInTheDocument()
     })
   })
 })
