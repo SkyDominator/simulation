@@ -50,7 +50,7 @@ Here is the live environment:
     * Backend is served on a Windows local machine (MSI Notebook, 24 hours running, 8000 port).
     * No CI/CD pipelines are set up yet.
 
-## Project instructions
+## Project details
 
 These notes help AI coding agents work effectively in this repo. Keep edits small, follow the patterns below, and verify with quick runs.
 
