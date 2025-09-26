@@ -1,6 +1,10 @@
 # Test Plan – Frontend E2E Tests (Concrete v1.0)
 
+**⚠️ STATUS: NOT YET IMPLEMENTED - E2E infrastructure not yet set up**
+
 This covers end-to-end testing for main user flows and core business features using Playwright. Tests the complete user journey from authentication through simulation management.
+
+**Current State**: Playwright is not installed and no E2E test infrastructure exists. This plan serves as a roadmap for future E2E implementation.
 
 Target: Critical user paths through the entire application stack, testing frontend + backend integration with real browser automation.
 
@@ -93,10 +97,28 @@ Target: Critical user paths through the entire application stack, testing fronte
   * E2E-028: Service worker caches static resources
 
 --------------------------------------------------------------------------------
-3. Test Infrastructure & Configuration
+3. Test Infrastructure & Configuration  
 --------------------------------------------------------------------------------
 
-3.1 Playwright Configuration (playwright.config.ts)
+**⚠️ INFRASTRUCTURE STATUS: NOT IMPLEMENTED**
+
+The following configuration and setup is provided as a reference for when E2E testing infrastructure is implemented.
+
+3.1 Required Dependencies (package.json additions)
+```json
+{
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  },
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug"
+  }
+}
+```
+
+3.2 Playwright Configuration (playwright.config.ts)
 ```typescript
 import { defineConfig, devices } from '@playwright/test'
 
@@ -655,19 +677,35 @@ Test descriptions: `{user action} should {expected outcome}`
 **Total: 28 test cases**
 
 --------------------------------------------------------------------------------
-10. Next Steps After Plan Approval
+10. Implementation Prerequisites (REQUIRED SETUP)
 --------------------------------------------------------------------------------
 
-1. Set up Playwright configuration and test environment
-2. Create test utilities and helper functions
-3. Implement user onboarding flow tests
-4. Add simulation management flow tests
-5. Create mobile responsiveness tests
-6. Implement PWA feature tests
-7. Add error handling and edge case tests
-8. Set up CI/CD integration
-9. Create test data management system
-10. Generate comprehensive test reports
+**⚠️ Before implementing this plan, the following setup is required:**
+
+1. **Install Playwright**: `npm install --save-dev @playwright/test`
+2. **Initialize Playwright**: `npx playwright install`
+3. **Create E2E directory structure**:
+   ```
+   e2e/
+   ├── playwright.config.ts
+   ├── utils/
+   ├── fixtures/
+   └── specs/
+   ```
+4. **Set up test environment configuration**
+5. **Create base test utilities and page objects**
+
+**Current Status**: ❌ None of the above prerequisites are met
+
+**Estimated Setup Time**: 2-3 days for initial infrastructure
+
+**Next Steps After Setup**:
+1. Implement user onboarding flow tests
+2. Add simulation management flow tests  
+3. Create mobile responsiveness tests
+4. Implement PWA feature tests
+5. Add error handling and edge case tests
+6. Set up CI/CD integration
 
 --------------------------------------------------------------------------------
 11. Risks & Mitigations
