@@ -66,7 +66,7 @@ Out-of-scope (deferred):
 | OS | Windows 11 |
 | IDE | Visual Studio Code |
 | Browser | Google Chrome (1920x1080) |
-| Device | Desktop (LG Gram Notebook) |
+| Device | Desktop |
 | Python | 3.11.6 or later (backend runtime; container may pin 3.12 in future) |
 | TypeScript | 5.8.3 or later |
 | React | 19.1.0 or later |
@@ -364,7 +364,6 @@ All plans share common structure with the following parameters:
 
 **Plan B** (max_investor_count: 15):
 - Same parameters as Plan A
-- max_bonus: 30000000
 
 **Plan C** (max_investor_count: 15):
 - Same min_payment structure as Plans A & B
@@ -425,7 +424,7 @@ All plans share common structure with the following parameters:
 - **Performance**: API endpoints < 500ms for typical operations; simulation run < 2s for common inputs
 - **Availability**: Health endpoint surfaces dependency issues; tolerate transient Supabase failures gracefully
 - **Security**: JWT validation via JWKS; admin checks via admins table. No secrets in frontend code
-- **Rate limiting**: OTP send limited (3 per 15-min); attempts per code limited (3 attempts)
+- **Rate limiting**: OTP send limited (3 per 15-min); attempts per code limited (6 attempts)
 - **PWA**: Installable manifest and icons; service worker via vite-plugin-pwa (basic)
 
 ---
@@ -910,7 +909,7 @@ ADD COLUMN mandatory BOOLEAN DEFAULT true;
 
 - **Health Endpoint**: Tracks Supabase latency and availability
 - **Client-side Telemetry**: Error rates, page load times via browser performance APIs
-- **Rate Limiting**: OTP endpoints protected (3/15min send, 3 attempts per code)
+- **Rate Limiting**: OTP endpoints protected (3/15min send, 6 attempts per code)
 
 **Scaling Thresholds**:
 
