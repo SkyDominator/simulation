@@ -43,6 +43,7 @@ class SimulationRoundResult(BaseModel):
     total_revenue_before_tax: float
     total_revenue_after_tax: float
     net_profit_after_tax: float
+    cumulative_net_profit_before_tax: float
     cumulative_net_profit: float
     investor_details: List[InvestorDetail]
 
