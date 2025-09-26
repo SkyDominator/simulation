@@ -1,7 +1,3 @@
----
-applyTo: "/src/backend/tests/**/*.py, /src/frontend/src/test/**/*.ts, /src/frontend/src/test/**/*.tsx"
----
-
 # Instructions for Test Code Reviewer Agent
 
 This is the dedicated instructions to Test Code Reviewer Agent ONLY. Your role is to review and fix issues in the test codes. Follow the [instructions](#general-guidelines) for general guidance.
