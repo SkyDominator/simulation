@@ -31,7 +31,7 @@ interface ProcessedRoundData {
   company_round: number;
   total_payment: number;
   total_revenue_before_tax: number;
-  net_profit_after_tax: number;
+  net_profit_before_tax: number;
   investor_details: InvestorDetail[]; // raw details for cell-level rendering
 }
 
@@ -60,14 +60,13 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
         company_round: round.company_round as number,
         total_payment: round.total_payment as number,
         total_revenue_before_tax: round.total_revenue_before_tax as number,
-        net_profit_after_tax: round.net_profit_after_tax as number,
+        net_profit_before_tax: round.net_profit_before_tax as number,
         investor_details: [],
       };
 
       // Process investor details if available
       if (round.investor_details && Array.isArray(round.investor_details)) {
-        roundData.investor_details =
-          round.investor_details as InvestorDetail[];
+        roundData.investor_details = round.investor_details as InvestorDetail[];
       }
 
       data.push(roundData);
@@ -100,7 +99,7 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
     for (const round of processedData) {
       totalPayment += round.total_payment;
       totalRevenue += round.total_revenue_before_tax;
-      sumNetProfit += round.net_profit_after_tax; // Sum across all rounds
+      sumNetProfit += round.net_profit_before_tax; // Sum across all rounds
       for (const d of round.investor_details) {
         const key = Number(d.investor_start_round);
         totals[key] = (totals[key] || 0) + Number(d.revenue);
@@ -242,7 +241,7 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                         minWidth: "120px",
                       }}
                     >
-                      실납입(세후)
+                      실납입(세전)
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -358,7 +357,7 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                           fontWeight: 500,
                         }}
                       >
-                        {formatValue(round.net_profit_after_tax)}
+                        {formatValue(round.net_profit_before_tax)}
                       </TableCell>
                     </TableRow>
                   ))}

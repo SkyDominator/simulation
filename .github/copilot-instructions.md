@@ -8,7 +8,7 @@ This section describes the basic behavioral patterns that ALL AI coding assistan
 
 ### How to approach requested tasks
 
-1. DO NOT do anything but the tasks the user requested.
+1. DO NOT do anything but the tasks the user requested. Focus on the requested tasks ONLY. If you find any issues or improvements that can be made in addition to the requested tasks, raise questions to the user instead of doing them directly.
 2. Take a break and then do the given tasks. Take enough time to think about the tasks and plan how to do them before actually doing them.
 
 ### When to raise questions to user

@@ -770,7 +770,7 @@ class TestSimulationResultsStructure:
         required_fields = [
             'company_round', 'investor_count', 'total_payment',
             'total_revenue_before_tax', 'total_revenue_after_tax',
-            'net_profit_after_tax', 'cumulative_net_profit_before_tax', 'cumulative_net_profit',
+            'net_profit_before_tax', 'net_profit_after_tax', 'cumulative_net_profit_before_tax', 'cumulative_net_profit',
             'investor_details'
         ]
         
