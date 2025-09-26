@@ -345,9 +345,10 @@ src/
 
 ### Where to look first
 
-**Core Project File**:
-- **Software Specification Document**: `/.memo/CE/specs/SSD.md` - comprehensive overview of architecture, features, and requirements
-- **Schema Documentation**: `/.memo/CE/specs/schema/schema.md` - detailed database schema and RLS policies
+**Core Documentation**:
+- **Software Specification Document**: `.memo/CE/specs/SSD.md` - software specification document
+- **Database Schema**: `.memo/CE/specs/schema/schema.md` - complete table definitions and RLS policies
+- **Test Plans**: `.memo/CE/plans/test-code-v1/` - comprehensive testing strategy and implementation
 
 **Core Backend Files**:
 - **API Endpoints**: `src/backend/api/routes.py` (507+ lines) - all REST endpoints
@@ -367,12 +368,8 @@ src/
 - **Context**: `src/frontend/src/context/` - React context providers for state management
 - **API Services**: `src/frontend/src/services/` - backend API communication layer
 
-**Documentation & Schema**:
-- **Database Schema**: `.memo/CE/specs/schema/schema.md` - complete table definitions and RLS policies
-- **API Specification**: `.memo/CE/specs/SSD.md` - software specification document
-- **Test Plans**: `.memo/CE/plans/test-code-v1/` - comprehensive testing strategy and implementation
-
 If anything above seems off or you need deeper conventions (e.g., testing/mocking patterns), ask in PR or ping to refine these notes.
+
 ## Back-end Coding Guidelines
 
 Follow the general guidelines below when writing Python codes.
