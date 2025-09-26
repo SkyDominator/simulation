@@ -85,14 +85,40 @@
       "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
       "sourceMaps": true,
       "trace": true,
-      "runtimeArgs": [
-        "--remote-debugging-port=9222",
-        "--user-data-dir=${workspaceFolder}/.vscode/chrome-debug-profile",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--disable-extensions"
-      ],
-      "port": 9222
+    "runtimeArgs": [
+      "--remote-debugging-port=9222",
+      "--user-data-dir=${workspaceFolder}/.vscode/chrome-debug-profile",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--disable-extensions"
+    ],
+    "port": 9222
+    },
+    {
+        "name": "Frontend Smoke Tests (debug)",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+        "args": ["run", "--reporter=json", "--reporter=verbose", "--coverage", "--outputFile=test_smoke_results.json"],
+        "cwd": "${workspaceFolder}/src/frontend",
+        "console": "integratedTerminal",
+        "skipFiles": ["<node_internals>/**"],
+        "env": {
+        "NODE_ENV": "test"
+        }
+    },
+    {
+        "name": "Frontend Smoke Tests",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+        "args": ["run", "--reporter=verbose", "--coverage"],
+        "cwd": "${workspaceFolder}/src/frontend",
+        "console": "integratedTerminal",
+        "skipFiles": ["<node_internals>/**"],
+        "env": {
+        "NODE_ENV": "test"
+        }
     },
     {
       "name": "Python: Single File Debug",
