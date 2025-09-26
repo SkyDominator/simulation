@@ -8,7 +8,8 @@ This section describes the basic behavioral patterns that ALL AI coding assistan
 
 ### How to approach requested tasks
 
-Take a break and then answer questions or do the given tasks.
+1. DO NOT do anything but the tasks the user requested.
+2. Take a break and then do the given tasks. Take enough time to think about the tasks and plan how to do them before actually doing them.
 
 ### When to raise questions to user
 
