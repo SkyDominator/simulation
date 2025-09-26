@@ -43,7 +43,7 @@ Here is the test environment:
     * No CI/CD pipelines are set up yet.
     * Testing framework: Pytest for backend, Vitest and Playwright for frontend.
     * Frontend is tested via Vite dev on a Windows local machine (some other notebook for development machine, 5173 port).
-    * Backend is tested with debugpy on a Windows local machine (some other notebook for development machine, 8000 port).
+    * Backend is tested with debugpy on a Windows local machine (some other notebook for development machine, 8001 port).
 
 ### App live environment
 
