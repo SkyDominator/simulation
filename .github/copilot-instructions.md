@@ -345,6 +345,10 @@ src/
 
 ### Where to look first
 
+**Core Project File**:
+- **Software Specification Document**: `/.memo/CE/specs/SSD.md` - comprehensive overview of architecture, features, and requirements
+- **Schema Documentation**: `/.memo/CE/specs/schema/schema.md` - detailed database schema and RLS policies
+
 **Core Backend Files**:
 - **API Endpoints**: `src/backend/api/routes.py` (507+ lines) - all REST endpoints
 - **Business Logic**: `src/backend/services/simulations.py` - simulation CRUD operations  
