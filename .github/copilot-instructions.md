@@ -2,6 +2,10 @@
 
 This file provides context and instructions for AI coding assistants to help them understand the project environment and structure, coding patterns, and conventions used in this repository. It is intended to improve the quality of code suggestions and completions.
 
+## Common instruction for all AI coding assistants (agents)
+
+* Take a break and then answer questions or do the given tasks.
+
 ## Project overview
 
 This app is a Progressive Web App (PWA) that provides financial simulation services. It consists of a backend built with FastAPI and a frontend built with React and TypeScript. The app uses Supabase for database, authentication, and storage. The app is designed to be responsive and works well on both desktop and mobile devices (but mobile first as described in later sessions).
