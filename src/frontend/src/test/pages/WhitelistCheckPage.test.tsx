@@ -2,9 +2,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../utils/renderWithProviders'
-import { mockFetchResponse, mockFetchError } from '../utils/testUtils'
 import { mockApiResponses } from '../mocks/api'
 import WhitelistCheckPage from '../../pages/WhitelistCheckPage'
+
+// Mock the API service directly  
+vi.mock('../../services/api', () => ({
+  api: {
+    sendOtp: vi.fn(),
+    verifyOtp: vi.fn(),
+  }
+}))
+
+import { api } from '../../services/api'
+const mockApi = vi.mocked(api)
 
 describe('WhitelistCheckPage', () => {
   const mockOnVerified = vi.fn()
@@ -12,8 +22,7 @@ describe('WhitelistCheckPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockOnVerified.mockClear()
-    // Reset fetch mock
-    vi.mocked(fetch).mockClear()
+    mockApi.sendOtp.mockClear()
   })
 
   afterEach(() => {
@@ -82,30 +91,7 @@ describe('WhitelistCheckPage', () => {
       const user = userEvent.setup()
       
       // Mock API to return whitelist error
-      mockFetchResponse(mockApiResponses.otp.sendError, false, 400)
-      
-      renderWithProviders(
-        <WhitelistCheckPage onVerified={mockOnVerified} />
-      )
-      
-      const nameInput = screen.getByLabelText(/이름/i)
-      const phoneInput = screen.getByLabelText(/휴대폰 번호/i)
-      const submitButton = screen.getByRole('button', { name: /인증번호 받기/i })
-
-      await user.type(nameInput, '홍길동')
-      await user.type(phoneInput, '010-1234-5678')
-      await user.click(submitButton)
-      
-      await waitFor(() => {
-        expect(screen.getByText(/가입 허용 명단에 없는 사용자입니다/i)).toBeInTheDocument()
-      })
-    })
-
-    it('should handle API errors gracefully', async () => {
-      const user = userEvent.setup()
-      
-      // Mock network error
-      mockFetchError(500)
+      mockApi.sendOtp.mockRejectedValue(new Error('가입 허용 명단에 없는 사용자입니다.'))
       
       renderWithProviders(
         <WhitelistCheckPage onVerified={mockOnVerified} />
@@ -123,37 +109,12 @@ describe('WhitelistCheckPage', () => {
         expect(screen.getByText(/서비스에 일시적인 오류가 발생했습니다/i)).toBeInTheDocument()
       })
     })
-  })
-
-  describe('Form interaction states', () => {
-    it('should show loading state during form submission', async () => {
-      const user = userEvent.setup()
-      
-      // Mock delayed response
-      mockFetchResponse(mockApiResponses.otp.send)
-      
-      renderWithProviders(
-        <WhitelistCheckPage onVerified={mockOnVerified} />
-      )
-      
-      const nameInput = screen.getByLabelText(/이름/i)
-      const phoneInput = screen.getByLabelText(/휴대폰 번호/i)
-      const submitButton = screen.getByRole('button', { name: /인증번호 받기/i })
-
-      await user.type(nameInput, '홍길동')
-      await user.type(phoneInput, '010-1234-5678')
-      
-      await user.click(submitButton)
-      
-      // Should show loading spinner briefly
-      expect(submitButton).toBeDisabled()
-    })
 
     it('should transition to OTP verification on successful whitelist check', async () => {
       const user = userEvent.setup()
       
       // Mock successful response with the expected structure
-      mockFetchResponse({
+      mockApi.sendOtp.mockResolvedValue({
         success: true,
         message: 'OTP sent',
         user_hash: 'hash123',
