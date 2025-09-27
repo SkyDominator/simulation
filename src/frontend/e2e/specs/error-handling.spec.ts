@@ -154,7 +154,7 @@ test.describe('Error Handling & Edge Cases', () => {
     // Mock slow API response (timeout scenario)
     await page.route('**/api/simulation/run', async route => {
       // Simulate timeout by delaying response beyond expected timeout
-      await new Promise(resolve => setTimeout(resolve, 20000))
+      await new Promise(resolve => setTimeout(resolve, 5000))
       await route.fulfill({
         status: 408,
         contentType: 'application/json',
