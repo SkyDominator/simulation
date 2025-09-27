@@ -1,4 +1,4 @@
-## Project details
+## Technical Specification
 
 Keep edits small, follow the patterns below, and verify with quick runs.
 
