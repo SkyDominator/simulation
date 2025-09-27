@@ -88,6 +88,20 @@ export class TestHelpers {
       return false
     }
   }
+
+  /**
+   * Wait for main page to load
+   */
+  async waitForMainPage() {
+    await expect(this.page.locator('text=내 시뮬레이션')).toBeVisible({ timeout: 10000 })
+  }
+
+  /**
+   * Click create simulation button
+   */
+  async clickCreateSimulation() {
+    await this.page.getByRole('button', { name: '새 시뮬레이션' }).click()
+  }
 }
 
 /**
