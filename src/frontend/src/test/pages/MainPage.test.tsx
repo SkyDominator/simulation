@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../utils/renderWithProviders'
-import { mockApiResponses } from '../mocks/api'
 import MainPage from '../../pages/MainPage'
 
 // Mock the entire API service with factory function
@@ -186,7 +185,7 @@ describe('MainPage', () => {
 
   describe('MAIN-004: AppController manages page navigation', () => {
     it('should render navigation elements', async () => {
-      mockFetchResponse([])
+      mockApi.getSimulations.mockResolvedValue([])
       
       renderWithProviders(<MainPage {...defaultProps} />)
       
@@ -198,7 +197,7 @@ describe('MainPage', () => {
 
     it('should navigate to plan editor on create button click', async () => {
       const user = userEvent.setup()
-      mockFetchResponse([])
+      mockApi.getSimulations.mockResolvedValue([])
       
       renderWithProviders(<MainPage {...defaultProps} />)
       
@@ -214,7 +213,7 @@ describe('MainPage', () => {
 
   describe('MAIN-005: Notice modal opens and closes correctly', () => {
     it('should show notice button when notices are available', async () => {
-      mockFetchResponse([])
+      mockApi.getSimulations.mockResolvedValue([])
       
       // Provide openNotice prop to enable notice button
       const propsWithNotice = { ...defaultProps, openNotice: mockOpenNotice }
@@ -227,7 +226,7 @@ describe('MainPage', () => {
 
     it('should call openNotice callback on button click', async () => {
       const user = userEvent.setup()
-      mockFetchResponse([])
+      mockApi.getSimulations.mockResolvedValue([])
       
       const propsWithNotice = { ...defaultProps, openNotice: mockOpenNotice }
       renderWithProviders(<MainPage {...propsWithNotice} />)
