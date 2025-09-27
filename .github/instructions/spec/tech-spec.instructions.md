@@ -1,5 +1,5 @@
 ---
-applyTo: "/src/backend/**, /src/frontend/**, /.github/prompts/plans/**"
+applyTo: "/src/backend/**/*.py, /src/frontend/**/*.tsx, /src/frontend/**/*.ts, /src/frontend/**/*.js, /docs/plans/**/*.md"
 ---
 
 ## Technical Specification
