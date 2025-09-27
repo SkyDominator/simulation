@@ -84,3 +84,7 @@ lerna-debug.log*
 src/frontend/dist/
 src/frontend/dist-ssr/
 *.local
+
+# ignore test code results
+playwright-report/
+test-results/
