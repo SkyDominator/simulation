@@ -359,7 +359,14 @@ test.describe('Responsive Design Cross-Viewport Tests', () => {
     await expect(simulationCard).toHaveClass(/selected/)
     
     // Test long press for context menu
-    await simulationCard.tap({ timeout: 1000 })
+    const box = await simulationCard.boundingBox()
+    if (box) {
+      const x = box.x + box.width / 2
+      const y = box.y + box.height / 2
+      await page.touchscreen.down(x, y)
+      await page.waitForTimeout(1000)
+      await page.touchscreen.up()
+    }
     
     // Should show context menu on tablets
     await expect(page.locator('[data-testid="context-menu"]')).toBeVisible()
