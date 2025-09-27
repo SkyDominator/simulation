@@ -1,6 +1,6 @@
 # Basic behavioral patterns for ALL AI coding assistants (agents)
 
-This page describes the basic behavioral patterns that ALL AI coding assistants (agents) should follow when working in this repository.
+ALWAYS FOLLOW the basic behavioral patterns described below when doing tasks.
 
 ## How to approach requested tasks
 

@@ -1,6 +1,6 @@
 ## Back-end Coding Guidelines
 
-Follow the general guidelines below when writing Python codes.
+ALWAYS FOLLOW the general guidelines below when writing Python codes.
 
 ### General Guidelines
 

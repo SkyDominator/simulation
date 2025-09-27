@@ -2,6 +2,8 @@
 
 This file provides instructions and context for AI coding assistants to help them behave right, and understand the project itself, coding patterns & conventions used in this repository. It is intended to improve the quality of code suggestions and completions.
 
+**MANDATORY**: ALWAYS CONSULT the linked markdown files in the rest of this document below before any task. DO NOT MAKE ANY ASSUMPTIONS without checking these files first.
+
 ## Basic behavioral patterns for ALL AI coding assistants (agents)
 
 See [AGENTS](docs/instructions/agents.md).
@@ -61,7 +63,7 @@ Here is the live environment:
 
 ## Project details
 
-For the project details, refer to the [project details](docs/instructions/project-details.md).
+For the details including architecture, features, configurations, codebase, etc., refer to the [project details](docs/instructions/project-details.md).
 
 ## Back-end Coding Guidelines
 

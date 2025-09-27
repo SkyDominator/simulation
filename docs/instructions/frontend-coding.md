@@ -1,6 +1,6 @@
 ## Front-end Coding Guidelines
 
-Follow the guidelines below when writing React, TypeScript, and JavaScript code for this PWA application.
+ALWAYS FOLLOW the guidelines below when writing React, TypeScript, and JavaScript code for this PWA application.
 
 ### Core Principles of React Coding
 

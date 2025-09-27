@@ -1,6 +1,6 @@
 ## Project details
 
-These notes help AI coding agents work effectively in this repo. Keep edits small, follow the patterns below, and verify with quick runs.
+Keep edits small, follow the patterns below, and verify with quick runs. ALWAYS CONSULT this document and the Software Specification Document (`.memo/CE/specs/SSD.md`) before any task.
 
 ### Architecture at a glance
 
