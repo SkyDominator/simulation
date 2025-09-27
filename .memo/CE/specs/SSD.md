@@ -1,7 +1,7 @@
 # Partners Club Simulation – Software Specification Document (SSD)
 
 Version: 0.2.1 (Updated for Implementation Consistency)  
-Date: 2025-01-20  
+Date: 2025-09-27  
 Status: Draft (updated to reflect current implementation)  
 Owners: Product, Engineering (Backend/Frontend)
 
