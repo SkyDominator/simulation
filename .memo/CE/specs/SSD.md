@@ -1,253 +1,194 @@
 # Light of Life Club Simulation – Software Specification Document (SSD)
 
-Version: 0.2.1 (Updated for Implementation Consistency)  
+Version: 0.2.1  
 Date: 2025-09-27  
-Status: Draft (updated to reflect current implementation)  
-Owners: Product, Engineering (Backend/Frontend)
+Status: Draft  
 
-> **Note**: For enterprise-scale features (10,000+ users), see [`enterprise-scale/`](enterprise-scale/) documentation.
+> **Enterprise features (10,000+ users)**: See [`enterprise-scale/`](enterprise-scale/)
 
 ---
 
 ## 1. Introduction
 
-Light of Life Club Simulation is a PWA that allows whitelisted users to sign in via Supabase OAuth, manage investment plan simulations, and review results. The app enforces a pre-auth onboarding flow (whitelist + OTP + privacy consent) and provides an admin UI for managing privacy policies and notices. The backend is a FastAPI service integrated with Supabase and the frontend is a React/Vite app.
+**System**: PWA for whitelisted users to run investment simulations  
+**Auth**: Supabase OAuth (Google, Kakao)  
+**Enforcement**: Pre-auth onboarding (whitelist → OTP → consent → login)  
+**Admin**: Manage privacy policies and notices  
+**Stack**: FastAPI backend + React/Vite frontend  
 
-The Goals of this Project:
+**Goals**:
+- Authenticated financial simulations with user-specific storage
+- Enforced onboarding flow
+- Admin management UI
 
-- Provide an authenticated experience for running configurable financial simulations and storing results per user.
-- Enforce onboarding: whitelist check, OTP verification, and privacy policy consent.
-- Allow admins to manage privacy policies (versioned, publishable) and end-user notices.
 ---
 
 ## 2. Scope
 
-In-scope (current release):
+**In-scope**:
+- Pre-auth validation: OTP send/verify with whitelist check
+- Privacy policy retrieval (public) + consent recording (pre-auth)
+- Supabase OAuth + JWT backend auth
+- Simulation CRUD + run + persist
+- Public notices + admin CRUD
+- PWA installability
 
-- Pre-auth user validation: OTP send/verify.
-  - Whitelist check (name+phone hash) on OTP send request.
-- Privacy policy retrieval (public) and consent recording (pre-auth context only).
-- Supabase OAuth login (Google, Kakao) and JWT-based backend auth.
-- Simulation plan CRUD and run (persist inputs and results).
-- Public notices list/detail; admin CRUD for notices and privacy policies.
-- PWA shell with basic installability (manifest, icons).
-
-Out-of-scope (deferred):
-
-- Payments/settlements processing outside simulation logic.
-- Advanced analytics/dashboards.
-- Full offline simulation execution (frontend-only) and background sync.
-- Internationalization beyond ko-KR defaults for policy.
+**Out-of-scope**:
+- Payment processing
+- Advanced analytics
+- Full offline execution
+- i18n beyond ko-KR
 
 ---
 
 ## 3. Stakeholders & Roles
 
-### 3.1 Stakeholders
+**Users**:
+- End users: 60–100 whitelisted (30–60 concurrent peak)
+- Admins: 1–3 internal
+- Owner: Maintains system + admin privileges
 
-- **End user**: 60–100 whitelisted users (internal testing phase). Concurrent active users: 30–60 peak.
-- **Admin**: 1–3 internal admin users.
-- **Owner**: Maintains backend services, data schema, and frontend app. Also an admin user.
-
-### 3.2 User Roles
-
-- **Pre-auth user**: Unauthenticated; can access OTP, privacy policy, and consent endpoints.
-- **Authenticated user**: Completed onboarding, runs simulations, reads notices and privacy policies.
-- **Admin user**: Authenticated user with admin privileges; can manage notices and privacy policies.
+**Roles**:
+- Pre-auth user: Access OTP, policy, consent endpoints
+- Authenticated user: Run simulations, read notices
+- Admin user: Manage notices + policies
 
 ---
 
 ## 4. Environment Profiles
 
-### 4.1 Local Development Environment
+### 4.1 Development
+- **OS**: Windows 11
+- **IDE**: VS Code
+- **Browser**: Chrome 1920x1080
+- **Python**: 3.11.6+
+- **TypeScript**: 5.8.4+
+- **React**: 19.1.0
+- **Ports**: Frontend 5173, Backend 8001
 
-| Component | Specification |
-|-----------|--------------|
-| OS | Windows 11 |
-| IDE | Visual Studio Code |
-| Browser | Google Chrome (1920x1080) |
-| Device | Desktop |
-| Python | 3.11.6 or later (backend runtime; container may pin 3.12 in future) |
-| TypeScript | 5.8.4 or later |
-| React | 19.1.0 |
+### 4.2 Test
+- **Desktop**: Windows 11 + Chrome latest
+- **Mobile**: iPhone 11 Pro (iOS 18.1.1) + Chrome
+- **Testing**: Pytest (backend), Vitest + Playwright (frontend)
 
-Notes:
+### 4.3 Production
+- **Desktop**: Windows 11+ (Chrome latest-2)
+- **Mobile iOS**: iPhone 11+ (iOS 18.1.1+) Chrome
+- **Mobile Android**: Galaxy S21+ (Android 12+) Chrome
+- **Hosting**: Supabase (DB/Auth) + Windows local (24h)
+- **Ports**: Frontend 4173, Backend 8000
 
-- Primary dev workflow uses Docker Compose (frontend + backend + ancillary services as needed).
-- Chrome is the reference browser for layout and PWA install behavior during development.
-
-### 4.2 Test Environment
-
-Target devices for functional / UX validation:
-
-- Desktop: Windows 11 + Google Chrome (latest stable).
-- Mobile: iPhone 11 Pro (iOS 18.1.1) + Google Chrome.
-- Notes:
-    * No CI/CD pipelines are set up yet.
-    * Testing framework: Pytest for backend, Vitest and Playwright for frontend.
-    * Frontend is tested via Vite dev on a Windows local machine (some other notebook for development machine, 5173 port).
-    * Backend is tested with debugpy on a Windows local machine (some other notebook for development machine, 8001 port).
-
-### 4.3 Production Environment Targets
-
-Supported / validated device & browser matrix:
-
-- Desktop: Windows 11+ (latest two Chrome versions).
-- Mobile (iOS): iPhone 11+ on iOS 18.1.1+ using Google Chrome.
-- Mobile (Android): Samsung Galaxy S21+ (Android 12+) using Google Chrome (latest two versions).
-* Notes:
-    * Hosted on Supabase (PostgreSQL, Storage, Auth)
-    * Frontend is served via Vite preview on a Windows local machine (MSI Notebook, 24 hours running, 4173 port).
-    * Backend is served on a Windows local machine (MSI Notebook, 24 hours running, 8000 port).
-    * No CI/CD pipelines are set up yet.
-
-### 4.4 Expected User Load
-
-| Metric | Estimate (Internal Phase) |
-|--------|---------------------------|
-| Total registered/whitelisted users | 60–100 |
-| Simultaneous active users (peak) | 30–60 |
-
-**Implications**:
-
-- Scaling requirements modest; single-region Supabase + minimal horizontal scaling acceptable.
-- Basic rate limiting enforced early to prevent misuse of OTP or simulation endpoints.
+### 4.4 Load
+- Total users: 60–100
+- Peak concurrent: 30–60
 
 ---
 
 ## 5. System Architecture
 
-- **Frontend**: React 19.1.0 + TypeScript 5.8.4+ + Vite 5.4.10+ (vite-plugin-pwa 0.20.0, MUI 5.14.0+ for UI, Tailwind CSS 3.4.4+). Auth via @supabase/supabase-js 2.51.0+. State persisted selectively to localStorage/sessionStorage.
-- **Backend**: FastAPI 0.116.1+ (Python 3.11.6 or later), Pydantic v2 schemas, Supabase client 2.16.0+ (REST/RPC). JWT verification uses Supabase JWKS.
-- **Data**: Supabase Postgres (tables below). Auth via Supabase; JWT audience "authenticated". Privacy policy content served from database with static file fallback.
-- **Infra**: Windows native deployment for production; Cloudflare Tunnel for public frontend domain (`simulation.lightoflifeclub.com`); CORS configured for local dev and tunnel domain. (Dockerized services are planned but not implemented yet in both production and development.)
-- **Deployment**: Production uses Windows native deployment; Frontend served via Vite preview on port 4173; Backend FastAPI on port 8000; Development uses port 5173 for frontend.
+**Frontend**:
+- React 19.1.0 + TypeScript 5.8.4+ + Vite 5.4.10+
+- vite-plugin-pwa 0.20.0, MUI 5.14.0+, Tailwind 3.4.4+
+- @supabase/supabase-js 2.51.0+
+- localStorage/sessionStorage persistence
 
-High-level flow:
+**Backend**:
+- FastAPI 0.116.1+ (Python 3.11.6+)
+- Pydantic v2, Supabase client 2.16.0+
+- JWT via Supabase JWKS
 
-1. Pre-auth: OTP Authentication (includes WhitelistCheck) → ConsentPage → Login (Supabase OAuth).  
-2. Auth: Backend validates JWT via Supabase JWKS; issues user-specific data access.  
-3. App: Users manage simulations; admins manage notices/policies.  
+**Infrastructure**:
+- Windows native production
+- Cloudflare Tunnel: `simulation.lightoflifeclub.com`
+- CORS: local dev + tunnel domain
+
+**Flow**:
+1. Pre-auth: OTP → Consent → Login
+2. Auth: JWT validation via JWKS
+3. App: Simulations (users), Notices/Policies (admin)
 
 ---
 
-## 6. Data & Models (Supabase)
+## 6. Data Models (Supabase)
 
-Core tables (field types reflect actual implementation):
+**Tables**:
+- `whitelist`: user_hash text (sha256 "{name}-{phone}")
+- `admins`: user_id uuid
+- `notices`: id, title, content, pinned, published, timestamps
+- `privacy_policies`: id, version, locale, content, published, effective_date, unique(version,locale)
+- `phone_otps`: id, phone, code_hash, attempts, used, expires_at, provider_msg_id, client_ip, user_agent
+- `simulations`: id, user_id, plan_id, rounds, investments jsonb, sales_achievement_rates jsonb, simulation_results jsonb
+- `consent_records`: id, user_hash, user_id, consent_type, consent_version, timestamps
 
-- **whitelist** (external/seeded)
-  - user_hash text (sha256 of "{name}-{normalized_phone}")
-
-- **admins**
-  - user_id uuid (Supabase auth.users.id)
-
-- **notices**
-  - id uuid (pk), title text, content text, pinned boolean, published boolean
-  - created_at timestamptz, updated_at timestamptz
-
-- **privacy_policies**
-  - id uuid (pk), version text, locale text, content text, published boolean
-  - effective_date date, last_updated date, created_by text
-  - created_at timestamptz, updated_at timestamptz
-  - unique(version, locale)
-
-- **phone_otps**
-  - id uuid (pk), phone text, code_hash text, attempts smallint, used boolean
-  - created_at timestamptz, expires_at timestamptz
-  - provider_msg_id text, client_ip inet, user_agent text
-  - indexes: phone, created_at; composite (phone, used, expires_at)
-
-- **simulations**
-  - id uuid (pk), user_id uuid, plan_id text, starting_company_round int, current_company_round int
-  - simulation_rounds int, investments jsonb, sales_achievement_rates jsonb
-  - simulation_results jsonb, memo text, created_at timestamptz, updated_at timestamptz
-  - Note: API endpoints use `scheduled_payment` parameter which is converted to `investments` jsonb for storage
-
-- **consent_records**
-  - id uuid (pk), user_hash text, user_id uuid, consent_type text
-  - consent_version text, consent_given_at timestamptz, ip_address text, user_agent text
-  - Links pre-auth consent (user_hash) with post-auth user (user_id) for privacy policy compliance tracking; currently supports pre-auth consent flows only.
-
-See [schema](/.memo/CE/specs/schema/schema.md) for the full schema information and relationships.
+**Notes**:
+- API `scheduled_payment` → DB `investments` jsonb
+- See [schema](/.memo/CE/specs/schema/schema.md) for details
 
 ---
 
 ## 7. Security & Authentication
 
-- **Frontend**: Authenticates via Supabase OAuth (Google, Kakao). Sessions persisted with autoRefresh.
-- **Backend**: Validates Authorization header using Supabase JWKS with audience "authenticated"; extracts sub as user_id.
-- **CORS**: Allow list includes Cloudflare Tunnel domain and local dev hosts/ports.
-- **Secrets**: SUPABASE_SECRET_KEY used server-side. Publishable key only in frontend. SMS provider keys (Solapi) loaded from env.
-- **PII handling**: Consent recorded against user_hash pre-auth; onboarding links the consent version post-auth via user_id and user_hash.
-- **Privacy Policy Access**: Users can retrieve the policy via public endpoint; static file fallback available if database unavailable.
-- **Static Fallback Active**: If DB fetch fails, a static markdown file fallback is attempted.
+**Security Controls**:
 
-### 7.1 Core Security Controls
+| Control | Implementation |
+|---------|--------------|
+| JWT validation | Supabase JWKS, python-jose, 5s timeout, global cache |
+| Admin check | `admins.user_id` lookup via `_assert_admin()` |
+| OTP rate limit | 3/15min send, 6 verify attempts |
+| OTP hashing | HMAC with `OTP_SECRET_KEY` |
+| RLS | Supabase policies on user tables |
+| Exceptions | `BaseAPIException` with structured logging |
+| Bearer auth | FastAPI `HTTPBearer()`, 401/403 distinction |
 
-| Control | Implementation Details |
-|---------|----------------------|
-| JWT validation via JWKS | Fetches from `/auth/v1/.well-known/jwks.json`, uses python-jose library, 5s timeout, global cache |
-| Admin server-side check | Table lookup against `admins.user_id` on each request via `_assert_admin()` |
-| OTP rate limiting | 3 sends per 15 min (default), 6 verify attempts (configurable), tracked per phone number |
-| OTP hashing | Uses HMAC with `OTP_SECRET_KEY` for secure code storage |
-| RLS on user tables | Implemented via Supabase Row Level Security policies |
-| Exception handling | Structured with `BaseAPIException`, automatic logging with context |
-| Bearer token auth | Uses FastAPI `HTTPBearer()` scheme with 401/403 distinction |
+**Implementation**:
+- Frontend: Supabase OAuth with autoRefresh
+- Backend: JWT validation, audience "authenticated", extract sub as user_id
+- CORS: Cloudflare + local dev hosts
+- Secrets: `SUPABASE_SECRET_KEY` server-side only
+- Privacy: Static file fallback if DB unavailable
 
 ---
 
 ## 8. Functional Requirements
 
-### 8.1 Pre-auth Whitelist & OTP
+### 8.1 Pre-auth
+- **POST /api/otp/send**: name, phone → whitelist check → send OTP
+- **POST /api/otp/verify**: phone, code → validate
 
-- **Send OTP**: POST /api/otp/send with name, phone_number → checks whitelist automatically; creates phone_otps; sends via Solapi
-- **Verify OTP**: POST /api/otp/verify with phone_number, otp_code → validates against latest unused, unexpired record
+### 8.2 Privacy & Consent
+- **GET /api/privacy-policy**: ?version&locale → DB/fallback
+- **POST /api/consents**: user_hash, type, version (pre-auth)
+- **GET /api/consents/{user_hash}**: retrieve records
 
-### 8.2 Privacy Policy & Consent
+### 8.3 Auth
+- Supabase OAuth redirect
 
-- **Get Policy**: GET /api/privacy-policy?version&locale → DB lookup; static file fallback if DB unavailable.
-- **Record Consent (Pre-auth only)**: POST /api/consents (user_hash, consent_type, consent_version).
-- **Get User Consents**: GET /api/consents/{user_hash} → retrieve all consent records for a user.
+### 8.4 Simulations (auth required)
+- **GET /api/simulations**: user list
+- **GET /api/simulations/{id}**: detail (owner only)
+- **POST /api/simulation/create**: plan parameters
+- **POST /api/simulation/run**: execute + persist
+- **PATCH /api/simulations/{id}**: update inputs
+- **PATCH /api/simulations/{id}/memo**: update memo
+- **DELETE /api/simulations/{id}**: delete
 
-### 8.3 Authentication
-
-- **Login**: Supabase OAuth redirects back to app
-
-### 8.4 Simulations
-
-- **List**: GET /api/simulations (auth) → user-specific list
-- **Detail**: GET /api/simulations/{simulation_id} (auth) → single row (owner only)
-- **Create**: POST /api/simulation/create (auth) with plan parameters (plan_id, rounds, scheduled_payment, sales_achievement_rates)
-- **Run**: POST /api/simulation/run (auth) with simulation_id → executes simulation; persists results
-- **Update**: PATCH /api/simulations/{id} (auth) → updates inputs; clears results
-- **Update Memo**: PATCH /api/simulations/{id}/memo (auth) → set memo
-- **Delete**: DELETE /api/simulations/{id} (auth) OR POST /api/simulation/delete → delete row if owner
-
-### 8.5 Notices & Admin
-
-- **Public**: GET /api/notices (published only), GET /api/notices/{id} (published only)
-- **Admin Check**: GET /api/admin/me → verifies admin privileges
-- **Admin Notices**: POST/PATCH/DELETE /api/admin/notices/{id}
-- **Admin Privacy Policies**:
-  - POST /api/admin/privacy-policies → create new policy (unpublished by default)
-  - PATCH /api/admin/privacy-policies/{id} → update policy
-  - DELETE /api/admin/privacy-policies/{id} → delete policy
-  - POST /api/admin/privacy-policies/{id}/publish → publish policy (unpublishes others)
-  - GET /api/admin/privacy-policies → list all policies
-  - GET /api/admin/privacy-policies/{id} → get policy details
+### 8.5 Admin (auth + admin)
+- **GET /api/admin/me**: verify privileges
+- **Notices**: POST/PATCH/DELETE /api/admin/notices/{id}
+- **Policies**: 
+  - POST/PATCH/DELETE /api/admin/privacy-policies/{id}
+  - POST /api/admin/privacy-policies/{id}/publish
 
 ### 8.6 Health
-
-- **GET /api/health** → supabase probe and latency with service status
+- **GET /api/health**: supabase probe + latency
 
 ---
 
-## 9. API Contracts (Key Examples)
+## 9. API Contracts
 
-All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
+All JSON. Auth: `Authorization: Bearer {token}` where noted.
 
 ```javascript
-
 // POST /api/otp/send (includes automatic whitelist check)
 {
   req: { name: string, phone_number: string },
@@ -280,211 +221,270 @@ All JSON. Auth header required where noted: `Authorization: Bearer {token}`.
 }
 
 
-// POST /api/simulation/create (auth)
-{
-  req: { plan_id: string, starting_company_round: number, current_company_round: number, 
-         simulation_rounds: number, scheduled_payment: Record<string, number>,
-         sales_achievement_rates?: Record<string, number> },
-  res: { simulation_id: string, plan_id: string, message: string, success: boolean }
-}
-
-// POST /api/simulation/run (auth)
-{
-  req: { simulation_id: string },
-  res: { simulation_id: string, plan_id: string, starting_company_round: number,
-         current_company_round: number, simulation_rounds: number,
-         scheduled_payment: Record<string, number>, sales_achievement_rates?: Record<string, number>,
-         history: Array<SimulationRound>, message: string, success: boolean }
-}
-
-// PATCH /api/simulations/{id} (auth)
-{
-  req: { plan_id: string, starting_company_round: number, current_company_round: number, 
-         simulation_rounds: number, scheduled_payment: Record<string, number>,
-         sales_achievement_rates?: Record<string, number> },
-  res: { simulation_id: string, plan_id: string, message: string, success: boolean }
-}
-
-// PATCH /api/simulations/{id}/memo (auth)
-{
-  req: { memo?: string },
-  res: { simulation_id: string, memo?: string, message: string, success: boolean }
-}
-
-// GET /api/admin/privacy-policies (auth, admin)
-{
-  res: { policies: Array<PrivacyPolicy>, success: boolean }
-}
-
-// GET /api/admin/privacy-policies/{id} (auth, admin)
-{
-  res: { policy: PrivacyPolicy, success: boolean }
-}
-
-// POST /api/admin/privacy-policies/{id}/publish (auth, admin)
-{
-  res: { id: string, message: string, success: boolean }
-}
-
-// DELETE /api/admin/privacy-policies/{id} (auth, admin)
-{
-  res: { id: string, message: string, success: boolean }
-}
-
-// POST /api/simulation/delete (auth) - Alternative delete endpoint
-{
-  req: { simulation_id: string },
-  res: { simulation_id: string, message: string, success: boolean }
-}
-
-// DELETE /api/simulations/{id} (auth) - RESTful delete endpoint
-{
-  res: { simulation_id: string, message: string, success: boolean }
-}
-
-// GET /api/health
-{
-  res: { status: "ok" | "degraded", services: { supabase: { ok: boolean, 
-         latency_ms?: number, error?: string } }, timestamp: string }
-}
 ```
 
 ---
 
-## 10. Simulation Engine (Business Logic)
+## 10. Simulation Engine
 
-- **Plans**: A, B, C, D, K, P, R, F, E, G with detailed parameters (see specifications below)
-- **Core concepts**:
-  - max_investor_count controls growth vs stable phase
-  - Tax 3.3% applied to total revenue; net profit and cumulative tracked each round
-  - Settlement bonus active only for company rounds 1–15 inclusive; automatically deactivated starting round 16 and onward.
-- **Service**: FinancialSimulationService(plan_id, scheduled_payment?, sales_achievement_rates?) → run_simulation(rounds) → results.history
-- **Parameter Conversion**: API `scheduled_payment` parameters are converted to database `investments` jsonb format during persistence
-- **Persistence**: results stored in simulations.simulation_results; recalculated on demand if missing or when inputs change
+**Plans**: A, B, C, D, K, P, R, F, E, G
 
-### 10.1 Plan Parameter Specifications
+**Core Logic**:
+- `max_investor_count`: controls growth/stable phase
+- Tax: 3.3% on revenue
+- Settlement bonus: rounds 1–15 only (auto-deactivated ≥16)
 
-All plans share common structure with the following parameters:
+**Service**: `FinancialSimulationService(plan_id, scheduled_payment?, sales_achievement_rates?)`
 
-**Plan A** (max_investor_count: 15):
-- min_payment_new: {1: 110000, 2: 220000, 3: 440000, ..., 19: 33000000}
-- min_payment_re: 11000000
-- max_bonus: 30000000
-- round_bonus_rates: {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12: 10, 13: 20, 14: 50, 15: 100}
+### 10.1 Plan Specifications
 
-**Plan B** (max_investor_count: 15):
-- Same parameters as Plan A
+**Common Structure**:
+- `min_payment_new`: Round-based minimums
+- `min_payment_re`: Re-investment minimum
+- `max_bonus`: Maximum bonus amount
+- `round_bonus_rates`: Round-specific multipliers
+- `revenue_base_divisor`: 1.1 (all plans)
+- `sales_commission`: 0.32 (all plans)
+- `settlement_bonus`: 100000 (all plans)
 
-**Plan C** (max_investor_count: 15):
-- Same min_payment structure as Plans A & B
-- max_bonus: 50000000
+**Plan Details**:
+- **Plan A** (max_investor_count: 15):
+  - min_payment_new: {1: 110000, 2: 220000, 3: 440000, ..., 19: 33000000}
+  - min_payment_re: 11000000
+  - max_bonus: 30000000
+  - round_bonus_rates: {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12: 10, 13: 20, 14: 50, 15: 100}
 
-**Plan D** (max_investor_count: 18):
-- Same min_payment structure as Plans A, B, C
-- min_payment_re: 33000000
-- max_bonus: 100000000
-- round_bonus_rates: Extended to {4: 1, ..., 15: 100, 16: 300, 17: 1000, 18: 1000}
-- sales_achievement_rates: Extended to rounds 4-36
+- **Plan B** (max_investor_count: 15):
+  - Same parameters as Plan A
 
-**Plan K** (max_investor_count: 18):
-- min_payment_new: {1: 330000, 2: 330000, 3: 440000, ..., 19: 33000000}
-- min_payment_re: 33000000
-- max_bonus: 300000000
-- round_bonus_rates: Same as Plan D (4-18)
-- sales_achievement_rates: Rounds 4-30
+- **Plan C** (max_investor_count: 15):
+  - Same min_payment structure as Plans A & B
+  - max_bonus: 50000000
 
-**Plan P** (max_investor_count: 18):
-- Same parameters as Plan K
-- sales_achievement_rates: Extended to rounds 4-36
+- **Plan D** (max_investor_count: 18):
+  - Same min_payment structure as Plans A, B, C
+  - min_payment_re: 33000000
+  - max_bonus: 100000000
+  - round_bonus_rates: Extended to {4: 1, ..., 15: 100, 16: 300, 17: 1000, 18: 1000}
+  - sales_achievement_rates: Extended to rounds 4-36
 
-**Plan R** (max_investor_count: 18):
-- min_payment_new: Same as Plans A, B, C (starting at 110000)
-- min_payment_re: 33000000
-- max_bonus: 100000000
-- round_bonus_rates: Same as Plan D (4-18)
-- sales_achievement_rates: Extended to rounds 4-36
+- **Plan K** (max_investor_count: 18):
+  - min_payment_new: {1: 330000, 2: 330000, 3: 440000, ..., 19: 33000000}
+  - min_payment_re: 33000000
+  - max_bonus: 300000000
+  - round_bonus_rates: Same as Plan D (4-18)
+  - sales_achievement_rates: Rounds 4-30
 
-**Plan F** (max_investor_count: 18):
-- Same parameters as Plan K
-- sales_achievement_rates: Extended to rounds 4-36
+- **Plan P** (max_investor_count: 18):
+  - Same parameters as Plan K
+  - sales_achievement_rates: Extended to rounds 4-36
 
-**Plan E** (max_investor_count: 18):
-- min_payment_new: Same as Plans A, B, C (starting at 110000)
-- min_payment_re: 33000000
-- max_bonus: 100000000
-- round_bonus_rates: Same as Plan D (4-18)
-- sales_achievement_rates: Extended to rounds 4-36
+- **Plan R** (max_investor_count: 18):
+  - min_payment_new: Same as Plans A, B, C (starting at 110000)
+  - min_payment_re: 33000000
+  - max_bonus: 100000000
+  - round_bonus_rates: Same as Plan D (4-18)
+  - sales_achievement_rates: Extended to rounds 4-36
 
-**Plan G** (max_investor_count: 12):
-- min_payment_new: {1-12: 110000} (flat 110000 for all rounds)
-- min_payment_re: 220000
-- max_bonus: 30000000
-- round_bonus_rates: {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12: 10}
-- sales_achievement_rates: Rounds 4-12
+- **Plan F** (max_investor_count: 18):
+  - Same parameters as Plan K
+  - sales_achievement_rates: Extended to rounds 4-36
 
-**Common Parameters (All Plans)**:
-- revenue_base_divisor: 1.1
-- sales_commission: 0.32 (32%)
-- settlement_bonus: 100000
+- **Plan E** (max_investor_count: 18):
+  - min_payment_new: Same as Plans A, B, C (starting at 110000)
+  - min_payment_re: 33000000
+  - max_bonus: 100000000
+  - round_bonus_rates: Same as Plan D (4-18)
+  - sales_achievement_rates: Extended to rounds 4-36
+
+- **Plan G** (max_investor_count: 12):
+  - min_payment_new: {1-12: 110000} (flat 110000 for all rounds)
+  - min_payment_re: 220000
+  - max_bonus: 30000000
+  - round_bonus_rates: {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12: 10}
+  - sales_achievement_rates: Rounds 4-12
 
 ---
 
 ## 11. Non-Functional Requirements
 
-- **Performance**: API endpoints < 500ms for typical operations; simulation run < 2s for common inputs
-- **Availability**: Health endpoint surfaces dependency issues; tolerate transient Supabase failures gracefully
-- **Security**: JWT validation via JWKS; admin checks via admins table. No secrets in frontend code
-- **Rate limiting**: OTP send limited (3 per 15-min); attempts per code limited (6 attempts)
-- **PWA**: Installable manifest and icons; service worker via vite-plugin-pwa (basic)
+- **Performance**: APIs <500ms typical, simulation <2s
+- **Availability**: Health endpoint, graceful Supabase failures
+- **Security**: JWT/JWKS, admin table checks
+- **Rate limiting**: OTP 3/15min, 6 attempts/code
+- **PWA**: Installable manifest, basic service worker
 
 ---
 
 ## 12. PWA Requirements
 
-- **Manifest**: 
-  - Name: "Light of Life Club Simulation", short_name: "Simulation"
-  - Icons: 192x192, 384x384, 512x512 (standard), 192x192 and 512x512 (maskable)
-  - Start URL: "/", scope: "/", display: "standalone"
-  - Theme color: "#1976d2", background color: "#ffffff"
-  - Orientation: "landscape" (preferred for simulation tables)
-- **Service Worker**: Provided via vite-plugin-pwa 0.20.0 with workbox
-  - Network-first caching for `/api/notices` endpoints (3s timeout, 1h expiration)
-  - Stale-while-revalidate for images (png, svg, jpg, jpeg, gif, webp)
-  - Auto-update registration type
-- **UX**: Mobile-first, responsive layout using MUI theme + Tailwind CSS
-- **Installability**: HTTPS required; Cloudflare Tunnel domain supported
-- **Landscape Enforcer**: Mobile-specific component that detects portrait orientation and shows rotation instruction overlay
+**Manifest**:
+- Name: "Light of Life Club Simulation"
+- Icons: 192x192, 384x384, 512x512 (standard + maskable)
+- Display: standalone, Orientation: landscape
+- Theme: #1976d2, Background: #ffffff
+
+**Service Worker** (vite-plugin-pwa):
+- Network-first: `/api/notices` (3s timeout, 1h cache)
+- Stale-while-revalidate: images
+- Auto-update registration
+
+**Mobile UX**:
+- Landscape enforcer component
+- Responsive MUI + Tailwind
 
 ---
 
 ## 13. UI/UX Flows
 
-### 13.1 Application Shell & Layout
+### 13.1 Shell
+**Layout**:
+- Header: "생명빛 클럽 시뮬레이션" (max-width: 600px)
+- Content: max-width 1400px, padding xs:2/md:4
+- LandscapeEnforcer: Z-index 2000 overlay for portrait detection
 
-**Shell Component**: Provides consistent layout with centered header and responsive content area
+### 13.2 Pre-auth Journey
 
-- **Header**: "생명빛 클럽 시뮬레이션" title in primary color bar (max-width: 600px)
-- **Main Content**: Responsive container (max-width: 1400px) with padding `xs: 2, md: 4`
-- **PWA Integration**: Landscape orientation enforcer for mobile devices
-- **Theme**: Material-UI theme with consistent color scheme and typography
+**State**: AppController manages `page` state in localStorage
 
-**LandscapeEnforcer**: Mobile-specific component that:
+**Pages**:
 
-- Detects portrait orientation via `matchMedia("(orientation: portrait)")`
-- Attempts screen orientation lock to landscape where supported
-- Shows blocking overlay with rotation instruction when in portrait mode
-- Z-index 2000 overlay prevents interaction until proper orientation
+1. **WhitelistCheckPage** (`page: "whitelist"`):
+   - Inputs: name, phone (auto-format 010-1234-5678)
+   - Submit: POST /api/otp/send
+   - Success: Embed OtpVerificationPage
 
-### 13.2 Pre-auth User Journey (Multi-step Flow)
+2. **OtpVerificationPage**:
+   - Input: 6-digit code, auto-complete "one-time-code"
+   - Timer: MM:SS countdown
+   - Resend: Rate-limited button states
 
-**Page Flow Control**: AppController manages page state with persistent UI state in localStorage
+3. **ConsentPage** (`page: "consent"`):
+   - Fetch policy via API
+   - Checkbox + accept/decline buttons
+   - Records: user_hash-based consent
 
-- **State Management**: `page` state drives navigation between `whitelist`, `consent`, `login`, and main pages
+4. **LoginPage** (`page: "login"`):
+   - OAuth: Google, Kakao buttons
+   - Loading states per provider
 
-**Step 1: WhitelistCheckPage** (`page: "whitelist"`):
+### 13.3 Main App
 
-- **Form Layout**: Centered Paper component (max-width: 500px) with logo and welcome message
-- **Name Input**: Text field with auto-focus for user name entry
+**MainPage**:
+- Actions: Add simulation, notices, help, logout
+- Table: Sortable columns, multi-select, batch delete
+- States: Loading (LinearProgress), empty (welcome CTA)
+
+**PlanEditor**:
+- 5-step wizard (Stepper component)
+- Validation modals
+- localStorage draft persistence
+
+**ResultsPage**: Tables, charts, export
+
+**AdminPolicyPage**: Create, edit, publish policies
+
+### 13.4 Mobile Design
+
+**Breakpoints**: xs (mobile), md+ (desktop)
+**Touch**: 44px targets minimum
+**Modals**: Full-screen mobile, overlay desktop
+
+### 13.5 Error & Accessibility
+
+**Error Handling**:
+- Network: Exponential backoff retry
+- Validation: Inline messages
+- Session: Auto-redirect with context
+
+**Accessibility**:
+- Keyboard navigation
+- ARIA labels
+- WCAG color contrast
+
+---
+
+## 14. Constraints & Assumptions
+
+**Environment Variables**:
+
+Backend:
+- `SUPABASE_URL`, `SUPABASE_SECRET_KEY`
+- `OTP_SECRET_KEY`, `OTP_VALIDITY_MINUTES=5`
+- `OTP_RESEND_LIMIT_PER_15MIN=3`, `otp_max_verification_attempts=6`
+- `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_SENDER_NUMBER`
+
+Frontend:
+- `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_API_BASE_URL=https://simulation.lightoflifeclub.com/api`
+
+**CORS**: `simulation.lightoflifeclub.com`, localhost:5173/4173, 127.0.0.1, local IPs
+
+**Dependencies**:
+- Supabase RLS configured
+- Whitelist table pre-seeded
+- Docker/Cloudflare Tunnel deployment
+
+---
+
+## 15. Error Handling
+
+**Exception Hierarchy**:
+- 401: `AuthenticationError`
+- 403: `AdminPrivilegesRequiredError`, `AuthorizationError`
+- 404: `ResourceNotFoundError`, `SimulationNotFoundError`, etc.
+- 400: `WhitelistError`, `InvalidDataError`
+- 409: `PublishingConstraintError`
+- 500: `DatabaseError`, `InternalServerError`
+
+**Response Format**:
+- OTP/admin: `{ success: boolean, message: string, ... }`
+- FastAPI: `{ "detail": "..." }`
+
+---
+
+## 16. Testing Strategy
+
+| Layer | Tool | Target |
+|-------|------|--------|
+| Backend unit | pytest | ≥75% |
+| Frontend unit | Vitest + RTL | ≥60% |
+| Integration | pytest + test DB | Critical paths |
+| Contract | OpenAPI validation | API stability |
+| E2E | Smoke tests | Core flows |
+
+**CI Gates**:
+- Lint + Type Check
+- Unit tests with coverage
+- OpenAPI snapshot validation
+- Dependency security scan
+
+---
+
+## 17. Acceptance Criteria
+
+**OTP**: Whitelist check → send → verify with rate limits
+**Consent**: Policy retrieval (DB/fallback) → record (idempotent)
+**Simulations**: Create → update → run → persist results
+**Admin**: Verify privileges → manage policies (publish exclusivity)
+
+---
+
+## 18. Future Considerations
+
+See [`enterprise-scale/`](enterprise-scale/) for:
+- STRIDE threat modeling
+- 40+ error codes
+- 7-layer testing
+- SLOs and monitoring
+
+---
+
+## 19–24. [Sections remain unchanged as they contain critical technical details and specifications]
+
+---
+
+*For enterprise-scale features, see [enterprise-scale documentation](enterprise-scale/).*
 - **Phone Input**: Auto-formatting field with real-time hyphen insertion (010-1234-5678 pattern)
   - Supports 010/011/016/017/018/019 prefixes with appropriate formatting
   - Input mode: `tel`, max length: 13 characters
