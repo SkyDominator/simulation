@@ -1,6 +1,6 @@
 # Copilot Instructions
 
-This is the Software Specification Document (SSD) provides the broad context of my application to help AI assistants behave right and understand my project for improving the quality of tasks including planning, code suggestions, and completions.
+This Software Specification Document (SSD) provides the broad context of my application to help AI assistants understand my project for improving the quality of tasks including planning, code suggestions, and completions.
 
 ## 1. Introduction
 
@@ -14,8 +14,6 @@ This is the Software Specification Document (SSD) provides the broad context of 
 - Authenticated financial simulations with user-specific storage
 - Enforced onboarding flow
 - Admin management UI
-
----
 
 ## 2. Scope
 
@@ -33,8 +31,6 @@ This is the Software Specification Document (SSD) provides the broad context of 
 - Full offline execution
 - i18n beyond ko-KR
 
----
-
 ## 3. Stakeholders & Roles
 
 **Users**:
@@ -46,8 +42,6 @@ This is the Software Specification Document (SSD) provides the broad context of 
 - Pre-auth user: Access OTP, policy, consent endpoints
 - Authenticated user: Run simulations, read notices
 - Admin user: Manage notices + policies
-
----
 
 ## 4. Environment Profiles
 
@@ -76,8 +70,6 @@ This is the Software Specification Document (SSD) provides the broad context of 
 - Total users: 60–100
 - Peak concurrent: 30–60
 
----
-
 ## 5. System Architecture
 
 **Frontend**:
@@ -101,8 +93,6 @@ This is the Software Specification Document (SSD) provides the broad context of 
 2. Auth: JWT validation via JWKS
 3. App: Simulations (users), Notices/Policies (admin)
 
----
-
 ## 6. Data Models (Supabase)
 
 **Tables**:
@@ -117,8 +107,6 @@ This is the Software Specification Document (SSD) provides the broad context of 
 **Notes**:
 - API `scheduled_payment` → DB `investments` jsonb
 - See [schema](/.memo/CE/specs/schema/schema.md) for details
-
----
 
 ## 7. Security & Authentication
 
@@ -140,8 +128,6 @@ This is the Software Specification Document (SSD) provides the broad context of 
 - CORS: Cloudflare + local dev hosts
 - Secrets: `SUPABASE_SECRET_KEY` server-side only
 - Privacy: Static file fallback if DB unavailable
-
----
 
 ## 8. Functional Requirements
 
@@ -175,8 +161,6 @@ This is the Software Specification Document (SSD) provides the broad context of 
 
 ### 8.6 Health
 - **GET /api/health**: supabase probe + latency
-
----
 
 ## 9. API Contracts
 
@@ -213,11 +197,7 @@ All JSON. Auth: `Authorization: Bearer {token}` where noted.
   res: { version: string, last_updated: string, content: string, 
          success: boolean, source: "db" | "static-file", locale?: string }
 }
-
-
 ```
-
----
 
 ## 10. Simulation Engine
 
@@ -298,9 +278,86 @@ All JSON. Auth: `Authorization: Bearer {token}` where noted.
   - round_bonus_rates: {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12: 10}
   - sales_achievement_rates: Rounds 4-12
 
----
+## 11. UI/UX Flows
 
-## 11. Non-Functional Requirements
+### 11.1 Shell
+**Layout**:
+- Header: "생명빛 클럽 시뮬레이션" (max-width: 600px)
+- Content: max-width 1400px, padding xs:2/md:4
+- LandscapeEnforcer: Z-index 2000 overlay for portrait detection
+
+### 11.2 Pre-auth Journey
+
+**State**: AppController manages `page` state in localStorage
+
+**Pages**:
+
+1. **WhitelistCheckPage** (`page: "whitelist"`):
+   - Inputs: name, phone (auto-format 010-1234-5678)
+   - Phone supports 010/011/016/017/018/019 prefixes
+   - Submit: POST /api/otp/send
+   - Success: Embed OtpVerificationPage
+
+2. **OtpVerificationPage**:
+   - Input: 6-digit code, auto-complete "one-time-code"
+   - Timer: MM:SS countdown
+   - Resend: Rate-limited button states (3 sends per 15min)
+   - Navigation: "이전으로" returns to whitelist form
+
+3. **ConsentPage** (`page: "consent"`):
+   - Fetch policy via API with DB/fallback
+   - Checkbox + accept/decline buttons
+   - Records: user_hash-based consent
+   - Flow: Accept → login, Decline → whitelist
+
+4. **LoginPage** (`page: "login"`):
+   - OAuth: Google, Kakao buttons
+   - Loading states per provider
+   - Error recovery with retry options
+
+### 11.3 Main App
+
+**MainPage** (`page: "main"`):
+- Actions: Add simulation, notices, help, logout
+- Table: Sortable columns, multi-select, batch delete
+- States: Loading (LinearProgress), empty (welcome CTA)
+
+**PlanEditor** (`page: "plan-editor"`):
+- 5-step wizard (Stepper component)
+- Validation modals
+- localStorage draft persistence
+- Auto-generation based on plan type
+
+**ResultsPage** (`page: "results"`):
+- Tables, charts, export functions
+
+**AdminPolicyPage** (`page: "admin-policy"`):
+- Create, edit, publish policies
+
+**OfflineResultsPage** (`page: "offline-results"`):
+- Display simulation results for special authentication flow
+
+### 11.4 Mobile Design
+
+- **Breakpoints**: xs (mobile), md+ (desktop)
+- **Touch**: 44px targets minimum
+- **Modals**: Full-screen mobile, overlay desktop
+- **Table**: Horizontal scroll on narrow screens
+
+### 11.5 Error & Accessibility
+
+**Error Handling**:
+- Network: Exponential backoff retry
+- Validation: Inline messages
+- Session: Auto-redirect with context
+
+**Accessibility**:
+- Keyboard navigation
+- ARIA labels
+- WCAG color contrast
+- Screen reader support
+
+## 12. Non-Functional Requirements
 
 - **Performance**: APIs <500ms typical, simulation <2s
 - **Availability**: Health endpoint, graceful Supabase failures
@@ -308,9 +365,7 @@ All JSON. Auth: `Authorization: Bearer {token}` where noted.
 - **Rate limiting**: OTP 3/15min, 6 attempts/code
 - **PWA**: Installable manifest, basic service worker
 
----
-
-## 12. PWA Requirements
+## 13. PWA Requirements
 
 **Manifest**:
 - Name: "Light of Life Club Simulation"
@@ -326,77 +381,6 @@ All JSON. Auth: `Authorization: Bearer {token}` where noted.
 **Mobile UX**:
 - Landscape enforcer component
 - Responsive MUI + Tailwind
-
----
-
-## 13. UI/UX Flows
-
-### 13.1 Shell
-**Layout**:
-- Header: "생명빛 클럽 시뮬레이션" (max-width: 600px)
-- Content: max-width 1400px, padding xs:2/md:4
-- LandscapeEnforcer: Z-index 2000 overlay for portrait detection
-
-### 13.2 Pre-auth Journey
-
-**State**: AppController manages `page` state in localStorage
-
-**Pages**:
-
-1. **WhitelistCheckPage** (`page: "whitelist"`):
-   - Inputs: name, phone (auto-format 010-1234-5678)
-   - Submit: POST /api/otp/send
-   - Success: Embed OtpVerificationPage
-
-2. **OtpVerificationPage**:
-   - Input: 6-digit code, auto-complete "one-time-code"
-   - Timer: MM:SS countdown
-   - Resend: Rate-limited button states
-
-3. **ConsentPage** (`page: "consent"`):
-   - Fetch policy via API
-   - Checkbox + accept/decline buttons
-   - Records: user_hash-based consent
-
-4. **LoginPage** (`page: "login"`):
-   - OAuth: Google, Kakao buttons
-   - Loading states per provider
-
-### 13.3 Main App
-
-**MainPage**:
-- Actions: Add simulation, notices, help, logout
-- Table: Sortable columns, multi-select, batch delete
-- States: Loading (LinearProgress), empty (welcome CTA)
-
-**PlanEditor**:
-- 5-step wizard (Stepper component)
-- Validation modals
-- localStorage draft persistence
-
-**ResultsPage**: Tables, charts, export
-
-**AdminPolicyPage**: Create, edit, publish policies
-
-### 13.4 Mobile Design
-
-**Breakpoints**: xs (mobile), md+ (desktop)
-**Touch**: 44px targets minimum
-**Modals**: Full-screen mobile, overlay desktop
-
-### 13.5 Error & Accessibility
-
-**Error Handling**:
-- Network: Exponential backoff retry
-- Validation: Inline messages
-- Session: Auto-redirect with context
-
-**Accessibility**:
-- Keyboard navigation
-- ARIA labels
-- WCAG color contrast
-
----
 
 ## 14. Constraints & Assumptions
 
@@ -419,8 +403,6 @@ Frontend:
 - Whitelist table pre-seeded
 - Docker/Cloudflare Tunnel deployment
 
----
-
 ## 15. Error Handling
 
 **Exception Hierarchy**:
@@ -434,8 +416,6 @@ Frontend:
 **Response Format**:
 - OTP/admin: `{ success: boolean, message: string, ... }`
 - FastAPI: `{ "detail": "..." }`
-
----
 
 ## 16. Testing Strategy
 
@@ -453,46 +433,66 @@ Frontend:
 - OpenAPI snapshot validation
 - Dependency security scan
 
----
-
 ## 17. Acceptance Criteria
 
-**OTP**: Whitelist check → send → verify with rate limits
-**Consent**: Policy retrieval (DB/fallback) → record (idempotent)
-**Simulations**: Create → update → run → persist results
-**Admin**: Verify privileges → manage policies (publish exclusivity)
+- **OTP**: Whitelist check → send → verify with rate limits
+- **Consent**: Policy retrieval (DB/fallback) → record (idempotent)
+- **Simulations**: Create → update → run → persist results
+- **Admin**: Verify privileges → manage policies (publish exclusivity)
 
+## 18. Performance Baselines
 
----
+### 18.1 API Performance Targets
 
-## 19–24. [Sections remain unchanged as they contain critical technical details and specifications]
+| Endpoint | Target (p95) | Acceptable (p99) | Timeout |
+|----------|--------------|------------------|---------|
+| POST /api/otp/send | < 2000ms | < 4000ms | 10s |
+| POST /api/otp/verify | < 300ms | < 500ms | 5s |
+| POST /api/simulation/create | < 400ms | < 600ms | 10s |
+| POST /api/simulation/run | < 1500ms | < 3000ms | 15s |
+| GET /api/simulations | < 200ms | < 400ms | 5s |
+| GET /api/health | < 100ms | < 200ms | 3s |
 
-- **Phone Input**: Auto-formatting field with real-time hyphen insertion (010-1234-5678 pattern)
-  - Supports 010/011/016/017/018/019 prefixes with appropriate formatting
-  - Input mode: `tel`, max length: 13 characters
-- **Validation**: Client-side validation for required fields before API call
-- **Loading States**: CircularProgress indicator during API requests
-- **Error Handling**: Alert component for validation and API errors
-- **Submit Action**: "인증번호 받기" button calls POST /api/otp/send (includes automatic whitelist check)
-- **Success Flow**: On verification success, transitions to embedded OtpVerificationPage
+### 18.2 Frontend Performance
 
-**Step 2: OtpVerificationPage** (embedded within WhitelistCheckPage):
+**Core Web Vitals**:
+- **LCP**: < 2.5s for MainPage
+- **FID**: < 100ms for interactive elements
+- **CLS**: < 0.1 for stable layouts
 
-- **Context Preservation**: Receives phone, name, userHash from parent component
-- **Input Design**: Large numeric input field with auto-complete support (`one-time-code`)
-  - 6-digit code entry with numeric keypad on mobile
-  - Input validation: numeric only, max length 6
-- **Timer Display**: Real-time countdown showing expiration time (MM:SS format)
-- **Resend Logic**: Progressive button states:
-  - Active: "인증번호 재전송" when countdown expired
-  - Disabled: "재전송 M:SS" during countdown period
-  - Rate limiting: 3 sends per 15 minutes enforced by backend
-- **Navigation**: "이전으로" button returns to whitelist form with state reset
+### 18.3 Scalability
 
-**Step 3: ConsentPage** (`page: "consent"`):
+**Load Profile** (60-100 users):
+- Concurrent: 30-60 peak, 5-15 average
+- API: ~1000 requests/hour peak
+- DB: 5-10 concurrent connections
 
-- **Layout**: Centered Paper component (max-width: 600px) with structured consent flow
-- **Pre-auth Flow Support**: Uses user_hash-based consent recording for pre-auth users
+## 19. Data Migration & Recovery
+
+### 19.1 Migration Strategy
+- Additive changes with defaults
+- Backward-compatible JSONB evolution
+- Grace periods for deprecation
+
+### 19.2 Backup & Recovery
+- Daily Supabase snapshots (7-day retention)
+- Point-in-time recovery available
+- Service degradation modes (read-only, cached policy)
+
+**Recovery Objectives**:
+- Database restore: < 4 hours
+- Service restart: < 30 minutes
+- User notification: < 2 hours
+
+## 20. Glossary
+
+- **Supabase**: Backend-as-a-Service (Postgres, Auth, Storage, APIs)
+- **JWKS**: JSON Web Key Set for JWT verification
+- **OTP**: One-time password via SMS
+- **PWA**: Progressive Web App
+- **RLS**: Row Level Security (Postgres)
+- **LCP/FID/CLS**: Core Web Vitals metrics
+- **Pre-auth user**: User before OTP + consent + OAuth completion
   - **Context Detection**: Determines flow based on authentication state and calling context
 - **Privacy Policy Integration**:
   - Fetches current policy version via `api.getPrivacyPolicy()`
