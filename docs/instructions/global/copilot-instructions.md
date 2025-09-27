@@ -1,26 +1,921 @@
 # Copilot Instructions
 
-This file provides instructions and context for AI coding assistants to help them behave right, and understand the project itself, coding patterns & conventions used in this repository. It is intended to improve the quality of code suggestions and completions.
+This is the Software Specification Document (SSD) provides the broad context of my application to help AI assistants behave right and understand my project for improving the quality of tasks including planning, code suggestions, and completions.
 
-**MANDATORY**: ALWAYS CONSULT the linked markdown files in the rest of this document below before any task. DO NOT MAKE ANY ASSUMPTIONS without checking these files first.
+## 1. Introduction
 
-## Basic behavioral patterns for ALL AI coding assistants (agents)
+**System**: PWA for whitelisted users to run investment simulations  
+**Auth**: Supabase OAuth (Google, Kakao)  
+**Enforcement**: Pre-auth onboarding (whitelist → OTP → consent → login)  
+**Admin**: Manage privacy policies and notices  
+**Stack**: FastAPI backend + React/Vite frontend  
 
-See [AGENTS](docs/instructions/agents.md).
+**Goals**:
+- Authenticated financial simulations with user-specific storage
+- Enforced onboarding flow
+- Admin management UI
 
-## Project overview
+---
 
-See the Software Specification Document (`.memo/CE/specs/SSD.md`) for the project overview.
+## 2. Scope
 
-## Project details
+**In-scope**:
+- Pre-auth validation: OTP send/verify with whitelist check
+- Privacy policy retrieval (public) + consent recording (pre-auth)
+- Supabase OAuth + JWT backend auth
+- Simulation CRUD + run + persist
+- Public notices + admin CRUD
+- PWA installability
 
-For the details including architecture, features, configurations, codebase, etc., refer to the [project details](docs/instructions/project-details.md).
+**Out-of-scope**:
+- Payment processing
+- Advanced analytics
+- Full offline execution
+- i18n beyond ko-KR
 
-## Back-end Coding Guidelines
+---
 
-For the back-end coding guidelines, refer to the [back-end coding guidelines](docs/instructions/backend-coding.md).
+## 3. Stakeholders & Roles
+
+**Users**:
+- End users: 60–100 whitelisted (30–60 concurrent peak)
+- Admins: 1–3 internal
+- Owner: Maintains system + admin privileges
+
+**Roles**:
+- Pre-auth user: Access OTP, policy, consent endpoints
+- Authenticated user: Run simulations, read notices
+- Admin user: Manage notices + policies
+
+---
+
+## 4. Environment Profiles
+
+### 4.1 Development
+- **OS**: Windows 11
+- **IDE**: VS Code
+- **Browser**: Chrome 1920x1080
+- **Python**: 3.11.6+
+- **TypeScript**: 5.8.4+
+- **React**: 19.1.0
+- **Ports**: Frontend 5173, Backend 8001
+
+### 4.2 Test
+- **Desktop**: Windows 11 + Chrome latest
+- **Mobile**: iPhone 11 Pro (iOS 18.1.1) + Chrome
+- **Testing**: Pytest (backend), Vitest + Playwright (frontend)
+
+### 4.3 Production
+- **Desktop**: Windows 11+ (Chrome latest-2)
+- **Mobile iOS**: iPhone 11+ (iOS 18.1.1+) Chrome
+- **Mobile Android**: Galaxy S21+ (Android 12+) Chrome
+- **Hosting**: Supabase (DB/Auth) + Windows local (24h)
+- **Ports**: Frontend 4173, Backend 8000
+
+### 4.4 Load
+- Total users: 60–100
+- Peak concurrent: 30–60
+
+---
+
+## 5. System Architecture
+
+**Frontend**:
+- React 19.1.0 + TypeScript 5.8.4+ + Vite 5.4.10+
+- vite-plugin-pwa 0.20.0, MUI 5.14.0+, Tailwind 3.4.4+
+- @supabase/supabase-js 2.51.0+
+- localStorage/sessionStorage persistence
+
+**Backend**:
+- FastAPI 0.116.1+ (Python 3.11.6+)
+- Pydantic v2, Supabase client 2.16.0+
+- JWT via Supabase JWKS
+
+**Infrastructure**:
+- Windows native production
+- Cloudflare Tunnel: `simulation.lightoflifeclub.com`
+- CORS: local dev + tunnel domain
+
+**Flow**:
+1. Pre-auth: OTP → Consent → Login
+2. Auth: JWT validation via JWKS
+3. App: Simulations (users), Notices/Policies (admin)
+
+---
+
+## 6. Data Models (Supabase)
+
+**Tables**:
+- `whitelist`: user_hash text (sha256 "{name}-{phone}")
+- `admins`: user_id uuid
+- `notices`: id, title, content, pinned, published, timestamps
+- `privacy_policies`: id, version, locale, content, published, effective_date, unique(version,locale)
+- `phone_otps`: id, phone, code_hash, attempts, used, expires_at, provider_msg_id, client_ip, user_agent
+- `simulations`: id, user_id, plan_id, rounds, investments jsonb, sales_achievement_rates jsonb, simulation_results jsonb
+- `consent_records`: id, user_hash, user_id, consent_type, consent_version, timestamps
+
+**Notes**:
+- API `scheduled_payment` → DB `investments` jsonb
+- See [schema](/.memo/CE/specs/schema/schema.md) for details
+
+---
+
+## 7. Security & Authentication
+
+**Security Controls**:
+
+| Control | Implementation |
+|---------|--------------|
+| JWT validation | Supabase JWKS, python-jose, 5s timeout, global cache |
+| Admin check | `admins.user_id` lookup via `_assert_admin()` |
+| OTP rate limit | 3/15min send, 6 verify attempts |
+| OTP hashing | HMAC with `OTP_SECRET_KEY` |
+| RLS | Supabase policies on user tables |
+| Exceptions | `BaseAPIException` with structured logging |
+| Bearer auth | FastAPI `HTTPBearer()`, 401/403 distinction |
+
+**Implementation**:
+- Frontend: Supabase OAuth with autoRefresh
+- Backend: JWT validation, audience "authenticated", extract sub as user_id
+- CORS: Cloudflare + local dev hosts
+- Secrets: `SUPABASE_SECRET_KEY` server-side only
+- Privacy: Static file fallback if DB unavailable
+
+---
+
+## 8. Functional Requirements
+
+### 8.1 Pre-auth
+- **POST /api/otp/send**: name, phone → whitelist check → send OTP
+- **POST /api/otp/verify**: phone, code → validate
+
+### 8.2 Privacy & Consent
+- **GET /api/privacy-policy**: ?version&locale → DB/fallback
+- **POST /api/consents**: user_hash, type, version (pre-auth)
+- **GET /api/consents/{user_hash}**: retrieve records
+
+### 8.3 Auth
+- Supabase OAuth redirect
+
+### 8.4 Simulations (auth required)
+- **GET /api/simulations**: user list
+- **GET /api/simulations/{id}**: detail (owner only)
+- **POST /api/simulation/create**: plan parameters
+- **POST /api/simulation/run**: execute + persist
+- **PATCH /api/simulations/{id}**: update inputs
+- **PATCH /api/simulations/{id}/memo**: update memo
+- **DELETE /api/simulations/{id}**: delete
+
+### 8.5 Admin (auth + admin)
+- **GET /api/admin/me**: verify privileges
+- **Notices**: POST/PATCH/DELETE /api/admin/notices/{id}
+- **Policies**: 
+  - POST/PATCH/DELETE /api/admin/privacy-policies/{id}
+  - POST /api/admin/privacy-policies/{id}/publish
+
+### 8.6 Health
+- **GET /api/health**: supabase probe + latency
+
+---
+
+## 9. API Contracts
+
+All JSON. Auth: `Authorization: Bearer {token}` where noted.
+
+```javascript
+// POST /api/otp/send (includes automatic whitelist check)
+{
+  req: { name: string, phone_number: string },
+  res: { success: boolean, message: string, expires_in_seconds?: number, user_hash?: string }
+}
+
+// POST /api/otp/verify
+{
+  req: { phone_number: string, otp_code: string },
+  res: { success: boolean, message: string, remaining_attempts?: number }
+}
+
+// POST /api/consents (pre-auth)
+{
+  req: { user_hash: string, consent_type: string, consent_version: string, 
+         ip_address?: string, user_agent?: string },
+  res: { user_hash: string, consent_type: string, consent_version: string, 
+         consent_given_at: string, ip_address?: string, user_agent?: string }
+}
+
+// GET /api/consents/{user_hash}
+{
+  res: { consents: Array<ConsentRecord>, success: boolean }
+}
+
+// GET /api/privacy-policy?version&locale
+{
+  res: { version: string, last_updated: string, content: string, 
+         success: boolean, source: "db" | "static-file", locale?: string }
+}
 
 
-## Front-end Coding Guidelines
+```
 
-For the front-end coding guidelines, refer to the [front-end coding guidelines](docs/instructions/frontend-coding.md).
+---
+
+## 10. Simulation Engine
+
+**Plans**: A, B, C, D, K, P, R, F, E, G
+
+**Core Logic**:
+- `max_investor_count`: controls growth/stable phase
+- Tax: 3.3% on revenue
+- Settlement bonus: rounds 1–15 only (auto-deactivated ≥16)
+
+**Service**: `FinancialSimulationService(plan_id, scheduled_payment?, sales_achievement_rates?)`
+
+### 10.1 Plan Specifications
+
+**Common Structure**:
+- `min_payment_new`: Round-based minimums
+- `min_payment_re`: Re-investment minimum
+- `max_bonus`: Maximum bonus amount
+- `round_bonus_rates`: Round-specific multipliers
+- `revenue_base_divisor`: 1.1 (all plans)
+- `sales_commission`: 0.32 (all plans)
+- `settlement_bonus`: 100000 (all plans)
+
+**Plan Details**:
+- **Plan A** (max_investor_count: 15):
+  - min_payment_new: {1: 110000, 2: 220000, 3: 440000, ..., 19: 33000000}
+  - min_payment_re: 11000000
+  - max_bonus: 30000000
+  - round_bonus_rates: {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12: 10, 13: 20, 14: 50, 15: 100}
+
+- **Plan B** (max_investor_count: 15):
+  - Same parameters as Plan A
+
+- **Plan C** (max_investor_count: 15):
+  - Same min_payment structure as Plans A & B
+  - max_bonus: 50000000
+
+- **Plan D** (max_investor_count: 18):
+  - Same min_payment structure as Plans A, B, C
+  - min_payment_re: 33000000
+  - max_bonus: 100000000
+  - round_bonus_rates: Extended to {4: 1, ..., 15: 100, 16: 300, 17: 1000, 18: 1000}
+  - sales_achievement_rates: Extended to rounds 4-36
+
+- **Plan K** (max_investor_count: 18):
+  - min_payment_new: {1: 330000, 2: 330000, 3: 440000, ..., 19: 33000000}
+  - min_payment_re: 33000000
+  - max_bonus: 300000000
+  - round_bonus_rates: Same as Plan D (4-18)
+  - sales_achievement_rates: Rounds 4-30
+
+- **Plan P** (max_investor_count: 18):
+  - Same parameters as Plan K
+  - sales_achievement_rates: Extended to rounds 4-36
+
+- **Plan R** (max_investor_count: 18):
+  - min_payment_new: Same as Plans A, B, C (starting at 110000)
+  - min_payment_re: 33000000
+  - max_bonus: 100000000
+  - round_bonus_rates: Same as Plan D (4-18)
+  - sales_achievement_rates: Extended to rounds 4-36
+
+- **Plan F** (max_investor_count: 18):
+  - Same parameters as Plan K
+  - sales_achievement_rates: Extended to rounds 4-36
+
+- **Plan E** (max_investor_count: 18):
+  - min_payment_new: Same as Plans A, B, C (starting at 110000)
+  - min_payment_re: 33000000
+  - max_bonus: 100000000
+  - round_bonus_rates: Same as Plan D (4-18)
+  - sales_achievement_rates: Extended to rounds 4-36
+
+- **Plan G** (max_investor_count: 12):
+  - min_payment_new: {1-12: 110000} (flat 110000 for all rounds)
+  - min_payment_re: 220000
+  - max_bonus: 30000000
+  - round_bonus_rates: {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12: 10}
+  - sales_achievement_rates: Rounds 4-12
+
+---
+
+## 11. Non-Functional Requirements
+
+- **Performance**: APIs <500ms typical, simulation <2s
+- **Availability**: Health endpoint, graceful Supabase failures
+- **Security**: JWT/JWKS, admin table checks
+- **Rate limiting**: OTP 3/15min, 6 attempts/code
+- **PWA**: Installable manifest, basic service worker
+
+---
+
+## 12. PWA Requirements
+
+**Manifest**:
+- Name: "Light of Life Club Simulation"
+- Icons: 192x192, 384x384, 512x512 (standard + maskable)
+- Display: standalone, Orientation: landscape
+- Theme: #1976d2, Background: #ffffff
+
+**Service Worker** (vite-plugin-pwa):
+- Network-first: `/api/notices` (3s timeout, 1h cache)
+- Stale-while-revalidate: images
+- Auto-update registration
+
+**Mobile UX**:
+- Landscape enforcer component
+- Responsive MUI + Tailwind
+
+---
+
+## 13. UI/UX Flows
+
+### 13.1 Shell
+**Layout**:
+- Header: "생명빛 클럽 시뮬레이션" (max-width: 600px)
+- Content: max-width 1400px, padding xs:2/md:4
+- LandscapeEnforcer: Z-index 2000 overlay for portrait detection
+
+### 13.2 Pre-auth Journey
+
+**State**: AppController manages `page` state in localStorage
+
+**Pages**:
+
+1. **WhitelistCheckPage** (`page: "whitelist"`):
+   - Inputs: name, phone (auto-format 010-1234-5678)
+   - Submit: POST /api/otp/send
+   - Success: Embed OtpVerificationPage
+
+2. **OtpVerificationPage**:
+   - Input: 6-digit code, auto-complete "one-time-code"
+   - Timer: MM:SS countdown
+   - Resend: Rate-limited button states
+
+3. **ConsentPage** (`page: "consent"`):
+   - Fetch policy via API
+   - Checkbox + accept/decline buttons
+   - Records: user_hash-based consent
+
+4. **LoginPage** (`page: "login"`):
+   - OAuth: Google, Kakao buttons
+   - Loading states per provider
+
+### 13.3 Main App
+
+**MainPage**:
+- Actions: Add simulation, notices, help, logout
+- Table: Sortable columns, multi-select, batch delete
+- States: Loading (LinearProgress), empty (welcome CTA)
+
+**PlanEditor**:
+- 5-step wizard (Stepper component)
+- Validation modals
+- localStorage draft persistence
+
+**ResultsPage**: Tables, charts, export
+
+**AdminPolicyPage**: Create, edit, publish policies
+
+### 13.4 Mobile Design
+
+**Breakpoints**: xs (mobile), md+ (desktop)
+**Touch**: 44px targets minimum
+**Modals**: Full-screen mobile, overlay desktop
+
+### 13.5 Error & Accessibility
+
+**Error Handling**:
+- Network: Exponential backoff retry
+- Validation: Inline messages
+- Session: Auto-redirect with context
+
+**Accessibility**:
+- Keyboard navigation
+- ARIA labels
+- WCAG color contrast
+
+---
+
+## 14. Constraints & Assumptions
+
+**Environment Variables**:
+
+Backend:
+- `SUPABASE_URL`, `SUPABASE_SECRET_KEY`
+- `OTP_SECRET_KEY`, `OTP_VALIDITY_MINUTES=5`
+- `OTP_RESEND_LIMIT_PER_15MIN=3`, `otp_max_verification_attempts=6`
+- `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_SENDER_NUMBER`
+
+Frontend:
+- `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_API_BASE_URL=https://simulation.lightoflifeclub.com/api`
+
+**CORS**: `simulation.lightoflifeclub.com`, localhost:5173/4173, 127.0.0.1, local IPs
+
+**Dependencies**:
+- Supabase RLS configured
+- Whitelist table pre-seeded
+- Docker/Cloudflare Tunnel deployment
+
+---
+
+## 15. Error Handling
+
+**Exception Hierarchy**:
+- 401: `AuthenticationError`
+- 403: `AdminPrivilegesRequiredError`, `AuthorizationError`
+- 404: `ResourceNotFoundError`, `SimulationNotFoundError`, etc.
+- 400: `WhitelistError`, `InvalidDataError`
+- 409: `PublishingConstraintError`
+- 500: `DatabaseError`, `InternalServerError`
+
+**Response Format**:
+- OTP/admin: `{ success: boolean, message: string, ... }`
+- FastAPI: `{ "detail": "..." }`
+
+---
+
+## 16. Testing Strategy
+
+| Layer | Tool | Target |
+|-------|------|--------|
+| Backend unit | pytest | ≥75% |
+| Frontend unit | Vitest + RTL | ≥60% |
+| Integration | pytest + test DB | Critical paths |
+| Contract | OpenAPI validation | API stability |
+| E2E | Smoke tests | Core flows |
+
+**CI Gates**:
+- Lint + Type Check
+- Unit tests with coverage
+- OpenAPI snapshot validation
+- Dependency security scan
+
+---
+
+## 17. Acceptance Criteria
+
+**OTP**: Whitelist check → send → verify with rate limits
+**Consent**: Policy retrieval (DB/fallback) → record (idempotent)
+**Simulations**: Create → update → run → persist results
+**Admin**: Verify privileges → manage policies (publish exclusivity)
+
+
+---
+
+## 19–24. [Sections remain unchanged as they contain critical technical details and specifications]
+
+- **Phone Input**: Auto-formatting field with real-time hyphen insertion (010-1234-5678 pattern)
+  - Supports 010/011/016/017/018/019 prefixes with appropriate formatting
+  - Input mode: `tel`, max length: 13 characters
+- **Validation**: Client-side validation for required fields before API call
+- **Loading States**: CircularProgress indicator during API requests
+- **Error Handling**: Alert component for validation and API errors
+- **Submit Action**: "인증번호 받기" button calls POST /api/otp/send (includes automatic whitelist check)
+- **Success Flow**: On verification success, transitions to embedded OtpVerificationPage
+
+**Step 2: OtpVerificationPage** (embedded within WhitelistCheckPage):
+
+- **Context Preservation**: Receives phone, name, userHash from parent component
+- **Input Design**: Large numeric input field with auto-complete support (`one-time-code`)
+  - 6-digit code entry with numeric keypad on mobile
+  - Input validation: numeric only, max length 6
+- **Timer Display**: Real-time countdown showing expiration time (MM:SS format)
+- **Resend Logic**: Progressive button states:
+  - Active: "인증번호 재전송" when countdown expired
+  - Disabled: "재전송 M:SS" during countdown period
+  - Rate limiting: 3 sends per 15 minutes enforced by backend
+- **Navigation**: "이전으로" button returns to whitelist form with state reset
+
+**Step 3: ConsentPage** (`page: "consent"`):
+
+- **Layout**: Centered Paper component (max-width: 600px) with structured consent flow
+- **Pre-auth Flow Support**: Uses user_hash-based consent recording for pre-auth users
+  - **Context Detection**: Determines flow based on authentication state and calling context
+- **Privacy Policy Integration**:
+  - Fetches current policy version via `api.getPrivacyPolicy()`
+  - Inline summary with key data collection points
+  - Modal dialog for full policy text with ReactMarkdown rendering
+  - Version tracking and last updated date display
+- **Consent UI**:
+  - Checkbox with explicit consent text
+  - Two-button layout: "취소" (decline) and "계속하기" (accept)
+  - Disabled submit until checkbox is checked
+- **Data Recording**: Records consent with `userHash`, `consent_type: "privacy_policy"`, `policyVersion`
+- **Flow Control**:
+  - Accept: Stores `consentVersion` in sessionStorage, proceeds to login
+  - Decline: Returns to whitelist check
+
+**Step 4: LoginPage** (`page: "login"`):
+
+- **OAuth Integration**: Supabase auth with Google and Kakao providers
+- **Provider Buttons**: Branded buttons with loading states and error handling
+- **Navigation**: "이전으로" option to return to whitelist check
+- **Loading States**: Individual loading indicators per provider to prevent double-clicks
+- **Error Recovery**: Alert messages for authentication failures with retry options
+
+### 13.3 Authentication State Transitions
+
+**State Restoration**: App visibility change handlers for session recovery
+
+- **Persistence**: UI state (page, editingPlan, noticeOpen, simulationResult) in localStorage
+- **Restoration**: On app focus/visibility change, restores state with diff checking
+- **Session Management**: Supabase session auto-refresh maintains authentication
+
+### 13.4 Main Application Experience
+
+**MainPage Navigation** (`page: "main"`):
+
+- **Header Actions**:
+  - Add simulation button (+ icon) navigates to plan editor
+  - Notice board icon opens global notice modal
+  - Help icon opens contact modal
+  - Logout with confirmation
+- **Simulation Management**:
+  - **Table Interface**: Sortable columns (plan type, rounds, dates) with sort indicators
+  - **Bulk Operations**: Multi-select checkboxes with batch delete functionality
+  - **Row Actions**: Edit, run, view results, memo, delete icons per simulation
+  - **Loading States**: LinearProgress during simulation runs, skeleton loading for table
+  - **Empty States**: Welcome message and CTA for first-time users
+- **Summary Reports**: Statistical overview of selected simulations with export capabilities
+
+**PlanEditor Multi-step Wizard** (`page: "plan-editor"`):
+
+- **Step Navigation**: Material-UI Stepper component with 5 steps:
+  1. Plan Type Selector (A, B, C, D, K, P, R, F, E, G)
+  2. Starting Company Round
+  3. Current Company Round (must be ≥ starting round)
+  4. Simulation Rounds (plan-specific defaults: A/B/C/G=12-15, others=18)
+  5. Investment Schedule Editor with round-by-round investment input
+- **Validation Modals**: Step-specific validation with detailed error messages
+- **State Persistence**: Draft plans saved to localStorage for session recovery
+- **Auto-generation**: Default investment amounts based on plan type and round
+- **Progress Indicators**: Current step highlighting with completion status
+
+**ResultsPage** (`page: "results"`):
+
+- **Data Visualization**: Responsive tables and charts for simulation results
+- **Navigation**: Back to main page with preserved context
+- **Export Functions**: Download simulation results in various formats
+
+**Offline Results Page** (`page: "offline-results"`):
+
+- **Result Table**: Displays the simulation results for offline authentication (Here the "offline authentication" means the unique type of authentication process that is not covered in the current scope. It does not mean the opposite of the 'network connected' state.)
+- **Buttons**
+  - "Back to main page" button to return to the main page.
+
+**Admin Policy Page** (`page: "admin-policy"`):
+
+- **Policy Management**: Administrative interface for creating, editing, and publishing privacy policies
+- **Policy List**: Displays all policies with version, status, and publication information
+- **Policy Editor**: Form for creating and editing policy content, version, and metadata
+- **Publishing Controls**: Interface for publishing policies and managing active versions
+
+### 13.5 Mobile-First Responsive Design
+
+**Breakpoint Strategy**: Material-UI responsive design with mobile-first approach
+
+- **Mobile (xs)**: Single-column layouts, full-width inputs, touch-friendly button sizing
+- **Desktop (md+)**: Multi-column layouts, optimized spacing, hover states
+
+**Touch Interaction Patterns**:
+
+- **Button Sizing**: Minimum 44px touch targets for accessibility
+- **Input Fields**: Large, clearly labeled form controls with appropriate input modes
+- **Table Scrolling**: Horizontal scroll for simulation table on narrow screens
+- **Modal Handling**: Full-screen modals on mobile, overlay on desktop
+
+**Progressive Enhancement**:
+
+- **Core Functionality**: Works without JavaScript for basic policy viewing
+- **Enhanced Features**: Interactive sorting, real-time validation, auto-save
+- **Offline Indicators**: Connection status awareness (future enhancement)
+
+### 13.6 Error Recovery & Accessibility
+
+**Error State Management**:
+
+- **Network Failures**: Retry mechanisms with exponential backoff
+- **Validation Errors**: Inline error messages with clear recovery instructions
+- **Session Expiry**: Automatic redirect to login with context preservation
+
+**Accessibility Features**:
+
+- **Keyboard Navigation**: Tab order and focus management throughout forms
+- **Screen Reader Support**: Proper ARIA labels and semantic HTML structure
+- **Auto-complete Support**: OTP fields with `one-time-code` attribute for SMS integration
+- **Color Contrast**: Material-UI theme ensures WCAG compliance
+
+**Loading & Feedback States**:
+
+- **Progress Indicators**: CircularProgress for actions, LinearProgress for data loading
+- **Success Confirmations**: Toast notifications for completed actions
+- **State Preservation**: Form inputs maintained across navigation and errors
+
+---
+
+## 14. Constraints & Assumptions
+
+- **Environment variables**:
+  - Backend: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (preferred) or `SUPABASE_PUBLISHABLE_KEY`, `OTP_SECRET_KEY`, `OTP_VALIDITY_MINUTES` (default: 5), `OTP_RESEND_LIMIT_PER_15MIN` (default: 3), `otp_max_verification_attempts` (default: 6), `OTP_RESEND_LIMIT_PER_DAY` (default: 10)
+  - SMS Provider: `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_SENDER_NUMBER` (primary); Legacy: `NHN_CLOUD_APPKEY`, `NHN_CLOUD_SECRET_KEY`, `NHN_CLOUD_SENDER_NUMBER`
+  - Frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_BASE_URL` (default: `https://simulation.lightoflifeclub.com/api`)
+- **CORS Configuration**: Includes `simulation.lightoflifeclub.com`, localhost and 127.0.0.1 on ports 5173 (dev), 4173 (preview), plus local network IP addresses for development (`10.10.113.129`, `172.30.1.39` but can vary by environment)
+- **Supabase RLS** should be configured on user-owned tables; admin APIs rely on server checks
+- **Whitelist table** exists with user_hash; seeding/management handled out-of-band
+- **Docker/Cloudflare Tunnel** used for deployment; ports: frontend 5173 (dev), 4173 (preview), backend 8000 (production), 8001 (development)
+- **Privacy Policy Source of Truth**: Published DB row is primary; static file fallback available if DB unavailable
+- **PWA Manifest**: Name "Light of Life Club Simulation", landscape orientation preferred, theme color #1976d2
+
+---
+
+## 15. Error Handling
+
+- **Structured Exception System**: Custom `BaseAPIException` class with error codes, context, and structured logging
+- **HTTP Status Code Mapping**:
+  - 401: `AuthenticationError` - Missing or invalid authentication  
+  - 403: `AdminPrivilegesRequiredError`, `AuthorizationError` - Insufficient permissions
+  - 404: `ResourceNotFoundError`, `SimulationNotFoundError`, `NoticeNotFoundError`, `PrivacyPolicyNotFoundError` - Resource not found
+  - 400: `WhitelistError`, `InvalidDataError`, `NoFieldsToUpdateError` - Business logic validation errors
+  - 409: `PublishingConstraintError` - Conflict errors (e.g., policy publishing constraints)
+  - 422: FastAPI request validation errors
+  - 500: `DatabaseError`, `InternalServerError` - Server errors
+- **Response Formats**:
+  - OTP & admin endpoints: `{ success: boolean, message: string, ... }`
+  - Standard FastAPI errors: `{ "detail": "..." }`
+- **Error Context**: Exceptions include optional `error_code` and `error_context` for debugging
+- **Logging**: All exceptions automatically logged with structured context for monitoring
+
+---
+
+## 16. Testing Strategy (Simplified)
+
+### 16.1 Test Layers
+
+| Layer | Tooling | Coverage Target |
+|-------|---------|-----------------|
+| Backend unit | pytest | ≥75% |
+| Frontend unit | Vitest + RTL | ≥60% |
+| Integration | pytest + test DB | Critical paths |
+| Contract | OpenAPI validation | API stability |
+| E2E | Basic smoke tests | Core user flows |
+
+### 16.2 CI Gates
+
+- Lint & Type Check (ESLint, tsc)
+- Unit tests pass with coverage
+- OpenAPI snapshot validation (no breaking changes)
+- Basic security checks (dependency scan)
+
+---
+
+## 17. Acceptance Criteria
+
+### 17.1 OTP & Whitelist
+
+- Given a whitelisted name+phone, when POST /api/otp/send, then OTP is sent and user_hash returned
+- Given OTP attempts exceed max, when another attempt is made, then success=false and remaining_attempts=0
+
+### 17.2 Consent & Policy
+
+- Given a policy (DB or fallback), when GET /api/privacy-policy, content is returned.
+- Given user_hash + version, when POST /api/consents, record is stored (idempotent via upsert).
+- Post-auth enforcement & decline flows are not part of current implementation.
+
+### 17.3 Simulations
+
+- Given valid inputs, when POST /api/simulation/create, then a simulation row is created with id
+- Given an updated simulation, when PATCH /api/simulations/{id}, then results are invalidated and re-generated on next run
+
+### 17.4 Admin
+
+- Given an admin user, when GET /api/admin/me, then is_admin=true
+- Given an admin user, when publishing a policy, then other policies become unpublished
+
+---
+
+## 19. User Experience Flows
+
+### 19.1 Pre-auth User Journey
+
+**Onboarding Flow (First-time Users)**:
+
+1. **WhitelistCheckPage**: User enters name + phone → system validates against SHA256 hash in whitelist table
+   - **Success**: Redirects to OTP verification with `user_hash` stored in sessionStorage
+   - **Failure**: Shows error message with retry option
+   - **UX Considerations**: Clear error messaging, input validation, mobile-optimized form layout
+
+2. **OtpVerificationPage**: User receives and enters 6-digit code
+   - **Loading States**: Shows spinner during send/verify operations
+   - **Error Handling**: Displays remaining attempts, resend timer, clear error messages
+   - **Rate Limiting UX**: Progressive backoff messaging (3 sends per 15min, 6 verify attempts)
+   - **Accessibility**: Large input fields for mobile, auto-focus, numeric keypad
+
+3. **ConsentPage**: Privacy policy acceptance
+   - **Content**: Fetches current published policy version via GET /api/privacy-policy
+   - **UX**: Scrollable policy text, clear "Accept" button, cannot proceed without consent
+   - **State Persistence**: Consent recorded against user_hash before authentication
+
+4. **LoginPage**: Supabase OAuth selection
+   - **Providers**: Google, Kakao buttons with brand-appropriate styling
+   - **Fallback**: Back navigation to previous steps if needed
+   - **Mobile**: Touch-friendly button sizing, clear provider identification
+
+### 19.2 Authenticated User Experience
+
+**Post-login Flow**:
+
+1. **MainPage Navigation**:
+   - **Loading States**: Skeleton loaders for simulation table, progressive data loading
+   - **Empty States**: Welcome message and CTA for first simulation creation
+   - **Bulk Operations**: Multi-select with batch actions (delete, export)
+
+**Simulation Management UX**:
+
+- **Plan Editor**: Multi-step wizard with validation, progress indicators, contextual help
+- **Results Visualization**: Responsive tables, mobile-scrollable layouts, summary cards
+- **State Management**: Auto-save drafts to localStorage, session recovery on browser refresh
+
+### 19.3 Error Recovery Patterns
+
+**Network Resilience**:
+
+- **Retry Logic**: Exponential backoff for failed API calls with user-friendly retry buttons
+- **Offline Indicators**: Connection status in header, cached content when possible
+- **Progressive Enhancement**: Core functionality available even with slow connections
+
+**Validation & Feedback**:
+
+- **Real-time Validation**: Input field validation with inline error messages
+- **Form State Recovery**: Preserve user inputs across navigation and errors
+- **Success Confirmations**: Clear feedback for completed actions (simulation created, policy updated)
+
+---
+
+## 20. Data Migration Strategy
+
+### 20.1 Schema Evolution Approach
+
+**Version-Safe Migrations**:
+
+- **Additive Changes**: New columns added with default values, backward-compatible
+- **Deprecation Pattern**: Mark columns for removal with migration comments, grace period before DROP
+- **Index Management**: Create indexes concurrently, drop only after confirming usage patterns
+
+**Migration Execution**:
+
+```sql
+-- Example: Adding new simulation metadata
+ALTER TABLE simulations 
+ADD COLUMN metadata JSONB DEFAULT '{}';
+
+-- Example: Evolving privacy policy structure
+ALTER TABLE privacy_policies 
+ADD COLUMN category TEXT DEFAULT 'general',
+ADD COLUMN mandatory BOOLEAN DEFAULT true;
+```
+
+### 20.2 Data Consistency Patterns
+
+**Supabase-Specific Considerations**:
+
+- **RLS Policy Updates**: Test policy changes in staging before production deployment
+- **Foreign Key Constraints**: Maintain referential integrity during user_id migrations
+- **JSONB Evolution**: Use backwards-compatible JSONB schema changes for `simulation_results`, `investments`
+
+**User Data Migration**:
+
+- **Consent Version Tracking**: When privacy policies update, flag users requiring re-consent
+- **Consent Status Migration**: Backfill consent_records for existing authenticated users with current published policy version (one-off script)
+- **Simulation Schema Updates**: Preserve historical simulation data while supporting new plan parameters
+- **Whitelist Management**: Support bulk import/export for whitelist hash updates
+- **Retroactive Consent Linking**: Link existing consent_records to user_id for authenticated users
+
+### 20.3 Rollback Procedures
+
+**Safe Rollback Strategy**:
+
+- **Database**: Keep old columns during migration grace period, restore from Supabase backups if needed
+- **Application**: Feature flags to disable new functionality, graceful degradation
+- **User State**: Preserve pre-migration user preferences and simulation history
+
+---
+
+## 21. Backup and Recovery
+
+### 21.1 Data Protection Strategy
+
+**Supabase Managed Backups**:
+
+- **Automatic Backups**: Daily snapshots with 7-day retention (Supabase Pro tier)
+- **Point-in-Time Recovery**: Up to 7 days for critical data recovery scenarios
+- **Geographic Redundancy**: Multi-region backup storage via Supabase infrastructure
+
+**Application-Level Backups**:
+
+- **Simulation Export**: User-initiated export of personal simulation history to JSON/CSV
+- **Policy Archive**: Administrative backup of all privacy policy versions before publication
+- **Whitelist Management**: External backup of hashed whitelist for disaster recovery
+
+### 21.2 Recovery Procedures
+
+**Data Loss Scenarios**:
+
+1. **User Simulation Data**: Restore from daily Supabase backup, user notification of potential data loss window
+2. **Privacy Policy Corruption**: Restore from version control + database backup combination
+3. **Whitelist Compromise**: Re-hash from master list, coordinate with user communication
+
+**Recovery Time Objectives**:
+
+- **Database Restore**: < 4 hours for complete restoration from backup
+- **Application Recovery**: < 30 minutes for service restoration (Docker container restart)
+- **User Notification**: < 2 hours for incident communication
+
+### 21.3 Business Continuity
+
+**Service Degradation Modes**:
+
+- **Read-Only Mode**: If write operations fail, allow simulation viewing and export
+- **Cached Policy**: Serve privacy policy from static backup if database unavailable
+- **OTP Fallback**: Manual verification process if SMS provider fails
+
+---
+
+## 22. Performance Baselines
+
+### 22.1 API Performance Targets
+
+**Core Endpoints**:
+
+| Endpoint | Target (p95) | Acceptable (p99) | Timeout |
+|----------|--------------|------------------|---------|
+| POST /api/otp/send | < 2000ms | < 4000ms | 10s |
+| POST /api/otp/verify | < 300ms | < 500ms | 5s |
+| POST /api/simulation/create | < 400ms | < 600ms | 10s |
+| POST /api/simulation/run | < 1500ms | < 3000ms | 15s |
+| GET /api/simulations | < 200ms | < 400ms | 5s |
+| GET /api/health | < 100ms | < 200ms | 3s |
+
+**Database Operations**:
+
+- **Supabase Query Performance**: < 100ms for simple selects, < 500ms for complex joins
+- **JWT Verification**: < 50ms including JWKS cache lookup (5-15min TTL)
+- **Simulation Engine**: < 1000ms for 10-round simulation with complex investment schedules
+
+### 22.2 Frontend Performance Metrics
+
+**Core Web Vitals Targets**:
+
+- **Largest Contentful Paint (LCP)**: < 2.5s for MainPage initial load
+- **First Input Delay (FID)**: < 100ms for all interactive elements
+- **Cumulative Layout Shift (CLS)**: < 0.1 for stable page layouts
+
+**Application-Specific Metrics**:
+
+- **Page Transitions**: < 200ms between authenticated pages
+- **Simulation Table Rendering**: < 500ms for 100+ simulation rows
+- **Plan Editor**: < 100ms response time for input validation
+
+### 22.3 Scalability Considerations
+
+**Current Load Profile** (60-100 users):
+
+- **Concurrent Users**: 30-60 peak, 5-15 average
+- **API Requests**: ~1000 requests/hour peak, mostly GET operations
+- **Database Connections**: 5-10 concurrent via Supabase connection pooling
+
+**Performance Monitoring**:
+
+- **Health Endpoint**: Tracks Supabase latency and availability
+- **Client-side Telemetry**: Error rates, page load times via browser performance APIs
+- **Rate Limiting**: OTP endpoints protected (3/15min send, 6 attempts per code)
+
+**Scaling Thresholds**:
+
+- **Database**: Current Supabase tier supports 500+ concurrent connections
+- **Backend**: Single FastAPI instance handles current load; horizontal scaling at 200+ concurrent users
+- **Frontend**: Cloudflare CDN provides global distribution, Vite build optimizations for bundle size
+
+---
+
+## 23. Privacy Policy Management
+
+- Create / update / delete / publish policies (admin endpoints).
+- Fetch policy (public) with DB-first then static-file fallback.
+
+
+---
+
+## 24. Glossary
+
+- **Supabase**: Backend-as-a-Service providing Postgres, Auth, Storage, and APIs
+- **JWKS**: JSON Web Key Set for verifying JWT signatures
+- **OTP**: One-time password sent via SMS
+- **PWA**: Progressive Web App supporting installability and service worker caching
+- **RLS**: Row Level Security (Postgres policy-based row access control)
+- **P95/P99**: 95th and 99th percentile performance metrics
+- **LCP/FID/CLS**: Core Web Vitals performance metrics
+- **RTT**: Round-trip time for network requests
+- **Pre-auth user**: User before completing OTP verification, privacy policy consent, and OAuth authentication

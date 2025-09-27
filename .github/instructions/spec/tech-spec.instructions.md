@@ -1,3 +1,7 @@
+---
+applyTo: "/src/backend/**, /src/frontend/**, /.github/prompts/plans/**"
+---
+
 ## Technical Specification
 
 Keep edits small. Follow patterns. Verify with quick runs.
