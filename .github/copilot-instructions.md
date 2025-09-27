@@ -21,7 +21,7 @@ See [AGENTS](docs/instructions/agents.md).
 
 The app is designed to be responsive and works optimally on both desktop and mobile devices with a mobile-first approach.
 
-See the Software Specification Document (`.memo/CE/specs/SSD.md`) for more details.
+See the Software Specification Document (`.memo/CE/specs/SSD.md`) for more overview details.
 
 ## Project environment
 
