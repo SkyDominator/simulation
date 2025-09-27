@@ -4,7 +4,7 @@ This file provides instructions and context for AI coding assistants to help the
 
 ## Basic behavioral patterns for ALL AI coding assistants (agents)
 
-Adhere to the instructions in `.github/instructions/agents.md` for basic behavioral patterns.
+Adhere to the instructions in [AGENTS](/.github/instructions/agents.md) for basic behavioral patterns.
 
 ## Project overview
 
