@@ -6,19 +6,14 @@ import { mockFetchResponse, mockFetchError } from '../utils/testUtils'
 import { mockApiResponses } from '../mocks/api'
 import WhitelistCheckPage from '../../pages/WhitelistCheckPage'
 
-// Mock the API module
-vi.mock('../../services/api', () => ({
-  api: {
-    sendOtp: vi.fn(),
-  }
-}))
-
 describe('WhitelistCheckPage', () => {
   const mockOnVerified = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
     mockOnVerified.mockClear()
+    // Reset fetch mock
+    vi.mocked(fetch).mockClear()
   })
 
   afterEach(() => {
@@ -157,8 +152,13 @@ describe('WhitelistCheckPage', () => {
     it('should transition to OTP verification on successful whitelist check', async () => {
       const user = userEvent.setup()
       
-      // Mock successful response
-      mockFetchResponse(mockApiResponses.otp.send)
+      // Mock successful response with the expected structure
+      mockFetchResponse({
+        success: true,
+        message: 'OTP sent',
+        user_hash: 'hash123',
+        expires_in_seconds: 300
+      })
       
       renderWithProviders(
         <WhitelistCheckPage onVerified={mockOnVerified} />
@@ -173,8 +173,9 @@ describe('WhitelistCheckPage', () => {
       await user.click(submitButton)
       
       await waitFor(() => {
-        // Should render OTP verification page
-        expect(screen.getByText(/인증번호 입력/i)).toBeInTheDocument()
+        // Should render OTP verification page with expected text
+        expect(screen.getByText(/휴대폰 인증/i)).toBeInTheDocument()
+        expect(screen.getByLabelText(/인증번호/i)).toBeInTheDocument()
       })
     })
   })

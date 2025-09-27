@@ -18,7 +18,21 @@ export const mockAuthContext: MockAuthContextType = {
     aud: 'authenticated',
     created_at: '2024-01-01T00:00:00Z'
   } as User,
-  session: null,
+  session: {
+    access_token: 'mock-access-token',
+    token_type: 'bearer',
+    expires_in: 3600,
+    expires_at: Date.now() + 3600 * 1000,
+    refresh_token: 'mock-refresh-token',
+    user: {
+      id: 'test-user-id',
+      email: 'test@example.com',
+      app_metadata: {},
+      user_metadata: {},
+      aud: 'authenticated',
+      created_at: '2024-01-01T00:00:00Z'
+    }
+  } as Session,
   loading: false,
   signOut: vi.fn(),
 }
