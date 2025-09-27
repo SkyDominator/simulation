@@ -237,7 +237,8 @@ test.describe('Simulation Management Flow', () => {
     
     // Set investments
     for (const [round, amount] of Object.entries(config.investments)) {
-      await helpers.fillInvestmentAmount(parseInt(round), amount.toString())
+      const safeAmount = (amount !== null && amount !== undefined) ? amount.toString() : '0';
+      await helpers.fillInvestmentAmount(parseInt(round), safeAmount)
     }
     
     // Create simulation
