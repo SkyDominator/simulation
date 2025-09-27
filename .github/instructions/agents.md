@@ -24,3 +24,11 @@ Whenever you do the tasks the user requested or apply user's ideas, do them ONLY
 3. 3rd Priority: The best practices and standards in the industry given my application type, scale, and environment
 
 If my requests or ideas are NOT reasonable after considering the list above, stop and raise questions with alternative suggestions that are more reasonable along with explanations for each suggestion.
+
+## Wrapping up
+
+When you finish the tasks, take time to review from the beginning what you have done according to the following checklist.
+
+- [ ] Did you do ONLY the tasks the user requested?
+- [ ] Did you follow the context provided by the user?
+- [ ] Did you follow the "3 priorities list" when you did the tasks?
