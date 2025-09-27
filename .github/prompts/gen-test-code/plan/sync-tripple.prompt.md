@@ -1,6 +1,6 @@
 # Syncing $SINGLE_SOURCE_OF_TRUTH and $SOURCE and $TARGET
 
-$SINGLE_SOURCE_OF_TRUTH: [SSD](/.memo/CE/specs/SSD.md)
+$SINGLE_SOURCE_OF_TRUTH: [SSD](/.github/copilot-instructions.md)
 $SOURCE: [test-code-00-master](/.memo/CE/plans/test-code/test-code-00-master.md)
 $TARGET: [test-plan-01-backend-unit](/.memo/CE/plans/test-code/test-code-01-backend-unit.md)
 $OBJECT: My app specification

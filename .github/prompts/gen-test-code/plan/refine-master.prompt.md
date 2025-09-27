@@ -1,6 +1,6 @@
 # Review & Refinement
 
-$SINGLE_SOURCE_OF_TRUTH: [SSD](/.memo/CE/specs/SSD.md)
+$SINGLE_SOURCE_OF_TRUTH: [SSD](/.github/copilot-instructions.md)
 $TARGET: [test-code-00-master](/.memo/CE/plans/test-code/test-code-00-master.md)
 $REVIEW_DIR: [review](/.memo/CE/plans/test-code/review/)
 $REVIEW_FILE: `review-00-{date}-{idx}.md`

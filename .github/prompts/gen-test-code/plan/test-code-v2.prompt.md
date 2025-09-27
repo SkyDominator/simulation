@@ -1,6 +1,6 @@
 Improve the plan for test code generation for backend unit test of my app following the guidance below:
 
-{SSD} = `/.memo/CE/specs/SSD.md`
+{SSD} = `/.github/copilot-instructions.md`
 {codebase} = `/src/backend/**`
 {test-plan} = `/.memo/CE/plans/test-code/test-plan-02-backend-integration.md`
 

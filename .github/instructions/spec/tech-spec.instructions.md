@@ -276,7 +276,7 @@ src/
 ### Key Files
 
 **Docs**:
-- SSD: `.memo/CE/specs/SSD.md`
+- SSD: `.github/copilot-instructions.md`
 - Schema: `.memo/CE/specs/schema/schema.md`
 - Tests: `.memo/CE/plans/test-code-v1/`
 

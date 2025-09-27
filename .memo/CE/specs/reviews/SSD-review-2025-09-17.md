@@ -1,6 +1,6 @@
 # SSD Review – 2025-09-17
 
-Source SSD: `/.memo/CE/specs/SSD.md` (v0.2.0)  
+Source SSD: `/.github/copilot-instructions.md` (v0.2.0)  
 Scope of this review: Two sections requested by author – (1) Implementation vs SSD Gap Analysis, (2) Edge Cases to Handle.
 
 ---

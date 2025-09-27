@@ -1,6 +1,6 @@
 # SSD Review – 2025-09-16
 
-Scope: Format Consistency & Content Consistency across `.memo/CE/specs/SSD.md` and `.memo/CE/specs/schema/schema.md` after recent privacy policy consent feature additions.
+Scope: Format Consistency & Content Consistency across `.github/copilot-instructions.md` and `.memo/CE/specs/schema/schema.md` after recent privacy policy consent feature additions.
 
 ## Summary
 
