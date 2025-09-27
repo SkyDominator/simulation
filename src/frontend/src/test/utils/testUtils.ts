@@ -83,9 +83,32 @@ export const mockDesktopViewport = () => {
 
 // Reset viewport
 export const resetViewport = () => {
-  delete (window as any).innerWidth
-  delete (window as any).innerHeight
-  delete (window as any).matchMedia
+  // Reset to default values instead of trying to delete
+  Object.defineProperty(window, 'innerWidth', {
+    writable: true,
+    configurable: true,
+    value: 1024,
+  })
+  Object.defineProperty(window, 'innerHeight', {
+    writable: true,
+    configurable: true,
+    value: 768,
+  })
+  // Reset matchMedia to default desktop behavior
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    configurable: true,
+    value: vi.fn().mockImplementation(query => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  })
 }
 
 // Mock navigator.onLine for network status tests

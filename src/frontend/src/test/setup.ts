@@ -18,6 +18,7 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
+  configurable: true,
   value: vi.fn().mockImplementation(query => ({
     matches: false,
     media: query,
