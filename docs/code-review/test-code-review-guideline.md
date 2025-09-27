@@ -1,6 +1,6 @@
 # Test Code Review Guidelines
 
-You will be given a markdown file (backend) or a JSON file (frontend) that contains the test report of the test codes. If not provided, ask the user for the report file. Review the report and decide whether the problems lie on the codebase or test codes themselves. If you have questions that need to be clarified, pause reviewing and ask the user first.
+Run tests and get the test report. Review the report and decide whether the problems lie on the codebase or test codes themselves. If you have questions that need to be clarified, pause reviewing and ask the user first.
 
 If no questions exist (or all raised questions are solved by the user's answers), decide whether the problems lie on the codebase or test codes
 
