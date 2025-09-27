@@ -10,57 +10,64 @@ export class TestHelpers {
    * Fill the whitelist verification form
    */
   async fillWhitelistForm(name: string, phone: string) {
-    await this.page.fill('[data-testid="name-input"]', name)
-    await this.page.fill('[data-testid="phone-input"]', phone)
-    await this.page.click('[data-testid="submit-whitelist"]')
+    // Use Material-UI label-based selectors
+    await this.page.getByLabel('이름').fill(name)
+    await this.page.getByLabel('휴대폰 번호').fill(phone)  
+    await this.page.getByRole('button', { name: '인증번호 받기' }).click()
   }
   
   /**
    * Fill the OTP verification form
    */
   async fillOTPForm(code: string) {
-    await this.page.fill('[data-testid="otp-input"]', code)
-    await this.page.click('[data-testid="verify-otp"]')
+    await this.page.getByLabel('인증번호').fill(code)
+    await this.page.getByRole('button', { name: '인증하기' }).click()
   }
   
   /**
    * Select a plan in the plan editor
    */
   async selectPlan(planId: string) {
-    await this.page.selectOption('[data-testid="plan-selector"]', planId)
+    // Look for Material-UI Select component
+    await this.page.click('[role="button"][aria-haspopup="listbox"]')
+    await this.page.click(`text="${planId}"`)
   }
   
   /**
    * Fill investment amount for specific round
    */
   async fillInvestmentAmount(round: number, amount: string) {
-    await this.page.fill(`[data-testid="investment-round-${round}"]`, amount)
+    // Look for investment input by round - could be in a table or form
+    const selector = `input[type="text"]:near(text="${round}회차")`
+    await this.page.fill(selector, amount)
   }
   
   /**
    * Wait for simulation results to appear
    */
   async waitForSimulationResults() {
-    await this.page.waitForSelector('[data-testid="simulation-results"]', { timeout: 10000 })
-    await expect(this.page.locator('[data-testid="results-table"]')).toBeVisible()
+    // Look for results content or table
+    await this.page.waitForSelector('text=/시뮬레이션.*결과/', { timeout: 10000 })
+    await expect(this.page.locator('table, [role="table"]')).toBeVisible()
   }
   
   /**
    * Wait for notification message
    */
   async waitForNotification(message: string) {
-    await expect(this.page.locator('[data-testid="notification"]')).toContainText(message)
+    // Look for Material-UI Alert or Snackbar
+    await expect(this.page.locator('[role="alert"], .MuiAlert-root').filter({ hasText: message })).toBeVisible()
   }
   
   /**
    * Navigate through multi-step forms
    */
   async clickNext() {
-    await this.page.click('[data-testid="next-button"]')
+    await this.page.getByRole('button', { name: /다음|Next|계속/i }).click()
   }
-  
+
   async clickPrevious() {
-    await this.page.click('[data-testid="previous-button"]')
+    await this.page.getByRole('button', { name: /이전|Previous|뒤로/i }).click()
   }
   
   /**
