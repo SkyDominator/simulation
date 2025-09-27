@@ -1,4 +1,4 @@
-`$TARGET`: `security test codes implemented in PR #48`
+`$TARGET`: `e2e test codes implemented in PR #47`
 
 Run tests for `$TARGET` and get the test report. Review the report and decide whether the problems lie on the codebase or test codes themselves. If you have questions that need to be clarified, pause reviewing and ask the user first.
 
