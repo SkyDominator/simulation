@@ -1,10 +1,8 @@
 ## Project details
 
-Keep edits small, follow the patterns below, and verify with quick runs. ALWAYS CONSULT this document and the Software Specification Document (`.memo/CE/specs/SSD.md`) before any task.
+Keep edits small, follow the patterns below, and verify with quick runs.
 
 ### Architecture at a glance
-
-**Software Specification Document**: `.memo/CE/specs/SSD.md`
 
 **Backend (FastAPI + Python 3.11+)**:
 - **Application Factory**: `main.py` creates FastAPI app with CORS middleware and exception handlers
