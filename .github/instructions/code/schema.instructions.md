@@ -1,3 +1,7 @@
+---
+applyTo: "/src/backend/**, /src/frontend/**, /.github/prompts/plans/**"
+---
+
 ## admins
 
 ### schema

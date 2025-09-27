@@ -1,6 +1,6 @@
 # Syncing $SOURCE and $TARGET
 
-$SOURCE: [SSD](/.memo/CE/specs/SSD.md)
+$SOURCE: [SSD](/.github/copilot-instructions.md)
 $TARGET: [test-plan-master](/.memo/CE/plans/test-code/test-code-00-master.md)
 $OBJECT: My app specification
 $REVIEW_DIR: [review](/.memo/CE/plans/test-code/review/)

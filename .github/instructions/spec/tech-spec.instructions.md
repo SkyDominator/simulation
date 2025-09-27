@@ -1,3 +1,7 @@
+---
+applyTo: "/src/backend/**, /src/frontend/**, /.github/prompts/plans/**"
+---
+
 ## Technical Specification
 
 Keep edits small. Follow patterns. Verify with quick runs.
@@ -272,7 +276,7 @@ src/
 ### Key Files
 
 **Docs**:
-- SSD: `.memo/CE/specs/SSD.md`
+- SSD: `.github/copilot-instructions.md`
 - Schema: `.memo/CE/specs/schema/schema.md`
 - Tests: `.memo/CE/plans/test-code-v1/`
 

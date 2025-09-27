@@ -1,6 +1,6 @@
 $PLAN = `/.memo/CE/plans/test-code/test-plan-01-backend-unit.md`
 $MASTER_PLAN = `/.memo/CE/plans/test-code/test-code-00-master.md`
-$SSD = `/.memo/CE/specs/SSD.md`
+$SSD = `/.github/copilot-instructions.md`
 $REPORT_PATH = `/.memo/CE/implement/report/{date}/test-plan-01-backend-unit.md`
 
 Implement new codes or modify existing codes on the [backend](/src/backend/) or [frontend](/src/frontend/) codebase by exactly following the implementation plan described in $PLAN.

@@ -1,11 +1,11 @@
 # Implementation Plan
 
-Use `/.memo/CE/specs/SSD.md` as the Single Source of Truth (SST) and use `/.memo/CE/research/2025-09-16/policy-research.md` as the snapshot of the current codebase to create an implementation/update plan of the following feature
+Use `/.github/copilot-instructions.md` as the Single Source of Truth (SST) and use `/.memo/CE/research/2025-09-16/policy-research.md` as the snapshot of the current codebase to create an implementation/update plan of the following feature
 
 # Feature to be implemented
 
-1. The privacy policy consent flow for both authenticated users and pre-auth users, as described in `/.memo/CE/specs/SSD.md`.
-2. The required affiliated codes corresponds to the consent flow, as described in `/.memo/CE/specs/SSD.md`.
+1. The privacy policy consent flow for both authenticated users and pre-auth users, as described in `/.github/copilot-instructions.md`.
+2. The required affiliated codes corresponds to the consent flow, as described in `/.github/copilot-instructions.md`.
 
 # Plan format
 

@@ -1,6 +1,6 @@
 # Instruction
 
-Read `.memo/CE/specs/SSD.md` and `.memo/CE/specs/schema/schema.md` to understand my app. After that, update SSD.md for applying the following needs.
+Read `.github/copilot-instructions.md` and `.memo/CE/specs/schema/schema.md` to understand my app. After that, update SSD.md for applying the following needs.
 
 # The needs to be applied
 

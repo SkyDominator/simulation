@@ -1,6 +1,6 @@
 # Implementation Plan
 
-Use `/.memo/CE/specs/SSD.md` as the Single Source of Truth (SST) and use `/.memo/CE/research/2025-09-16/test-code-research.md` as the snapshot of the current codebase to create an implementation/update plan of the following feature
+Use `/.github/copilot-instructions.md` as the Single Source of Truth (SST) and use `/.memo/CE/research/2025-09-16/test-code-research.md` as the snapshot of the current codebase to create an implementation/update plan of the following feature
 
 # Feature to be implemented
 
