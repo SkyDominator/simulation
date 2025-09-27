@@ -548,11 +548,11 @@ describe('Authentication Security Tests', () => {
       
       await waitFor(() => {
         expect(fetch).toHaveBeenCalled()
+        
+        // Verify CSRF token is included
+        expect(requestHeaders['X-CSRF-Token']).toBe('csrf-token-123')
+        expect(requestHeaders['Authorization']).toBe('Bearer test-token')
       })
-      
-      // Verify CSRF token is included
-      expect(requestHeaders['X-CSRF-Token']).toBe('csrf-token-123')
-      expect(requestHeaders['Authorization']).toBe('Bearer test-token')
     })
   })
 })
