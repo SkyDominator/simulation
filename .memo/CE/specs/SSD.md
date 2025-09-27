@@ -1,4 +1,4 @@
-# Partners Club Simulation – Software Specification Document (SSD)
+# Light of Life Club Simulation – Software Specification Document (SSD)
 
 Version: 0.2.1 (Updated for Implementation Consistency)  
 Date: 2025-09-27  
@@ -11,7 +11,7 @@ Owners: Product, Engineering (Backend/Frontend)
 
 ## 1. Introduction
 
-Partners Club Simulation is a PWA that allows whitelisted users to sign in via Supabase OAuth, manage investment plan simulations, and review results. The app enforces a pre-auth onboarding flow (whitelist + OTP + privacy consent) and provides an admin UI for managing privacy policies and notices. The backend is a FastAPI service integrated with Supabase and the frontend is a React/Vite app.
+Light of Life Club Simulation is a PWA that allows whitelisted users to sign in via Supabase OAuth, manage investment plan simulations, and review results. The app enforces a pre-auth onboarding flow (whitelist + OTP + privacy consent) and provides an admin UI for managing privacy policies and notices. The backend is a FastAPI service integrated with Supabase and the frontend is a React/Vite app.
 
 The Goals of this Project:
 
@@ -82,6 +82,11 @@ Target devices for functional / UX validation:
 
 - Desktop: Windows 11 + Google Chrome (latest stable).
 - Mobile: iPhone 11 Pro (iOS 18.1.1) + Google Chrome.
+- Notes:
+    * No CI/CD pipelines are set up yet.
+    * Testing framework: Pytest for backend, Vitest and Playwright for frontend.
+    * Frontend is tested via Vite dev on a Windows local machine (some other notebook for development machine, 5173 port).
+    * Backend is tested with debugpy on a Windows local machine (some other notebook for development machine, 8001 port).
 
 ### 4.3 Production Environment Targets
 
@@ -90,6 +95,11 @@ Supported / validated device & browser matrix:
 - Desktop: Windows 11+ (latest two Chrome versions).
 - Mobile (iOS): iPhone 11+ on iOS 18.1.1+ using Google Chrome.
 - Mobile (Android): Samsung Galaxy S21+ (Android 12+) using Google Chrome (latest two versions).
+* Notes:
+    * Hosted on Supabase (PostgreSQL, Storage, Auth)
+    * Frontend is served via Vite preview on a Windows local machine (MSI Notebook, 24 hours running, 4173 port).
+    * Backend is served on a Windows local machine (MSI Notebook, 24 hours running, 8000 port).
+    * No CI/CD pipelines are set up yet.
 
 ### 4.4 Expected User Load
 
@@ -98,7 +108,7 @@ Supported / validated device & browser matrix:
 | Total registered/whitelisted users | 60–100 |
 | Simultaneous active users (peak) | 30–60 |
 
-Implications:
+**Implications**:
 
 - Scaling requirements modest; single-region Supabase + minimal horizontal scaling acceptable.
 - Basic rate limiting enforced early to prevent misuse of OTP or simulation endpoints.
