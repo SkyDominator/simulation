@@ -1,5 +1,5 @@
 ---
-applyTo: "/src/frontend/**/*.tsx, /src/frontend/**/*.ts, /src/frontend/**/*.js, /src/frontend/**/*.jsx"
+applyTo: "/src/frontend/**/*.tsx,/src/frontend/**/*.ts,/src/frontend/**/*.js,/src/frontend/**/*.jsx"
 ---
 
 # Front-end Coding Guidelines

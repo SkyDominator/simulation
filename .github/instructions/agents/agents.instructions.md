@@ -1,5 +1,5 @@
 ---
-applyTo: "**/*.md, **/*.js, **/*.ts, **/*.tsx, **/*.py"
+applyTo: "**/*.md,**/*.js,**/*.ts,**/*.tsx,**/*.py"
 ---
 
 # Guidelines for Copilot Agents

@@ -1,5 +1,5 @@
 ---
-applyTo: "/src/backend/**/*.py, /src/frontend/**/*.tsx, /src/frontend/**/*.ts, /src/frontend/**/*.js, /docs/plans/**/*.md"
+applyTo: "/src/backend/**/*.py,/src/frontend/**/*.tsx,/src/frontend/**/*.ts,/src/frontend/**/*.js,/docs/plans/**/*.md"
 ---
 
 ## admins
