@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { api } from "../services/api";
 import ReactMarkdown from "react-markdown";
+import { sanitizeRichContent } from "../utils/sanitizer";
 
 // Consent gate: fetch privacy policy, require acknowledgement, and record consent
 
@@ -187,7 +188,16 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
             {policyLoading ? (
               <CircularProgress />
             ) : (
-              <ReactMarkdown>{policyContent}</ReactMarkdown>
+              <ReactMarkdown 
+                components={{
+                  // Sanitize any HTML that might be embedded in markdown
+                  html: ({ children }) => (
+                    <span dangerouslySetInnerHTML={{ __html: sanitizeRichContent(String(children)) }} />
+                  )
+                }}
+              >
+                {policyContent}
+              </ReactMarkdown>
             )}
           </Box>
           <Button

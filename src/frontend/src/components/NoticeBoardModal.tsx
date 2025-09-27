@@ -21,6 +21,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import useAuth from "../context/useAuth";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import { getJSON, setJSON } from "../utils/persist";
+import { sanitizeRichContent, createSafeHtml } from "../utils/sanitizer";
 
 interface NoticeBoardModalProps {
   isOpen: boolean;
@@ -386,9 +387,8 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
                   fontSize: 13,
                   lineHeight: 1.6,
                 }}
-              >
-                {activeNotice.content}
-              </Typography>
+                dangerouslySetInnerHTML={createSafeHtml(activeNotice.content)}
+              />
             </div>
           )}
 
