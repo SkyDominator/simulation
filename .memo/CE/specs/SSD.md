@@ -68,8 +68,8 @@ Out-of-scope (deferred):
 | Browser | Google Chrome (1920x1080) |
 | Device | Desktop |
 | Python | 3.11.6 or later (backend runtime; container may pin 3.12 in future) |
-| TypeScript | 5.8.3 or later |
-| React | 19.1.0 or later |
+| TypeScript | 5.8.4 or later |
+| React | 19.1.0 |
 
 Notes:
 
@@ -117,11 +117,11 @@ Supported / validated device & browser matrix:
 
 ## 5. System Architecture
 
-- **Frontend**: React 19.1.0+ + TypeScript 5.8.3+ + Vite 5.4.10+ (vite-plugin-pwa 0.20.0, MUI 5.14.0+ for UI, Tailwind CSS 3.4.4+). Auth via @supabase/supabase-js 2.51.0+. State persisted selectively to localStorage/sessionStorage.
+- **Frontend**: React 19.1.0 + TypeScript 5.8.4+ + Vite 5.4.10+ (vite-plugin-pwa 0.20.0, MUI 5.14.0+ for UI, Tailwind CSS 3.4.4+). Auth via @supabase/supabase-js 2.51.0+. State persisted selectively to localStorage/sessionStorage.
 - **Backend**: FastAPI 0.116.1+ (Python 3.11.6 or later), Pydantic v2 schemas, Supabase client 2.16.0+ (REST/RPC). JWT verification uses Supabase JWKS.
 - **Data**: Supabase Postgres (tables below). Auth via Supabase; JWT audience "authenticated". Privacy policy content served from database with static file fallback.
-- **Infra**: Dockerized services; Cloudflare Tunnel for public frontend domain (`simulation.lightoflifeclub.com`); CORS configured for local dev and tunnel domain.
-- **Deployment**: Frontend served via Vite preview on port 4173; Backend FastAPI on port 8000; Development uses port 5173 for frontend.
+- **Infra**: Windows native deployment for production; Cloudflare Tunnel for public frontend domain (`simulation.lightoflifeclub.com`); CORS configured for local dev and tunnel domain. (Dockerized services are planned but not implemented yet in both production and development.)
+- **Deployment**: Production uses Windows native deployment; Frontend served via Vite preview on port 4173; Backend FastAPI on port 8000; Development uses port 5173 for frontend.
 
 High-level flow:
 
@@ -640,7 +640,7 @@ All plans share common structure with the following parameters:
   - Backend: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (preferred) or `SUPABASE_PUBLISHABLE_KEY`, `OTP_SECRET_KEY`, `OTP_VALIDITY_MINUTES` (default: 5), `OTP_RESEND_LIMIT_PER_15MIN` (default: 3), `otp_max_verification_attempts` (default: 6), `OTP_RESEND_LIMIT_PER_DAY` (default: 10)
   - SMS Provider: `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_SENDER_NUMBER` (primary); Legacy: `NHN_CLOUD_APPKEY`, `NHN_CLOUD_SECRET_KEY`, `NHN_CLOUD_SENDER_NUMBER`
   - Frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_BASE_URL` (default: `https://simulation.lightoflifeclub.com/api`)
-- **CORS Configuration**: Includes `simulation.lightoflifeclub.com`, localhost and 127.0.0.1 on ports 5173 (dev), 4173 (preview), plus local IP addresses `10.10.113.129`, `172.30.1.39`
+- **CORS Configuration**: Includes `simulation.lightoflifeclub.com`, localhost and 127.0.0.1 on ports 5173 (dev), 4173 (preview), plus local network IP addresses for development (`10.10.113.129`, `172.30.1.39` but can vary by environment)
 - **Supabase RLS** should be configured on user-owned tables; admin APIs rely on server checks
 - **Whitelist table** exists with user_hash; seeding/management handled out-of-band
 - **Docker/Cloudflare Tunnel** used for deployment; ports: frontend 5173 (dev), 4173 (preview), backend 8000 (production), 8001 (development)

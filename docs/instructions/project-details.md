@@ -62,8 +62,9 @@ Keep edits small, follow the patterns below, and verify with quick runs.
 ### Local dev & runtime
 
 **Current Deployment Architecture**:
-- **Frontend**: Served via Vite preview on Windows laptop server (default port 4173)
-- **Backend**: Runs locally on Windows via helper scripts in `windows-scripts/` or directly with `uvicorn` (default port 8000)
+
+- **Frontend**: Served via Vite preview on Windows server (default port 4173)
+- **Backend**: Runs natively on Windows via PowerShell scripts directly with `uvicorn` (default port 8000)
 - **Public Access**: Frontend accessible via Cloudflare Tunnel at `https://simulation.lightoflifeclub.com`
 - **Database**: Hosted on Supabase cloud (PostgreSQL, Auth, Storage)
 
@@ -98,6 +99,9 @@ npm run test     # Vitest unit tests
 - Containers available but not used for production deployment
 - Services clone repo at startup via `/entrypoints/common-init.sh`
 - Requires `REPO_URL` env variable and optional GitHub PAT in `.secrets/github_pat.txt`
+
+**Windows Production Deployment**:
+- Cloudflare Tunnel for HTTPS termination and public access
 
 ### Configuration keys (backend)
 
@@ -246,6 +250,8 @@ src/
 **Testing & Mocking**:
 - **JWKS Network Calls**: Tests should mock `JWKSClient.get_keys()` to avoid real HTTP requests
 - **Test Environment**: Backend requires environment variables; use test fixtures and mocks
+- **Integration Tests**: Available in `src/backend/tests/integration/` with proper client mocking
+- **Frontend Tests**: Vitest-based testing with React Testing Library integration
 
 **OTP & SMS Integration**:
 - **Korean Language**: OTP messages include Korean strings - maintain existing contract
@@ -267,13 +273,18 @@ src/
 - **JWT Handling**: Tokens managed by Supabase client, not manually stored
 - **Error Boundaries**: Implement proper error handling for failed API calls
 
+**Windows Deployment Considerations**:
+- **Service Dependencies**: Backend must start before frontend in service configurations
+- **Port Conflicts**: Verify ports 4173 (frontend) and 8000 (backend) are available
+- **Cloudflare Tunnel**: Requires proper tunnel configuration and domain DNS setup
+
 **Database & Schema**:
 - **RLS Policies**: All tables protected by Row Level Security - respect user isolation
 - **Schema Documentation**: Full schema available in `.memo/CE/specs/schema/schema.md`
 - **Migration Pattern**: Schema changes should consider existing data and RLS policies
 
 **Development Environment**:
-- **Windows Primary**: Development optimized for Windows with PowerShell scripts
+- **Windows Primary**: Development and production optimized for Windows
 - **Port Configuration**: Frontend dev (5173), frontend preview (4173), backend (8000)
 - **Cloudflare Tunnel**: Production frontend served via tunnel at `simulation.lightoflifeclub.com`
 
