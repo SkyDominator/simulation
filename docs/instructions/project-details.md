@@ -4,6 +4,8 @@ These notes help AI coding agents work effectively in this repo. Keep edits smal
 
 ### Architecture at a glance
 
+**Software Specification Document**: `.memo/CE/specs/SSD.md`
+
 **Backend (FastAPI + Python 3.11+)**:
 - **Application Factory**: `main.py` creates FastAPI app with CORS middleware and exception handlers
 - **Router Layer**: `api/routes.py` (507+ lines) - centralized route definitions with thin delegation to services
