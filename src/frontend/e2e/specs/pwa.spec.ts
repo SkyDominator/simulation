@@ -472,10 +472,10 @@ test.describe('PWA Advanced Features', () => {
     await page.evaluate(() => {
       // Simulate low storage scenario
       if ('localStorage' in window) {
-        const largeDara = 'x'.repeat(1000000) // 1MB of data
+        const largeData = 'x'.repeat(1000000) // 1MB of data
         for (let i = 0; i < 10; i++) {
           try {
-            localStorage.setItem(`large-data-${i}`, largeDara)
+            localStorage.setItem(`large-data-${i}`, largeData)
           } catch (e) {
             // Quota exceeded
             break
