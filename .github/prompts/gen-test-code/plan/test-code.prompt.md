@@ -8,7 +8,7 @@ Use `/.github/copilot-instructions.md` as the Single Source of Truth (SST) and u
 
 # Plan format
 
-* Write and save your plan to `/.memo/CE/plans/2025-09-16/test-code.md`.
+* Write and save your plan to `/docs/plans/2025-09-16/test-code.md`.
 * Use the following format and style for the plan.
     * Reference example: `/.memo/CE/example1-plan.md`
 

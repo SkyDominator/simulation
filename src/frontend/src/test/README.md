@@ -1,6 +1,6 @@
 # Frontend Smoke Test Suite
 
-This directory contains comprehensive smoke tests for the Light of Life Club Simulation frontend application, implemented following the test plan in `.memo/CE/plans/test-code-v1/test-plan-03-frontend-smoke.md`.
+This directory contains comprehensive smoke tests for the Light of Life Club Simulation frontend application, implemented following the test plan in `docs/plans/test-code-v1/test-plan-03-frontend-smoke.md`.
 
 ## Test Coverage Overview
 

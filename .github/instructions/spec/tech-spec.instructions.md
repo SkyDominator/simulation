@@ -278,7 +278,7 @@ src/
 **Docs**:
 - SSD: `.github/copilot-instructions.md`
 - Schema: `.memo/CE/specs/schema/schema.md`
-- Tests: `.memo/CE/plans/test-code-v1/`
+- Tests: `docs/plans/test-code-v1/`
 
 **Backend Core**:
 - `api/routes.py` → All endpoints (507+ lines)

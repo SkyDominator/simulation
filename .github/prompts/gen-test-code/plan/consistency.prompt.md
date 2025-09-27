@@ -5,7 +5,7 @@ tools: ['codebase', 'usages', 'problems', 'fetch', 'searchResults', 'githubRepo'
 
 # Review
 
-Given the context discussed here so far, read thoroughly all the test code plans `/.memo/CE/plans/test-code/**` (except `examples`) again and provide feedbacks on the following review areas. Write your review as `/.memo/CE/plans/test-code/consistency-review-{date}.md`. Include suggestions for improvements, changes, or further clarification where necessary. If there are none, simply state "No issues found".
+Given the context discussed here so far, read thoroughly all the test code plans `/docs/plans/test-code/**` (except `examples`) again and provide feedbacks on the following review areas. Write your review as `/docs/plans/test-code/consistency-review-{date}.md`. Include suggestions for improvements, changes, or further clarification where necessary. If there are none, simply state "No issues found".
 
 ## Review Areas
 

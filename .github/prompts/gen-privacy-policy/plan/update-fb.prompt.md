@@ -29,7 +29,7 @@ Here are my decision and clarifications for `NEED_VERIFICATION`s
 # Next Step
 
 1. Apply the clarifications and decisions above in the `/.github/copilot-instructions.md` and `/.memo/CE/specs/schema/schema.md` if necessary. Note that SSD.md is written in more abstract way, so fit the clarifications and decisions to the level of abstraction of SSD.md.
-2. Apply the clarifications and decisions `/.memo/CE/plans/2025-09-16/policy-plan.md`. Remove `NEED_VERIFICATION` on the clarified elements in the `/.memo/CE/plans/2025-09-16/policy-plan.md`
+2. Apply the clarifications and decisions `/docs/plans/2025-09-16/policy-plan.md`. Remove `NEED_VERIFICATION` on the clarified elements in the `/docs/plans/2025-09-16/policy-plan.md`
 
 # Note
 

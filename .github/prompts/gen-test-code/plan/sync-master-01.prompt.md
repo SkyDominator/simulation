@@ -1,9 +1,9 @@
 # Syncing $SOURCE and $TARGET
 
-$SOURCE: [test-code-00-master](/.memo/CE/plans/test-code/test-code-00-master.md)
-$TARGET: [test-plan-01-backend-unit](/.memo/CE/plans/test-code/test-code-01-backend-unit.md)
+$SOURCE: [test-code-00-master](/docs/plans/test-code/test-code-00-master.md)
+$TARGET: [test-plan-01-backend-unit](/docs/plans/test-code/test-code-01-backend-unit.md)
 $OBJECT: My app specification
-$REVIEW_DIR: [review](/.memo/CE/plans/test-code/review/)
+$REVIEW_DIR: [review](/docs/plans/test-code/review/)
 $REVIEW_FILE: `review-sync-00-01-{date}-{idx}.md`
 
 ## Instructions

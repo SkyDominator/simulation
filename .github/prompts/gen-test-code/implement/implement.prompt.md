@@ -1,5 +1,5 @@
-$PLAN = `/.memo/CE/plans/test-code/test-plan-01-backend-unit.md`
-$MASTER_PLAN = `/.memo/CE/plans/test-code/test-code-00-master.md`
+$PLAN = `/docs/plans/test-code/test-plan-01-backend-unit.md`
+$MASTER_PLAN = `/docs/plans/test-code/test-code-00-master.md`
 $SSD = `/.github/copilot-instructions.md`
 $REPORT_PATH = `/.memo/CE/implement/report/{date}/test-plan-01-backend-unit.md`
 

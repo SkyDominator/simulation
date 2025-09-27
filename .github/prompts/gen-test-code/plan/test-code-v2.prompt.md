@@ -2,7 +2,7 @@ Improve the plan for test code generation for backend unit test of my app follow
 
 {SSD} = `/.github/copilot-instructions.md`
 {codebase} = `/src/backend/**`
-{test-plan} = `/.memo/CE/plans/test-code/test-plan-02-backend-integration.md`
+{test-plan} = `/docs/plans/test-code/test-plan-02-backend-integration.md`
 
 1. First, read thoroughly the {SSD} to correctly and fully understand the general aspects of my application.
 2. Second, go through every file under the {codebase} and fully understand them. You must think hard to understand even the smallest details of the {codebase} codes. You must understand what's going on at each function, what kind of data is provided and what's the output (data flow), etc. The business logic, the error handling, and all the edge cases should be taken into account.

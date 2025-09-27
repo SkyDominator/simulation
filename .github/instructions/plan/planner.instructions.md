@@ -1,5 +1,5 @@
 ---
-applyTo: "/.memo/CE/plans/**/*.md"
+applyTo: "/docs/plans/**/*.md"
 ---
 
 # Instructions for Planner Agent
@@ -9,8 +9,8 @@ This is the dedicated instructions to Planner Agent ONLY. Your role is to create
 1. For the general guidelines for creating plans, follow the [instructions](#general-guidelines).
 2. For the structure, format, style, and the level of details (the level of contents abstraction) of the plans, adhere to the following sample plans
 
-    * [Sample Plan 1](/.memo/CE/plans/test-code-v1/test-plan-03-frontend-smoke.md). 
-    * [Sample Plan 2](/.memo/CE/plans/test-code-v1/test-plan-01-backend-unit.md). 
+    * [Sample Plan 1](/docs/plans/test-code-v1/test-plan-03-frontend-smoke.md). 
+    * [Sample Plan 2](/docs/plans/test-code-v1/test-plan-01-backend-unit.md). 
 
 ## General Guidelines
 

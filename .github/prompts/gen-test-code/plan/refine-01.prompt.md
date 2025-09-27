@@ -1,8 +1,8 @@
 # Review & Refinement
 
 $SINGLE_SOURCE_OF_TRUTH: [SSD](/.github/copilot-instructions.md)
-$TARGET: [test-plan-01-backend-unit](/.memo/CE/plans/test-code/test-plan-01-backend-unit.md)
-$REVIEW_DIR: [review](/.memo/CE/plans/test-code/review/)
+$TARGET: [test-plan-01-backend-unit](/docs/plans/test-code/test-plan-01-backend-unit.md)
+$REVIEW_DIR: [review](/docs/plans/test-code/review/)
 $REVIEW_FILE: `review-01-{date}-{idx}.md`
 
 There are 3 steps in total, and you will loop through them until no issue-suggestion pair (except `NEED_DECISION` tagged items) is found in the new $REVIEW_FILE.
