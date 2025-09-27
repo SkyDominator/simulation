@@ -126,8 +126,20 @@ export const MOCK_RESULTS = {
 
 export const TEST_OTP_CODES = {
   VALID: '123456',
-  INVALID: '000000',
+  INVALID: '000000', 
   EXPIRED: '999999'
+} as const
+
+// Test constants to avoid hardcoded values
+export const TEST_CONSTANTS = {
+  OTP_LENGTH: 6,
+  OTP_TIMEOUT_MS: 300000, // 5 minutes
+  DEFAULT_TIMEOUT_MS: 5000,
+  LONG_TIMEOUT_MS: 10000,
+  NETWORK_TIMEOUT_MS: 15000,
+  PHONE_INPUT_MAX_LENGTH: 13, // 010-1234-5678 format
+  INVESTMENT_MIN_AMOUNT: 110000,
+  MAX_SIMULATION_ROUNDS: 36
 } as const
 
 export const TEST_MESSAGES = {

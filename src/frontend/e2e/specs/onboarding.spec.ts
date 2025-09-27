@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { TestHelpers, APIHelpers } from '../utils/test-helpers'
 import { loginTestUser, completeOnboardingFlow } from '../utils/auth-helpers'
-import { TEST_USERS, TEST_MESSAGES } from '../fixtures/test-data'
+import { TEST_USERS, TEST_MESSAGES, TEST_OTP_CODES, TEST_CONSTANTS } from '../fixtures/test-data'
 
 /**
  * CAT-ONBOARD: User Onboarding Flow Tests
@@ -16,6 +16,14 @@ test.describe('User Onboarding Flow', () => {
     // Set up API mocks for each test
     await APIHelpers.mockOTPSuccess(page)
     await APIHelpers.mockAuthSuccess(page)
+  })
+
+  test.afterEach(async ({ page }) => {
+    // Cleanup: Clear any test data from localStorage
+    await page.evaluate(() => {
+      window.localStorage.clear()
+      window.sessionStorage.clear()
+    })
   })
 
   test('E2E-001: Complete user onboarding for whitelisted user', async ({ page }) => {
@@ -33,11 +41,11 @@ test.describe('User Onboarding Flow', () => {
     
     // Verify OTP input is visible and properly formatted
     const otpInput = page.locator('[data-testid="otp-input"]')
-    await expect(otpInput).toBeVisible()
-    await expect(otpInput).toHaveAttribute('maxlength', '6')
+    await expect(otpInput).toBeVisible({ timeout: TEST_CONSTANTS.DEFAULT_TIMEOUT_MS })
+    await expect(otpInput).toHaveAttribute('maxlength', TEST_CONSTANTS.OTP_LENGTH.toString())
     
-    // Fill OTP form
-    await helpers.fillOTPForm('123456')
+    // Fill OTP form with test constant
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID)
     
     // Step 3: Should redirect to privacy consent page
     await expect(page.locator('h1')).toContainText('개인정보 처리방침')
@@ -57,7 +65,7 @@ test.describe('User Onboarding Flow', () => {
     await page.click('[data-testid="google-login"]')
     
     // Step 5: Should reach main application page
-    await expect(page.locator('[data-testid="main-page"]')).toBeVisible({ timeout: 10000 })
+    await expect(page.locator('[data-testid="main-page"]')).toBeVisible({ timeout: TEST_CONSTANTS.LONG_TIMEOUT_MS })
     await expect(page.locator('h1')).toContainText('투자 시뮬레이션')
     
     // Verify user is properly authenticated
@@ -100,7 +108,7 @@ test.describe('User Onboarding Flow', () => {
     await expect(page.locator('[data-testid="otp-timer"]')).toBeVisible()
     
     // Fill valid OTP
-    await helpers.fillOTPForm('123456')
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID)
     
     // Should proceed to next step
     await expect(page.locator('h1')).toContainText('개인정보 처리방침')
@@ -121,8 +129,8 @@ test.describe('User Onboarding Flow', () => {
     // Wait for OTP page
     await expect(page.locator('h1')).toContainText('인증번호 입력')
     
-    // Fill invalid OTP
-    await helpers.fillOTPForm('000000')
+    // Fill invalid OTP using test constant
+    await helpers.fillOTPForm(TEST_OTP_CODES.INVALID)
     
     // Should show error message
     await expect(page.locator('[data-testid="error-message"]')).toContainText(TEST_MESSAGES.ERROR.INVALID_OTP)
@@ -136,22 +144,43 @@ test.describe('User Onboarding Flow', () => {
   })
 
   test('E2E-005: OAuth login completes successfully', async ({ page }) => {
+    // Setup: Complete onboarding flow up to login page independently
+    await APIHelpers.mockOTPSuccess(page)
     await page.goto('/')
     
-    // Skip to login page (assuming previous steps completed)
-    await completeOnboardingFlow(page)
+    // Navigate through onboarding steps
+    await helpers.fillWhitelistForm(TEST_USERS.WHITELISTED.name, TEST_USERS.WHITELISTED.phone)
+    await expect(page.locator('h1')).toContainText('인증번호 입력')
     
-    // Should be on main page after OAuth
-    await expect(page.locator('[data-testid="main-page"]')).toBeVisible()
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID)
+    await expect(page.locator('h1')).toContainText('개인정보 처리방침')
+    
+    await page.check('[data-testid="consent-checkbox"]')
+    await page.click('[data-testid="accept-consent"]')
+    
+    // Now test OAuth login specifically
+    await expect(page.locator('h1')).toContainText('로그인')
+    
+    // Complete OAuth login (mocked)
+    await loginTestUser(page)
+    await page.click('[data-testid="google-login"]')
+    
+    // Assertions with meaningful messages
+    await expect(page.locator('[data-testid="main-page"]')).toBeVisible({ 
+      timeout: TEST_CONSTANTS.LONG_TIMEOUT_MS 
+    })
     
     // Verify user info is displayed
-    await expect(page.locator('[data-testid="user-info"]')).toContainText('Test User')
+    const userInfo = page.locator('[data-testid="user-info"]')
+    await expect(userInfo, 'User information should be visible after successful login').toContainText('Test User')
     
     // Verify navigation menu is available
-    await expect(page.locator('[data-testid="nav-menu"]')).toBeVisible()
+    const navMenu = page.locator('[data-testid="nav-menu"]')
+    await expect(navMenu, 'Navigation menu should be accessible after login').toBeVisible()
     
     // Verify logout option is present
-    await expect(page.locator('[data-testid="logout-button"]')).toBeVisible()
+    const logoutButton = page.locator('[data-testid="logout-button"]')
+    await expect(logoutButton, 'Logout button should be available for authenticated user').toBeVisible()
   })
 
   test('E2E-006: Return user bypasses whitelist/OTP steps', async ({ page }) => {
@@ -176,6 +205,14 @@ test.describe('Onboarding Flow Error Scenarios', () => {
 
   test.beforeEach(async ({ page }) => {
     helpers = new TestHelpers(page)
+  })
+
+  test.afterEach(async ({ page }) => {
+    // Cleanup: Clear any test data
+    await page.evaluate(() => {
+      window.localStorage.clear()
+      window.sessionStorage.clear()
+    })
   })
 
   test('Network error during OTP send shows retry option', async ({ page }) => {
@@ -228,8 +265,8 @@ test.describe('Onboarding Flow Error Scenarios', () => {
     // Should show format validation error
     await expect(page.locator('[data-testid="phone-error"]')).toContainText('올바른 전화번호 형식으로 입력해주세요')
     
-    // Test correct format
-    await page.fill('[data-testid="phone-input"]', '010-1234-5678')
+    // Test correct format using test constant
+    await page.fill('[data-testid="phone-input"]', TEST_USERS.WHITELISTED.phone)
     
     // Error should disappear
     await expect(page.locator('[data-testid="phone-error"]')).not.toBeVisible()
