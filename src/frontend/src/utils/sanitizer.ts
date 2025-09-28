@@ -5,7 +5,7 @@
  * when rendering user-generated content or API responses that contain HTML.
  */
 
-import * as DOMPurify from 'dompurify';
+import DOMPurify from 'dompurify';
 
 /**
  * Sanitize HTML content to prevent XSS attacks
