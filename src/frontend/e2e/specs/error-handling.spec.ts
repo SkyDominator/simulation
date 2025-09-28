@@ -122,7 +122,7 @@ test.describe('Error Handling & Edge Cases', () => {
     await page.goto('/')
     
     // Verify user is authenticated initially
-    await expect(page.locator('helpers.waitForMainPage()')).toBeVisible()
+    await helpers.waitForMainPage()
     
     // Simulate session expiry
     await mockSessionExpiry(page)
@@ -182,7 +182,7 @@ test.describe('Error Handling & Edge Cases', () => {
     
     // Test cancel
     await page.click('[data-testid="cancel-button"]')
-    await expect(page.locator('helpers.waitForMainPage()')).toBeVisible()
+    await helpers.waitForMainPage()
     
     // Test retry with successful mock
     await page.click('[data-testid="run-simulation-btn"]')
@@ -215,7 +215,7 @@ test.describe('Advanced Error Scenarios', () => {
     await page.goto('/')
     
     // App should handle corrupted data gracefully
-    await expect(page.locator('helpers.waitForMainPage()')).toBeVisible()
+    await helpers.waitForMainPage()
     
     // Should show data recovery notification
     await expect(page.locator('[data-testid="recovery-notification"]')).toContainText('일부 저장된 데이터가 손상되어 초기화되었습니다')
@@ -299,7 +299,7 @@ test.describe('Advanced Error Scenarios', () => {
     await expect(page.locator('[data-testid="upgrade-browser-message"]')).toContainText('브라우저를 최신 버전으로 업데이트해주세요')
     
     // Should still provide basic functionality
-    await expect(page.locator('helpers.waitForMainPage()')).toBeVisible()
+    await helpers.waitForMainPage()
     
     // Test storage quota handling
     await page.click('[data-testid="create-simulation"]')

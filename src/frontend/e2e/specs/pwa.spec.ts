@@ -110,7 +110,7 @@ test.describe('PWA Features', () => {
     await page.waitForTimeout(2000)
     
     // Verify app works online first
-    await expect(page.locator('helpers.waitForMainPage()')).toBeVisible()
+    await helpers.waitForMainPage()
     
     // Go offline
     await context.setOffline(true)
@@ -120,7 +120,7 @@ test.describe('PWA Features', () => {
     
     // Basic elements should still be visible from cache
     await expect(page.locator('[data-testid="app-shell"]')).toBeVisible({ timeout: 10000 })
-    await expect(page.locator('helpers.waitForMainPage()')).toBeVisible()
+    await helpers.waitForMainPage()
     
     // Offline indicator should appear
     await expect(page.locator('text=/오프라인|Offline/')).toBeVisible()
@@ -210,7 +210,7 @@ test.describe('PWA Features', () => {
     
     // Reload page - static assets should still load from cache
     await page.reload()
-    await expect(page.locator('helpers.waitForMainPage()')).toBeVisible()
+    await helpers.waitForMainPage()
     
     // Test network-first strategy for API calls
     await page.route('**/api/notices', async route => {
