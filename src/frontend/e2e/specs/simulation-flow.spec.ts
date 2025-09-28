@@ -302,5 +302,5 @@ test.describe('Simulation Validation and Edge Cases', () => {
     
     await page.getByRole('button', { name: /확인|OK/ }).click()
     await helpers.waitForNotification('시뮬레이션이 삭제되었습니다')
-  }))
+  })
 })
