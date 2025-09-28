@@ -34,6 +34,28 @@ class Settings:
     solapi_api_secret: str = os.getenv("SOLAPI_API_SECRET", "")
     solapi_sender_number: str = os.getenv("SOLAPI_SENDER_NUMBER", "")
     
+    # Health notification settings
+    health_monitoring_enabled: bool = os.getenv("HEALTH_MONITORING_ENABLED", "false").lower() == "true"
+    health_check_interval: float = float(os.getenv("HEALTH_CHECK_INTERVAL", "60.0"))
+    health_check_timeout: float = float(os.getenv("HEALTH_CHECK_TIMEOUT", "10.0"))
+    health_slow_threshold_ms: float = float(os.getenv("HEALTH_SLOW_THRESHOLD_MS", "3000.0"))
+    
+    # Telegram notification settings
+    telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "")
+    
+    # KakaoTalk notification settings
+    kakao_app_key: str = os.getenv("KAKAO_APP_KEY", "")
+    kakao_recipient_id: str = os.getenv("KAKAO_RECIPIENT_ID", "")
+    
+    # iOS Push notification settings
+    ios_apns_key_id: str = os.getenv("IOS_APNS_KEY_ID", "")
+    ios_team_id: str = os.getenv("IOS_TEAM_ID", "")
+    ios_bundle_id: str = os.getenv("IOS_BUNDLE_ID", "")
+    ios_apns_key_path: str = os.getenv("IOS_APNS_KEY_PATH", "")
+    ios_device_token: str = os.getenv("IOS_DEVICE_TOKEN", "")
+    ios_use_sandbox: bool = os.getenv("IOS_USE_SANDBOX", "false").lower() == "true"
+    
     # Add logger  
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)

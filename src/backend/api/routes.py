@@ -25,6 +25,7 @@ from models.schemas import (
     PrivacyPolicyUpdateRequest, PrivacyPolicyUpdateResponse,
     PrivacyPolicyPublishResponse,
     PrivacyPolicyListResponse, PrivacyPolicyDetailResponse,
+    HealthNotificationStatusResponse, HealthNotificationControlRequest, HealthNotificationControlResponse,
 )
 from supabase import create_client
 from config.settings import settings
@@ -51,6 +52,31 @@ def _supabase_client():
 
 # instantiate services lazily (could use dependency injection)
 _sim_service = SimulationService()
+
+# Health notification service (initialized if enabled)
+_health_service = None
+if settings.health_monitoring_enabled:
+    from services.health.health_notification_service import create_health_notification_service
+    
+    # Determine health URL - use the production URL or localhost for development
+    health_url = "https://simulation.lightoflifeclub.com/api/health"
+    if settings.supabase_url and "localhost" in settings.supabase_url:
+        health_url = "http://localhost:8000/api/health"
+    
+    _health_service = create_health_notification_service(
+        health_url=health_url,
+        telegram_bot_token=settings.telegram_bot_token,
+        telegram_chat_id=settings.telegram_chat_id,
+        kakao_app_key=settings.kakao_app_key,
+        kakao_recipient_id=settings.kakao_recipient_id,
+        ios_apns_key_id=settings.ios_apns_key_id,
+        ios_team_id=settings.ios_team_id,
+        ios_bundle_id=settings.ios_bundle_id,
+        ios_apns_key_path=settings.ios_apns_key_path,
+        ios_device_token=settings.ios_device_token,
+        ios_use_sandbox=settings.ios_use_sandbox,
+        check_interval=settings.health_check_interval
+    )
 
 @router.get("/")
 async def root():
@@ -365,6 +391,124 @@ async def health():
         },
         "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     }
+
+# ------------------------------- Health notification management routes -------------------------------
+@router.get("/api/admin/health-notifications/status", response_model=HealthNotificationStatusResponse)
+async def get_health_notification_status(user_id: str = Depends(authenticate_jwt_token)):
+    """Get the status of the health notification service. Admin only."""
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    
+    if not _health_service:
+        return HealthNotificationStatusResponse(
+            is_running=False,
+            check_interval=0,
+            health_url="N/A",
+            notification_providers=[],
+            provider_count=0,
+            success=True
+        )
+    
+    status = _health_service.get_status()
+    return HealthNotificationStatusResponse(**status, success=True)
+
+@router.post("/api/admin/health-notifications/control", response_model=HealthNotificationControlResponse)
+async def control_health_notifications(
+    request: HealthNotificationControlRequest,
+    user_id: str = Depends(authenticate_jwt_token)
+):
+    """Start or stop health notification monitoring. Admin only."""
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    
+    if not _health_service:
+        return HealthNotificationControlResponse(
+            action=request.action,
+            success=False,
+            message="Health notification service is not configured. Set HEALTH_MONITORING_ENABLED=true and configure notification providers."
+        )
+    
+    try:
+        if request.action == "start":
+            if _health_service.is_running:
+                return HealthNotificationControlResponse(
+                    action="start",
+                    success=True,
+                    message="Health monitoring is already running"
+                )
+            else:
+                _health_service.start_background_monitoring()
+                return HealthNotificationControlResponse(
+                    action="start",
+                    success=True,
+                    message="Health monitoring started successfully"
+                )
+        
+        elif request.action == "stop":
+            if not _health_service.is_running:
+                return HealthNotificationControlResponse(
+                    action="stop",
+                    success=True,
+                    message="Health monitoring is already stopped"
+                )
+            else:
+                await _health_service.stop_monitoring()
+                return HealthNotificationControlResponse(
+                    action="stop",
+                    success=True,
+                    message="Health monitoring stopped successfully"
+                )
+        
+        else:
+            return HealthNotificationControlResponse(
+                action=request.action,
+                success=False,
+                message=f"Invalid action: {request.action}. Use 'start' or 'stop'."
+            )
+            
+    except Exception as e:
+        return HealthNotificationControlResponse(
+            action=request.action,
+            success=False,
+            message=f"Error controlling health monitoring: {str(e)}"
+        )
+
+@router.post("/api/admin/health-notifications/test")
+async def test_health_notification(user_id: str = Depends(authenticate_jwt_token)):
+    """Send a test health notification. Admin only."""
+    client = _supabase_client()
+    _assert_admin(user_id, client)
+    
+    if not _health_service:
+        return {
+            "success": False,
+            "message": "Health notification service is not configured"
+        }
+    
+    try:
+        # Perform a manual health check and send notifications
+        result = await _health_service.perform_health_check()
+        
+        if result:
+            return {
+                "success": True,
+                "message": "Test notification sent (status changed)",
+                "status": result.status,
+                "latency_ms": result.latency_ms,
+                "error": result.error
+            }
+        else:
+            return {
+                "success": True,
+                "message": "No notification sent (status unchanged)",
+                "current_status": _health_service.health_monitor.last_status
+            }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Error sending test notification: {str(e)}"
+        }
 
 # ------------------------------- Consent management routes -------------------------------
 @router.post("/api/consents", response_model=ConsentRecordResponse)

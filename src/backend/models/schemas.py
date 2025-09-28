@@ -249,3 +249,22 @@ class PrivacyPolicyListResponse(BaseModel):
 class PrivacyPolicyDetailResponse(BaseModel):
     policy: PrivacyPolicy
     success: bool = True
+
+# Health notification schemas
+class HealthNotificationStatusResponse(BaseModel):
+    is_running: bool
+    check_interval: float
+    health_url: str
+    last_status: Optional[str] = None
+    last_check_time: Optional[str] = None
+    notification_providers: List[str]
+    provider_count: int
+    success: bool = True
+
+class HealthNotificationControlRequest(BaseModel):
+    action: str  # "start" or "stop"
+
+class HealthNotificationControlResponse(BaseModel):
+    action: str
+    success: bool
+    message: str
