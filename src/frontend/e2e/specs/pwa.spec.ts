@@ -110,7 +110,7 @@ test.describe('PWA Features', () => {
     await page.waitForTimeout(2000)
     
     // Verify app works online first
-    await expect(page.locator('[data-testid="main-page"]')).toBeVisible()
+    await expect(page.locator('helpers.waitForMainPage()')).toBeVisible()
     
     // Go offline
     await context.setOffline(true)
@@ -120,10 +120,10 @@ test.describe('PWA Features', () => {
     
     // Basic elements should still be visible from cache
     await expect(page.locator('[data-testid="app-shell"]')).toBeVisible({ timeout: 10000 })
-    await expect(page.locator('[data-testid="main-page"]')).toBeVisible()
+    await expect(page.locator('helpers.waitForMainPage()')).toBeVisible()
     
     // Offline indicator should appear
-    await expect(page.locator('[data-testid="offline-indicator"]')).toBeVisible()
+    await expect(page.locator('text=/오프라인|Offline/')).toBeVisible()
     await expect(page.locator('[data-testid="offline-message"]')).toContainText('오프라인 상태입니다')
     
     // Test offline navigation
@@ -144,7 +144,7 @@ test.describe('PWA Features', () => {
     await context.setOffline(false)
     
     // Offline indicator should disappear
-    await expect(page.locator('[data-testid="offline-indicator"]')).not.toBeVisible({ timeout: 5000 })
+    await expect(page.locator('text=/오프라인|Offline/')).not.toBeVisible({ timeout: 5000 })
     
     // Should show reconnection success
     await expect(page.locator('[data-testid="online-indicator"]')).toBeVisible()
@@ -210,7 +210,7 @@ test.describe('PWA Features', () => {
     
     // Reload page - static assets should still load from cache
     await page.reload()
-    await expect(page.locator('[data-testid="main-page"]')).toBeVisible()
+    await expect(page.locator('helpers.waitForMainPage()')).toBeVisible()
     
     // Test network-first strategy for API calls
     await page.route('**/api/notices', async route => {
@@ -245,11 +245,11 @@ test.describe('PWA Advanced Features', () => {
     await page.click('[data-testid="create-simulation-fab"]')
     await helpers.selectPlan('A')
     await helpers.clickNext()
-    await page.fill('[data-testid="starting-round"]', '1')
+    await page.fill('input[aria-label*="시작"], input[placeholder*="시작"]', '1')
     await helpers.clickNext()
-    await page.fill('[data-testid="current-round"]', '1')
+    await page.fill('input[aria-label*="현재"], input[placeholder*="현재"]', '1')
     await helpers.clickNext()
-    await page.fill('[data-testid="simulation-rounds"]', '10')
+    await page.fill('input[aria-label*="회차"], input[placeholder*="회차"]', '10')
     await helpers.clickNext()
     await helpers.fillInvestmentAmount(1, '1000000')
     
