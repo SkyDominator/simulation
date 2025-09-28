@@ -37,9 +37,8 @@ export class TestHelpers {
    * Fill investment amount for specific round
    */
   async fillInvestmentAmount(round: number, amount: string) {
-    // Look for investment input by round - could be in a table or form
-    const selector = `input[type="text"]:near(text="${round}회차")`
-    await this.page.fill(selector, amount)
+    // Find the input field associated with the round by locating the text, then its parent, then the input
+    await this.page.locator(`text=${round}회차`).locator('..').locator('input[type="text"]').fill(amount)
   }
   
   /**
