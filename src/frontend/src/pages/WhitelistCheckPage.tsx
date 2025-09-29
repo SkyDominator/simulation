@@ -136,7 +136,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
           </Box>
 
           {error && (
-            <Alert severity="error" sx={{ width: "100%" }}>
+            <Alert severity="error" sx={{ width: "100%" }} data-testid="error-message">
               {error}
             </Alert>
           )}
@@ -149,6 +149,8 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
             onChange={(e) => setName(e.target.value)}
             disabled={loading}
             autoFocus
+            data-testid="name-input"
+            FormHelperTextProps={{ 'data-testid': 'name-error' }}
           />
 
           <TextField
@@ -163,6 +165,8 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
               inputMode: "tel",
             }}
             inputProps={{ maxLength: 13 }}
+            data-testid="phone-input"
+            FormHelperTextProps={{ 'data-testid': 'phone-error' }}
           />
 
           <Button
@@ -172,6 +176,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
             type="submit"
             disabled={loading}
             size="large"
+            data-testid="submit-whitelist"
           >
             {loading ? (
               <CircularProgress size={24} color="inherit" />

@@ -78,9 +78,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
             로그인
           </Typography>
         </Box>
-        <Stack spacing={2.5}>
+        <Stack spacing={2.5} data-testid="login-form">
           {error && (
-            <Alert severity="error" onClose={() => setError(null)}>
+            <Alert severity="error" onClose={() => setError(null)} data-testid="login-error">
               {error}
             </Alert>
           )}
@@ -91,6 +91,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
             size="large"
             onClick={() => handleSocialLogin("google")}
             disabled={!!loadingProvider}
+            data-testid="google-login"
           >
             {loadingProvider === "google"
               ? "Google 로그인 중..."
@@ -107,6 +108,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
               color: "rgba(0,0,0,0.85)",
               "&:hover": { bgcolor: "#FDD400" },
             }}
+            data-testid="kakao-login"
           >
             {loadingProvider === "kakao"
               ? "Kakao 로그인 중..."

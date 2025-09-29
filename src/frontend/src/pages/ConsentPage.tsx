@@ -134,7 +134,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
         </Typography>
 
         {error && (
-          <Alert severity="error" sx={{ my: 2 }}>
+          <Alert severity="error" sx={{ my: 2 }} data-testid="error-message">
             {error}
           </Alert>
         )}
@@ -144,6 +144,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
             <Checkbox
               checked={checkboxChecked}
               onChange={(e) => setCheckboxChecked(e.target.checked)}
+              data-testid="consent-checkbox"
             />
           }
           label="개인정보 수집 및 이용에 동의합니다."
@@ -151,7 +152,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
         />
 
         <Stack direction="row" spacing={2}>
-          <Button variant="outlined" onClick={onDecline} fullWidth>
+          <Button variant="outlined" onClick={onDecline} fullWidth data-testid="decline-consent">
             취소
           </Button>
           <Button
@@ -159,6 +160,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
             disabled={!checkboxChecked || loading}
             onClick={handleAccept}
             fullWidth
+            data-testid="accept-consent"
           >
             {loading ? <CircularProgress size={24} /> : "계속하기"}
           </Button>

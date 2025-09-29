@@ -284,6 +284,7 @@ const MainPage: React.FC<MainPageProps> = ({
         maxWidth={false}
         disableGutters
         sx={{ py: 2.5, px: { xs: 1, sm: 1.5, md: 2 } }}
+        data-testid="main-page"
       >
         <Stack
           direction="row"
@@ -293,7 +294,7 @@ const MainPage: React.FC<MainPageProps> = ({
         >
           <Stack direction="row" spacing={1}>
             {openNotice && (
-              <Button onClick={openNotice} variant="contained" color="warning">
+              <Button onClick={openNotice} variant="contained" color="warning" data-testid="notice-button">
                 공지사항
               </Button>
             )}
@@ -302,6 +303,7 @@ const MainPage: React.FC<MainPageProps> = ({
               variant="contained"
               color="info"
               startIcon={<HelpOutlineIcon />}
+              data-testid="contact-button"
             >
               문의하기
             </Button>
@@ -318,6 +320,7 @@ const MainPage: React.FC<MainPageProps> = ({
               variant="outlined"
               color="inherit"
               disabled={signOutLoading}
+              data-testid="logout-button"
             >
               <LogoutIcon sx={{ mr: 0.5 }} fontSize="small" />{" "}
               {signOutLoading ? "로그아웃 중..." : "로그아웃"}
@@ -326,11 +329,19 @@ const MainPage: React.FC<MainPageProps> = ({
               onClick={() => setPage("admin-policy")}
               variant="outlined"
               color="secondary"
+              data-testid="policy-button"
               // startIcon={<PolicyIcon />}
             >
               개인 정보 보호 정책
             </Button>
           </Stack>
+          
+          {/* User info for tests */}
+          {user && (
+            <Typography variant="body2" data-testid="user-info" sx={{ color: 'text.secondary' }}>
+              환영합니다, {user.user_metadata?.name || user.email || 'Test User'}님
+            </Typography>
+          )}
         </Stack>
 
         <Paper elevation={3} sx={{ p: 2.5, mb: 4 }}>
@@ -350,6 +361,7 @@ const MainPage: React.FC<MainPageProps> = ({
                 variant="contained"
                 color="primary"
                 disabled={selectedSimulations.length === 0}
+                data-testid="summary-report-button"
               >
                 종합 결과
               </Button>
@@ -358,6 +370,7 @@ const MainPage: React.FC<MainPageProps> = ({
                 variant="contained"
                 color="success"
                 startIcon={<AddIcon />}
+                data-testid="create-simulation"
               >
                 새 시뮬레이션
               </Button>
