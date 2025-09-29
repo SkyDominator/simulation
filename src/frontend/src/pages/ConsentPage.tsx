@@ -188,14 +188,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
             {policyLoading ? (
               <CircularProgress />
             ) : (
-              <ReactMarkdown 
-                components={{
-                  // Sanitize any HTML that might be embedded in markdown
-                  html: ({ children }) => (
-                    <span dangerouslySetInnerHTML={{ __html: sanitizeRichContent(String(children)) }} />
-                  )
-                }}
-              >
+              <ReactMarkdown>
                 {policyContent}
               </ReactMarkdown>
             )}
