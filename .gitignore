@@ -88,3 +88,4 @@ src/frontend/dist-ssr/
 # ignore test code results
 playwright-report/
 test-results/
+coverage/

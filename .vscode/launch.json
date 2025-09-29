@@ -93,6 +93,19 @@
         }
     },
     {
+        "name": "E2E Test: Frontend",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+        "args": ["run", "e2e", "--reporter=verbose", "--coverage"],
+        "cwd": "${workspaceFolder}/src/frontend",
+        "console": "integratedTerminal",
+        "skipFiles": ["<node_internals>/**"],
+        "env": {
+        "NODE_ENV": "test"
+        }
+    },
+    {
         "name": "Security Test: Frontend",
         "type": "node",
         "request": "launch",
