@@ -13,13 +13,13 @@ import DOMPurify from 'dompurify';
  * @param options - Optional DOMPurify configuration
  * @returns Sanitized HTML string safe for rendering
  */
-export function sanitizeHtml(html: string, options?: DOMPurify.Config): string {
+export function sanitizeHtml(html: string, options?: any): string {
   if (!html || typeof html !== 'string') {
     return '';
   }
 
   // Default configuration - allows basic formatting tags but removes scripts/handlers
-  const defaultConfig: DOMPurify.Config = {
+  const defaultConfig = {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'u', 'p', 'br', 'ul', 'ol', 'li', 'a', 'span'],
     ALLOWED_ATTR: ['href', 'target', 'class'],
     ALLOWED_URI_REGEXP: /^(?:https?|mailto):/i,
@@ -27,7 +27,7 @@ export function sanitizeHtml(html: string, options?: DOMPurify.Config): string {
     ...options
   };
 
-  return DOMPurify.sanitize(html, defaultConfig);
+  return DOMPurify.sanitize(html, defaultConfig) as unknown as string;
 }
 
 /**
@@ -89,7 +89,7 @@ export function sanitizeUrl(url: string): string {
  * React component helper for safely rendering HTML content
  * Use this instead of dangerouslySetInnerHTML
  */
-export function createSafeHtml(html: string, options?: DOMPurify.Config) {
+export function createSafeHtml(html: string, options?: any) {
   return {
     __html: sanitizeHtml(html, options)
   };
