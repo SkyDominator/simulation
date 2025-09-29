@@ -292,7 +292,7 @@ const MainPage: React.FC<MainPageProps> = ({
           justifyContent="space-between"
           mb={4}
         >
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} data-testid="nav-menu">
             {openNotice && (
               <Button onClick={openNotice} variant="contained" color="warning" data-testid="notice-button">
                 공지사항
@@ -336,12 +336,9 @@ const MainPage: React.FC<MainPageProps> = ({
             </Button>
           </Stack>
           
-          {/* User info for tests */}
-          {user && (
-            <Typography variant="body2" data-testid="user-info" sx={{ color: 'text.secondary' }}>
-              환영합니다, {user.user_metadata?.name || user.email || 'Test User'}님
-            </Typography>
-          )}
+          <Typography variant="body2" data-testid="user-info" sx={{ color: 'text.secondary' }}>
+            환영합니다, {user ? ((user as any).user_metadata?.name || (user as any).email || 'Test User') : 'User'}님
+          </Typography>
         </Stack>
 
         <Paper elevation={3} sx={{ p: 2.5, mb: 4 }}>

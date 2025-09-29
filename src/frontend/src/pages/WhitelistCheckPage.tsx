@@ -150,7 +150,6 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
             disabled={loading}
             autoFocus
             data-testid="name-input"
-            FormHelperTextProps={{ 'data-testid': 'name-error' }}
           />
 
           <TextField
@@ -166,7 +165,6 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
             }}
             inputProps={{ maxLength: 13 }}
             data-testid="phone-input"
-            FormHelperTextProps={{ 'data-testid': 'phone-error' }}
           />
 
           <Button

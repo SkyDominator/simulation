@@ -71,7 +71,7 @@ const SimulationTable: React.FC<SimulationTableProps> = ({
   onEditPlan,
 }) => {
   if (loading) {
-    return <LinearProgress sx={{ mb: 2 }} />;
+    return <LinearProgress sx={{ mb: 2 }} data-testid="simulation-loading" />;
   }
 
   if (plans.length === 0) {
@@ -228,6 +228,7 @@ const SimulationTable: React.FC<SimulationTableProps> = ({
                           color="primary"
                           size="small"
                           onClick={() => onEditPlan(plan)}
+                          data-testid="edit-simulation"
                         >
                           <EditIcon fontSize="small" />
                         </IconButton>
@@ -240,6 +241,7 @@ const SimulationTable: React.FC<SimulationTableProps> = ({
                           size="small"
                           onClick={() => handleViewResults(plan)}
                           disabled={isRunning}
+                          data-testid="run-simulation-btn"
                         >
                           <PlayArrowIcon fontSize="small" />
                         </IconButton>
@@ -252,6 +254,7 @@ const SimulationTable: React.FC<SimulationTableProps> = ({
                           size="small"
                           onClick={() => openDeleteConfirm(plan, idx + 1)}
                           disabled={isDeleting}
+                          data-testid="delete-simulation"
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>

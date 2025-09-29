@@ -10,18 +10,25 @@ export class TestHelpers {
    * Fill the whitelist verification form
    */
   async fillWhitelistForm(name: string, phone: string) {
-    // Use Material-UI label-based selectors
-    await this.page.getByLabel('이름').fill(name)
-    await this.page.getByLabel('휴대폰 번호').fill(phone)  
-    await this.page.getByRole('button', { name: '인증번호 받기' }).click()
+    // Use both Material-UI label-based selectors and data-testid as fallback
+    const nameInput = this.page.locator('[data-testid="name-input"], input[name="name"], [aria-label="이름"]').first()
+    const phoneInput = this.page.locator('[data-testid="phone-input"], input[name="phone"], [aria-label="휴대폰 번호"]').first()
+    const submitButton = this.page.locator('[data-testid="submit-whitelist"], button:has-text("인증번호 받기")').first()
+    
+    await nameInput.fill(name)
+    await phoneInput.fill(phone)  
+    await submitButton.click()
   }
   
   /**
    * Fill the OTP verification form
    */
   async fillOTPForm(code: string) {
-    await this.page.getByLabel('인증번호').fill(code)
-    await this.page.getByRole('button', { name: '인증하기' }).click()
+    const otpInput = this.page.locator('[data-testid="otp-input"], input[maxlength="6"], [aria-label="인증번호"]').first()
+    const verifyButton = this.page.locator('[data-testid="verify-otp"], button:has-text("인증하기")').first()
+    
+    await otpInput.fill(code)
+    await verifyButton.click()
   }
   
   /**
@@ -99,7 +106,8 @@ export class TestHelpers {
    * Click create simulation button
    */
   async clickCreateSimulation() {
-    await this.page.getByRole('button', { name: '새 시뮬레이션' }).click()
+    const createButton = this.page.locator('[data-testid="create-simulation"], button:has-text("새 시뮬레이션")').first()
+    await createButton.click()
   }
 }
 
