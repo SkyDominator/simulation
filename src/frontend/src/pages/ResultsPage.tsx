@@ -50,7 +50,11 @@ const COLUMN_ORDER: readonly string[] = [
 const SHOW_UNLISTED_COLUMNS = true as const;
 
 // Columns that must never be shown in results table
-const EXCLUDED_COLUMNS = new Set<string>(["investor_details"]);
+const EXCLUDED_COLUMNS = new Set<string>([
+  "investor_details",
+  "net_profit_before_tax",
+  "cumulative_net_profit_before_tax",
+]);
 
 interface ResultsPageProps {
   setPage: (page: Page) => void;
