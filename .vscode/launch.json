@@ -109,7 +109,7 @@
       "name": "E2E Test: Frontend",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/src/frontend/node_modules/.bin/playwright",
+      "program": "${workspaceFolder}/src/frontend/node_modules/@playwright/test/cli.js",
       "args": ["test", "--reporter=list", "--project=chromium"],
       "cwd": "${workspaceFolder}/src/frontend",
       "console": "integratedTerminal",
