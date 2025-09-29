@@ -21,7 +21,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import useAuth from "../context/useAuth";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import { getJSON, setJSON } from "../utils/persist";
-import { sanitizeRichContent, createSafeHtml } from "../utils/sanitizer";
+import { createSafeHtml } from "../utils/sanitizer";
 
 interface NoticeBoardModalProps {
   isOpen: boolean;
