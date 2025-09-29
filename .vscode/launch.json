@@ -84,7 +84,7 @@
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
-      "args": ["run", "src/**/*.{test,spec}.{ts,tsx}", "--exclude", "**/*.e2e.{test,spec}.{ts,tsx}", "--exclude", "**/*.security.{test,spec}.{ts,tsx}", "--reporter=verbose"],
+      "args": ["run", "src/test", "--exclude", "src/test/security", "--reporter=verbose"],
       "cwd": "${workspaceFolder}/src/frontend",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"],
