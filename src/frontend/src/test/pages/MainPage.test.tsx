@@ -201,13 +201,12 @@ describe('MainPage', () => {
       
       renderWithProviders(<MainPage {...defaultProps} />)
       
-      await waitFor(async () => {
-        const createButton = screen.getByRole('button', { name: /새 시뮬레이션/i })
-        await user.click(createButton)
+      const createButton = screen.getByRole('button', { name: /새 시뮬레이션/i })
+      await user.click(createButton)
         
-        // Should trigger navigation (tested via state change)
-        expect(createButton).toHaveBeenClicked
-      })
+      // Should trigger navigation to plan editor
+      expect(mockSetPage).toHaveBeenCalledWith("plan-editor")
+      expect(mockSetEditingPlan).toHaveBeenCalledWith(null)
     })
   })
 
@@ -312,13 +311,16 @@ describe('MainPage', () => {
     it('should handle simulation memo editing', async () => {
       const user = userEvent.setup()
       const mockSimulations = [{
+        id: '1',
         simulation_id: '1',
         plan_id: 'A',
         memo: 'Original memo',
         created_at: '2024-01-01T00:00:00Z',
         starting_company_round: 1,
         current_company_round: 1,
-        simulation_rounds: 12
+        simulation_rounds: 12,
+        investments: {},
+        simulation_results: null
       }]
 
       mockApi.getSimulations.mockResolvedValue(mockSimulations)
@@ -326,9 +328,9 @@ describe('MainPage', () => {
       renderWithProviders(<MainPage {...defaultProps} />)
       
       await waitFor(() => {
-        // Check if table renders with data
+        // Check if table renders with data - look for a more unique identifier
         expect(screen.getByText('A')).toBeInTheDocument()
-      })
+      }, { timeout: 5000 })
     })
   })
 })

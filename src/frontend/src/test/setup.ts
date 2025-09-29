@@ -76,3 +76,8 @@ const sessionStorageMock = (() => {
   }
 })()
 global.sessionStorage = sessionStorageMock
+
+// Mock window.alert and other window methods for tests
+global.alert = vi.fn()
+global.confirm = vi.fn(() => true)
+global.prompt = vi.fn()
