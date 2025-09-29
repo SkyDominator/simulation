@@ -92,19 +92,19 @@
         "NODE_ENV": "test"
       }
     },
-    {
-      "name": "Unit Test (Watch): Frontend",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
-      "args": ["src/**/*.{test,spec}.{ts,tsx}", "--exclude", "**/*.e2e.{test,spec}.{ts,tsx}", "--exclude", "**/*.security.{test,spec}.{ts,tsx}", "--reporter=verbose"],
-      "cwd": "${workspaceFolder}/src/frontend",
-      "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**"],
-      "env": {
-        "NODE_ENV": "test"
-      }
-    },
+    // {
+    //   "name": "Unit Test (Watch): Frontend",
+    //   "type": "node",
+    //   "request": "launch",
+    //   "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+    //   "args": ["src/**/*.{test,spec}.{ts,tsx}", "--exclude", "**/*.e2e.{test,spec}.{ts,tsx}", "--exclude", "**/*.security.{test,spec}.{ts,tsx}", "--reporter=verbose"],
+    //   "cwd": "${workspaceFolder}/src/frontend",
+    //   "console": "integratedTerminal",
+    //   "skipFiles": ["<node_internals>/**"],
+    //   "env": {
+    //     "NODE_ENV": "test"
+    //   }
+    // },
     {
       "name": "E2E Test: Frontend",
       "type": "node",
@@ -118,26 +118,26 @@
         "NODE_ENV": "test"
       }
     },
-    {
-      "name": "E2E Test (Debug): Frontend",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/src/frontend/node_modules/.bin/playwright",
-      "args": ["test", "--debug", "--project=chromium"],
-      "cwd": "${workspaceFolder}/src/frontend",
-      "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**"],
-      "env": {
-        "NODE_ENV": "test",
-        "PWDEBUG": "1"
-      }
-    },
+    // {
+    //   "name": "E2E Test (Debug): Frontend",
+    //   "type": "node",
+    //   "request": "launch",
+    //   "program": "${workspaceFolder}/src/frontend/node_modules/.bin/playwright",
+    //   "args": ["test", "--debug", "--project=chromium"],
+    //   "cwd": "${workspaceFolder}/src/frontend",
+    //   "console": "integratedTerminal",
+    //   "skipFiles": ["<node_internals>/**"],
+    //   "env": {
+    //     "NODE_ENV": "test",
+    //     "PWDEBUG": "1"
+    //   }
+    // },
     {
       "name": "Security Test: Frontend",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
-      "args": ["run", "src/**/*.security.{test,spec}.{ts,tsx}", "--reporter=verbose"],
+      "args": ["run", "src/test/security", "--reporter=verbose"],
       "cwd": "${workspaceFolder}/src/frontend",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"],
