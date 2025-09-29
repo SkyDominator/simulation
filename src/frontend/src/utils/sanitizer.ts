@@ -36,8 +36,20 @@ export function sanitizeHtml(html: string, options?: DOMPurify.Config): string {
  */
 export function sanitizeRichContent(html: string): string {
   return sanitizeHtml(html, {
-    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'i', 'em', 'u', 
-                   'ul', 'ol', 'li', 'a', 'span', 'div', 'blockquote', 'code', 'pre'],
+    ALLOWED_TAGS: [
+      // Headings
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      // Text formatting
+      'p', 'br', 'strong', 'b', 'i', 'em', 'u',
+      // Lists
+      'ul', 'ol', 'li',
+      // Links and spans
+      'a', 'span',
+      // Containers and blocks
+      'div', 'blockquote',
+      // Code
+      'code', 'pre'
+    ],
     ALLOWED_ATTR: ['href', 'target', 'class', 'id'],
     ADD_ATTR: ['target'],
     KEEP_CONTENT: true
