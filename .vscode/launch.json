@@ -70,53 +70,80 @@
       "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
       "sourceMaps": true,
       "trace": true,
-    "runtimeArgs": [
-      "--remote-debugging-port=9222",
-      "--user-data-dir=${workspaceFolder}/.vscode/chrome-debug-profile",
-      "--no-first-run",
-      "--no-default-browser-check",
-      "--disable-extensions"
-    ],
-    "port": 9222
+      "runtimeArgs": [
+        "--remote-debugging-port=9222",
+        "--user-data-dir=${workspaceFolder}/.vscode/chrome-debug-profile",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-extensions"
+      ],
+      "port": 9222
     },
     {
-        "name": "Smoke Test: Frontend",
-        "type": "node",
-        "request": "launch",
-        "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
-        "args": ["run", "--reporter=verbose", "--coverage"],
-        "cwd": "${workspaceFolder}/src/frontend",
-        "console": "integratedTerminal",
-        "skipFiles": ["<node_internals>/**"],
-        "env": {
+      "name": "Unit Test: Frontend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+      "args": ["run", "src/**/*.{test,spec}.{ts,tsx}", "--exclude", "**/*.e2e.{test,spec}.{ts,tsx}", "--exclude", "**/*.security.{test,spec}.{ts,tsx}", "--reporter=verbose"],
+      "cwd": "${workspaceFolder}/src/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
         "NODE_ENV": "test"
-        }
+      }
     },
     {
-        "name": "E2E Test: Frontend",
-        "type": "node",
-        "request": "launch",
-        "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
-        "args": ["run", "e2e", "--reporter=verbose", "--coverage"],
-        "cwd": "${workspaceFolder}/src/frontend",
-        "console": "integratedTerminal",
-        "skipFiles": ["<node_internals>/**"],
-        "env": {
+      "name": "Unit Test (Watch): Frontend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+      "args": ["src/**/*.{test,spec}.{ts,tsx}", "--exclude", "**/*.e2e.{test,spec}.{ts,tsx}", "--exclude", "**/*.security.{test,spec}.{ts,tsx}", "--reporter=verbose"],
+      "cwd": "${workspaceFolder}/src/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
         "NODE_ENV": "test"
-        }
+      }
     },
     {
-        "name": "Security Test: Frontend",
-        "type": "node",
-        "request": "launch",
-        "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
-        "args": ["run", "src/test/security", "--reporter=verbose", "--coverage"],
-        "cwd": "${workspaceFolder}/src/frontend",
-        "console": "integratedTerminal",
-        "skipFiles": ["<node_internals>/**"],
-        "env": {
+      "name": "E2E Test: Frontend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/frontend/node_modules/.bin/playwright",
+      "args": ["test", "--reporter=list", "--project=chromium"],
+      "cwd": "${workspaceFolder}/src/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
         "NODE_ENV": "test"
-        }
+      }
+    },
+    {
+      "name": "E2E Test (Debug): Frontend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/frontend/node_modules/.bin/playwright",
+      "args": ["test", "--debug", "--project=chromium"],
+      "cwd": "${workspaceFolder}/src/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NODE_ENV": "test",
+        "PWDEBUG": "1"
+      }
+    },
+    {
+      "name": "Security Test: Frontend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+      "args": ["run", "src/**/*.security.{test,spec}.{ts,tsx}", "--reporter=verbose"],
+      "cwd": "${workspaceFolder}/src/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NODE_ENV": "test"
+      }
     },
     {
       "name": "Debug: Python Single File",
@@ -136,12 +163,24 @@
       ]
     },
     {
-      "name": "Security Tests (Debug)",
+      "name": "All Unit Tests",
+      "configurations": [
+        "Unit Test: Backend",
+        "Unit Test: Frontend"
+      ]
+    },
+    {
+      "name": "All Security Tests",
       "configurations": [
         "Security Test: Backend",
         "Security Test: Frontend"
       ]
     },
-
+    {
+      "name": "All E2E Tests",
+      "configurations": [
+        "E2E Test: Frontend"
+      ]
+    }
   ]
 }

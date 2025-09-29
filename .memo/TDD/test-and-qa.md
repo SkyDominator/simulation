@@ -51,31 +51,23 @@
     2. automated regression suite
     3. coverage reports (backend 80%+, frontend 70%+)
 
-# Small app
+# Small App Test Strategy
 
 ## MUST-HAVE Tests (Critical Path)
 
-1. backend essentials
-    1. unit tests for critical business logic only
-        - OTP service (rate limiting, validation)
-        - simulation calculations
-        - auth/JWT validation
-    2. basic API smoke tests
-        - happy path for all endpoints
-        - auth protection verification
+1. **Backend essentials**
+   - Unit tests for business logic (OTP, simulation, JWT)
+   - API integration tests (happy paths + auth verification)
 
-2. frontend essentials
-    1. smoke tests for main user flows
-        - login/logout flow
-        - core business features (simulation CRUD)
-    2. manual testing checklist
-        - test on 2 browsers (Chrome desktop + mobile)
-        - verify PWA installation works
+2. **Frontend essentials**  
+   - Unit tests for critical components
+   - E2E tests for core flows (login, CRUD)
+   - Manual testing on 2 browsers + PWA verification
 
-3. security basics
-    1. auth endpoints are protected
-    2. PII data not exposed in logs/responses
-    3. rate limiting on OTP works
+3. **Security basics**
+   - Dedicated security test suite
+   - Auth protection verification
+   - Rate limiting validation
 
 4. simple automation
     1. pre-commit hooks (linting, basic tests)
