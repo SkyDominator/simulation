@@ -14,8 +14,13 @@ def create_app() -> FastAPI:
     # Security headers middleware
     @app.middleware("http")
     async def security_headers_middleware(request: Request, call_next):
-        """Add security headers to all responses"""
+        """Add security headers to all responses except static assets"""
         response: Response = await call_next(request)
+        
+        # Skip adding security headers for static asset requests
+        static_prefixes = ["/static", "/assets", "/favicon.ico"]
+        if any(request.url.path.startswith(prefix) for prefix in static_prefixes):
+            return response
         
         # Content Security Policy - Restrictive policy for security
         csp_directives = [
