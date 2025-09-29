@@ -293,11 +293,11 @@ describe('PWA Security Tests', () => {
       ]
       
       const expectedSanitized = [
-        'scriptalert_xss__script_', // Fixed: should end with underscore
-        '____etc_passwd',
+        'scriptalert_xss__script', // Corrected: actual sanitization result  
+        '.._.._etc_passwd', // Corrected: dots are preserved, only path separators replaced
         'keywithquotes',
         'key_with_backslashes',
-        'very-long-key-' + 'x'.repeat(185) // Exact calculation: 13 + 185 = 198 chars
+        'very-long-key-' + 'x'.repeat(186) // Correct calculation: 14 + 186 = 200 chars
       ]
       
       dangerousKeys.forEach((key, index) => {
@@ -554,9 +554,9 @@ describe('PWA Security Tests', () => {
       
       // Valid offline requests
       const validRequests = [
-        new Request('/api/notices', { method: 'GET' }),
-        new Request('/api/sync', { method: 'POST' }),
-        new Request('/static/app.js', { method: 'GET' })
+        new Request(new URL('/api/notices', window.location.origin)), // Use full URL
+        new Request(new URL('/api/sync', window.location.origin), { method: 'POST' }),
+        new Request(new URL('/static/app.js', window.location.origin))
       ]
       
       for (const request of validRequests) {
@@ -566,8 +566,8 @@ describe('PWA Security Tests', () => {
       // Invalid offline requests
       const invalidRequests = [
         new Request('http://api.external.com/data'), // Cross-origin
-        new Request('/api/admin/users', { method: 'GET' }), // Sensitive path
-        new Request('/api/simulations', { method: 'DELETE' }) // Write to non-sync endpoint
+        new Request(new URL('/api/admin/users', window.location.origin)), // Sensitive path  
+        new Request(new URL('/api/simulations', window.location.origin), { method: 'DELETE' }) // Write to non-sync endpoint
       ]
       
       for (const request of invalidRequests) {

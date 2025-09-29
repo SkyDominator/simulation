@@ -187,7 +187,9 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
             {policyLoading ? (
               <CircularProgress />
             ) : (
-              <ReactMarkdown>{policyContent}</ReactMarkdown>
+              <ReactMarkdown>
+                {policyContent}
+              </ReactMarkdown>
             )}
           </Box>
           <Button
