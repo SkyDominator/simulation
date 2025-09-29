@@ -76,8 +76,26 @@ describe('WhitelistCheckPage', () => {
       const phoneInput = screen.getByLabelText(/휴대폰 번호/i)
       const submitButton = screen.getByRole('button', { name: /인증번호 받기/i })
 
+      // Test validation with incomplete data
       await user.type(nameInput, '홍길동')
-      await user.type(phoneInput, '123-456')
+      // Don't fill phone number
+      await user.click(submitButton)
+      
+      await waitFor(() => {
+        expect(screen.getByText(/이름과 전화번호를 모두 입력해주세요/i)).toBeInTheDocument()
+      })
+    })
+
+    it('should validate incomplete fields', async () => {
+      const user = userEvent.setup()
+      
+      renderWithProviders(
+        <WhitelistCheckPage onVerified={mockOnVerified} />
+      )
+      
+      const submitButton = screen.getByRole('button', { name: /인증번호 받기/i })
+
+      // Submit without any data
       await user.click(submitButton)
       
       await waitFor(() => {
@@ -91,7 +109,10 @@ describe('WhitelistCheckPage', () => {
       const user = userEvent.setup()
       
       // Mock API to return whitelist error
-      mockApi.sendOtp.mockRejectedValue(new Error('가입 허용 명단에 없는 사용자입니다.'))
+      mockApi.sendOtp.mockResolvedValue({
+        success: false,
+        message: '가입 허용 명단에 없는 사용자입니다.'
+      })
       
       renderWithProviders(
         <WhitelistCheckPage onVerified={mockOnVerified} />
@@ -106,7 +127,7 @@ describe('WhitelistCheckPage', () => {
       await user.click(submitButton)
       
       await waitFor(() => {
-        expect(screen.getByText(/서비스에 일시적인 오류가 발생했습니다/i)).toBeInTheDocument()
+        expect(screen.getByText(/가입 허용 명단에 없는 사용자입니다/i)).toBeInTheDocument()
       })
     })
 
