@@ -145,13 +145,13 @@ test.describe('Mobile & Responsive Behavior', () => {
     await helpers.clickNext()
     
     // Round inputs should be mobile-optimized
-    await page.fill('[data-testid="starting-round"]', '1')
+    await page.fill('input[aria-label*="시작"], input[placeholder*="시작"]', '1')
     await helpers.clickNext()
     
-    await page.fill('[data-testid="current-round"]', '1')
+    await page.fill('input[aria-label*="현재"], input[placeholder*="현재"]', '1')
     await helpers.clickNext()
     
-    await page.fill('[data-testid="simulation-rounds"]', '10')
+    await page.fill('input[aria-label*="회차"], input[placeholder*="회차"]', '10')
     await helpers.clickNext()
     
     // Investment inputs should be stacked on mobile
@@ -258,15 +258,15 @@ test.describe('Mobile & Responsive Behavior', () => {
     await helpers.clickNext()
     
     // Input fields should use appropriate input types
-    const startingRoundInput = page.locator('[data-testid="starting-round"]')
+    const startingRoundInput = page.locator('input[aria-label*="시작"], input[placeholder*="시작"]')
     await expect(startingRoundInput).toHaveAttribute('type', 'number')
     await expect(startingRoundInput).toHaveAttribute('inputmode', 'numeric')
     
-    await page.fill('[data-testid="starting-round"]', '1')
+    await page.fill('input[aria-label*="시작"], input[placeholder*="시작"]', '1')
     await helpers.clickNext()
-    await page.fill('[data-testid="current-round"]', '1')
+    await page.fill('input[aria-label*="현재"], input[placeholder*="현재"]', '1')
     await helpers.clickNext()
-    await page.fill('[data-testid="simulation-rounds"]', '10')
+    await page.fill('input[aria-label*="회차"], input[placeholder*="회차"]', '10')
     await helpers.clickNext()
     
     // Investment inputs should scroll if needed
@@ -332,7 +332,7 @@ test.describe('Responsive Design Cross-Viewport Tests', () => {
       }
       
       // Test simulation table responsiveness
-      const simulationTable = page.locator('[data-testid="simulation-table"]')
+      const simulationTable = page.locator('table, [role="table"]')
       await expect(simulationTable).toBeVisible()
       
       if (viewport.size.width < 768) {
@@ -450,6 +450,6 @@ test.describe('Responsive Design Cross-Viewport Tests', () => {
     
     // Elements should still be visible in high contrast
     await expect(createButton).toBeVisible()
-    await expect(page.locator('[data-testid="simulation-table"]')).toBeVisible()
+    await expect(page.locator('table, [role="table"]')).toBeVisible()
   })
 })

@@ -302,7 +302,6 @@ describe('Authentication Security Tests', () => {
   })
 
   describe('Session Management', () => {
-  describe('Session Management', () => {
     it('should clear sensitive data on logout', async () => {
       // Set up initial sensitive data in beforeEach, but verify they exist
       const initialTokenValue = 'sensitive-token'
@@ -555,4 +554,3 @@ describe('Authentication Security Tests', () => {
       })
     })
   })
-})

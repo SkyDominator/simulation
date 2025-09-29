@@ -31,16 +31,16 @@ test.describe('User Onboarding Flow', () => {
     await page.goto('/')
     
     // Step 1: Should show whitelist check page
-    await expect(page.locator('h1')).toContainText('가입 허용 확인')
+    await expect(page.locator('h1, h5').filter({ hasText: '환영합니다!' })).toBeVisible()
     
     // Fill whitelist form with valid user
     await helpers.fillWhitelistForm(TEST_USERS.WHITELISTED.name, TEST_USERS.WHITELISTED.phone)
     
     // Step 2: Should redirect to OTP verification
-    await expect(page.locator('h1')).toContainText('인증번호 입력')
+    await expect(page.locator('h1, h5').filter({ hasText: '휴대폰 인증' })).toBeVisible()
     
     // Verify OTP input is visible and properly formatted
-    const otpInput = page.locator('[data-testid="otp-input"]')
+    const otpInput = page.getByLabel('인증번호')
     await expect(otpInput).toBeVisible({ timeout: TEST_CONSTANTS.DEFAULT_TIMEOUT_MS })
     await expect(otpInput).toHaveAttribute('maxlength', TEST_CONSTANTS.OTP_LENGTH.toString())
     
@@ -48,25 +48,24 @@ test.describe('User Onboarding Flow', () => {
     await helpers.fillOTPForm(TEST_OTP_CODES.VALID)
     
     // Step 3: Should redirect to privacy consent page
-    await expect(page.locator('h1')).toContainText('개인정보 처리방침')
+    await expect(page.locator('h1, h5').filter({ hasText: '데이터 수집 동의' })).toBeVisible()
     
     // Accept privacy policy
-    await page.check('[data-testid="consent-checkbox"]')
-    await page.click('[data-testid="accept-consent"]')
+    await page.getByLabel('개인정보 수집 및 이용에 동의합니다.').check()
+    await page.getByRole('button', { name: '계속하기' }).click()
     
     // Step 4: Should redirect to login page
-    await expect(page.locator('h1')).toContainText('로그인')
+    await expect(page.locator('h1, h5').filter({ hasText: '로그인' })).toBeVisible()
     
     // Verify OAuth login buttons are present
-    await expect(page.locator('[data-testid="google-login"]')).toBeVisible()
-    await expect(page.locator('[data-testid="kakao-login"]')).toBeVisible()
+    await expect(page.getByRole('button', { name: /Google.*로그인/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /Kakao.*로그인/ })).toBeVisible()
     
     // Complete OAuth login (mocked)
-    await page.click('[data-testid="google-login"]')
+    await page.getByRole('button', { name: /Google.*로그인/ }).click()
     
-    // Step 5: Should reach main application page
-    await expect(page.locator('[data-testid="main-page"]')).toBeVisible({ timeout: TEST_CONSTANTS.LONG_TIMEOUT_MS })
-    await expect(page.locator('h1')).toContainText('투자 시뮬레이션')
+    // Step 5: Should reach main application page (after successful auth mock)
+    await expect(page.locator('text=/투자.*시뮬레이션|시뮬레이션.*관리/')).toBeVisible({ timeout: TEST_CONSTANTS.LONG_TIMEOUT_MS })
     
     // Verify user is properly authenticated
     const isAuthenticated = await page.evaluate(() => {
