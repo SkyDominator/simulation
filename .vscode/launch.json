@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Backend (launch)",
+      "name": "Debug: Backend",
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
@@ -17,22 +17,7 @@
       "justMyCode": true
     },
     {
-      "name": "Unit test: backend (debug)",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "pytest",
-      "args": ["tests/unit", "-v", ">", "test_unit_results.md"],
-      "cwd": "${workspaceFolder}/src/backend",
-      "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
-      "env": {
-        "PYTHONPATH": "${workspaceFolder}/src/backend"
-      },
-      "console": "integratedTerminal",
-      "subProcess": true,
-      "justMyCode": true
-    },
-    {
-      "name": "Unit test: backend",
+      "name": "Unit Test: Backend",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
@@ -47,11 +32,11 @@
       "justMyCode": true
     },
     {
-      "name": "API contract test: backend (debug)",
+      "name": "Security Test: Backend",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/integration", "-v", ">", "test_integration_results.md"],
+      "args": ["tests/integration/api/test_security.py", "-v"],
       "cwd": "${workspaceFolder}/src/backend",
       "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {
@@ -62,7 +47,7 @@
       "justMyCode": true
     },
     {
-      "name": "API contract test: backend",
+      "name": "API Contract Test: Backend",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
@@ -77,7 +62,7 @@
       "justMyCode": true
     },
     {
-      "name": "Frontend: Chrome (Vite + Breakpoints)",
+      "name": "Debug: Frontend",
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:5173",
@@ -95,20 +80,7 @@
     "port": 9222
     },
     {
-        "name": "Frontend Smoke Tests (debug)",
-        "type": "node",
-        "request": "launch",
-        "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
-        "args": ["run", "--reporter=json", "--reporter=verbose", "--coverage", "--outputFile=test_smoke_results.json"],
-        "cwd": "${workspaceFolder}/src/frontend",
-        "console": "integratedTerminal",
-        "skipFiles": ["<node_internals>/**"],
-        "env": {
-        "NODE_ENV": "test"
-        }
-    },
-    {
-        "name": "Frontend Smoke Tests",
+        "name": "Smoke Test: Frontend",
         "type": "node",
         "request": "launch",
         "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
@@ -121,7 +93,20 @@
         }
     },
     {
-      "name": "Python: Single File Debug",
+        "name": "Security Test: Frontend",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+        "args": ["run", "src/test/security", "--reporter=verbose", "--coverage"],
+        "cwd": "${workspaceFolder}/src/frontend",
+        "console": "integratedTerminal",
+        "skipFiles": ["<node_internals>/**"],
+        "env": {
+        "NODE_ENV": "test"
+        }
+    },
+    {
+      "name": "Debug: Python Single File",
       "type": "debugpy",
       "request": "launch",
       "program": "${file}",
@@ -131,11 +116,19 @@
   ],
   "compounds": [
     {
-      "name": "Full Stack Debug",
+      "name": "Debug: Full Stack",
       "configurations": [
-        "Backend (launch)",
-        "Frontend: Chrome (Vite + Breakpoints)"
+        "Debug: Backend",
+        "Debug: Frontend"
       ]
-    }
+    },
+    {
+      "name": "Security Tests (Debug)",
+      "configurations": [
+        "Security Test: Backend",
+        "Security Test: Frontend"
+      ]
+    },
+
   ]
 }
