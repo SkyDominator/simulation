@@ -800,16 +800,6 @@ class TestDependencySecurity:
                         vuln_id = v.get('id', '')
                         
                         # Some patterns that might indicate high severity
-                        high_risk_patterns = [
-                            'remote code execution',
-                            'code execution',
-                            'privilege escalation',
-                            'arbitrary code',
-                            'buffer overflow',
-                            'sql injection',
-                            'xss',
-                            'csrf'
-                        ]
                         
                         # For now, we'll be conservative and not classify anything as high-risk
                         # without explicit severity information, since pip-audit format doesn't 
