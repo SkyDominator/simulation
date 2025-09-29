@@ -58,7 +58,7 @@ test.describe('Error Handling & Edge Cases', () => {
 
   test('E2E-018: Invalid form data shows validation errors', async ({ page }) => {
     await page.goto('/')
-    await page.click('[data-testid="create-simulation"]')
+    await helpers.clickCreateSimulation()
     
     // Try to proceed without selecting plan
     await helpers.clickNext()
@@ -93,25 +93,25 @@ test.describe('Error Handling & Edge Cases', () => {
     await helpers.clickNext()
     
     // Try invalid investment amount (negative)
-    await page.fill('[data-testid="investment-round-1"]', '-1000000')
+    await helpers.fillInvestmentAmount(1, '-1000000')
     
     await expect(page.locator('text=/투자|양수|음수|Investment|Invalid/')).toContainText('양수를 입력해주세요')
     
     // Try amount below minimum
-    await page.fill('[data-testid="investment-round-1"]', '1000')
+    await helpers.fillInvestmentAmount(1, '1000')
     
     await expect(page.locator('text=/투자|양수|음수|Investment|Invalid/')).toContainText('최소 투자금액은')
     
     // Verify form cannot be submitted with validation errors
-    await page.click('[data-testid="create-simulation"]')
+    await helpers.clickCreateSimulation()
     
     await expect(page.locator('text=/입력.*오류|Validation.*error/')).toContainText('입력 오류가 있습니다')
     
     // Fix all errors
-    await page.fill('[data-testid="investment-round-1"]', '1000000')
+    await helpers.fillInvestmentAmount(1, '1000000')
     
     // Should allow submission now
-    await page.click('[data-testid="create-simulation"]')
+    await helpers.clickCreateSimulation()
     
     // Assuming mocked success
     await APIHelpers.mockSimulationAPI(page)
@@ -128,7 +128,7 @@ test.describe('Error Handling & Edge Cases', () => {
     await mockSessionExpiry(page)
     
     // Try to perform authenticated action
-    await page.click('[data-testid="create-simulation"]')
+    await helpers.clickCreateSimulation()
     
     // Should detect expired session and redirect
     await expect(page.locator('[data-testid="session-expired-modal"]')).toBeVisible()
@@ -221,7 +221,7 @@ test.describe('Advanced Error Scenarios', () => {
     await expect(page.locator('[data-testid="recovery-notification"]')).toContainText('일부 저장된 데이터가 손상되어 초기화되었습니다')
     
     // Should fall back to defaults
-    await page.click('[data-testid="create-simulation"]')
+    await helpers.clickCreateSimulation()
     
     // Form should be empty (not corrupted)
     await expect(page.locator('[data-testid="plan-selector"]')).toHaveValue('')
@@ -302,7 +302,7 @@ test.describe('Advanced Error Scenarios', () => {
     await helpers.waitForMainPage()
     
     // Test storage quota handling
-    await page.click('[data-testid="create-simulation"]')
+    await helpers.clickCreateSimulation()
     
     // Fill large amount of data to trigger quota error
     const longText = 'a'.repeat(2000)
