@@ -15,7 +15,6 @@ import {
 } from "@mui/material";
 import { api } from "../services/api";
 import ReactMarkdown from "react-markdown";
-import { sanitizeRichContent } from "../utils/sanitizer";
 
 // Consent gate: fetch privacy policy, require acknowledgement, and record consent
 
