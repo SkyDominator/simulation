@@ -25,7 +25,7 @@ def create_app() -> FastAPI:
         # Content Security Policy - Restrictive policy for security
         csp_directives = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",  # Allow inline scripts for React
+            "script-src 'self' 'unsafe-inline'",  # Allow inline scripts for React; 'unsafe-eval' removed for security
             "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
             "font-src 'self' fonts.gstatic.com",
             "img-src 'self' data: blob:",
