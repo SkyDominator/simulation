@@ -5,7 +5,7 @@
 
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "../utils/renderWithProviders";
 
 // Mock authentication context
@@ -18,6 +18,12 @@ const MockAuthProvider = ({
 }: any) => {
   const [user, setUser] = React.useState(mockUser);
   const [session, setSession] = React.useState(mockSession);
+
+  // Update state when props change (for rerender scenarios)
+  React.useEffect(() => {
+    setUser(mockUser);
+    setSession(mockSession);
+  }, [mockUser, mockSession]);
 
   const signOut = vi.fn().mockImplementation(() => {
     setUser(null);
@@ -323,14 +329,10 @@ describe("Authentication Security Tests", () => {
 
   describe("Session Management", () => {
     it("should clear sensitive data on logout", async () => {
-      // Set up initial sensitive data in beforeEach, but verify they exist
+      // Set up initial sensitive data after component renders
       const initialTokenValue = "sensitive-token";
       const initialUserValue = "user-data";
       const initialTempValue = "temporary-data";
-
-      localStorage.setItem("supabase.auth.token", initialTokenValue);
-      localStorage.setItem("user-session", initialUserValue);
-      sessionStorage.setItem("temp-data", initialTempValue);
 
       const mockUser = { id: "user-789" };
       const mockSession = { access_token: "test-token" };
@@ -341,6 +343,11 @@ describe("Authentication Security Tests", () => {
         </MockAuthProvider>
       );
 
+      // Set up data after render to avoid beforeEach clearing
+      localStorage.setItem("supabase.auth.token", initialTokenValue);
+      localStorage.setItem("user-session", initialUserValue);
+      sessionStorage.setItem("temp-data", initialTempValue);
+
       const logoutBtn = screen.getByTestId("logout-btn");
 
       // Verify data exists before logout
@@ -350,7 +357,7 @@ describe("Authentication Security Tests", () => {
       expect(sessionStorage.getItem("temp-data")).toBe(initialTempValue);
 
       // Perform logout
-      logoutBtn.click();
+      fireEvent.click(logoutBtn);
 
       // Verify data is cleared after logout
       expect(localStorage.getItem("supabase.auth.token")).toBeNull();
@@ -371,13 +378,13 @@ describe("Authentication Security Tests", () => {
           Object.entries(sensitiveData).forEach(([key, value]) => {
             const sensitiveKeys = [
               "password",
-              "creditCard",
+              "creditcard", // lowercase to match key.toLowerCase()
               "ssn",
               "token",
               "secret",
             ];
 
-            if (!sensitiveKeys.some((sk) => key.toLowerCase().includes(sk))) {
+            if (!sensitiveKeys.some((sk) => key.toLowerCase().includes(sk.toLowerCase()))) {
               localStorage.setItem(key, value);
             }
           });
@@ -392,10 +399,10 @@ describe("Authentication Security Tests", () => {
 
       render(<DataStorageComponent />);
 
-      // Verify sensitive data is not stored (should be null, not undefined)
-      expect(localStorage.getItem("password")).toBeNull();
-      expect(localStorage.getItem("creditCard")).toBeNull();
-      expect(localStorage.getItem("ssn")).toBeNull();
+      // Verify sensitive data is not stored (localStorage returns null for missing items)
+      expect(localStorage.getItem("password")).toBe(null);
+      expect(localStorage.getItem("creditCard")).toBe(null);
+      expect(localStorage.getItem("ssn")).toBe(null);
     });
 
     it("should handle concurrent session validation", async () => {
@@ -464,7 +471,7 @@ describe("Authentication Security Tests", () => {
   });
 
   describe("Authorization Security", () => {
-    it("should enforce role-based access control", () => {
+    it("should enforce role-based access control", async () => {
       const roles = ["user", "admin", "moderator"];
 
       const RoleBasedComponent = ({
@@ -508,9 +515,11 @@ describe("Authentication Security Tests", () => {
         </MockAuthProvider>
       );
 
-      // Should now show access granted
-      expect(screen.queryByTestId("access-denied")).not.toBeInTheDocument();
-      expect(screen.getByTestId("access-granted")).toBeInTheDocument();
+      // Wait for React to finish the rerender before checking
+      await waitFor(() => {
+        expect(screen.queryByTestId("access-denied")).not.toBeInTheDocument();
+        expect(screen.getByTestId("access-granted")).toBeInTheDocument();
+      });
     });
 
     it("should validate user permissions for specific actions", () => {
