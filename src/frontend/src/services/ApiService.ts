@@ -18,8 +18,15 @@ import {
 } from "../types/types";
 
 export interface ApiServiceInterface {
-  deleteSimulation(simulation_id: string, token: string): Promise<{ simulation_id: string; message: string; success: boolean }>;
-  runSimulation(simulation_id: string, token: string, expectedUpdatedAt?: string): Promise<SimulationRunResponse>;
+  deleteSimulation(
+    simulation_id: string,
+    token: string
+  ): Promise<{ simulation_id: string; message: string; success: boolean }>;
+  runSimulation(
+    simulation_id: string,
+    token: string,
+    expectedUpdatedAt?: string
+  ): Promise<SimulationRunResponse>;
   getSimulations(token: string): Promise<Plan[]>;
   getSimulationDetails(simulationId: string, token: string): Promise<Plan>;
   createSimulation(
@@ -40,29 +47,100 @@ export interface ApiServiceInterface {
     simulation_rounds: number,
     scheduled_payment: Record<string, number>,
     sales_achievement_rates?: Record<string, number>
-  ): Promise<{ simulation_id: string; plan_id: string; message: string; success: boolean }>;
-  updateSimulationMemo(token: string, simulation_id: string, memo: string | null): Promise<SimulationMemoUpdateResponse>;
+  ): Promise<{
+    simulation_id: string;
+    plan_id: string;
+    message: string;
+    success: boolean;
+  }>;
+  updateSimulationMemo(
+    token: string,
+    simulation_id: string,
+    memo: string | null
+  ): Promise<SimulationMemoUpdateResponse>;
   adminMe(token: string): Promise<AdminMeResponse>;
   listNotices(): Promise<NoticeListResponse>;
   getNotice(notice_id: string): Promise<NoticeDetailResponse>;
-  createNotice(token: string, payload: { title: string; content: string; pinned?: boolean; published?: boolean }): Promise<NoticeCreateResponse>;
-  updateNotice(token: string, notice_id: string, payload: { title?: string; content?: string; pinned?: boolean; published?: boolean }): Promise<NoticeUpdateResponse>;
+  createNotice(
+    token: string,
+    payload: {
+      title: string;
+      content: string;
+      pinned?: boolean;
+      published?: boolean;
+    }
+  ): Promise<NoticeCreateResponse>;
+  updateNotice(
+    token: string,
+    notice_id: string,
+    payload: {
+      title?: string;
+      content?: string;
+      pinned?: boolean;
+      published?: boolean;
+    }
+  ): Promise<NoticeUpdateResponse>;
   deleteNotice(token: string, notice_id: string): Promise<NoticeDeleteResponse>;
-  getPrivacyPolicy(params?: { version?: string; locale?: string }): Promise<PrivacyPolicyResponse>;
-  createPrivacyPolicy(token: string, payload: { version: string; content: string; locale?: string; effective_date?: string; last_updated?: string }): Promise<{ id: string; message: string; success: boolean }>;
-  updatePrivacyPolicy(token: string, policy_id: string, payload: { version?: string; content?: string; locale?: string; effective_date?: string; last_updated?: string }): Promise<{ id: string; message: string; success: boolean }>;
-  publishPrivacyPolicy(token: string, policy_id: string): Promise<{ id: string; message: string; success: boolean }>;
+  getPrivacyPolicy(params?: {
+    version?: string;
+    locale?: string;
+  }): Promise<PrivacyPolicyResponse>;
+  createPrivacyPolicy(
+    token: string,
+    payload: {
+      version: string;
+      content: string;
+      locale?: string;
+      effective_date?: string;
+      last_updated?: string;
+    }
+  ): Promise<{ id: string; message: string; success: boolean }>;
+  updatePrivacyPolicy(
+    token: string,
+    policy_id: string,
+    payload: {
+      version?: string;
+      content?: string;
+      locale?: string;
+      effective_date?: string;
+      last_updated?: string;
+    }
+  ): Promise<{ id: string; message: string; success: boolean }>;
+  publishPrivacyPolicy(
+    token: string,
+    policy_id: string
+  ): Promise<{ id: string; message: string; success: boolean }>;
   listPrivacyPolicies(token: string): Promise<AdminPrivacyPolicyListResponse>;
-  getPrivacyPolicyAdmin(token: string, policy_id: string): Promise<AdminPrivacyPolicyDetailResponse>;
-  deletePrivacyPolicy(token: string, policy_id: string): Promise<{ id: string; message: string; success: boolean }>;
-  recordConsent(user_hash: string, consent_type?: string, consent_version?: string): Promise<ConsentRecordResponse>;
-  getUserConsents(user_hash: string): Promise<{ consents: ConsentRecordResponse[]; success: boolean }>;
+  getPrivacyPolicyAdmin(
+    token: string,
+    policy_id: string
+  ): Promise<AdminPrivacyPolicyDetailResponse>;
+  deletePrivacyPolicy(
+    token: string,
+    policy_id: string
+  ): Promise<{ id: string; message: string; success: boolean }>;
+  recordConsent(
+    user_hash: string,
+    consent_type?: string,
+    consent_version?: string
+  ): Promise<ConsentRecordResponse>;
+  getUserConsents(
+    user_hash: string
+  ): Promise<{ consents: ConsentRecordResponse[]; success: boolean }>;
   sendOtp(name: string, phone_number: string): Promise<OTPSendResponse>;
-  verifyOtp(phone_number: string, otp_code: string, user_hash?: string): Promise<OTPVerifyResponse>;
+  verifyOtp(
+    phone_number: string,
+    otp_code: string,
+    user_hash?: string
+  ): Promise<OTPVerifyResponse>;
 }
 
 export class ApiService implements ApiServiceInterface {
-  constructor(private baseUrl: string) {}
+  private readonly baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
 
   private url(path: string): string {
     const base = this.baseUrl.replace(/\/+$/, "");
@@ -276,14 +354,17 @@ export class ApiService implements ApiServiceInterface {
     simulation_id: string,
     memo: string | null
   ): Promise<SimulationMemoUpdateResponse> {
-    const response = await fetch(this.url(`/simulations/${simulation_id}/memo`), {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ memo }),
-    });
+    const response = await fetch(
+      this.url(`/simulations/${simulation_id}/memo`),
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ memo }),
+      }
+    );
     if (!response.ok) {
       try {
         const err = await response.json();
@@ -474,14 +555,17 @@ export class ApiService implements ApiServiceInterface {
       last_updated?: string;
     }
   ): Promise<{ id: string; message: string; success: boolean }> {
-    const response = await fetch(this.url(`/admin/privacy-policies/${policy_id}`), {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    const response = await fetch(
+      this.url(`/admin/privacy-policies/${policy_id}`),
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      }
+    );
     if (!response.ok) {
       let msg = `API error: ${response.status}`;
       try {
@@ -542,9 +626,12 @@ export class ApiService implements ApiServiceInterface {
     token: string,
     policy_id: string
   ): Promise<AdminPrivacyPolicyDetailResponse> {
-    const response = await fetch(this.url(`/admin/privacy-policies/${policy_id}`), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await fetch(
+      this.url(`/admin/privacy-policies/${policy_id}`),
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
     if (!response.ok) {
       let msg = `API error: ${response.status}`;
       try {
@@ -562,10 +649,13 @@ export class ApiService implements ApiServiceInterface {
     token: string,
     policy_id: string
   ): Promise<{ id: string; message: string; success: boolean }> {
-    const response = await fetch(this.url(`/admin/privacy-policies/${policy_id}`), {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await fetch(
+      this.url(`/admin/privacy-policies/${policy_id}`),
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
     if (!response.ok) {
       let msg = `API error: ${response.status}`;
       try {
@@ -632,10 +722,7 @@ export class ApiService implements ApiServiceInterface {
     }
   }
 
-  async sendOtp(
-    name: string,
-    phone_number: string
-  ): Promise<OTPSendResponse> {
+  async sendOtp(name: string, phone_number: string): Promise<OTPSendResponse> {
     try {
       const response = await fetch(this.url("/otp/send"), {
         method: "POST",
@@ -646,13 +733,33 @@ export class ApiService implements ApiServiceInterface {
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        let errorMessage = `API error: ${response.status}`;
+        try {
+          const errorBody = await response.json();
+          if (errorBody && typeof errorBody === "object") {
+            const bodyRecord = errorBody as Record<string, unknown>;
+            if (typeof bodyRecord.message === "string") {
+              errorMessage = bodyRecord.message;
+            } else if (typeof bodyRecord.detail === "string") {
+              errorMessage = bodyRecord.detail;
+            }
+          }
+        } catch {
+          // ignore parsing errors
+        }
+
+        return {
+          success: false,
+          message: errorMessage,
+        };
       }
 
-      return await response.json();
+      return (await response.json()) as OTPSendResponse;
     } catch (error) {
       console.error("OTP send error:", error);
-      return { success: false, message: String(error) };
+      const message =
+        "서비스에 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+      return { success: false, message };
     }
   }
 
@@ -675,15 +782,41 @@ export class ApiService implements ApiServiceInterface {
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        let errorMessage = `API error: ${response.status}`;
+        let remainingAttempts: number | undefined;
+        try {
+          const errorBody = await response.json();
+          if (errorBody && typeof errorBody === "object") {
+            const bodyRecord = errorBody as Record<string, unknown>;
+            if (typeof bodyRecord.message === "string") {
+              errorMessage = bodyRecord.message;
+            } else if (typeof bodyRecord.detail === "string") {
+              errorMessage = bodyRecord.detail;
+            }
+            if (typeof bodyRecord.remaining_attempts === "number") {
+              remainingAttempts = bodyRecord.remaining_attempts;
+            }
+          }
+        } catch {
+          // ignore parsing errors
+        }
+
+        return {
+          success: false,
+          message: errorMessage,
+          ...(remainingAttempts !== undefined
+            ? { remaining_attempts: remainingAttempts }
+            : {}),
+        };
       }
 
-      return await response.json();
+      return (await response.json()) as OTPVerifyResponse;
     } catch (error) {
       console.error("OTP verification error:", error);
       return {
         success: false,
-        message: String(error),
+        message:
+          "서비스에 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
       };
     }
   }

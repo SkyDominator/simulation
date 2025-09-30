@@ -92,6 +92,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
       <Paper
         elevation={3}
         sx={{ p: 4, maxWidth: 600, width: "100%", mx: "auto" }}
+        data-testid="consent-page"
       >
         <Typography
           variant="h5"
@@ -134,7 +135,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
         </Typography>
 
         {error && (
-          <Alert severity="error" sx={{ my: 2 }}>
+          <Alert severity="error" sx={{ my: 2 }} data-testid="consent-error">
             {error}
           </Alert>
         )}
@@ -148,10 +149,16 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
           }
           label="개인정보 수집 및 이용에 동의합니다."
           sx={{ mb: 3, display: "block" }}
+          data-testid="consent-checkbox"
         />
 
         <Stack direction="row" spacing={2}>
-          <Button variant="outlined" onClick={onDecline} fullWidth>
+          <Button
+            variant="outlined"
+            onClick={onDecline}
+            fullWidth
+            data-testid="decline-consent"
+          >
             취소
           </Button>
           <Button
@@ -159,6 +166,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
             disabled={!checkboxChecked || loading}
             onClick={handleAccept}
             fullWidth
+            data-testid="accept-consent"
           >
             {loading ? <CircularProgress size={24} /> : "계속하기"}
           </Button>
@@ -183,13 +191,14 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
                 ).toLocaleDateString()}`
               : ""}
           </Typography>
-          <Box sx={{ my: 3, maxHeight: "60vh", overflow: "auto", p: 1 }}>
+          <Box
+            sx={{ my: 3, maxHeight: "60vh", overflow: "auto", p: 1 }}
+            data-testid="policy-content"
+          >
             {policyLoading ? (
               <CircularProgress />
             ) : (
-              <ReactMarkdown>
-                {policyContent}
-              </ReactMarkdown>
+              <ReactMarkdown>{policyContent}</ReactMarkdown>
             )}
           </Box>
           <Button

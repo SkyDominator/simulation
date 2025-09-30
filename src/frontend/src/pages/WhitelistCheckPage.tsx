@@ -124,6 +124,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
         sx={{ p: 4, width: "100%", maxWidth: 500, boxShadow: 3 }}
         component="form"
         onSubmit={handleSubmit}
+        data-testid="whitelist-form"
       >
         <Stack spacing={3}>
           <Box textAlign="center">
@@ -154,6 +155,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
             onChange={(e) => setName(e.target.value)}
             disabled={loading}
             autoFocus
+            inputProps={{ "data-testid": "name-input" }}
           />
 
           <TextField
@@ -167,7 +169,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
             InputProps={{
               inputMode: "tel",
             }}
-            inputProps={{ maxLength: 13 }}
+            inputProps={{ maxLength: 13, "data-testid": "phone-input" }}
           />
 
           <Button
@@ -177,6 +179,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
             type="submit"
             disabled={loading}
             size="large"
+            data-testid="submit-whitelist"
           >
             {loading ? (
               <CircularProgress size={24} color="inherit" />

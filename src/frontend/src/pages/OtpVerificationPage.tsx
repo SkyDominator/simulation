@@ -101,6 +101,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
           maxWidth: 500,
           boxShadow: 3,
         }}
+        data-testid="otp-form"
       >
         <Stack spacing={3}>
           <Box textAlign="center">
@@ -136,12 +137,13 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
               pattern: "[0-9]*",
               inputMode: "numeric",
               autoComplete: "one-time-code", // Enable auto-fill on supporting browsers
+              "data-testid": "otp-input",
             }}
           />
 
           <Box sx={{ textAlign: "center" }}>
             {countdown > 0 && (
-              <Typography color="text.secondary">
+              <Typography color="text.secondary" data-testid="otp-timer">
                 {Math.floor(countdown / 60)}:
                 {(countdown % 60).toString().padStart(2, "0")} 내에 입력하세요
               </Typography>
@@ -154,6 +156,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
             fullWidth
             onClick={handleVerify}
             disabled={loading || !otpCode.trim()}
+            data-testid="verify-otp"
           >
             {loading ? (
               <CircularProgress size={24} color="inherit" />
@@ -177,6 +180,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
               color="primary"
               onClick={handleSendOtp}
               disabled={loading || countdown > 0}
+              data-testid="resend-otp"
             >
               {countdown > 0
                 ? `재전송 ${Math.floor(countdown / 60)}:${(countdown % 60)
