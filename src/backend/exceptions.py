@@ -59,14 +59,14 @@ class ResourceNotFoundError(BaseAPIException):
     """Resource not found - 404 status."""
     
     def __init__(self, resource_type: str, resource_id: Optional[str] = None, **kwargs):
+        # Security fix: Don't include user-provided resource_id in error message
+        # to prevent exposure of injection attempts and internal information
         detail = f"{resource_type} not found"
-        if resource_id:
-            detail += f" (ID: {resource_id})"
         
         error_context = kwargs.get("error_context", {})
         error_context.update({
             "resource_type": resource_type,
-            "resource_id": resource_id
+            "resource_id": resource_id  # Keep for internal logging only
         })
         
         super().__init__(
