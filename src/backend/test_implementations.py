@@ -46,6 +46,10 @@ class TestQueryBuilder(QueryBuilder):
         self.filters[column] = value
         return self
     
+    def gt(self, column, value):
+        self.filters[f"{column}_gt"] = value
+        return self
+    
     def gte(self, column, value):
         self.filters[f"{column}_gte"] = value
         return self
@@ -139,6 +143,16 @@ class TestSMSClient(SMSClient):
     def send(self, phone: str, message: str) -> bool:
         self.sent_messages.append({"phone": phone, "message": message})
         return self.success
+    
+    def send_otp(self, phone: str, otp_code: str) -> dict:
+        """Alternative method name for backward compatibility."""
+        success = self.send(phone, f"Your OTP: {otp_code}")
+        return {"success": success, "provider_msg_id": f"test-{len(self.sent_messages)}"}
+    
+    def send_sms(self, phone: str, message: str) -> dict:
+        """Alternative method name for backward compatibility."""
+        success = self.send(phone, message)
+        return {"success": success}
 
 
 class TestConfigProvider(ConfigProvider):

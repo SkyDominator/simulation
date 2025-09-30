@@ -158,11 +158,11 @@ class TestJWTSecurityFunctions:
         
         # Should raise HTTPException for invalid token
         with pytest.raises(HTTPException) as exc_info:
-            # This would normally be called by FastAPI dependency injection
-            # We test the function directly with invalid input
             from auth.jwt import authenticate_jwt_token
-            # authenticate_jwt_token expects to be called by FastAPI
-            # For unit testing, we test the core validation logic instead
+            # Call the function directly with invalid credentials
+            authenticate_jwt_token(invalid_credentials)
+        
+        assert exc_info.value.status_code == 401
 
 
 @pytest.mark.unit
