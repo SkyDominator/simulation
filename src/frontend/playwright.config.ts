@@ -73,8 +73,5 @@ export default defineConfig({
     port: 4173,
     cwd: './',
     reuseExistingServer: !process.env.CI,
-    env: {
-      VITE_E2E_MODE: 'true',
-    },
   },
 })
