@@ -1,3 +1,7 @@
+---
+applyTo: "**"
+---
+
 # Copilot Instructions
 
 This Software Specification Document (SSD) provides the broad context of my application to help AI assistants understand my project for improving the quality of tasks including planning, code suggestions, and completions.
