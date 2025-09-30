@@ -1281,6 +1281,7 @@ Evaluate ALL requests against these priorities (highest to lowest):
 - [ ] Applied priority evaluation
 - [ ] No unauthorized additions
 - [ ] No assumption-based decisions
+- [ ] Removed the legacy codes not used anymore
 
 **ACTION:** If verification fails, revisit implementation or ASK user for clarification.
 
