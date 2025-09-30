@@ -49,12 +49,12 @@
       "subProcess": true,
       "justMyCode": true
     },
-        {
+    {
       "name": "Unit Test: Frontend",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
-      "args": ["run", "src/test", "--exclude", "src/test/security", "--reporter=verbose"],
+      "args": ["run", "src/test/pages", "--reporter=verbose"],
       "cwd": "${workspaceFolder}/src/frontend",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"],
@@ -62,7 +62,20 @@
         "NODE_ENV": "test"
       }
     },
-        {
+    {
+      "name": "Component Test: Frontend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+      "args": ["run", "src/test/components", "--reporter=verbose"],
+      "cwd": "${workspaceFolder}/src/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NODE_ENV": "test"
+      }
+    },
+    {
       "name": "API Contract Test: Backend",
       "type": "debugpy",
       "request": "launch",
@@ -76,6 +89,19 @@
       "console": "integratedTerminal",
       "subProcess": true,
       "justMyCode": true
+    },
+    {
+      "name": "Integration Test: Frontend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+      "args": ["run", "src/test/integration", "--reporter=verbose"],
+      "cwd": "${workspaceFolder}/src/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NODE_ENV": "test"
+      }
     },
     {
       "name": "Security Test: Backend",
@@ -92,7 +118,7 @@
       "subProcess": true,
       "justMyCode": true
     },
-        {
+    {
       "name": "Security Test: Frontend",
       "type": "node",
       "request": "launch",
