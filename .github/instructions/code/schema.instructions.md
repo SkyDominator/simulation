@@ -2,6 +2,8 @@
 applyTo: "/src/backend/**/*.py,/src/frontend/**/*.tsx,/src/frontend/**/*.ts,/src/frontend/**/*.js,/docs/plans/**/*.md"
 ---
 
+# Database Schema and RLS Policies
+
 ## admins
 
 ### schema
