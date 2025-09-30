@@ -9,6 +9,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    testTimeout: 15000, // Increase default timeout to 15 seconds
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

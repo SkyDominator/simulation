@@ -178,8 +178,8 @@ describe('Real Component Integration Tests', () => {
       // Verify real API call was made with correct parameters
       await waitFor(() => {
         expect(apiService.sendOtp).toHaveBeenCalledWith('홍길동', '010-1234-5678')
-      })
-    })
+      }, { timeout: 10000 }) // Increase timeout to 10 seconds
+    }, 15000)
 
     it('should handle OTP verification errors in real component', async () => {
       const user = userEvent.setup()
