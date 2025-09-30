@@ -494,27 +494,6 @@ Frontend:
 - **LCP/FID/CLS**: Core Web Vitals metrics
 - **Pre-auth user**: User before OTP + consent + OAuth completion
   - **Context Detection**: Determines flow based on authentication state and calling context
-- **Privacy Policy Integration**:
-  - Fetches current policy version via `api.getPrivacyPolicy()`
-  - Inline summary with key data collection points
-  - Modal dialog for full policy text with ReactMarkdown rendering
-  - Version tracking and last updated date display
-- **Consent UI**:
-  - Checkbox with explicit consent text
-  - Two-button layout: "취소" (decline) and "계속하기" (accept)
-  - Disabled submit until checkbox is checked
-- **Data Recording**: Records consent with `userHash`, `consent_type: "privacy_policy"`, `policyVersion`
-- **Flow Control**:
-  - Accept: Stores `consentVersion` in sessionStorage, proceeds to login
-  - Decline: Returns to whitelist check
-
-**Step 4: LoginPage** (`page: "login"`):
-
-- **OAuth Integration**: Supabase auth with Google and Kakao providers
-- **Provider Buttons**: Branded buttons with loading states and error handling
-- **Navigation**: "이전으로" option to return to whitelist check
-- **Loading States**: Individual loading indicators per provider to prevent double-clicks
-- **Error Recovery**: Alert messages for authentication failures with retry options
 
 ### 13.3 Authentication State Transitions
 
