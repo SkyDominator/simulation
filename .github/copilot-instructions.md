@@ -1904,7 +1904,7 @@ create table public.simulations (
   investments jsonb not null,
   simulation_results jsonb null,
   created_at timestamp with time zone null default (now() AT TIME ZONE 'Asia/Seoul'::text),
-  updated_at timestamp with time zone null default (now() AT TIME ZONE 'utc'::text),
+  updated_at timestamp with time zone null default (now() AT TIME ZONE 'Asia/Seoul'::text),
   memo text null,
   sales_achievement_rates jsonb null,
   current_company_round smallint null,
