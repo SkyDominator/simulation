@@ -166,7 +166,7 @@ const MainPage: React.FC<MainPageProps> = ({
 
       setLoading(true);
       try {
-        const data = await api.getSimulations(session.access_token);
+        const data = await apiService.getSimulations(session.access_token);
         setPlans(data);
       } catch (error) {
         console.error("Error loading plans:", error);
@@ -177,7 +177,7 @@ const MainPage: React.FC<MainPageProps> = ({
     };
 
     loadPlans();
-  }, [user, session]);
+  }, [user, session, apiService]);
 
   // (Policy button now visible to all; admin-gated logic moved to page component)
 
