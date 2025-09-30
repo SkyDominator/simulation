@@ -11,6 +11,7 @@ from constants import PLAN_PARAMETERS
 CANONICAL_SNAPSHOT_ROUNDS = 36  # Used for snapshot tests only, not production
 
 
+@pytest.mark.unit
 class TestSimulationServiceInitialization:
     """Test CAT-INIT: Initialization & Input Validation (INIT-001 to INIT-004)."""
     
