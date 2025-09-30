@@ -13,6 +13,15 @@ from main import app
 
 
 @pytest.fixture(autouse=True)
+def reset_container():
+    """Reset the service container between tests."""
+    from container import container
+    container.reset()
+    yield
+    container.reset()
+
+
+@pytest.fixture(autouse=True)
 def disable_network_mock():
     """Disable the network mock for integration tests since TestClient needs sockets."""
     # Stop the network mock that's applied globally in conftest.py
@@ -264,7 +273,22 @@ def mock_supabase_client(monkeypatch):
             return MockTable(name, self.mock_data)
 
     mock_client = MockClient()
+    
+    # Register mock client in the container so routes use the same mock data
+    from container import container
+    from interfaces import DatabaseClient
+    from test_implementations import TestDatabaseClient
+    
+    # Create a test database client that uses our mock data
+    test_db_client = TestDatabaseClient()
+    test_db_client.data = mock_client.mock_data
+    container.register_instance(DatabaseClient, test_db_client)
+    
+    # Keep legacy mock for any remaining direct calls
     monkeypatch.setattr("api.routes._supabase_client", lambda: mock_client)
+    
+    # Store reference to mock data so other fixtures can access it
+    mock_client._test_db_client = test_db_client
     return mock_client
 
 
@@ -272,8 +296,10 @@ def mock_supabase_client(monkeypatch):
 def mock_otp_service(monkeypatch):
     """Mock OTP service for rate limiting and verification tests."""
     class MockOTPService:
-        def __init__(self, db_client=None):
+        def __init__(self, db_client=None, sms_client=None, config=None):
             self.db_client = db_client
+            self.sms_client = sms_client
+            self.config = config
             self.sent_otps = {}
             self.rate_limit_reached = False
             self.verification_attempts = {}
@@ -293,31 +319,55 @@ def mock_otp_service(monkeypatch):
             }
         
         def verify_otp(self, phone, code, client_ip=None):
-            # Simulate attempt tracking
-            attempts = self.verification_attempts.get(phone, 0)
-            self.verification_attempts[phone] = attempts + 1
+            normalized_phone = phone.replace(" ", "").replace("-", "")
             
-            # If too many attempts
-            if attempts >= 6:
+            # Get the data from the container's database client
+            from container import container
+            from interfaces import DatabaseClient
+            db_client = container.get(DatabaseClient)
+            
+            # Check if we have an OTP record in the mock database
+            otp_records = db_client.data.get('phone_otps', [])
+            
+            # Find the OTP record for this phone
+            otp_record = None
+            for record in otp_records:
+                if record.get('phone') == normalized_phone and not record.get('used', False):
+                    otp_record = record
+                    break
+            
+            if not otp_record:
                 return {
                     "success": False,
-                    "message": "Maximum verification attempts exceeded",
-                    "remaining_attempts": 0
+                    "message": "유효하지 않거나 만료된 인증번호입니다."
                 }
             
-            if phone in self.sent_otps and self.sent_otps[phone] == code:
-                # Reset attempts on success
-                self.verification_attempts[phone] = 0
+            # Check if max attempts reached
+            current_attempts = otp_record.get('attempts', 0)
+            if current_attempts >= 6:
+                return {
+                    "success": False,
+                    "message": "인증 시도 횟수를 초과했습니다. 새 인증번호를 요청하세요."
+                }
+            
+            # For testing, assume OTP is correct if it's "123456"
+            if code == "123456":
+                # Mark as used
+                otp_record['used'] = True
                 return {
                     "success": True,
-                    "message": "OTP verified successfully"
+                    "message": "인증이 완료되었습니다."
                 }
             
-            remaining = 6 - self.verification_attempts[phone]
+            # Increment attempts
+            new_attempts = current_attempts + 1
+            remaining_attempts = 6 - new_attempts
+            otp_record['attempts'] = new_attempts
+            
             return {
                 "success": False,
-                "message": "Invalid or expired OTP",
-                "remaining_attempts": max(0, remaining)
+                "message": f"인증번호가 일치하지 않습니다. {remaining_attempts}회 시도 기회가 남았습니다." if remaining_attempts > 0 else "인증 시도 횟수를 초과했습니다. 새 인증번호를 요청하세요.",
+                "remaining_attempts": max(0, remaining_attempts)
             }
     
     # Mock both the SMS client and OTP service at the same time
@@ -387,15 +437,23 @@ def mock_otp_service(monkeypatch):
             }
     
     # Mock the SMS client import 
-    monkeypatch.setattr("services.otp.otp_service.SolapiSMSClient", MockSMSClient)
-    # Mock the verify_otp method
-    monkeypatch.setattr("services.otp.otp_service.OTPService.verify_otp", mock_verify_otp)
+    class MockSMSClient:
+        def send_sms(self, phone, message):
+            return {"success": True}
     
-    # Mock the OTP service instance creation
-    def mock_otp_service_factory(*args, **kwargs):
-        return MockOTPService(*args, **kwargs)
+    monkeypatch.setattr("services.otp.solapi_sms.SolapiSMSClient", MockSMSClient)
     
-    monkeypatch.setattr("services.otp.otp_service.OTPService", MockOTPService)
+    # Register mock service in container
+    from container import container
+    from services.otp.otp_service import OTPService
+    
+    def mock_otp_service_factory():
+        return MockOTPService()
+    
+    # Create a specific instance for this test
+    mock_service_instance = MockOTPService()
+    container.register_instance(OTPService, mock_service_instance)
+    
     return mock_otp_service_factory
 
 
@@ -487,7 +545,11 @@ def mock_simulation_service(monkeypatch, mock_supabase_client):
             }
     
     mock_service = MockSimulationService()
-    monkeypatch.setattr("api.routes._sim_service", mock_service)
+    
+    # Register mock service in container
+    from container import container
+    from services.simulations import SimulationService
+    container.register_instance(SimulationService, mock_service)
     return mock_service
 
 

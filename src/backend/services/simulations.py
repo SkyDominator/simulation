@@ -2,9 +2,8 @@
 from __future__ import annotations
 import logging
 from typing import Dict, Any, List
-from supabase import Client, create_client
+from datetime import datetime
 
-from config.settings import settings
 from models.schemas import (
     SimulationCreateRequest, SimulationCreateResponse,
     SimulationRunRequest, SimulationRunResponse,
@@ -19,19 +18,9 @@ from exceptions import (
     SimulationNotFoundError, InvalidDataError, DatabaseError, 
     SimulationServiceError, handle_database_exception, handle_service_exception
 )
-from datetime import datetime
+from interfaces import DatabaseClient
 
 logger = logging.getLogger(__name__)
-
-# Supabase client factory (could be injected/mocked in tests)
-
-def get_supabase_client() -> Client:
-    # Prefer new Secret key (server-only). Fallback to legacy service/anon if not set.
-    key = (
-        settings.supabase_secret_key
-        or settings.supabase_publishable_key
-    )
-    return create_client(settings.supabase_url, key)
 
 def _parse_iso8601(ts: str) -> datetime:
     # Normalize 'Z' to '+00:00' for fromisoformat
@@ -52,8 +41,8 @@ def _is_timestamp_older(actual: str | None, expected: str) -> bool:
         return str(actual) < str(expected)
 
 class SimulationService:
-    def __init__(self, client: Client | None = None) -> None:
-        self.client = client or get_supabase_client()
+    def __init__(self, db_client: DatabaseClient) -> None:
+        self.db_client = db_client
 
     def create(self, req: SimulationCreateRequest, user_id: str) -> SimulationCreateResponse:
         if req.plan_id not in PLAN_PARAMETERS:
@@ -77,7 +66,7 @@ class SimulationService:
         }
         
         try:
-            db_response = self.client.table("simulations").insert(plan_data).execute()
+            db_response = self.db_client.table("simulations").insert(plan_data).execute()
             if not db_response or not db_response.data:
                 logger.error("Failed to save plan: %s", db_response)
                 raise DatabaseError("insert", "simulations")
@@ -96,7 +85,7 @@ class SimulationService:
 
     def run(self, req: SimulationRunRequest, user_id: str) -> SimulationRunResponse:
         try:
-            db_response = self.client.table("simulations").select("*").eq("id", req.simulation_id).eq("user_id", user_id).execute()
+            db_response = self.db_client.table("simulations").select("*").eq("id", req.simulation_id).eq("user_id", user_id).execute()
         except Exception as e:
             handle_database_exception(e, "select", "simulations")
             
@@ -128,7 +117,7 @@ class SimulationService:
 
         # Best-effort persist
         try:
-            upd = self.client.table("simulations").update({"simulation_results": results}).eq("id", req.simulation_id).execute()
+            upd = self.db_client.table("simulations").update({"simulation_results": results}).eq("id", req.simulation_id).execute()
             if not upd.data:
                 logger.error("Failed to persist simulation results for %s", req.simulation_id)
         except Exception as e:
@@ -156,7 +145,7 @@ class SimulationService:
             )
             
         try:
-            existing = self.client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
+            existing = self.db_client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
         except Exception as e:
             handle_database_exception(e, "select", "simulations")
             
@@ -175,7 +164,7 @@ class SimulationService:
         }
         
         try:
-            upd = self.client.table("simulations").update(payload).eq("id", simulation_id).eq("user_id", user_id).execute()
+            upd = self.db_client.table("simulations").update(payload).eq("id", simulation_id).eq("user_id", user_id).execute()
             if not upd.data:
                 raise DatabaseError("update", "simulations")
         except Exception as e:
@@ -193,7 +182,7 @@ class SimulationService:
 
     def delete(self, simulation_id: str, user_id: str) -> SimulationDeleteResponse:
         try:
-            check = self.client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
+            check = self.db_client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
         except Exception as e:
             handle_database_exception(e, "select", "simulations")
             
@@ -201,7 +190,7 @@ class SimulationService:
             raise SimulationNotFoundError(simulation_id)
             
         try:
-            _ = self.client.table("simulations").delete().eq("id", simulation_id).eq("user_id", user_id).execute()
+            _ = self.db_client.table("simulations").delete().eq("id", simulation_id).eq("user_id", user_id).execute()
         except Exception as e:
             handle_database_exception(e, "delete", "simulations")
             
@@ -213,7 +202,7 @@ class SimulationService:
 
     def list_for_user(self, user_id: str):  # return raw supabase rows for now
         try:
-            resp = self.client.table('simulations').select("id, starting_company_round, current_company_round, investments, sales_achievement_rates, simulation_rounds, created_at, updated_at, plan_id, memo").eq('user_id', user_id).execute()
+            resp = self.db_client.table('simulations').select("id, starting_company_round, current_company_round, investments, sales_achievement_rates, simulation_rounds, created_at, updated_at, plan_id, memo").eq('user_id', user_id).execute()
         except Exception as e:
             handle_database_exception(e, "select", "simulations")
             
@@ -225,7 +214,7 @@ class SimulationService:
     def update_memo(self, simulation_id: str, req: SimulationMemoUpdateRequest, user_id: str) -> SimulationMemoUpdateResponse:
         # Ensure the simulation exists and belongs to user
         try:
-            existing = self.client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
+            existing = self.db_client.table("simulations").select("id").eq("id", simulation_id).eq("user_id", user_id).execute()
         except Exception as e:
             handle_database_exception(e, "select", "simulations")
             
@@ -233,7 +222,7 @@ class SimulationService:
             raise SimulationNotFoundError(simulation_id)
             
         try:
-            upd = self.client.table("simulations").update({"memo": (req.memo or '').strip() if req.memo is not None else None}).eq("id", simulation_id).eq("user_id", user_id).execute()
+            upd = self.db_client.table("simulations").update({"memo": (req.memo or '').strip() if req.memo is not None else None}).eq("id", simulation_id).eq("user_id", user_id).execute()
             if not upd.data:
                 raise DatabaseError("update", "simulations")
         except Exception as e:
