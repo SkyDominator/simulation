@@ -16,11 +16,10 @@ class TestCryptographicFunctions:
         """Test that OTP HMAC generation is deterministic."""
         phone = "01012345678"
         code = "123456" 
-        secret = "test-secret-key"
         
         # Same inputs should produce same hash
-        hash1 = hash_otp(phone, code, secret)
-        hash2 = hash_otp(phone, code, secret)
+        hash1 = hash_otp(phone, code)
+        hash2 = hash_otp(phone, code)
         
         assert hash1 == hash2
         assert isinstance(hash1, str)
@@ -30,10 +29,9 @@ class TestCryptographicFunctions:
         """Test OTP HMAC validation with correct code."""
         phone = "01012345678"
         code = "123456"
-        secret = "test-secret-key"
         
         # Generate hash and verify it
-        code_hash = hash_otp(phone, code, secret)
+        code_hash = hash_otp(phone, code)
         is_valid = verify_otp_hash(phone, code, code_hash)
         
         assert is_valid is True
@@ -43,10 +41,9 @@ class TestCryptographicFunctions:
         phone = "01012345678"
         correct_code = "123456"
         wrong_code = "654321"
-        secret = "test-secret-key"
         
         # Generate hash with correct code, verify with wrong code
-        code_hash = hash_otp(phone, correct_code, secret)
+        code_hash = hash_otp(phone, correct_code)
         is_valid = verify_otp_hash(phone, wrong_code, code_hash)
         
         assert is_valid is False
@@ -54,12 +51,11 @@ class TestCryptographicFunctions:
     def test_otp_hmac_phone_sensitivity(self):
         """Test that OTP HMAC is sensitive to phone number changes."""
         code = "123456"
-        secret = "test-secret-key"
         phone1 = "01012345678"
         phone2 = "01087654321"
         
-        hash1 = hash_otp(phone1, code, secret)
-        hash2 = hash_otp(phone2, code, secret)
+        hash1 = hash_otp(phone1, code)
+        hash2 = hash_otp(phone2, code)
         
         assert hash1 != hash2
     
@@ -84,10 +80,10 @@ class TestCryptographicFunctions:
     def test_phone_normalization_consistency(self):
         """Test phone normalization produces consistent results."""
         test_cases = [
-            ("010-1234-5678", "01012345678"),
-            ("010 1234 5678", "01012345678"), 
-            ("010-1234 5678", "01012345678"),
-            ("01012345678", "01012345678"),
+            ("010-1234-5678", "+821012345678"),
+            ("010 1234 5678", "+821012345678"), 
+            ("010-1234 5678", "+821012345678"),
+            ("01012345678", "+821012345678"),
         ]
         
         for input_phone, expected in test_cases:

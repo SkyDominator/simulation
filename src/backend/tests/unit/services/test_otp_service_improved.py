@@ -204,7 +204,7 @@ class TestOTPServiceImproved:
         
         # Set up valid OTP record in database
         from services.otp.utils import hash_otp
-        code_hash = hash_otp(phone, correct_code, mock_config.get_otp_secret_key())
+        code_hash = hash_otp(phone, correct_code)
         
         otp_record = {
             "id": "test-otp-1",
@@ -233,7 +233,7 @@ class TestOTPServiceImproved:
         
         # Set up OTP record near attempt limit
         from services.otp.utils import hash_otp
-        code_hash = hash_otp(phone, "123456", mock_config.get_otp_secret_key())
+        code_hash = hash_otp(phone, "123456")
         
         otp_record = {
             "id": "test-otp-1", 
@@ -289,7 +289,7 @@ class TestOTPServiceImproved:
         
         # Set up OTP record at custom limit
         from services.otp.utils import hash_otp
-        code_hash = hash_otp("01012345678", "123456", custom_config.get_otp_secret_key())
+        code_hash = hash_otp("01012345678", "123456")
         
         otp_record = {
             "id": "test-otp-1",

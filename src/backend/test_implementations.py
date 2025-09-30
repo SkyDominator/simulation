@@ -20,8 +20,8 @@ class TestTableClient(TableClient):
         self.db_client = db_client
         self.table_name = table_name
         
-    def select(self, columns="*"):
-        return TestQueryBuilder(self, "select", {"columns": columns})
+    def select(self, columns="*", count=None):
+        return TestQueryBuilder(self, "select", {"columns": columns, "count": count})
     
     def insert(self, data):
         return TestQueryBuilder(self, "insert", {"data": data})
