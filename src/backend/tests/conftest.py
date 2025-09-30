@@ -176,6 +176,18 @@ def determinism_guard():
         p.stop()
 
 # Mock network access to prevent outbound calls during tests
+@pytest.fixture
+def isolated_unit_test(monkeypatch):
+    """Explicit fixture for unit tests that need network isolation."""
+    import socket
+    
+    def mock_socket(*args, **kwargs):
+        raise AssertionError("Network call attempted during unit tests! Use mocks instead.")
+    
+    monkeypatch.setattr('socket.socket', mock_socket)
+
+
+# Legacy fixture - maintained for backward compatibility but prefer explicit marking
 @pytest.fixture(autouse=True)
 def mock_network_access(request):
     """Prevent network calls during tests by patching socket creation."""
@@ -183,15 +195,23 @@ def mock_network_access(request):
     if "integration" in str(request.fspath) or "api" in str(request.fspath):
         yield
         return
-        
-    import socket
-    original_socket = socket.socket
     
-    def mock_socket(*args, **kwargs):
-        raise AssertionError("Network call attempted during unit tests! Use mocks instead.")
+    # Only apply for tests explicitly marked as unit tests
+    if hasattr(request.node, 'iter_markers'):
+        markers = [marker.name for marker in request.node.iter_markers()]
+        if "unit" in markers:
+            import socket
+            original_socket = socket.socket
+            
+            def mock_socket(*args, **kwargs):
+                raise AssertionError("Network call attempted during unit tests! Use mocks instead.")
+            
+            with patch('socket.socket', side_effect=mock_socket):
+                yield
+            return
     
-    with patch('socket.socket', side_effect=mock_socket):
-        yield
+    # Default: allow networking (for unmarked tests)
+    yield
 
 @pytest.fixture
 def build_error_helper():

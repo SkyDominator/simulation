@@ -46,8 +46,17 @@ class TestOTPServiceRateLimiting:
     @pytest.fixture
     def otp_service(self, mock_supabase_client, settings_override):
         """Create OTP service instance with mocked dependencies."""
-        # OTPService expects a db_client parameter
-        service = OTPService(db_client=mock_supabase_client)
+        # Import test implementations
+        from test_implementations import TestSMSClient, TestConfigProvider
+        
+        # Create OTP service with all required dependencies
+        sms_client = TestSMSClient(success=True)
+        config_provider = TestConfigProvider()
+        service = OTPService(
+            db_client=mock_supabase_client,
+            sms_client=sms_client,
+            config=config_provider
+        )
         return service
     
     def test_OTPS_001_check_rate_limits_allows_first_request(self, otp_service, mock_supabase_client):
@@ -363,8 +372,17 @@ class TestOTPServiceEdgeCases:
     @pytest.fixture  
     def otp_service(self, mock_supabase_client, settings_override):
         """Create OTP service instance with mocked dependencies."""
-        # OTPService expects a db_client parameter
-        service = OTPService(db_client=mock_supabase_client)
+        # Import test implementations
+        from test_implementations import TestSMSClient, TestConfigProvider
+        
+        # Create OTP service with all required dependencies
+        sms_client = TestSMSClient(success=True)
+        config_provider = TestConfigProvider()
+        service = OTPService(
+            db_client=mock_supabase_client,
+            sms_client=sms_client,
+            config=config_provider
+        )
         return service
     
     def test_verify_otp_handles_expired_otp(self, otp_service, mock_supabase_client):

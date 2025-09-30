@@ -39,7 +39,7 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/unit", "-v"],
+      "args": ["tests/unit", "--ignore=tests/unit/security/test_cryptography.py", "-v"],
       "cwd": "${workspaceFolder}/src/backend",
       "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {
@@ -76,11 +76,11 @@
       }
     },
     {
-      "name": "API Contract Test: Backend",
+      "name": "Integration Test: Backend",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/integration", "-v"],
+      "args": ["tests/integration", "--ignore=tests/integration/api/test_security_e2e.py", "-v"],
       "cwd": "${workspaceFolder}/src/backend",
       "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {
@@ -108,7 +108,7 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/integration/api/test_security.py", "-v"],
+      "args": ["tests/integration/api/test_security_e2e.py", "tests/unit/security/test_cryptography.py", "-v"],
       "cwd": "${workspaceFolder}/src/backend",
       "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {
