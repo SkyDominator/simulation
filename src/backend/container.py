@@ -43,7 +43,8 @@ class ServiceContainer:
     def _setup_defaults(self):
         """Setup default service factories."""
         # Determine if we're in test mode
-        is_test_mode = os.environ.get("TEST_MODE") == "1" or not PROD_IMPLEMENTATIONS_AVAILABLE
+        test_mode_env = os.environ.get("TEST_MODE", "").strip().lower()
+        is_test_mode = test_mode_env in {"1", "true", "yes", "on"} or not PROD_IMPLEMENTATIONS_AVAILABLE
         
         if is_test_mode and TEST_IMPLEMENTATIONS_AVAILABLE:
             # Use test implementations
