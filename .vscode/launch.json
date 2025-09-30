@@ -82,7 +82,7 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/integration/api/test_security.py", "-v"],
+      "args": ["tests/integration/api/test_security_e2e.py", "tests/unit/security/test_cryptography.py", "-v"],
       "cwd": "${workspaceFolder}/src/backend",
       "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {
