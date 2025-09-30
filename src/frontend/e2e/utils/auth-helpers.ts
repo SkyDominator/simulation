@@ -8,57 +8,38 @@ import { Page } from "@playwright/test";
  * Mock successful user authentication
  */
 export async function loginTestUser(page: Page) {
+  // Set E2E mode flag first
+  await page.addInitScript(() => {
+    // Ensure navigator.webdriver is set for E2E detection
+    Object.defineProperty(navigator, 'webdriver', {
+      get: () => true,
+      configurable: true
+    });
+  });
+
   // Mock Supabase auth for testing
   await page.addInitScript(() => {
     // Mock successful authentication
-    window.localStorage.setItem(
-      "supabase.auth.token",
-      JSON.stringify({
-        access_token: "mock-jwt-token",
-        refresh_token: "mock-refresh-token",
-        expires_at: Date.now() + 3600000, // 1 hour from now
-        user: {
-          id: "test-user-123",
-          email: "test@example.com",
-          user_metadata: {
-            name: "Test User",
-            phone: "010-1234-5678",
-          },
+    const authData = {
+      access_token: "mock-jwt-token",
+      refresh_token: "mock-refresh-token",
+      expires_at: Date.now() + 3600000, // 1 hour from now
+      user: {
+        id: "test-user-123",
+        email: "test@example.com",
+        user_metadata: {
+          name: "Test User",
+          phone: "010-1234-5678",
         },
-      })
-    );
+      },
+    };
+    
+    window.localStorage.setItem("supabase.auth.token", JSON.stringify(authData));
 
     // Mock session state
     window.localStorage.setItem("ui.page", '"main"');
     window.localStorage.setItem("ui.noticeOpen", "false");
   });
-
-  try {
-    await page.evaluate(() => {
-      window.localStorage.setItem(
-        "supabase.auth.token",
-        JSON.stringify({
-          access_token: "mock-jwt-token",
-          refresh_token: "mock-refresh-token",
-          expires_at: Date.now() + 3600000,
-          user: {
-            id: "test-user-123",
-            email: "test@example.com",
-            user_metadata: {
-              name: "Test User",
-              phone: "010-1234-5678",
-            },
-          },
-        })
-      );
-
-      window.localStorage.setItem("ui.page", '"main"');
-      window.localStorage.setItem("ui.noticeOpen", "false");
-    });
-  } catch {
-    // Ignored: the page might not have navigated yet. The init script will
-    // populate storage on the next navigation in that case.
-  }
 }
 
 /**

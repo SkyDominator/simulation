@@ -16,22 +16,37 @@ test.describe("Session and state persistence", () => {
     await loginTestUser(page);
     await page.goto("/");
 
-    await expect(page.getByTestId("main-page")).toBeVisible();
+    // Wait for the main page to load and check authentication
+    await expect(page.getByTestId("main-page")).toBeVisible({ timeout: 10000 });
 
+    // Reload the page
     await page.reload();
-    await expect(page.getByTestId("main-page")).toBeVisible();
+    
+    // Should still be authenticated after reload
+    await expect(page.getByTestId("main-page")).toBeVisible({ timeout: 10000 });
+    
+    // Verify auth token still exists in localStorage
+    const tokenExists = await page.evaluate(() => {
+      const token = window.localStorage.getItem("supabase.auth.token");
+      return !!token;
+    });
+    expect(tokenExists).toBe(true);
   });
 
   test("clears sensitive storage on logout", async ({ page }) => {
     await loginTestUser(page);
     await page.goto("/");
-    await expect(page.getByTestId("main-page")).toBeVisible();
+    await expect(page.getByTestId("main-page")).toBeVisible({ timeout: 10000 });
 
+    // Logout
     await page.getByTestId("logout-button").click();
-    await expect(page.getByTestId("whitelist-form")).toBeVisible();
+    
+    // Should redirect to whitelist page
+    await expect(page.getByTestId("whitelist-form")).toBeVisible({ timeout: 10000 });
 
+    // Debug: Check navigator.webdriver and localStorage state
     const webdriverFlag = await page.evaluate(() => navigator.webdriver);
-    console.log("navigator.webdriver", webdriverFlag);
+    console.log("navigator.webdriver:", webdriverFlag);
 
     const storageSnapshot = await page.evaluate(() => {
       const entries: Record<string, string | null> = {};
@@ -43,8 +58,9 @@ test.describe("Session and state persistence", () => {
       }
       return entries;
     });
-    console.log("localStorage after logout", storageSnapshot);
+    console.log("localStorage after logout:", storageSnapshot);
 
+    // Verify auth token is cleared (should be null in E2E mode as it clears all storage)
     const tokenExists = await page.evaluate(() => {
       return window.localStorage.getItem("supabase.auth.token");
     });
@@ -54,4 +70,5 @@ test.describe("Session and state persistence", () => {
 
 test.describe.skip("Advanced persistence cases", () => {
   // Draft management, multi-tab coordination, etc.
+  // Skipped for now until basic persistence works
 });

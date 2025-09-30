@@ -95,4 +95,8 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: ["simulation.lightoflifeclub.com", "localhost"],
   },
+  define: {
+    // Allow runtime access to E2E mode when set via env variable
+    'import.meta.env.VITE_E2E_MODE': JSON.stringify(process.env.VITE_E2E_MODE || 'false'),
+  },
 });
