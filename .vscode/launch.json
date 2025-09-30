@@ -16,12 +16,58 @@
       "subProcess": true,
       "justMyCode": true
     },
+        {
+      "name": "Debug: Frontend",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src/frontend",
+      "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
+      "sourceMaps": true,
+      "trace": true,
+      "runtimeArgs": [
+        "--remote-debugging-port=9222",
+        "--user-data-dir=${workspaceFolder}/.vscode/chrome-debug-profile",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-extensions"
+      ],
+      "port": 9222
+    },
     {
       "name": "Unit Test: Backend",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
       "args": ["tests/unit", "-v"],
+      "cwd": "${workspaceFolder}/src/backend",
+      "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src/backend"
+      },
+      "console": "integratedTerminal",
+      "subProcess": true,
+      "justMyCode": true
+    },
+        {
+      "name": "Unit Test: Frontend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+      "args": ["run", "src/test", "--exclude", "src/test/security", "--reporter=verbose"],
+      "cwd": "${workspaceFolder}/src/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NODE_ENV": "test"
+      }
+    },
+        {
+      "name": "API Contract Test: Backend",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["tests/integration", "-v"],
       "cwd": "${workspaceFolder}/src/backend",
       "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
       "env": {
@@ -46,45 +92,25 @@
       "subProcess": true,
       "justMyCode": true
     },
-    {
-      "name": "API Contract Test: Backend",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "pytest",
-      "args": ["tests/integration", "-v"],
-      "cwd": "${workspaceFolder}/src/backend",
-      "python": "${workspaceFolder}/src/backend/venv/Scripts/python.exe",
-      "env": {
-        "PYTHONPATH": "${workspaceFolder}/src/backend"
-      },
-      "console": "integratedTerminal",
-      "subProcess": true,
-      "justMyCode": true
-    },
-    {
-      "name": "Debug: Frontend",
-      "type": "chrome",
-      "request": "launch",
-      "url": "http://localhost:5173",
-      "webRoot": "${workspaceFolder}/src/frontend",
-      "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
-      "sourceMaps": true,
-      "trace": true,
-      "runtimeArgs": [
-        "--remote-debugging-port=9222",
-        "--user-data-dir=${workspaceFolder}/.vscode/chrome-debug-profile",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--disable-extensions"
-      ],
-      "port": 9222
-    },
-    {
-      "name": "Unit Test: Frontend",
+        {
+      "name": "Security Test: Frontend",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
-      "args": ["run", "src/test", "--exclude", "src/test/security", "--reporter=verbose"],
+      "args": ["run", "src/test/security", "--reporter=verbose"],
+      "cwd": "${workspaceFolder}/src/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NODE_ENV": "test"
+      }
+    },
+        {
+      "name": "E2E Test: Frontend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/frontend/node_modules/@playwright/test/cli.js",
+      "args": ["test", "--reporter=list", "--project=chromium"],
       "cwd": "${workspaceFolder}/src/frontend",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"],
@@ -105,19 +131,7 @@
     //     "NODE_ENV": "test"
     //   }
     // },
-    {
-      "name": "E2E Test: Frontend",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/src/frontend/node_modules/@playwright/test/cli.js",
-      "args": ["test", "--reporter=list", "--project=chromium"],
-      "cwd": "${workspaceFolder}/src/frontend",
-      "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**"],
-      "env": {
-        "NODE_ENV": "test"
-      }
-    },
+    
     // {
     //   "name": "E2E Test (Debug): Frontend",
     //   "type": "node",
@@ -132,19 +146,7 @@
     //     "PWDEBUG": "1"
     //   }
     // },
-    {
-      "name": "Security Test: Frontend",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
-      "args": ["run", "src/test/security", "--reporter=verbose"],
-      "cwd": "${workspaceFolder}/src/frontend",
-      "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**"],
-      "env": {
-        "NODE_ENV": "test"
-      }
-    },
+
     {
       "name": "Debug: Python Single File",
       "type": "debugpy",
