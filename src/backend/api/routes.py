@@ -6,8 +6,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from auth.jwt import authenticate_jwt_token
+from container import get_service
 from services.simulations import SimulationService
 from services.otp.otp_service import OTPService
+from interfaces import DatabaseClient
 from models.schemas import (
     UserCheckRequest,
     SimulationCreateRequest, SimulationCreateResponse,
@@ -49,8 +51,7 @@ def _supabase_client():
     )
     return create_client(settings.supabase_url, key)
 
-# instantiate services lazily (could use dependency injection)
-_sim_service = SimulationService()
+# Remove global service instances - use dependency injection instead
 
 @router.get("/")
 async def root():
@@ -67,14 +68,15 @@ async def send_otp(request: OTPSendRequest, client_request: Request):
     hashed_value = hashlib.sha256(combined_string.encode('utf-8')).hexdigest()
     
     # Check if user is whitelisted
-    _otp_service = OTPService(db_client=_supabase_client())
-    response = _otp_service.db_client.table('whitelist').select("user_hash").eq('user_hash', hashed_value).execute()
+    db_client = get_service(DatabaseClient)
+    response = db_client.table('whitelist').select("user_hash").eq('user_hash', hashed_value).execute()
     
     if not response.data:
         raise WhitelistError()
     
     # User is whitelisted, proceed with OTP
-    result = _otp_service.request_otp(
+    otp_service = get_service(OTPService)
+    result = otp_service.request_otp(
         normalized_phone, 
         client_ip=str(client_request.client.host) if client_request.client else "unknown",
         user_agent=client_request.headers.get("user-agent")
@@ -88,8 +90,8 @@ async def send_otp(request: OTPSendRequest, client_request: Request):
 @router.post("/api/otp/verify", response_model=OTPVerifyResponse)
 async def verify_otp(request: OTPVerifyRequest, client_request: Request):
     """Verify OTP code for a phone number."""
-    _otp_service = OTPService(db_client=_supabase_client())
-    result = _otp_service.verify_otp(
+    otp_service = get_service(OTPService)
+    result = otp_service.verify_otp(
         request.phone_number,
         request.otp_code,
         client_ip=str(client_request.client.host) if client_request.client else "unknown"
@@ -303,39 +305,46 @@ async def get_privacy_policy_admin(policy_id: str, user_id: str = Depends(authen
 
 @router.get("/api/simulations")
 async def get_simulations(user_id: str = Depends(authenticate_jwt_token)):
-    return _sim_service.list_for_user(user_id)
+    sim_service = get_service(SimulationService)
+    return sim_service.list_for_user(user_id)
 
 @router.get("/api/simulations/{simulation_id}")
 async def get_simulation_details(simulation_id: str, user_id: str = Depends(authenticate_jwt_token)):
-    client = _sim_service.client
-    response = client.table('simulations').select("*").eq('id', simulation_id).eq('user_id', user_id).execute()
+    db_client = get_service(DatabaseClient)
+    response = db_client.table('simulations').select("*").eq('id', simulation_id).eq('user_id', user_id).execute()
     if not response.data:
         raise SimulationNotFoundError(simulation_id)
     return response.data[0]
 
 @router.post("/api/simulation/create", response_model=SimulationCreateResponse)
 async def create_simulation(request: SimulationCreateRequest, user_id: str = Depends(authenticate_jwt_token)):
-    return _sim_service.create(request, user_id)
+    sim_service = get_service(SimulationService)
+    return sim_service.create(request, user_id)
 
 @router.post("/api/simulation/run", response_model=SimulationRunResponse)
 async def run_simulation(request: SimulationRunRequest, user_id: str = Depends(authenticate_jwt_token)):
-    return _sim_service.run(request, user_id)
+    sim_service = get_service(SimulationService)
+    return sim_service.run(request, user_id)
 
 @router.patch("/api/simulations/{simulation_id}", response_model=SimulationUpdateResponse)
 async def update_simulation(simulation_id: str, request: SimulationUpdateRequest, user_id: str = Depends(authenticate_jwt_token)):
-    return _sim_service.update(simulation_id, request, user_id)
+    sim_service = get_service(SimulationService)
+    return sim_service.update(simulation_id, request, user_id)
 
 @router.patch("/api/simulations/{simulation_id}/memo", response_model=SimulationMemoUpdateResponse)
 async def update_simulation_memo(simulation_id: str, request: SimulationMemoUpdateRequest, user_id: str = Depends(authenticate_jwt_token)):
-    return _sim_service.update_memo(simulation_id, request, user_id)
+    sim_service = get_service(SimulationService)
+    return sim_service.update_memo(simulation_id, request, user_id)
 
 @router.delete("/api/simulations/{simulation_id}", response_model=SimulationDeleteResponse)
 async def delete_simulation(simulation_id: str, user_id: str = Depends(authenticate_jwt_token)):
-    return _sim_service.delete(simulation_id, user_id)
+    sim_service = get_service(SimulationService)
+    return sim_service.delete(simulation_id, user_id)
 
 @router.post("/api/simulation/delete", response_model=SimulationDeleteResponse)
 async def delete_simulation_post(request: SimulationDeleteRequest, user_id: str = Depends(authenticate_jwt_token)):
-    return _sim_service.delete(request.simulation_id, user_id)
+    sim_service = get_service(SimulationService)
+    return sim_service.delete(request.simulation_id, user_id)
 
 
 @router.get("/api/health")

@@ -3,19 +3,17 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, Tuple
 
-from config.settings import settings
 from services.otp.utils import generate_otp, hash_otp, verify_otp_hash, normalize_phone, calculate_expiry
-from services.otp.solapi_sms import SolapiSMSClient
+from interfaces import DatabaseClient, SMSClient, ConfigProvider
 
 logger = logging.getLogger(__name__)
 
 class OTPService:
-    def __init__(self, db_client):
-        """Initialize OTP service with database client."""
-        # Use provided DB client or get from settings
-        
+    def __init__(self, db_client: DatabaseClient, sms_client: SMSClient, config: ConfigProvider):
+        """Initialize OTP service with injected dependencies."""
         self.db_client = db_client
-        self.sms_client = SolapiSMSClient()
+        self.sms_client = sms_client
+        self.config = config
     
     def _check_rate_limits(self, phone: str, client_ip: Optional[str] = None) -> Tuple[bool, str]:
         """
@@ -35,7 +33,7 @@ class OTPService:
             .gte("created_at", fifteen_min_ago.isoformat()) \
             .execute()
             
-        if fifteen_min_count.count and fifteen_min_count.count >= settings.otp_resend_limit_per_15min:
+        if fifteen_min_count.count and fifteen_min_count.count >= self.config.get_otp_resend_limit_per_15min():
             return False, f"Maximum OTP requests reached. Try again in a few minutes."
         
         # Check daily limit
@@ -45,7 +43,7 @@ class OTPService:
             .gte("created_at", day_ago.isoformat()) \
             .execute()
             
-        if day_count.count and day_count.count >= settings.otp_resend_limit_per_day:
+        if day_count.count and day_count.count >= self.config.get_otp_resend_limit_per_day():
             return False, f"Daily OTP limit reached. Try again tomorrow."
         
         # IP-based rate limiting could be added here
@@ -126,7 +124,7 @@ class OTPService:
         return {
             "success": sms_result.get("success", False),
             "message": "인증번호가 발송되었습니다." if sms_result.get("success") else "인증번호 발송에 실패했습니다.",
-            "expires_in_seconds": settings.otp_validity_minutes * 60
+            "expires_in_seconds": self.config.get_otp_validity_minutes() * 60
         }
     
     def verify_otp(self, phone: str, otp_code: str, client_ip: Optional[str] = None) -> Dict[str, Any]:
@@ -166,7 +164,7 @@ class OTPService:
         otp_record = otp_records.data[0]
         
         # Check attempts
-        if otp_record["attempts"] >= settings.otp_max_verification_attempts:
+        if otp_record["attempts"] >= self.config.get_otp_max_verification_attempts():
             # Mark as used/expired since max attempts reached
             self.db_client.table("phone_otps") \
                 .update({"used": True}) \
@@ -199,7 +197,7 @@ class OTPService:
                 .eq("id", otp_record["id"]) \
                 .execute()
                 
-            remaining_attempts = settings.otp_max_verification_attempts - new_attempts
+            remaining_attempts = self.config.get_otp_max_verification_attempts() - new_attempts
                 
             return {
                 "success": False,

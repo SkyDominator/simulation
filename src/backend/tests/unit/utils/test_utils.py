@@ -253,12 +253,15 @@ class TestOTPLimitsValidation:
         # Import the actual OTP service
         from services.otp.otp_service import OTPService
         
-        # Create real OTP service with mocked database
-        otp_service = OTPService(fake_supabase_client)
+        # Create real OTP service with mocked dependencies
+        from test_implementations import TestSMSClient, TestConfigProvider
+        sms_client = TestSMSClient(success=True)
+        config_provider = TestConfigProvider()
+        otp_service = OTPService(fake_supabase_client, sms_client, config_provider)
         
         # Mock the SMS client to avoid actual sending
-        with patch.object(otp_service.sms_client, 'send_otp') as mock_sms:
-            mock_sms.return_value = {"success": True, "provider_msg_id": "test-123"}
+        with patch.object(otp_service.sms_client, 'send') as mock_sms:
+            mock_sms.return_value = True
             
             phone = "01012345678"
             
@@ -319,12 +322,15 @@ class TestOTPSendLimiterHelper:
         # Import the actual OTP service
         from services.otp.otp_service import OTPService
         
-        # Create real OTP service with mocked database
-        otp_service = OTPService(fake_supabase_client)
+        # Create real OTP service with mocked dependencies
+        from test_implementations import TestSMSClient, TestConfigProvider
+        sms_client = TestSMSClient(success=True)
+        config_provider = TestConfigProvider()
+        otp_service = OTPService(fake_supabase_client, sms_client, config_provider)
         
         # Mock the SMS client to avoid actual sending
-        with patch.object(otp_service.sms_client, 'send_otp') as mock_sms:
-            mock_sms.return_value = {"success": True, "provider_msg_id": "test-123"}
+        with patch.object(otp_service.sms_client, 'send') as mock_sms:
+            mock_sms.return_value = True
             
             # This would test the rolling window logic using actual backend rate limiting
             start_time = datetime(2025, 1, 1, 12, 0, 0)

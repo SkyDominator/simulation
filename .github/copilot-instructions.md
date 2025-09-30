@@ -1220,6 +1220,7 @@ ALWAYS FOLLOW these patterns when doing tasks.
 - Choice depends on preference/taste
 - Decision impacts future implementation
 - Requirements are ambiguous
+- Test code failures are due to the frontend or backend code base (not the test codes themselves)
 
 **PROVIDE:**
 - Clear options list with explanations
