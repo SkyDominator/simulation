@@ -1226,6 +1226,7 @@ ALWAYS FOLLOW these patterns when doing tasks.
 - Focus ONLY on requested tasks
 - Take time to think and plan before executing
 - Raise questions for issues/improvements outside scope
+- The codebase is the single source of truth for test codes 
 
 **DON'T:**
 - Add unrequested features or fixes
