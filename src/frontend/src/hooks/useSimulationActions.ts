@@ -1,10 +1,12 @@
 import React from "react";
 import type { Plan, SimulationRunResponse } from "../types/types";
 import { api } from "../services/api";
+import { type ApiServiceInterface } from "../services/ApiService";
 
 export const useSimulationActions = (
   session: { access_token: string } | null,
-  refreshPlans: () => Promise<void>
+  refreshPlans: () => Promise<void>,
+  apiService: ApiServiceInterface = api // Default to legacy api object
 ) => {
   const [runningId, setRunningId] = React.useState<string>("");
   const [deletingId, setDeletingId] = React.useState<string>("");
@@ -25,7 +27,7 @@ export const useSimulationActions = (
 
     try {
       setRunningId(simId);
-      const data = await api.runSimulation(
+      const data = await apiService.runSimulation(
         simId,
         session.access_token,
         plan.updated_at
@@ -64,7 +66,7 @@ export const useSimulationActions = (
   ) => {
     if (!session || !memoTarget) return;
     try {
-      await api.updateSimulationMemo(
+      await apiService.updateSimulationMemo(
         session.access_token,
         memoTarget.simulation_id,
         text
@@ -90,7 +92,7 @@ export const useSimulationActions = (
     if (!session || !targetPlan) return;
     try {
       setDeletingId(targetPlan.simulation_id);
-      await api.deleteSimulation(
+      await apiService.deleteSimulation(
         targetPlan.simulation_id,
         session.access_token
       );

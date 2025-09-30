@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../services/api";
+import { type ApiServiceInterface } from "../services/ApiService";
 import {
   Box,
   Paper,
@@ -17,6 +18,8 @@ interface OtpVerificationPageProps {
   userHash: string;
   onVerified: (userHash: string) => void;
   onBack: () => void;
+  // Dependency injection for testing
+  apiService?: ApiServiceInterface;
 }
 
 const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
@@ -25,6 +28,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
   userHash,
   onVerified,
   onBack,
+  apiService = api, // Default to legacy api object
 }) => {
   const [otpCode, setOtpCode] = useState("");
   const [error, setError] = useState("");
@@ -46,7 +50,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
     setError("");
 
     try {
-      const result = await api.sendOtp(name, phone);
+      const result = await apiService.sendOtp(name, phone);
 
       if (result.success) {
         setCountdown(result.expires_in_seconds || 180); // Default 3 minutes
@@ -72,7 +76,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
     setError("");
 
     try {
-      const result = await api.verifyOtp(phone, otpCode);
+      const result = await apiService.verifyOtp(phone, otpCode);
 
       if (result.success) {
         onVerified(userHash);

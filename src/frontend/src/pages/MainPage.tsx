@@ -5,6 +5,7 @@ import MemoModal from "../components/MemoModal";
 import ContactModal from "../components/ContactModal";
 import { useAuth } from "../context/useAuth";
 import { api } from "../services/api";
+import { type ApiServiceInterface } from "../services/ApiService";
 import type { Plan, Page, SimulationRunResponse } from "../types/types";
 import { Container, Paper, Typography, Stack, Divider } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -37,6 +38,8 @@ interface MainPageProps {
   // Opens global notice board modal
   openNotice?: () => void;
   setSimulationResult: (result: SimulationRunResponse | null) => void;
+  // Dependency injection for testing
+  apiService?: ApiServiceInterface;
 }
 
 const MainPage: React.FC<MainPageProps> = ({
@@ -44,6 +47,7 @@ const MainPage: React.FC<MainPageProps> = ({
   setEditingPlan,
   openNotice,
   setSimulationResult,
+  apiService = api, // Default to legacy api object
 }) => {
   const { user, session, signOut } = useAuth();
   const [plans, setPlans] = React.useState<Plan[]>([]);
@@ -66,12 +70,12 @@ const MainPage: React.FC<MainPageProps> = ({
   const refreshPlans = React.useCallback(async () => {
     if (!session) return;
     try {
-      const data = await api.getSimulations(session.access_token);
+      const data = await apiService.getSimulations(session.access_token);
       setPlans(data);
     } catch (error) {
       console.error("Error refreshing plans:", error);
     }
-  }, [session]);
+  }, [session, apiService]);
 
   // Simulation actions
   const {
@@ -91,7 +95,7 @@ const MainPage: React.FC<MainPageProps> = ({
     openMemo,
     handleSaveMemo: saveMemo,
     handleConfirmDelete,
-  } = useSimulationActions(session, refreshPlans);
+  } = useSimulationActions(session, refreshPlans, apiService);
 
   // View results and navigate
   const handleViewResults = (plan: Plan) => {

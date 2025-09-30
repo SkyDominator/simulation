@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { api } from "../services/api";
+import { type ApiServiceInterface } from "../services/ApiService";
 import {
   Box,
   Paper,
@@ -14,10 +15,13 @@ import OtpVerificationPage from "./OtpVerificationPage";
 
 interface WhitelistCheckPageProps {
   onVerified: (userHash: string) => void;
+  // Dependency injection for testing
+  apiService?: ApiServiceInterface;
 }
 
 const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
   onVerified,
+  apiService = api, // Default to legacy api object
 }) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -63,7 +67,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
 
     try {
       // Send OTP after whitelist check is integrated in the backend
-      const result = await api.sendOtp(name, phone);
+      const result = await apiService.sendOtp(name, phone);
 
       if (result.success && result.user_hash) {
         // Store hash for OTP verification
@@ -98,6 +102,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
         userHash={userHash}
         onVerified={onVerified}
         onBack={handleBack}
+        apiService={apiService}
       />
     );
   }
