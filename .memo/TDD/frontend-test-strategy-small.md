@@ -7,20 +7,22 @@
 
 ## Core Principles
 
-1. **Test the Critical Path First**: Focus on user journeys that directly impact revenue or core functionality
-2. **Manual Testing is Valid**: For rarely-used features, manual testing may be more cost-effective
-3. **Pragmatic Coverage**: Aim for 60-70% code coverage, 100% critical path coverage
-4. **Fast Feedback Loop**: Tests should run in <2 minutes locally
+1. **Test User-Visible Behavior**: Avoid implementation details, test what users see/interact with
+2. **Test Isolation**: Each test independent with own storage/session/data/cookies
+3. **Fast Feedback**: Tests run <2min locally, fail fast on errors
+4. **Pragmatic Coverage**: 60-70% overall, 90%+ critical paths, skip trivial code (getters/setters)
 
 ## Test Pyramid for Small Apps
 
 ```
-         E2E (5%)
+         E2E (5%)        # Critical user journeys only
         /        \
-    Integration (25%)
+    Integration (25%)    # API + component interactions
    /                \
-  Unit Tests (70%)
+  Unit Tests (70%)       # Business logic + utilities
 ```
+
+**Rationale**: More unit tests = faster execution, easier debugging, better regression safety
 
 ## Priority Matrix
 
@@ -28,15 +30,35 @@
 Focus on what breaks the business if it fails.
 
 #### 1. Critical Business Logic (Unit Tests)
-```typescript
-// Examples to test:
-- Authentication/authorization logic
-- Payment calculations
-- Data validation/sanitization
-- Core business rules (e.g., pricing, permissions)
 
-// Tools: Vitest + React Testing Library
-// Target: 90% coverage of critical functions
+**What to Test**:
+- Auth/authorization logic: token validation, role checks, session handling
+- Payment calculations: pricing, discounts, tax, currency conversion
+- Data validation: input sanitization (XSS prevention), format checks, range validation
+- Business rules: state machines, permissions, workflow logic
+
+**Technical Requirements**:
+- Tools: Vitest + React Testing Library
+- Coverage: 90%+ for critical functions, 100% for security-sensitive code
+- Test structure: Arrange-Act-Assert pattern
+- Mocking: Mock external dependencies (APIs, localStorage, timers)
+- Assertions: Test return values + side effects (state changes, function calls)
+
+**Example Pattern**:
+
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+import { validatePayment, calculateTax } from './payment';
+
+describe('Payment Logic', () => {
+  it('rejects negative amounts', () => {
+    expect(() => validatePayment(-100)).toThrow('Amount must be positive');
+  });
+  
+  it('calculates tax correctly for US', () => {
+    expect(calculateTax(100, 'US', 'CA')).toBe(107.25); // 7.25% CA sales tax
+  });
+});
 ```
 
 #### 2. Happy Path E2E (1-3 tests)
@@ -269,15 +291,146 @@ if (performance.mark) {
 }
 ```
 
+## Security Testing Essentials
+
+### P0 Security Tests (Required for All Apps)
+
+**XSS Prevention**:
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import DOMPurify from 'dompurify';
+
+describe('XSS Protection', () => {
+  const xssPayloads = [
+    '<script>alert("XSS")</script>',
+    '<img src=x onerror=alert("XSS")>',
+    'javascript:alert("XSS")',
+  ];
+
+  it.each(xssPayloads)('sanitizes user input: %s', (payload) => {
+    const { container } = render(<UserComment comment={payload} />);
+    expect(container.innerHTML).not.toContain('<script>');
+    expect(container.innerHTML).not.toContain('onerror=');
+    expect(container.innerHTML).not.toContain('javascript:');
+  });
+});
+```
+
+**CSRF Token Validation**:
+
+```typescript
+describe('CSRF Protection', () => {
+  it('includes CSRF token in state-changing requests', async () => {
+    const mockFetch = vi.fn();
+    global.fetch = mockFetch;
+    
+    await submitForm({ data: 'test' });
+    
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'X-CSRF-Token': expect.any(String)
+        })
+      })
+    );
+  });
+});
+```
+
+**Authentication State**:
+
+```typescript
+describe('Auth Protection', () => {
+  it('redirects to login when token expired', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
+    render(<ProtectedRoute><Dashboard /></ProtectedRoute>);
+    expect(screen.getByText(/please log in/i)).toBeInTheDocument();
+  });
+  
+  it('clears sensitive data on logout', () => {
+    const clearSpy = vi.spyOn(Storage.prototype, 'clear');
+    fireEvent.click(screen.getByRole('button', { name: /logout/i }));
+    expect(clearSpy).toHaveBeenCalled();
+  });
+});
+```
+
+**Safe Rendering**:
+
+```typescript
+describe('Safe DOM Manipulation', () => {
+  it('uses textContent instead of innerHTML for user data', () => {
+    const userName = '<script>alert(1)</script>';
+    const { container } = render(<UserProfile name={userName} />);
+    
+    // Verify React escapes by default
+    expect(container.textContent).toContain('<script>');
+    expect(container.querySelector('script')).toBeNull();
+  });
+  
+  it('sanitizes HTML if dangerouslySetInnerHTML is required', () => {
+    const userHTML = '<b>Hello</b><script>alert(1)</script>';
+    const clean = DOMPurify.sanitize(userHTML);
+    
+    render(<div dangerouslySetInnerHTML={{ __html: clean }} />);
+    expect(screen.getByText('Hello')).toBeInTheDocument();
+    expect(document.querySelector('script')).toBeNull();
+  });
+});
+```
+
+### Security Headers Validation
+
+**CSP Enforcement** (E2E test):
+
+```typescript
+test('enforces Content Security Policy', async ({ page }) => {
+  const response = await page.goto('/');
+  const csp = response?.headers()['content-security-policy'];
+  
+  expect(csp).toContain("default-src 'self'");
+  expect(csp).toContain("script-src 'self'");
+  expect(csp).not.toContain("'unsafe-inline'"); // Avoid unless absolutely necessary
+  expect(csp).not.toContain("'unsafe-eval'");
+});
+```
+
+### Input Validation Tests
+
+```typescript
+describe('Input Sanitization', () => {
+  it('rejects malicious file uploads', async () => {
+    const maliciousFile = new File(['<script>alert(1)</script>'], 'evil.html', {
+      type: 'text/html'
+    });
+    
+    await expect(uploadFile(maliciousFile)).rejects.toThrow('Invalid file type');
+  });
+  
+  it('validates email format', () => {
+    expect(validateEmail('test@example.com')).toBe(true);
+    expect(validateEmail('invalid-email')).toBe(false);
+    expect(validateEmail('<script>@test.com')).toBe(false);
+  });
+});
+```
+
 ## Checklist for New Features
 
 - [ ] Unit tests for business logic (Vitest)
 - [ ] Component renders without errors (Vitest + RTL)
 - [ ] Happy path works (manual test if not critical)
 - [ ] Error states handled gracefully
+- [ ] Security: XSS protection verified
+- [ ] Security: CSRF tokens included in mutations
+- [ ] Security: No sensitive data in URLs/localStorage
 - [ ] Accessibility: keyboard navigation works
+- [ ] Accessibility: ARIA labels present
 - [ ] No console errors in development
-- [ ] Works on mobile viewport
+- [ ] Works on mobile viewport (320px+)
 
 ## Tools Summary
 

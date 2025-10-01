@@ -1,16 +1,19 @@
 # Frontend Test Strategy - Medium Scale Apps
 
 ## Overview
+
 **Target**: Growing production apps, 10-50 developers, 100k-1M users  
 **Goal**: Scalable testing with team consistency and quality gates  
 **Time Budget**: 30-40% of development time on testing
 
 ## Core Principles
 
-1. **Shift-Left Testing**: Catch bugs early in development cycle
-2. **Test Ownership**: Each team owns their feature's tests
-3. **Automated Quality Gates**: No manual approval without passing tests
-4. **Performance Budget**: Tests and app performance are equally important
+1. **Shift-Left Testing**: Catch bugs early, automate in PR pipeline
+2. **Test Ownership**: Each feature team owns their tests (CODEOWNERS enforced)
+3. **Automated Quality Gates**: 80%+ coverage, zero errors to merge
+4. **Performance Budget**: Tests <10min CI, app LCP <2.5s, FID <100ms
+5. **Test Isolation**: Independent tests with own data/mocks/contexts
+6. **User-Facing Tests**: Test behavior not implementation details
 
 ## Enhanced Test Pyramid
 
@@ -334,9 +337,246 @@ test('async operation', async () => {
 - Rollback plan documented
 ```
 
+## Security Testing Framework
+
+### Required Security Test Categories
+
+**1. XSS Prevention Suite**:
+
+```typescript
+// Test all user input rendering points
+describe('XSS Protection', () => {
+  const xssVectors = [
+    '<script>alert(1)</script>',
+    '<img src=x onerror=alert(1)>',
+    '<svg onload=alert(1)>',
+    'javascript:alert(1)',
+    '<iframe src="javascript:alert(1)">',
+    '&#x3C;script&#x3E;alert(1)&#x3C;/script&#x3E;', // HTML entities
+  ];
+
+  test.each(xssVectors)('sanitizes XSS vector: %s', (payload) => {
+    const { container } = render(<UserContent content={payload} />);
+    expect(container.innerHTML).not.toContain('<script');
+    expect(container.innerHTML).not.toContain('javascript:');
+    expect(container.innerHTML).not.toContain('onerror=');
+    expect(container.querySelector('script')).toBeNull();
+  });
+
+  test('uses DOMPurify for rich content', () => {
+    const richContent = '<b>Bold</b><script>alert(1)</script>';
+    const { container } = render(<RichText html={richContent} />);
+    expect(container.querySelector('b')).toBeInTheDocument();
+    expect(container.querySelector('script')).toBeNull();
+  });
+});
+```
+
+**2. CSRF Protection**:
+
+```typescript
+describe('CSRF Protection', () => {
+  test('includes CSRF token in POST requests', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch');
+    await api.updateUser({ name: 'test' });
+    
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'X-CSRF-Token': expect.stringMatching(/^[a-f0-9]{64}$/)
+        })
+      })
+    );
+  });
+
+  test('rejects requests without CSRF token', async () => {
+    server.use(
+      rest.post('/api/user', (req, res, ctx) => {
+        if (!req.headers.get('X-CSRF-Token')) {
+          return res(ctx.status(403), ctx.json({ error: 'CSRF token missing' }));
+        }
+      })
+    );
+
+    await expect(api.updateUser({ name: 'test' })).rejects.toThrow();
+  });
+});
+```
+
+**3. Authentication & Session Management**:
+
+```typescript
+describe('Authentication Security', () => {
+  test('clears all sensitive data on logout', () => {
+    localStorage.setItem('token', 'abc123');
+    localStorage.setItem('user', JSON.stringify({ id: 1 }));
+    sessionStorage.setItem('tempData', 'xyz');
+
+    fireEvent.click(screen.getByRole('button', { name: /logout/i }));
+
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(localStorage.getItem('user')).toBeNull();
+    expect(sessionStorage.getItem('tempData')).toBeNull();
+  });
+
+  test('redirects to login when token expired', async () => {
+    vi.spyOn(jwt, 'decode').mockReturnValue({ exp: Date.now() / 1000 - 1 });
+    render(<App />);
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/login');
+    });
+  });
+
+  test('auto-refreshes token before expiry', async () => {
+    vi.useFakeTimers();
+    const refreshSpy = vi.spyOn(auth, 'refreshToken');
+    
+    render(<App />);
+    vi.advanceTimersByTime(14 * 60 * 1000); // 14 minutes
+    
+    await waitFor(() => expect(refreshSpy).toHaveBeenCalled());
+    vi.useRealTimers();
+  });
+});
+```
+
+**4. Sensitive Data Protection**:
+
+```typescript
+describe('Data Protection', () => {
+  test('never stores passwords in localStorage', () => {
+    const loginForm = render(<LoginForm />);
+    fireEvent.change(screen.getByLabelText(/password/i), {
+      target: { value: 'secret123' }
+    });
+    
+    expect(localStorage.getItem('password')).toBeNull();
+    expect(sessionStorage.getItem('password')).toBeNull();
+  });
+
+  test('masks credit card numbers', () => {
+    render(<PaymentForm card="4111111111111111" />);
+    expect(screen.queryByText('4111111111111111')).not.toBeInTheDocument();
+    expect(screen.getByText('**** **** **** 1111')).toBeInTheDocument();
+  });
+
+  test('excludes sensitive data from URL parameters', () => {
+    const navigate = vi.fn();
+    render(<App navigate={navigate} />);
+    
+    fireEvent.submit(screen.getByRole('form'));
+    
+    expect(navigate).not.toHaveBeenCalledWith(
+      expect.stringContaining('password=')
+    );
+    expect(navigate).not.toHaveBeenCalledWith(
+      expect.stringContaining('token=')
+    );
+  });
+});
+```
+
+**5. Content Security Policy (E2E)**:
+
+```typescript
+test('enforces strict CSP headers', async ({ page }) => {
+  const response = await page.goto('/');
+  const csp = response?.headers()['content-security-policy'];
+  
+  expect(csp).toContain("default-src 'self'");
+  expect(csp).toContain("script-src 'self'");
+  expect(csp).toContain("style-src 'self'");
+  expect(csp).not.toContain("'unsafe-inline'");
+  expect(csp).not.toContain("'unsafe-eval'");
+  
+  // Test CSP violations are reported
+  const violations: string[] = [];
+  page.on('console', msg => {
+    if (msg.text().includes('CSP')) violations.push(msg.text());
+  });
+  
+  await page.evaluate(() => {
+    // Attempt to execute inline script (should be blocked)
+    const script = document.createElement('script');
+    script.textContent = 'console.log("inline")';
+    document.body.appendChild(script);
+  });
+  
+  expect(violations.length).toBeGreaterThan(0);
+});
+```
+
+**6. Dependency Security**:
+
+```typescript
+// In CI pipeline
+describe('Dependency Security', () => {
+  test('no high/critical vulnerabilities', async () => {
+    const { stdout } = await execa('npm', ['audit', '--json']);
+    const audit = JSON.parse(stdout);
+    
+    expect(audit.metadata.vulnerabilities.high).toBe(0);
+    expect(audit.metadata.vulnerabilities.critical).toBe(0);
+  });
+
+  test('all dependencies have valid licenses', () => {
+    const licenses = require('license-checker');
+    const banned = ['GPL', 'AGPL', 'LGPL'];
+    
+    // Check no copyleft licenses in production deps
+    expect(Object.values(licenses).every(
+      pkg => !banned.some(b => pkg.licenses.includes(b))
+    )).toBe(true);
+  });
+});
+```
+
+### Security Testing Integration
+
+**Pre-commit Hooks**:
+
+```json
+{
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged && npm run security:check"
+    }
+  },
+  "scripts": {
+    "security:check": "npm audit --audit-level=high && eslint-plugin-security"
+  }
+}
+```
+
+**CI Security Gates**:
+
+```yaml
+# .github/workflows/security.yml
+security-tests:
+  runs-on: ubuntu-latest
+  steps:
+    - name: Run OWASP Dependency Check
+      run: npm audit --audit-level=high
+      
+    - name: Run XSS tests
+      run: npm test -- --grep "XSS"
+      
+    - name: Run CSRF tests
+      run: npm test -- --grep "CSRF"
+      
+    - name: Check CSP headers
+      run: npm run test:e2e -- tests/security/csp.spec.ts
+      
+    - name: Scan for secrets
+      uses: trufflesecurity/trufflehog@main
+```
+
 ## Monitoring & Observability
 
 ### Development Metrics
+
 ```typescript
 // Track test metrics
 interface TestMetrics {
@@ -347,6 +587,12 @@ interface TestMetrics {
     branches: number;
     functions: number;
     lines: number;
+  };
+  securityTests: {
+    xss: number;
+    csrf: number;
+    auth: number;
+    total: number;
   };
 }
 ```

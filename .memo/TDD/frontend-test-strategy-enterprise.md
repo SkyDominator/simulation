@@ -399,55 +399,809 @@ class PerformanceMonitor {
 }
 ```
 
-## Security Testing
+## Security Testing Framework
 
-### Security Test Suite
+### 1. XSS Prevention Suite
+
+**Attack Vectors** (OWASP Top 10 coverage):
+
 ```typescript
-// XSS Prevention
+const XSS_ATTACK_VECTORS = {
+  scriptInjection: [
+    '<script>alert(1)</script>',
+    '<script src="evil.com/xss.js"></script>',
+    '<script>document.cookie</script>',
+  ],
+  eventHandlers: [
+    '<img src=x onerror=alert(1)>',
+    '<body onload=alert(1)>',
+    '<svg onload=alert(1)>',
+    '<input onfocus=alert(1) autofocus>',
+    '<marquee onstart=alert(1)>',
+  ],
+  javascriptProtocol: [
+    'javascript:alert(1)',
+    'data:text/html,<script>alert(1)</script>',
+    'vbscript:msgbox(1)',
+  ],
+  htmlEntities: [
+    '&#x3C;script&#x3E;alert(1)&#x3C;/script&#x3E;',
+    '&lt;script&gt;alert(1)&lt;/script&gt;',
+    '&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;&#97;&#108;&#101;&#114;&#116;&#40;&#49;&#41;',
+  ],
+  encodedPayloads: [
+    '%3Cscript%3Ealert(1)%3C/script%3E',
+    '\\x3Cscript\\x3Ealert(1)\\x3C/script\\x3E',
+    '\\u003Cscript\\u003Ealert(1)\\u003C/script\\u003E',
+  ],
+  domXss: [
+    '<iframe src=javascript:alert(1)>',
+    '<embed src=javascript:alert(1)>',
+    '<object data=javascript:alert(1)>',
+  ],
+};
+
 describe('XSS Protection', () => {
-  const xssPayloads = [
-    '<script>alert("XSS")</script>',
-    'javascript:alert("XSS")',
-    '<img src=x onerror=alert("XSS")>',
-    '<svg onload=alert("XSS")>',
-  ];
-  
-  test.each(xssPayloads)('sanitizes payload: %s', async (payload) => {
-    const result = await submitComment(payload);
-    expect(result).not.toContain('<script>');
-    expect(result).not.toContain('javascript:');
-    expect(result).not.toContain('onerror=');
-    expect(result).not.toContain('onload=');
-  });
-});
-
-// CSRF Protection
-test('CSRF token required for state changes', async () => {
-  const response = await fetch('/api/transfer', {
-    method: 'POST',
-    body: JSON.stringify({ amount: 1000 }),
-    headers: { 'Content-Type': 'application/json' },
-    // Intentionally missing CSRF token
+  Object.entries(XSS_ATTACK_VECTORS).forEach(([category, vectors]) => {
+    describe(category, () => {
+      test.each(vectors)('blocks: %s', async (vector) => {
+        const { container } = render(<UserContent content={vector} />);
+        
+        // Verify sanitization
+        expect(container.querySelector('script')).toBeNull();
+        expect(container.innerHTML).not.toContain('javascript:');
+        expect(container.innerHTML).not.toMatch(/on\w+=/);
+        
+        // Verify no script execution
+        const scriptExecuted = await page.evaluate(() => window.xssTriggered);
+        expect(scriptExecuted).toBeUndefined();
+      });
+    });
   });
   
-  expect(response.status).toBe(403);
-  expect(await response.json()).toMatchObject({
-    error: 'CSRF token missing or invalid'
+  test('DOMPurify configuration', () => {
+    const html = '<b>Safe</b><script>alert(1)</script><img src=x onerror=alert(1)>';
+    const clean = DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a'],
+      ALLOWED_ATTR: ['href', 'target'],
+      ALLOWED_URI_REGEXP: /^https?:\/\/(www\.)?example\.com/,
+    });
+    
+    expect(clean).toContain('<b>Safe</b>');
+    expect(clean).not.toContain('<script>');
+    expect(clean).not.toContain('onerror');
   });
 });
+```
 
-// Authentication & Authorization
-describe('Authorization', () => {
-  test('JWT expiry is enforced', async () => {
-    const expiredToken = generateExpiredToken();
-    const response = await makeAuthenticatedRequest(expiredToken);
+### 2. CSRF Protection
+
+**Requirements**:
+
+- Token: 64-char hex (SHA256), rotated every 1h
+- Header: `X-CSRF-Token` for all mutations
+- Cookie: `SameSite=Strict; Secure; HttpOnly`
+- Validation: Server-side with timing-safe comparison
+
+```typescript
+describe('CSRF Protection', () => {
+  test('includes valid token in mutations', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch');
+    await api.updateProfile({ name: 'John' });
+    
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'X-CSRF-Token': expect.stringMatching(/^[a-f0-9]{64}$/),
+        }),
+        credentials: 'same-origin',
+      })
+    );
+  });
+  
+  test('rejects requests without token', async () => {
+    server.use(
+      rest.post('/api/profile', (req, res, ctx) => {
+        if (!req.headers.get('X-CSRF-Token')) {
+          return res(ctx.status(403), ctx.json({ error: 'CSRF token required' }));
+        }
+      })
+    );
+    
+    await expect(api.updateProfile({ name: 'John' })).rejects.toThrow(/403|CSRF/);
+  });
+  
+  test('token rotation after sensitive operations', async () => {
+    const initialToken = getCSRFToken();
+    await api.changePassword({ old: 'x', new: 'y' });
+    const newToken = getCSRFToken();
+    
+    expect(newToken).not.toBe(initialToken);
+    expect(newToken).toMatch(/^[a-f0-9]{64}$/);
+  });
+  
+  test('SameSite cookie configuration', async ({ page }) => {
+    await page.goto('/');
+    const cookies = await page.context().cookies();
+    const csrfCookie = cookies.find(c => c.name === 'csrf_token');
+    
+    expect(csrfCookie).toBeDefined();
+    expect(csrfCookie.sameSite).toBe('Strict');
+    expect(csrfCookie.secure).toBe(true);
+    expect(csrfCookie.httpOnly).toBe(true);
+  });
+});
+```
+
+### 3. Authentication & Session Management
+
+```typescript
+describe('Authentication Security', () => {
+  test('JWT expiry enforced (15min access, 7d refresh)', async () => {
+    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
+    const token = generateToken({ exp: Math.floor(Date.now() / 1000) + 900 });
+    
+    vi.setSystemTime(new Date('2025-01-01T00:16:00Z')); // 16 minutes later
+    
+    const response = await makeAuthenticatedRequest(token);
     expect(response.status).toBe(401);
+    expect(response.data.error).toBe('Token expired');
   });
   
-  test('role-based access control', async () => {
-    const userToken = await loginAs('user');
-    const adminEndpoint = await accessAdminAPI(userToken);
-    expect(adminEndpoint.status).toBe(403);
+  test('auto-refresh before expiry (2min buffer)', async () => {
+    vi.useFakeTimers();
+    const refreshSpy = vi.spyOn(auth, 'refreshToken');
+    const expiryTime = Math.floor(Date.now() / 1000) + 900; // 15min
+    
+    vi.spyOn(jwt, 'decode').mockReturnValue({ exp: expiryTime });
+    render(<App />);
+    
+    // Advance to 13 minutes (2min before expiry)
+    vi.advanceTimersByTime(13 * 60 * 1000);
+    
+    await waitFor(() => expect(refreshSpy).toHaveBeenCalled());
+    vi.useRealTimers();
+  });
+  
+  test('secure logout (clears all session data)', async () => {
+    localStorage.setItem('accessToken', 'abc123');
+    localStorage.setItem('refreshToken', 'xyz789');
+    sessionStorage.setItem('user', JSON.stringify({ id: 1 }));
+    document.cookie = 'session=active; path=/';
+    
+    await auth.logout();
+    
+    expect(localStorage.getItem('accessToken')).toBeNull();
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(sessionStorage.getItem('user')).toBeNull();
+    expect(document.cookie).not.toContain('session=active');
+  });
+  
+  test('account lockout after 5 failed attempts', async () => {
+    const email = 'user@test.com';
+    
+    for (let i = 0; i < 5; i++) {
+      await expect(api.login({ email, password: 'wrong' })).rejects.toThrow();
+    }
+    
+    await expect(api.login({ email, password: 'correct' }))
+      .rejects.toThrow(/locked|temporarily disabled/i);
+    
+    // Verify lockout duration (15 minutes)
+    vi.advanceTimersByTime(14 * 60 * 1000);
+    await expect(api.login({ email, password: 'correct' })).rejects.toThrow();
+    
+    vi.advanceTimersByTime(1 * 60 * 1000);
+    await expect(api.login({ email, password: 'correct' })).resolves.toBeDefined();
+  });
+  
+  test('session timeout after inactivity (30min)', async () => {
+    vi.useFakeTimers();
+    render(<App />);
+    
+    // Simulate inactivity
+    vi.advanceTimersByTime(30 * 60 * 1000);
+    
+    await waitFor(() => {
+      expect(screen.getByText(/session expired/i)).toBeInTheDocument();
+      expect(window.location.pathname).toBe('/login');
+    });
+    
+    vi.useRealTimers();
+  });
+});
+```
+
+### 4. Sensitive Data Protection
+
+```typescript
+describe('Sensitive Data Protection', () => {
+  test('masks credit card numbers', () => {
+    const creditCard = '4532-1234-5678-9010';
+    render(<PaymentForm initialCard={creditCard} />);
+    
+    expect(screen.getByDisplayValue('****-****-****-9010')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue(creditCard)).not.toBeInTheDocument();
+  });
+  
+  test('no sensitive data in localStorage', () => {
+    const sensitiveKeys = ['password', 'creditCard', 'ssn', 'apiKey', 'secret'];
+    const stored = Object.keys(localStorage);
+    
+    sensitiveKeys.forEach(key => {
+      expect(stored.some(k => k.toLowerCase().includes(key))).toBe(false);
+    });
+  });
+  
+  test('no sensitive data in console logs', () => {
+    const consoleSpy = vi.spyOn(console, 'log');
+    const password = 'SecretPassword123!';
+    
+    await auth.login({ email: 'user@test.com', password });
+    
+    expect(consoleSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining(password)
+    );
+  });
+  
+  test('HTTPS enforced for sensitive operations', async ({ page }) => {
+    await page.goto('http://example.com/login');
+    
+    // Should redirect to HTTPS
+    expect(page.url()).toMatch(/^https:/);
+  });
+});
+```
+
+### 5. Content Security Policy (CSP)
+
+```typescript
+describe('CSP Headers', () => {
+  test('strict CSP configuration', async ({ page }) => {
+    const response = await page.goto('/');
+    const csp = response?.headers()['content-security-policy'];
+    
+    // Required directives
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("script-src 'self'");
+    expect(csp).toContain("style-src 'self'");
+    expect(csp).toContain("img-src 'self' https:");
+    expect(csp).toContain("connect-src 'self' https://api.example.com");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("base-uri 'self'");
+    expect(csp).toContain("form-action 'self'");
+    
+    // Forbidden directives
+    expect(csp).not.toContain("'unsafe-inline'");
+    expect(csp).not.toContain("'unsafe-eval'");
+    expect(csp).not.toContain("* http:");
+  });
+  
+  test('CSP violation reporting', async ({ page }) => {
+    const violations: any[] = [];
+    
+    page.on('console', msg => {
+      if (msg.type() === 'error' && msg.text().includes('CSP')) {
+        violations.push(msg.text());
+      }
+    });
+    
+    await page.goto('/');
+    
+    // Attempt inline script injection
+    await page.evaluate(() => {
+      const script = document.createElement('script');
+      script.textContent = 'alert(1)';
+      document.body.appendChild(script);
+    });
+    
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations[0]).toMatch(/Content Security Policy|CSP/i);
+  });
+  
+  test('nonce-based script execution', async ({ page }) => {
+    await page.goto('/');
+    
+    // Valid nonce should work
+    const validScript = await page.evaluate(() => {
+      const script = document.createElement('script');
+      script.nonce = document.querySelector('meta[property="csp-nonce"]')?.getAttribute('content');
+      script.textContent = 'window.validScript = true';
+      document.body.appendChild(script);
+      return window.validScript;
+    });
+    
+    expect(validScript).toBe(true);
+    
+    // Invalid nonce should be blocked
+    const invalidScript = await page.evaluate(() => {
+      const script = document.createElement('script');
+      script.nonce = 'invalid-nonce';
+      script.textContent = 'window.invalidScript = true';
+      document.body.appendChild(script);
+      return window.invalidScript;
+    });
+    
+    expect(invalidScript).toBeUndefined();
+  });
+});
+```
+
+### 6. Dependency Security
+
+```typescript
+describe('Dependency Security', () => {
+  test('no high/critical vulnerabilities', async () => {
+    const { execSync } = await import('child_process');
+    const audit = JSON.parse(execSync('npm audit --json').toString());
+    
+    expect(audit.metadata.vulnerabilities.high).toBe(0);
+    expect(audit.metadata.vulnerabilities.critical).toBe(0);
+  });
+  
+  test('license compliance', async () => {
+    const { execSync } = await import('child_process');
+    const licenses = JSON.parse(
+      execSync('npx license-checker --json').toString()
+    );
+    
+    const bannedLicenses = ['GPL', 'AGPL', 'LGPL'];
+    const violations = Object.entries(licenses).filter(([pkg, info]: any) =>
+      bannedLicenses.some(banned => info.licenses.includes(banned))
+    );
+    
+    expect(violations).toHaveLength(0);
+  });
+  
+  test('subresource integrity (SRI)', async ({ page }) => {
+    await page.goto('/');
+    
+    const externalScripts = await page.$$eval('script[src^="https://"]', scripts =>
+      scripts.map(s => ({
+        src: s.getAttribute('src'),
+        integrity: s.getAttribute('integrity'),
+        crossOrigin: s.getAttribute('crossorigin'),
+      }))
+    );
+    
+    externalScripts.forEach(script => {
+      expect(script.integrity).toMatch(/^sha(256|384|512)-/);
+      expect(script.crossOrigin).toBe('anonymous');
+    });
+  });
+});
+```
+
+### 7. Security Testing CI/CD Integration
+
+```yaml
+# .github/workflows/security-tests.yml
+name: Security Tests
+
+on: [push, pull_request]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      # Dependency scanning
+      - name: NPM Audit
+        run: npm audit --audit-level=high
+      
+      # Secret scanning
+      - name: TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+      
+      # SAST
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      
+      # OWASP Dependency Check
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'frontend'
+          path: '.'
+          format: 'ALL'
+      
+      # Run security tests
+      - name: Security Test Suite
+        run: npm run test -- --grep "XSS|CSRF|Auth|CSP|Security"
+      
+      # Upload results
+      - name: Upload Security Report
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: dependency-check-report.sarif
+```
+
+## Contract Testing
+
+### 1. API Contract Testing with Pact
+
+**Consumer Side** (Frontend):
+
+```typescript
+import { PactV3, MatchersV3 } from '@pact-foundation/pact';
+const { eachLike, like, string, integer } = MatchersV3;
+
+describe('User API Contract', () => {
+  const provider = new PactV3({
+    consumer: 'FrontendApp',
+    provider: 'UserAPI',
+    dir: './pacts',
+  });
+  
+  test('get user by id', async () => {
+    await provider
+      .given('user exists with id 123')
+      .uponReceiving('a request for user 123')
+      .withRequest({
+        method: 'GET',
+        path: '/api/users/123',
+        headers: {
+          'Authorization': like('Bearer token123'),
+          'Accept': 'application/json',
+        },
+      })
+      .willRespondWith({
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: {
+          id: integer(123),
+          name: string('John Doe'),
+          email: string('john@example.com'),
+          roles: eachLike('user'),
+          createdAt: string('2025-01-01T00:00:00Z'),
+        },
+      })
+      .executeTest(async (mockServer) => {
+        const api = new UserAPI(mockServer.url);
+        const user = await api.getUser(123);
+        
+        expect(user.id).toBe(123);
+        expect(user.name).toBe('John Doe');
+        expect(user.email).toBe('john@example.com');
+      });
+  });
+  
+  test('create new user', async () => {
+    await provider
+      .given('user does not exist')
+      .uponReceiving('a request to create user')
+      .withRequest({
+        method: 'POST',
+        path: '/api/users',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': like('Bearer token123'),
+        },
+        body: {
+          name: string('Jane Doe'),
+          email: string('jane@example.com'),
+          password: string('SecurePass123!'),
+        },
+      })
+      .willRespondWith({
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+        body: {
+          id: integer(124),
+          name: string('Jane Doe'),
+          email: string('jane@example.com'),
+          roles: eachLike('user'),
+          createdAt: like('2025-01-01T00:00:00Z'),
+        },
+      })
+      .executeTest(async (mockServer) => {
+        const api = new UserAPI(mockServer.url);
+        const user = await api.createUser({
+          name: 'Jane Doe',
+          email: 'jane@example.com',
+          password: 'SecurePass123!',
+        });
+        
+        expect(user.id).toBeDefined();
+        expect(user.name).toBe('Jane Doe');
+      });
+  });
+  
+  test('handles validation errors', async () => {
+    await provider
+      .uponReceiving('a request with invalid email')
+      .withRequest({
+        method: 'POST',
+        path: '/api/users',
+        body: {
+          name: string('Invalid User'),
+          email: string('not-an-email'),
+          password: string('pass'),
+        },
+      })
+      .willRespondWith({
+        status: 400,
+        body: {
+          error: string('Validation failed'),
+          details: eachLike({
+            field: string('email'),
+            message: string('Invalid email format'),
+          }),
+        },
+      })
+      .executeTest(async (mockServer) => {
+        const api = new UserAPI(mockServer.url);
+        
+        await expect(api.createUser({
+          name: 'Invalid User',
+          email: 'not-an-email',
+          password: 'pass',
+        })).rejects.toMatchObject({
+          status: 400,
+          error: 'Validation failed',
+        });
+      });
+  });
+});
+```
+
+### 2. OpenAPI Schema Validation
+
+```typescript
+import SwaggerParser from '@apidevtools/swagger-parser';
+import { validateAgainstSchema } from 'openapi-validator';
+
+describe('OpenAPI Contract Compliance', () => {
+  let apiSpec: any;
+  
+  beforeAll(async () => {
+    apiSpec = await SwaggerParser.validate('./openapi.yaml');
+  });
+  
+  test('API matches OpenAPI specification', async () => {
+    const response = await fetch('/api/users/123');
+    const data = await response.json();
+    
+    const validation = validateAgainstSchema(
+      data,
+      apiSpec.paths['/users/{id}'].get.responses['200'].content['application/json'].schema
+    );
+    
+    expect(validation.valid).toBe(true);
+    expect(validation.errors).toHaveLength(0);
+  });
+  
+  test('error responses match specification', async () => {
+    const response = await fetch('/api/users/999999');
+    const error = await response.json();
+    
+    expect(response.status).toBe(404);
+    
+    const validation = validateAgainstSchema(
+      error,
+      apiSpec.paths['/users/{id}'].get.responses['404'].content['application/json'].schema
+    );
+    
+    expect(validation.valid).toBe(true);
+  });
+});
+```
+
+### 3. GraphQL Contract Testing
+
+```typescript
+import { buildSchema, validate } from 'graphql';
+import { gql } from '@apollo/client';
+
+describe('GraphQL Schema Contracts', () => {
+  const schema = buildSchema(`
+    type User {
+      id: ID!
+      name: String!
+      email: String!
+      posts: [Post!]!
+    }
+    
+    type Post {
+      id: ID!
+      title: String!
+      content: String!
+      author: User!
+    }
+    
+    type Query {
+      user(id: ID!): User
+      users: [User!]!
+    }
+    
+    type Mutation {
+      createUser(name: String!, email: String!): User!
+    }
+  `);
+  
+  test('query matches schema', () => {
+    const query = gql`
+      query GetUser($id: ID!) {
+        user(id: $id) {
+          id
+          name
+          email
+          posts {
+            id
+            title
+          }
+        }
+      }
+    `;
+    
+    const errors = validate(schema, query);
+    expect(errors).toHaveLength(0);
+  });
+  
+  test('mutation matches schema', () => {
+    const mutation = gql`
+      mutation CreateUser($name: String!, $email: String!) {
+        createUser(name: $name, email: $email) {
+          id
+          name
+          email
+        }
+      }
+    `;
+    
+    const errors = validate(schema, mutation);
+    expect(errors).toHaveLength(0);
+  });
+  
+  test('invalid query detected', () => {
+    const invalidQuery = gql`
+      query {
+        user(id: "123") {
+          id
+          invalidField
+        }
+      }
+    `;
+    
+    const errors = validate(schema, invalidQuery);
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0].message).toContain('invalidField');
+  });
+});
+```
+
+### 4. Contract Testing CI/CD Pipeline
+
+```yaml
+# .github/workflows/contract-tests.yml
+name: Contract Tests
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  consumer-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run Pact tests (consumer)
+        run: npm run test:pact
+      
+      - name: Publish pacts
+        if: success()
+        run: |
+          npx pact-broker publish ./pacts \
+            --consumer-app-version=${{ github.sha }} \
+            --broker-base-url=${{ secrets.PACT_BROKER_URL }} \
+            --broker-token=${{ secrets.PACT_BROKER_TOKEN }}
+  
+  can-i-deploy:
+    needs: consumer-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check deployment compatibility
+        run: |
+          npx pact-broker can-i-deploy \
+            --pacticipant=FrontendApp \
+            --version=${{ github.sha }} \
+            --to-environment=production \
+            --broker-base-url=${{ secrets.PACT_BROKER_URL }} \
+            --broker-token=${{ secrets.PACT_BROKER_TOKEN }}
+```
+
+### 5. Consumer-Driven Contract Testing Workflow
+
+```typescript
+// 1. Consumer defines expectations
+export class UserAPIConsumer {
+  async testGetUser() {
+    return pact
+      .given('user exists')
+      .uponReceiving('get user request')
+      .withRequest({ method: 'GET', path: '/users/1' })
+      .willRespondWith({
+        status: 200,
+        body: { id: 1, name: 'John' },
+      });
+  }
+}
+
+// 2. Provider verifies contract
+describe('Provider Verification', () => {
+  test('satisfies consumer contract', async () => {
+    const verifier = new Verifier({
+      provider: 'UserAPI',
+      providerBaseUrl: 'http://localhost:8000',
+      pactUrls: ['./pacts/frontendapp-userapi.json'],
+    });
+    
+    const output = await verifier.verifyProvider();
+    expect(output).toContain('0 failures');
+  });
+});
+
+// 3. Pact Broker for contract sharing
+export const publishPact = async () => {
+  const publisher = new Publisher({
+    pactBroker: process.env.PACT_BROKER_URL,
+    pactBrokerToken: process.env.PACT_BROKER_TOKEN,
+    pactFilesOrDirs: ['./pacts'],
+    consumerVersion: process.env.GIT_SHA,
+    tags: ['main', 'production'],
+  });
+  
+  await publisher.publishPacts();
+};
+```
+
+### 6. Breaking Change Detection
+
+```typescript
+describe('API Versioning & Compatibility', () => {
+  test('detects breaking changes', async () => {
+    const oldSchema = await loadSchema('./schemas/v1.json');
+    const newSchema = await loadSchema('./schemas/v2.json');
+    
+    const changes = detectBreakingChanges(oldSchema, newSchema);
+    
+    // Allowed changes
+    expect(changes.addedFields).toBeDefined();
+    expect(changes.deprecatedFields).toBeDefined();
+    
+    // Breaking changes should fail
+    expect(changes.removedFields).toHaveLength(0);
+    expect(changes.changedFieldTypes).toHaveLength(0);
+    expect(changes.removedEndpoints).toHaveLength(0);
+  });
+  
+  test('enforces semantic versioning', () => {
+    const currentVersion = '1.2.3';
+    const nextVersion = '1.3.0';
+    
+    // Minor version bump for new features
+    expect(hasNewFeatures(oldAPI, newAPI)).toBe(true);
+    expect(hasBreakingChanges(oldAPI, newAPI)).toBe(false);
+    
+    // Would require major version bump
+    if (hasBreakingChanges(oldAPI, newAPI)) {
+      expect(nextVersion.startsWith('2.')).toBe(true);
+    }
   });
 });
 ```
