@@ -184,6 +184,7 @@ test.describe("Plan Editor Wizard - Step Navigation", () => {
     await helpers.selectPlan("A");
     await helpers.clickNext();
 
+    const startingRoundInput = page.locator('input[type="number"]').first();
     await startingRoundInput.fill("1");
     await helpers.clickNext();
 
