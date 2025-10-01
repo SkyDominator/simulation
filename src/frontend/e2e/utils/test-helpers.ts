@@ -210,6 +210,24 @@ export class APIHelpers {
    * Mock simulation API endpoints
    */
   static async mockSimulationAPI(page: Page) {
+    // Clean up existing routes
+    try {
+      await page.unroute("**/api/simulation/create");
+    } catch {
+      // ignore
+    }
+    try {
+      await page.unroute("**/api/simulation/run");
+    } catch {
+      // ignore
+    }
+    try {
+      await page.unroute("**/api/simulations**");
+    } catch {
+      // ignore
+    }
+
+    // Mock simulation creation
     await page.route("**/api/simulation/create", async (route) => {
       await route.fulfill({
         status: 201,
@@ -219,12 +237,16 @@ export class APIHelpers {
           data: {
             id: "sim-123",
             plan_id: "A",
+            starting_company_round: 1,
+            current_company_round: 1,
+            simulation_rounds: 12,
             created_at: new Date().toISOString(),
           },
         }),
       });
     });
 
+    // Mock simulation run
     await page.route("**/api/simulation/run", async (route) => {
       await route.fulfill({
         status: 200,
@@ -239,6 +261,8 @@ export class APIHelpers {
                 total_payment: 1000000,
                 total_revenue_after_tax: 970000,
                 cumulative_net_profit: -30000,
+                round_bonus: 0,
+                settlement_bonus: 100000,
               },
               {
                 company_round: 2,
@@ -246,6 +270,8 @@ export class APIHelpers {
                 total_payment: 2000000,
                 total_revenue_after_tax: 1940000,
                 cumulative_net_profit: -60000,
+                round_bonus: 0,
+                settlement_bonus: 100000,
               },
             ],
             summary: {
@@ -253,29 +279,87 @@ export class APIHelpers {
               final_profit: -60000,
               total_investment: 3000000,
               total_revenue: 2910000,
+              roi: -0.02,
             },
           },
         }),
       });
     });
 
-    await page.route("**/api/simulations", async (route) => {
-      if (route.request().method() === "GET") {
+    // Mock simulation list GET and specific simulation operations
+    await page.route("**/api/simulations**", async (route) => {
+      const method = route.request().method();
+      const url = route.request().url();
+
+      if (method === "GET") {
+        // Check if requesting specific simulation by ID
+        const idMatch = url.match(/\/simulations\/([^/?]+)/);
+        if (idMatch) {
+          // GET specific simulation
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              success: true,
+              data: {
+                id: idMatch[1],
+                plan_id: "A",
+                memo: "Test simulation",
+                created_at: "2024-01-01T00:00:00Z",
+                updated_at: "2024-01-01T00:00:00Z",
+                starting_company_round: 1,
+                current_company_round: 1,
+                simulation_rounds: 12,
+                investments: { 1: 110000, 2: 220000 },
+                simulation_results: null,
+              },
+            }),
+          });
+        } else {
+          // GET all simulations
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify([
+              {
+                id: "sim-123",
+                plan_id: "A",
+                memo: "Test simulation",
+                created_at: "2024-01-01T00:00:00Z",
+                updated_at: "2024-01-01T00:00:00Z",
+                starting_company_round: 1,
+                current_company_round: 1,
+                simulation_rounds: 12,
+              },
+            ]),
+          });
+        }
+      } else if (method === "PATCH") {
+        // UPDATE simulation
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify([
-            {
+          body: JSON.stringify({
+            success: true,
+            data: {
               id: "sim-123",
-              plan_id: "A",
-              memo: "Test simulation",
-              created_at: "2024-01-01T00:00:00Z",
-              starting_company_round: 1,
-              current_company_round: 1,
-              simulation_rounds: 12,
+              updated_at: new Date().toISOString(),
             },
-          ]),
+          }),
         });
+      } else if (method === "DELETE") {
+        // DELETE simulation
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            message: "Simulation deleted successfully",
+          }),
+        });
+      } else {
+        // Fallback for other methods
+        await route.continue();
       }
     });
   }
@@ -366,6 +450,233 @@ export class APIHelpers {
         "supabase.auth.token",
         JSON.stringify(mockSession)
       );
+    });
+  }
+
+  /**
+   * Mock notices API endpoints
+   */
+  static async mockNoticesAPI(page: Page) {
+    try {
+      await page.unroute("**/api/notices**");
+    } catch {
+      // ignore
+    }
+
+    await page.route("**/api/notices**", async (route) => {
+      const method = route.request().method();
+      const url = route.request().url();
+
+      if (method === "GET") {
+        const idMatch = url.match(/\/notices\/([^/?]+)/);
+        if (idMatch) {
+          // GET specific notice
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              success: true,
+              notice: {
+                id: idMatch[1],
+                title: "Test Notice",
+                content: "This is a test notice content.",
+                pinned: false,
+                published: true,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              },
+            }),
+          });
+        } else {
+          // GET all notices
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              success: true,
+              notices: [
+                {
+                  id: "notice-1",
+                  title: "Welcome Notice",
+                  content: "Welcome to the simulation platform!",
+                  pinned: true,
+                  published: true,
+                  created_at: "2024-01-01T00:00:00Z",
+                  updated_at: "2024-01-01T00:00:00Z",
+                },
+                {
+                  id: "notice-2",
+                  title: "System Update",
+                  content: "System maintenance scheduled.",
+                  pinned: false,
+                  published: true,
+                  created_at: "2024-01-02T00:00:00Z",
+                  updated_at: "2024-01-02T00:00:00Z",
+                },
+              ],
+            }),
+          });
+        }
+      } else {
+        await route.continue();
+      }
+    });
+  }
+
+  /**
+   * Mock admin API endpoints
+   */
+  static async mockAdminAPI(page: Page) {
+    try {
+      await page.unroute("**/api/admin/**");
+    } catch {
+      // ignore
+    }
+
+    // Mock admin verification endpoint
+    await page.route("**/api/admin/me", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          is_admin: true,
+          user_id: "admin-user-123",
+        }),
+      });
+    });
+
+    // Mock admin notices endpoints
+    await page.route("**/api/admin/notices**", async (route) => {
+      const method = route.request().method();
+
+      if (method === "POST") {
+        await route.fulfill({
+          status: 201,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            data: {
+              id: "notice-new",
+              title: "New Notice",
+              content: "New content",
+              created_at: new Date().toISOString(),
+            },
+          }),
+        });
+      } else if (method === "PATCH") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            data: {
+              id: "notice-1",
+              updated_at: new Date().toISOString(),
+            },
+          }),
+        });
+      } else if (method === "DELETE") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            message: "Notice deleted successfully",
+          }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    // Mock admin privacy policy endpoints
+    await page.route("**/api/admin/privacy-policies**", async (route) => {
+      const method = route.request().method();
+      const url = route.request().url();
+
+      if (method === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            policies: [
+              {
+                id: "policy-1",
+                version: "v1",
+                locale: "ko-KR",
+                content: "<p>Privacy policy content v1</p>",
+                published: true,
+                effective_date: "2024-01-01",
+                created_at: "2024-01-01T00:00:00Z",
+              },
+              {
+                id: "policy-2",
+                version: "v2",
+                locale: "ko-KR",
+                content: "<p>Privacy policy content v2 (draft)</p>",
+                published: false,
+                effective_date: null,
+                created_at: "2024-01-10T00:00:00Z",
+              },
+            ],
+          }),
+        });
+      } else if (method === "POST") {
+        if (url.includes("/publish")) {
+          // Publish policy
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              success: true,
+              data: {
+                id: "policy-2",
+                published: true,
+                effective_date: new Date().toISOString(),
+              },
+            }),
+          });
+        } else {
+          // Create policy
+          await route.fulfill({
+            status: 201,
+            contentType: "application/json",
+            body: JSON.stringify({
+              success: true,
+              data: {
+                id: "policy-new",
+                version: "v3",
+                created_at: new Date().toISOString(),
+              },
+            }),
+          });
+        }
+      } else if (method === "PATCH") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            data: {
+              id: "policy-1",
+              updated_at: new Date().toISOString(),
+            },
+          }),
+        });
+      } else if (method === "DELETE") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            message: "Policy deleted successfully",
+          }),
+        });
+      } else {
+        await route.continue();
+      }
     });
   }
 }
