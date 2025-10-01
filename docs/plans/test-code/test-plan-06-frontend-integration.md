@@ -4,6 +4,8 @@ This covers integration tests for complete user flows and multi-component intera
 
 Target: Integration tests in `src/frontend/src/test/integration/UserFlowIntegration.test.tsx` focusing on critical user paths.
 
+**Testability Note**: As of commit 080669f, key pages support API dependency injection via optional `apiService` prop (PlanEditor, ConsentPage, AdminPolicyPage, MainPage, NoticeBoardModal), enabling proper service-layer mocking in integration tests.
+
 --------------------------------------------------------------------------------
 ## 1. Scope & Principles
 --------------------------------------------------------------------------------
@@ -14,19 +16,21 @@ Target: Integration tests in `src/frontend/src/test/integration/UserFlowIntegrat
 * Data export and backup workflows
 * Authentication state management across navigation
 * Error recovery and resilience patterns
+* API dependency injection for network-layer mocking
 
 **Out of Scope:**
 * Browser-specific behavior (covered in E2E)
-* Real API calls (mocked at service layer)
+* Real API calls (mocked at service layer via dependency injection)
 * Performance testing
 * Cross-browser compatibility
 
 **Test Philosophy:**
 * Test complete business workflows from start to finish
-* Mock external services (Supabase, API endpoints)
+* Mock external services (Supabase, API endpoints) via apiService injection
 * Validate state management across component boundaries
 * Ensure data flows correctly through application layers
 * Test error handling and recovery mechanisms
+* Use dependency injection for clean, maintainable mocks
 
 --------------------------------------------------------------------------------
 ## 2. Test Category Matrix

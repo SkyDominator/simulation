@@ -6,6 +6,11 @@ This plan guides **re-implementation from scratch** of E2E tests for the fronten
 
 **Note**: Existing E2E test files are invalid (over-mocked, not testing real codebase). This plan focuses on the **actual frontend implementation** to guide proper E2E test creation.
 
+**Testability Note**: As of commit 080669f, frontend supports proper E2E testing with:
+- **API Dependency Injection**: Key pages accept `apiService` prop (PlanEditor, ConsentPage, AdminPolicyPage, MainPage, NoticeBoardModal)
+- **Data-testid Attributes**: Added to critical components (PlanEditor stepper/steps/buttons, SimulationTable rows/actions)
+- **Network-Layer Mocking**: Tests can mock at correct layer (Playwright route interception) instead of component level
+
 --------------------------------------------------------------------------------
 ## 1. Scope & Principles
 --------------------------------------------------------------------------------
@@ -40,6 +45,7 @@ This plan guides **re-implementation from scratch** of E2E tests for the fronten
 * **Verify Real State**: Check actual localStorage keys, session state from useAuth()
 * **Test Responsive Behavior**: Verify MUI breakpoints (xs, md) and mobile layouts
 * **Validate Real Components**: Test actual Material-UI components, not mocked versions
+* **Leverage Testability**: Use data-testid attributes and dependency injection for stable tests
 
 --------------------------------------------------------------------------------
 ## 2. Test Category Matrix
@@ -52,8 +58,9 @@ This plan guides **re-implementation from scratch** of E2E tests for the fronten
 * **Real Components Tested**:
   - WhitelistCheckPage: Name/phone input, validation, OTP send button
   - OtpVerificationPage (embedded in WhitelistCheckPage): 6-digit input, timer, resend, verify button
-  - ConsentPage: Policy display, checkbox, accept/decline buttons
+  - ConsentPage: Policy display, checkbox, accept/decline buttons (uses injected apiService for getPrivacyPolicy/recordConsent)
   - LoginPage: Google/Kakao OAuth buttons, back button
+* **API Integration**: ConsentPage uses injected apiService for policy retrieval and consent recording (mockable)
 * **State Persistence**: None (userHash in AppController state only, not localStorage)
 * **Cases**:
     - E2E-PREAUTH-001: Whitelisted user enters name/phone, gets OTP form
@@ -62,9 +69,9 @@ This plan guides **re-implementation from scratch** of E2E tests for the fronten
     - E2E-PREAUTH-004: OTP timer counts down and displays remaining time
     - E2E-PREAUTH-005: Resend button triggers new OTP send (rate limited)
     - E2E-PREAUTH-006: Non-whitelisted user sees error alert
-    - E2E-PREAUTH-007: Consent page shows privacy policy content
+    - E2E-PREAUTH-007: Consent page shows privacy policy content (verify network call to /api/privacy-policy)
     - E2E-PREAUTH-008: Consent checkbox must be checked to enable accept button
-    - E2E-PREAUTH-009: Accept consent proceeds to login page
+    - E2E-PREAUTH-009: Accept consent proceeds to login page (verify network call to /api/consents)
     - E2E-PREAUTH-010: Decline consent returns to whitelist page
     - E2E-PREAUTH-011: Back button from login returns to whitelist (whitelist remounts)
     - E2E-PREAUTH-012: Phone input auto-formats to 010-XXXX-XXXX pattern
@@ -90,23 +97,26 @@ This plan guides **re-implementation from scratch** of E2E tests for the fronten
 * **AppController State**: page = "main", editingPlan = null
 * **Real Components**: 
   - MainPage: Header actions, table, empty state
-  - SimulationTable: Rows, checkboxes, sort headers, action buttons
-  - NoticeBoardModal: Notice display
+  - SimulationTable: Rows (`data-testid="simulation-row-{idx}"`), checkboxes (`data-testid="simulation-checkbox-{id}"`), sort headers, action buttons
+  - Action Buttons: Edit (`data-testid="edit-{id}"`), Run (`data-testid="run-{id}"`), Delete (`data-testid="delete-{id}"`)
+  - Memo Chip: (`data-testid="memo-chip-{id}"`)
+  - NoticeBoardModal: Notice display (accepts apiService for mocking)
   - ContactModal: Help information
+* **API Integration**: MainPage and NoticeBoardModal use injected apiService (mockable via dependency injection)
 * **Cases**:
     - E2E-MAIN-001: MainPage displays user's simulation list from GET /api/simulations
     - E2E-MAIN-002: Empty state shows welcome message and create button
     - E2E-MAIN-003: Create simulation button navigates to plan-editor page
     - E2E-MAIN-004: Table displays columns: plan, memo, dates, actions
-    - E2E-MAIN-005: Click simulation row selects it (checkbox)
+    - E2E-MAIN-005: Click simulation row selects it (verify with data-testid="simulation-checkbox-{id}")
     - E2E-MAIN-006: Multi-select enables batch delete button
     - E2E-MAIN-007: Batch delete shows confirmation modal, deletes selected
     - E2E-MAIN-008: Sort header click changes sort order (ascending/descending)
-    - E2E-MAIN-009: Edit icon navigates to plan-editor with simulation data
-    - E2E-MAIN-010: Run icon executes simulation, shows loading indicator
+    - E2E-MAIN-009: Edit icon navigates to plan-editor with simulation data (verify with data-testid="edit-{id}")
+    - E2E-MAIN-010: Run icon executes simulation, shows loading indicator (verify with data-testid="run-{id}")
     - E2E-MAIN-011: Results icon navigates to results page
-    - E2E-MAIN-012: Memo icon opens MemoModal, allows editing
-    - E2E-MAIN-013: Delete icon shows DeleteConfirmModal, deletes on confirm
+    - E2E-MAIN-012: Memo icon opens MemoModal, allows editing (verify with data-testid="memo-chip-{id}")
+    - E2E-MAIN-013: Delete icon shows DeleteConfirmModal, deletes on confirm (verify with data-testid="delete-{id}")
     - E2E-MAIN-014: Notice board icon opens NoticeBoardModal
     - E2E-MAIN-015: Help icon opens ContactModal
     - E2E-MAIN-016: Logout button shows confirmation, logs out on confirm
@@ -116,10 +126,12 @@ This plan guides **re-implementation from scratch** of E2E tests for the fronten
 * **Frontend Target**: PlanEditor/index.tsx, StepComponents, validation modals
 * **AppController State**: page = "plan-editor", editingPlan = Plan object
 * **Real Components**:
-  - PlanEditor: Stepper, step content, navigation buttons
-  - StepComponents: PlanTypeStep, StartingRoundStep, CurrentRoundStep, SimulationRoundsStep, InvestmentScheduleStep
+  - PlanEditor: Stepper (`data-testid="plan-stepper"`), step content (`data-testid="step-content-{1-5}"`), navigation buttons
+  - StepComponents: PlanTypeStep, StartingRoundStep, CurrentRoundStep, SimulationRoundsStep, InvestmentScheduleStep (each step has `data-testid="step-{1-5}"`)
+  - Navigation Buttons: Back (`data-testid="back-button"`), Next (`data-testid="next-button"`), Save (`data-testid="save-button"`)
   - Validation Modals: StartingRoundValidationModal, CurrentRoundValidationModal, SimulationRoundValidationModal, DefaultValueWarningModal
   - ConfirmationModal: Final review before creation
+* **API Integration**: Uses injected apiService for createSimulation/updateSimulation (mockable via dependency injection)
 * **State Persistence**: editingPlan saved to localStorage as ui.editingPlan
 * **Cases**:
     - E2E-EDITOR-001: Step 1 shows plan type selector (A,B,C,D,E,F,G,K,P,R)
@@ -133,10 +145,10 @@ This plan guides **re-implementation from scratch** of E2E tests for the fronten
     - E2E-EDITOR-009: Step 5 shows investment schedule table (round by round)
     - E2E-EDITOR-010: Investment fields accept numeric input only
     - E2E-EDITOR-011: Default investment values show DefaultValueWarningModal
-    - E2E-EDITOR-012: Back button navigates to previous step
+    - E2E-EDITOR-012: Back button navigates to previous step (verify with data-testid="back-button")
     - E2E-EDITOR-013: Cancel button returns to MainPage (shows confirmation if changes)
     - E2E-EDITOR-014: Create button shows ConfirmationModal with summary
-    - E2E-EDITOR-015: Confirm creation POSTs to /api/simulation/create
+    - E2E-EDITOR-015: Confirm creation POSTs to /api/simulation/create (verify network request)
     - E2E-EDITOR-016: Successful creation returns to MainPage, adds to list
     - E2E-EDITOR-017: Edit mode loads existing simulation data into form
     - E2E-EDITOR-018: Edit mode shows Update button instead of Create
@@ -209,15 +221,16 @@ This plan guides **re-implementation from scratch** of E2E tests for the fronten
 * **Why**: Admin users need policy management interface
 * **Frontend Target**: AdminPolicyPage.tsx
 * **AppController State**: page = "admin-policy"
-* **Real Component**: AdminPolicyPage with policy editor
+* **Real Component**: AdminPolicyPage with policy editor (uses injected apiService for all policy operations)
+* **API Integration**: AdminPolicyPage uses injected apiService for createPrivacyPolicy, updatePrivacyPolicy, publishPrivacyPolicy, getPrivacyPolicyAdmin (mockable)
 * **Cases**:
     - E2E-ADMIN-001: Admin user can navigate to policy page
     - E2E-ADMIN-002: Non-admin user cannot access policy page
     - E2E-ADMIN-003: Policy list displays all versions
     - E2E-ADMIN-004: Create policy button opens editor
     - E2E-ADMIN-005: Policy editor accepts markdown content
-    - E2E-ADMIN-006: Save button POSTs to /api/admin/privacy-policies
-    - E2E-ADMIN-007: Publish button makes policy active
+    - E2E-ADMIN-006: Save button POSTs to /api/admin/privacy-policies (verify network request)
+    - E2E-ADMIN-007: Publish button makes policy active (verify network request to publish endpoint)
     - E2E-ADMIN-008: Delete button removes draft policy
 
 ### 2.10 PWA Features (CAT-PWA)
