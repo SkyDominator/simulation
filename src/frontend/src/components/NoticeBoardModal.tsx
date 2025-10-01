@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
+import type { ApiServiceInterface } from "../services/ApiService";
 import type { Notice } from "../types/types";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -26,11 +27,13 @@ import { createSafeHtml } from "../utils/sanitizer";
 interface NoticeBoardModalProps {
   isOpen: boolean;
   onClose: () => void;
+  apiService?: ApiServiceInterface;
 }
 
 export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
   isOpen,
   onClose,
+  apiService = api,
 }) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
@@ -107,7 +110,7 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
   const reloadAndSelect = async (selectId?: string) => {
     try {
       setLoading(true);
-      const res = await api.listNotices();
+      const res = await apiService.listNotices();
       setNotices(res.notices);
       const toPick =
         selectId ||
@@ -146,7 +149,7 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
     if (!token) return;
     try {
       setAdminBusy(true);
-      const res = await api.createNotice(token, {
+      const res = await apiService.createNotice(token, {
         title: formTitle.trim(),
         content: formContent.trim(),
         pinned: formPinned,
@@ -165,7 +168,7 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
     if (!token || !activeNotice) return;
     try {
       setAdminBusy(true);
-      await api.updateNotice(token, activeNotice.id, {
+      await apiService.updateNotice(token, activeNotice.id, {
         title: formTitle.trim(),
         content: formContent.trim(),
         pinned: formPinned,
@@ -184,7 +187,7 @@ export const NoticeBoardModal: React.FC<NoticeBoardModalProps> = ({
     if (!token || !activeNotice) return;
     try {
       setAdminBusy(true);
-      await api.deleteNotice(token, activeNotice.id);
+      await apiService.deleteNotice(token, activeNotice.id);
       setConfirmOpen(false);
       await reloadAndSelect(undefined);
     } catch (e) {
