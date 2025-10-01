@@ -247,7 +247,7 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage, apiService =
 
   // Admin full editor rendering
   return (
-    <Box sx={{ p: { xs: 1.5, md: 3 }, maxWidth: 1000, mx: "auto" }}>
+    <Box sx={{ p: { xs: 1.5, md: 3 }, maxWidth: 1000, mx: "auto" }} data-testid="admin-policy-page">
       <Stack
         direction="row"
         alignItems="center"
@@ -399,6 +399,7 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage, apiService =
               onClick={createOrUpdate}
               variant="contained"
               disabled={!canSave || busy}
+              data-testid="save-policy"
             >
               {policyId ? "수정 저장" : "새로 만들기"}
             </Button>
@@ -407,6 +408,7 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage, apiService =
               variant="outlined"
               color="success"
               disabled={!policyId || busy}
+              data-testid="publish-policy"
             >
               게시
             </Button>

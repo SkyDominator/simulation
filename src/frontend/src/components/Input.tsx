@@ -8,6 +8,7 @@ interface InputProps {
   placeholder?: string;
   type?: string;
   className?: string;
+  "data-testid"?: string;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -17,6 +18,7 @@ export const Input: React.FC<InputProps> = ({
   placeholder,
   type = "text",
   className = "",
+  "data-testid": dataTestId,
 }) => {
   return (
     <TextField
@@ -29,6 +31,7 @@ export const Input: React.FC<InputProps> = ({
       onBlur={onBlur}
       placeholder={placeholder}
       className={className}
+      inputProps={{ "data-testid": dataTestId }}
     />
   );
 };

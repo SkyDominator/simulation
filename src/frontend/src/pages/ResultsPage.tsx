@@ -159,6 +159,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
         py: { xs: 2, md: 3 },
         width: "100%",
       }}
+      data-testid="results-page"
     >
       <Stack
         direction={{ xs: "column", md: "row" }}
@@ -189,6 +190,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
             variant="contained"
             color="inherit"
             onClick={() => setPage("main")}
+            data-testid="back-to-main"
           >
             돌아가기
           </Button>

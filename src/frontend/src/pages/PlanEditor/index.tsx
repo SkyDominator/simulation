@@ -670,6 +670,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
             setPage("main");
           }}
           className="bg-gray-200 text-black hover:bg-gray-300"
+          data-testid="cancel-button"
         >
           메인으로 돌아가기
         </Button>
