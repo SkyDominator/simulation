@@ -39,17 +39,17 @@ Once you are provided with the commit hashes or PR numbers above, get the change
 * For **code implementation**:
     * What WILL be changed.
 
-### Review & Refine loop
+### Asking user for refactorings
 
-Once you finished writing a plan, you will loop through the following steps until no issue, conflict (against the user instructions), or ambiguity is found.
+You MUST ask user to perform refactoring of the codebase if you find any of the following issues in the codebase before you can proceed with creating/modifying the plan:
 
-1. Review
-2. Refinement
-3. Goes back to Step 1, and repeat Steps 1~3
+[Refactoring criteria](/.github/instructions/plan/refactor.instructions.md)
+
+In such cases, you MUST notify user of the issues you found and ask user to perform the necessary refactorings before you can proceed with creating/modifying the plan.
 
 ### Format consistency (modifying the existing plans)
 
-When modifying the existing plans, maintain the structure, format, and the style used in the original text. After the suggested change was applied to the original contents, the contents structure and flow should be natural as it was created as it is, not modified interim. So, do not use the expressions that emphasize the changes you made in any way, unless explicitly instructed to do so. Provide the final output as if it was originally written that way.
+When modifying the existing plan files, follow the structure, format, and style of the original text. The final contents should be natural as it was created as it is after modification, not looking like modified interim.
 
 ### Completeness of a plan
 
@@ -60,4 +60,12 @@ When modifying the existing plans, maintain the structure, format, and the style
 
 ### The use of utilities
 
-Include the plan for the installation and the use of any utility (e.g., mocking libraries, test data builders, etc.) that you think necessary that facilitates correct, effective, and efficient testing in the plan file.
+Include the plan for the installation and the use of any utility (e.g., mocking libraries, test data builders, etc.) that you think necessary to facilitate correct, effective, and efficient implementation of the codes by the plan file.
+
+### Review & Refine loop
+
+Once you finished writing a plan, you will loop through the following steps until no issue, conflict (against the user instructions), or ambiguity is found.
+
+1. Review
+2. Refinement
+3. Goes back to Step 1, and repeat Steps 1~3
