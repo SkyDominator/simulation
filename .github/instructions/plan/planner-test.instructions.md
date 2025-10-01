@@ -10,6 +10,14 @@ This is the dedicated instructions to Planner Agent ONLY for **creating/modifyin
 
 Create implementation plans for **test code** (unit tests, integration tests, E2E tests, security tests) that validate production code changes or new features.
 
+## Sample Plans
+
+For the structure, format, style, and the level of details (the level of contents abstraction) of the plans, adhere to the following sample plans:
+
+* [Sample Plan 1](/docs/plans/test-code-v1/test-plan-03-frontend-smoke.md)
+* [Sample Plan 2](/docs/plans/test-code-v1/test-plan-01-backend-unit.md)
+
+
 ## Testing Principles & Requirements
 
 All test plans MUST adhere to these core principles:
@@ -51,13 +59,6 @@ All test plans MUST adhere to these core principles:
 - Mock external dependencies, not internal logic
 - Use MSW (Mock Service Worker) for API mocking in frontend tests
 - Create reusable mock factories and fixtures
-
-## Sample Plans
-
-For the structure, format, style, and the level of details (the level of contents abstraction) of the plans, adhere to the following sample plans:
-
-* [Sample Plan 1](/docs/plans/test-code-v1/test-plan-03-frontend-smoke.md)
-* [Sample Plan 2](/docs/plans/test-code-v1/test-plan-01-backend-unit.md)
 
 ## General Guidelines
 

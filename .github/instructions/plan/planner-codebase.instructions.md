@@ -85,7 +85,6 @@ Specify:
 - Configuration requirements
 - Usage examples in the implementation context
 
-
 ## Testability-First Principles
 
 All codebase implementation plans MUST consider testability from the beginning. Code should be designed and implemented to be easily testable.
