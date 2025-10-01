@@ -13,6 +13,165 @@
 2. **Test Isolation**: Each test independent with own DB state/mocks/fixtures
 3. **Fast Feedback**: Tests run <2min locally, fail fast on errors
 4. **Pragmatic Coverage**: 70-80% overall, 90%+ critical paths, skip trivial code
+5. **Dependency Injection**: Use DI patterns for all external dependencies (DB, APIs, file system)
+6. **Mock External Dependencies**: Use pytest-mock, monkeypatch, responses for mocking
+7. **Decouple Code**: Separate concerns with interfaces/protocols for testability
+8. **CI Optimized**: Fast test execution, parallel runs, no unnecessary I/O
+
+## Testability Architecture
+
+### 1. Dependency Injection for All External Dependencies
+
+**Rule**: Inject databases, API clients, file systems, external services.
+
+```python
+# ✅ Good - Injectable dependencies
+from typing import Protocol
+
+class IDatabase(Protocol):
+    def query(self, sql: str) -> list: ...
+    def execute(self, sql: str) -> None: ...
+
+class UserRepository:
+    def __init__(self, db: IDatabase):
+        self.db = db  # Injected, easy to mock
+    
+    def find_by_email(self, email: str) -> User | None:
+        result = self.db.query("SELECT * FROM users WHERE email = ?", (email,))
+        return User(**result[0]) if result else None
+
+# In tests: Mock the database
+class MockDatabase:
+    def query(self, sql: str) -> list:
+        return [{"id": 1, "email": "test@example.com"}]
+
+repo = UserRepository(db=MockDatabase())
+
+# ❌ Bad - Hard-coded dependency
+from app.database import db  # Global import, can't mock
+
+class UserRepository:
+    def find_by_email(self, email: str):
+        return db.query("SELECT * FROM users WHERE email = ?", (email,))  # Tightly coupled
+```
+
+### 2. Use Protocols/Interfaces for Decoupling
+
+**Rule**: Define interfaces for service boundaries, enable mocking and polymorphism.
+
+```python
+from typing import Protocol, runtime_checkable
+
+# ✅ Good - Interface-based design
+@runtime_checkable
+class IEmailService(Protocol):
+    def send_email(self, to: str, subject: str, body: str) -> bool: ...
+
+class SMTPEmailService:
+    """Real implementation using SMTP"""
+    def send_email(self, to: str, subject: str, body: str) -> bool:
+        # Send via SMTP
+        return True
+
+class UserService:
+    def __init__(self, email_service: IEmailService):
+        self.email_service = email_service
+    
+    def register_user(self, email: str):
+        # ... registration logic
+        self.email_service.send_email(email, "Welcome", "Thanks for signing up!")
+
+# In tests: Mock implementation
+class MockEmailService:
+    def send_email(self, to: str, subject: str, body: str) -> bool:
+        return True  # No actual email sent
+
+service = UserService(email_service=MockEmailService())
+
+# ❌ Bad - Direct class coupling
+class UserService:
+    def __init__(self):
+        self.email_service = SMTPEmailService()  # Can't swap in tests
+```
+
+### 3. Mocking with pytest-mock and monkeypatch
+
+**Rule**: Use pytest fixtures for mocking, prefer monkeypatch for external calls.
+
+```python
+import pytest
+from unittest.mock import Mock, patch
+
+# ✅ Good - Using pytest-mock
+@pytest.fixture
+def mock_api_client(mocker):
+    """Mock external API client"""
+    mock_client = mocker.Mock()
+    mock_client.get.return_value = {"data": "test"}
+    return mock_client
+
+def test_fetch_data(mock_api_client):
+    service = DataService(api_client=mock_api_client)
+    result = service.fetch_data()
+    
+    mock_api_client.get.assert_called_once_with("/data")
+    assert result == {"data": "test"}
+
+# ✅ Good - Using monkeypatch for external calls
+def test_external_api_call(monkeypatch):
+    """Mock requests.get"""
+    mock_response = Mock()
+    mock_response.json.return_value = {"status": "ok"}
+    
+    monkeypatch.setattr("requests.get", lambda *args, **kwargs: mock_response)
+    
+    result = fetch_external_data()
+    assert result["status"] == "ok"
+
+# ❌ Bad - No mocking, real network call
+def test_fetch_data():
+    result = fetch_external_data()  # Makes real HTTP request
+    assert result is not None
+```
+
+### 4. Separate Pure Business Logic from I/O
+
+**Rule**: Extract pure functions, test separately from I/O operations.
+
+```python
+# ✅ Good - Pure logic separated
+def calculate_discount(price: Decimal, discount_rate: Decimal) -> Decimal:
+    """Pure function - easy to test"""
+    if discount_rate < 0 or discount_rate > 1:
+        raise ValueError("Discount rate must be between 0 and 1")
+    return price * discount_rate
+
+def apply_discount_to_order(order_id: str, discount_rate: Decimal, db: IDatabase) -> Order:
+    """I/O operation uses pure function"""
+    order = db.get_order(order_id)
+    discount_amount = calculate_discount(order.total, discount_rate)
+    order.discount = discount_amount
+    db.save_order(order)
+    return order
+
+# Test pure function without mocking
+def test_calculate_discount():
+    assert calculate_discount(Decimal("100"), Decimal("0.1")) == Decimal("10")
+
+# Test I/O operation with mocked DB
+def test_apply_discount(mock_db):
+    result = apply_discount_to_order("123", Decimal("0.1"), mock_db)
+    assert result.discount == Decimal("10")
+
+# ❌ Bad - Logic mixed with I/O
+def apply_discount_to_order(order_id: str, discount_rate: Decimal):
+    order = db.get_order(order_id)  # I/O
+    if discount_rate < 0 or discount_rate > 1:  # Logic
+        raise ValueError("Invalid rate")
+    order.discount = order.total * discount_rate  # Logic
+    db.save_order(order)  # I/O
+    return order
+```
 
 ## Test Pyramid for Small Apps
 

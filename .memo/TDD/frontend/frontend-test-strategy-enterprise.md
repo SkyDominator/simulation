@@ -11,6 +11,10 @@
 2. **Compliance First**: Meet regulatory requirements (GDPR, HIPAA, SOC2)
 3. **Platform Engineering**: Testing as a service for all teams
 4. **Continuous Verification**: Every commit is production-ready
+5. **Testability Architecture**: Add `data-testid` to ALL components organization-wide
+6. **Dependency Injection Standard**: Mandate DI patterns and interfaces for testability
+7. **Mock-First Development**: Use MSW for all API mocking, zero real network calls
+8. **CI Performance**: Disable video/traces/screenshots in CI, enable only for debugging
 
 ## Enterprise Test Pyramid
 
@@ -115,6 +119,58 @@ Testing CoE/
 | Performance | C | R,A | C | I |
 | Security | C | R | R,A | I |
 | Monitoring | I | C | R,A | I |
+
+## Testability Standards (Organization-wide MANDATORY)
+
+### 1. Test ID Convention
+
+**Rule**: Every interactive element MUST have a `data-testid` attribute.
+
+```typescript
+// ✅ REQUIRED
+<button data-testid="auth-login-button">Login</button>
+<input data-testid="auth-email-input" />
+<form data-testid="checkout-form">...</form>
+
+// ❌ PROHIBITED - Fails PR checks
+<button>Submit</button>
+<input type="email" />
+```
+
+**Enforcement**: ESLint rule + PR checklist + code review automation
+
+### 2. Dependency Injection
+
+**Rule**: All dependencies injected, never imported directly.
+
+```typescript
+// ✅ CORRECT
+export const UserService = ({ apiClient }: { apiClient: IApiClient }) => {
+  return { fetchUser: () => apiClient.get('/users') };
+};
+
+// ❌ PROHIBITED
+import { apiClient } from './api';  // Can't mock
+```
+
+### 3. MSW for API Mocking
+
+**Rule**: Use MSW for ALL API mocking, no axios-mock-adapter.
+
+### 4. CI-Optimized E2E
+
+**Rule**: Disable video/traces/screenshots in CI.
+
+```typescript
+// playwright.config.ts
+export default defineConfig({
+  use: {
+    trace: process.env.CI ? 'off' : 'on-first-retry',      // 30% faster
+    video: process.env.CI ? 'off' : 'on-first-retry',      // 50% faster
+    screenshot: process.env.CI ? 'off' : 'only-on-failure', // 10% faster
+  },
+});
+```
 
 ## Test Implementation Standards
 

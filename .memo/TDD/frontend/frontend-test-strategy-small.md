@@ -11,10 +11,107 @@
 2. **Test Isolation**: Each test independent with own storage/session/data/cookies
 3. **Fast Feedback**: Tests run <2min locally, fail fast on errors
 4. **Pragmatic Coverage**: 60-70% overall, 90%+ critical paths, skip trivial code (getters/setters)
+5. **Testability First**: Add `data-testid` to ALL components for reliable E2E/integration tests
+6. **Dependency Injection**: Use DI patterns and decoupled code for easy mocking
+7. **Mock External Dependencies**: Use MSW for API mocking, avoid real network calls in tests
+8. **CI Optimized**: Disable video recording, traces, and screenshots in CI for faster execution
+
+## Testability Architecture
+
+### 1. Add Test IDs to ALL Components
+
+**Rule**: Every interactive element MUST have a `data-testid` attribute.
+
+```typescript
+// ✅ Good - All elements have test IDs
+<button data-testid="submit-button" onClick={handleSubmit}>
+  Submit
+</button>
+
+<input 
+  data-testid="email-input"
+  type="email" 
+  value={email}
+  onChange={(e) => setEmail(e.target.value)}
+/>
+
+<form data-testid="login-form" onSubmit={handleLogin}>
+  <input data-testid="username-input" />
+  <input data-testid="password-input" />
+  <button data-testid="login-submit">Login</button>
+</form>
+
+// ❌ Bad - No test IDs
+<button onClick={handleSubmit}>Submit</button>
+<input type="email" value={email} />
+```
+
+### 2. Dependency Injection for Testability
+
+**Rule**: Inject dependencies via props/context, not import directly.
+
+```typescript
+// ✅ Good - Injectable API client
+interface UserServiceProps {
+  apiClient: ApiClient;
+}
+
+export const UserService = ({ apiClient }: UserServiceProps) => {
+  const fetchUsers = () => apiClient.get('/users');
+  return { fetchUsers };
+};
+
+// In tests: mock the apiClient
+const mockClient = { get: vi.fn() };
+const service = UserService({ apiClient: mockClient });
+
+// ❌ Bad - Hard-coded dependency
+import { apiClient } from './api';
+export const UserService = () => {
+  const fetchUsers = () => apiClient.get('/users'); // Can't mock in tests
+};
+```
+
+### 3. Decoupled Code for Mocking
+
+**Rule**: Separate concerns, use interfaces, avoid tight coupling.
+
+```typescript
+// ✅ Good - Decoupled, testable
+interface IAuthService {
+  login(email: string, password: string): Promise<User>;
+  logout(): Promise<void>;
+}
+
+interface Props {
+  authService: IAuthService;
+}
+
+export const LoginForm = ({ authService }: Props) => {
+  const handleSubmit = async () => {
+    await authService.login(email, password);
+  };
+};
+
+// In tests: provide mock implementation
+const mockAuthService: IAuthService = {
+  login: vi.fn().mockResolvedValue({ id: 1, name: 'Test' }),
+  logout: vi.fn().mockResolvedValue(undefined),
+};
+
+// ❌ Bad - Tightly coupled
+import { login } from './auth'; // Can't easily mock
+
+export const LoginForm = () => {
+  const handleSubmit = async () => {
+    await login(email, password); // Direct function call
+  };
+};
+```
 
 ## Test Pyramid for Small Apps
 
-```
+```text
          E2E (5%)        # Critical user journeys only
         /        \
     Integration (25%)    # API + component interactions
@@ -62,14 +159,39 @@ describe('Payment Logic', () => {
 ```
 
 #### 2. Happy Path E2E (1-3 tests)
+
+**Testability Requirements**:
+
+- **Add `data-testid` to ALL interactive elements**: buttons, inputs, forms, links
+- **Use semantic selectors first**: `getByRole`, `getByLabelText`, then fall back to `data-testid`
+- **CI Configuration**: Disable video, traces, and screenshots for faster execution
+
 ```typescript
-// Core user journeys:
-test('User can complete purchase', async ({ page }) => {
-  // Login → Browse → Add to Cart → Checkout → Confirm
+// playwright.config.ts - CI optimized
+export default defineConfig({
+  use: {
+    trace: 'off',          // Disabled for CI speed
+    video: 'off',          // Disabled for CI speed
+    screenshot: 'off',     // Disabled for CI speed
+  },
 });
 
-test('User can sign up and access dashboard', async ({ page }) => {
-  // Register → Verify Email → Login → See Dashboard
+// Core user journeys using data-testid:
+test('User can complete purchase', async ({ page }) => {
+  // Use data-testid for reliable selectors
+  await page.click('[data-testid="login-button"]');
+  await page.fill('[data-testid="email-input"]', 'user@example.com');
+  await page.fill('[data-testid="password-input"]', 'password123');
+  await page.click('[data-testid="submit-button"]');
+  
+  // Navigate and interact
+  await page.click('[data-testid="product-card-1"]');
+  await page.click('[data-testid="add-to-cart"]');
+  await page.click('[data-testid="checkout-button"]');
+  await page.click('[data-testid="confirm-order"]');
+  
+  // Assert success
+  await expect(page.locator('[data-testid="order-confirmation"]')).toBeVisible();
 });
 
 // Tool: Playwright
@@ -96,8 +218,32 @@ describe('App Components', () => {
 ### P1 - SHOULD HAVE (Month 1)
 
 #### 4. API Integration Tests
+
+**Dependency Injection & Mocking**:
+
+- **Use MSW (Mock Service Worker)** for all API mocking
+- **No real network calls** in tests
+- **Inject API clients** via props/context for testability
+
 ```typescript
-// Mock backend responses, test error handling
+// Setup MSW handlers
+import { rest } from 'msw';
+import { setupServer } from 'msw/node';
+
+const server = setupServer(
+  rest.get('/api/users', (req, res, ctx) => {
+    return res(ctx.json({ users: [{ id: 1, name: 'John' }] }));
+  }),
+  rest.post('/api/login', (req, res, ctx) => {
+    return res(ctx.status(401), ctx.json({ error: 'Invalid credentials' }));
+  })
+);
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+// Test with mocked API
 import { it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 

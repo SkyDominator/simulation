@@ -14,6 +14,10 @@
 4. **Performance Budget**: Tests <10min CI, app LCP <2.5s, FID <100ms
 5. **Test Isolation**: Independent tests with own data/mocks/contexts
 6. **User-Facing Tests**: Test behavior not implementation details
+7. **Testability First**: Add `data-testid` to ALL components for reliable selectors
+8. **Dependency Injection**: Use DI patterns and interfaces for easy mocking
+9. **Mock External Dependencies**: Use MSW for API mocking, no real network calls
+10. **CI Optimized E2E**: Disable video/traces/screenshots in CI for speed
 
 ## Enhanced Test Pyramid
 
@@ -73,17 +77,41 @@ Static Analysis (10%)
 ```
 
 ### 4. E2E Tests (Core journeys + edge cases)
+
+**Testability & Performance**:
+
+- **data-testid on ALL elements**: Consistent, reliable selectors
+- **CI optimized**: No video/traces/screenshots for faster execution
+- **Use MSW** for stable, fast API mocking
+
 ```typescript
-// Critical paths (run on every PR):
-- Complete user registration
-- Core feature workflow
-- Payment/checkout process
+// playwright.config.ts - CI optimized
+export default defineConfig({
+  use: {
+    trace: 'off',          // ❌ Disabled for CI speed
+    video: 'off',          // ❌ Disabled for CI speed  
+    screenshot: 'off',     // ❌ Disabled for CI speed
+  },
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+  ],
+});
+
+// Critical paths (run on every PR) with data-testid:
+test('Complete user registration', async ({ page }) => {
+  await page.click('[data-testid="register-button"]');
+  await page.fill('[data-testid="email-input"]', 'user@example.com');
+  await page.fill('[data-testid="password-input"]', 'SecurePass123!');
+  await page.click('[data-testid="submit-button"]');
+  await expect(page.locator('[data-testid="success-message"]')).toBeVisible();
+});
 
 // Extended suite (nightly):
-- Cross-browser tests
-- Mobile responsive tests
-- Performance tests
-- Accessibility full audit
+- Cross-browser tests (Chrome, Safari, Firefox)
+- Mobile responsive tests (iOS, Android viewports)
+- Performance tests (Lighthouse CI)
+- Accessibility full audit (axe-core)
 ```
 
 ## Team Organization
