@@ -83,6 +83,15 @@
     1. manual check of load times
     2. verify offline mode works for PWA
 
+## Test methodologies
+
+* Add test data builder pattern for complex objects
+* Cover more edge cases (concurrent updates, offline scenarios)
+* Use mocking libraries (MSW for frontend, pytest-mock for backend)
+* Reduce fixture complexity using pytest-mock
+* Use coverage tools to identify gaps
+* Prioritize tests based on risk/impact
+
 
 # Common Bug Types in React Related to User Flows (UX Flow)
 
