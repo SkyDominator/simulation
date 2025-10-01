@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { TestHelpers, APIHelpers } from "../utils/test-helpers";
+import { TestHelpers, APIHelpers, initE2EMode } from "../utils/test-helpers";
 import { TEST_USERS } from "../fixtures/test-data";
 import { loginTestUser } from "../utils/auth-helpers";
 
@@ -12,6 +12,7 @@ test.describe("Error Handling and Recovery", () => {
   let helpers: TestHelpers;
 
   test.beforeEach(async ({ page }) => {
+    await initE2EMode(page);
     helpers = new TestHelpers(page);
   });
 

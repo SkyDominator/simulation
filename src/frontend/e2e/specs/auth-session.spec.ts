@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { TestHelpers, APIHelpers } from "../utils/test-helpers";
+import { TestHelpers, APIHelpers, initE2EMode } from "../utils/test-helpers";
 import {
   loginTestUser,
   logoutTestUser,
@@ -15,6 +15,7 @@ test.describe("Authentication & Session Management", () => {
   let helpers: TestHelpers;
 
   test.beforeEach(async ({ page }) => {
+    await initE2EMode(page);
     helpers = new TestHelpers(page);
     await APIHelpers.mockOTPSuccess(page);
     await APIHelpers.mockConsentSuccess(page);

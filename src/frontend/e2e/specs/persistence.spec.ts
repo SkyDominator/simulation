@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { APIHelpers } from "../utils/test-helpers";
+import { APIHelpers, initE2EMode } from "../utils/test-helpers";
 import { loginTestUser } from "../utils/auth-helpers";
 
 /**
@@ -9,6 +9,7 @@ import { loginTestUser } from "../utils/auth-helpers";
 
 test.describe("State Persistence and Recovery", () => {
   test.beforeEach(async ({ page }) => {
+    await initE2EMode(page);
     await APIHelpers.mockSimulationAPI(page);
     await APIHelpers.mockNoticesAPI(page);
   });

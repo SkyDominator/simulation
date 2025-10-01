@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { TestHelpers, APIHelpers } from "../utils/test-helpers";
+import { TestHelpers, APIHelpers, initE2EMode } from "../utils/test-helpers";
 import { loginTestUser } from "../utils/auth-helpers";
 import { VIEWPORT_SIZES, TEST_USERS } from "../fixtures/test-data";
 
@@ -12,6 +12,7 @@ test.describe("Mobile & Responsive Design", () => {
   let helpers: TestHelpers;
 
   test.beforeEach(async ({ page }) => {
+    await initE2EMode(page);
     helpers = new TestHelpers(page);
     await APIHelpers.mockOTPSuccess(page);
     await APIHelpers.mockConsentSuccess(page);
