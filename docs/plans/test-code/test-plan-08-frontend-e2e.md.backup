@@ -700,24 +700,20 @@ The `playwright.config.ts` automatically starts the preview server via `webServe
 - **Desktop**: 1200x800 (Standard laptop)
 - **Large Desktop**: 1920x1080 (Full HD)
 
-### 6.4 Test Count Summary (Based on Real Frontend)
+### 6.4 Test Count Summary
 
-| Category | Test Cases | Priority | Source |
-|----------|------------|----------|--------|
-| Pre-Auth Journey | 12 | Critical | WhitelistCheckPage, OtpVerificationPage, ConsentPage, LoginPage |
-| Authentication & Session | 8 | Critical | useAuth hook, Supabase client, AppController |
-| Main Dashboard | 16 | Critical | MainPage, SimulationTable, modals |
-| Plan Editor Wizard | 20 | Critical | PlanEditor, StepComponents, validation modals |
-| Results Display | 7 | High | ResultsPage, result persistence |
-| Error Handling | 10 | High | API error handling, UI recovery |
-| Responsive & Mobile | 10 | High | MUI breakpoints, LandscapeEnforcer |
-| State Persistence | 8 | High | localStorage via persist utils |
-| Admin Features | 8 | Medium | AdminPolicyPage |
-| PWA Features | 8 | Medium | Manifest, service worker |
+| Category | Test Count | Priority |
+|----------|------------|----------|
+| Onboarding | 10 | Critical |
+| Simulation Management | 15 | Critical |
+| Error Handling | 7 | High |
+| Mobile/Responsive | 8 | High |
+| PWA Features | 6 | Medium |
+| Session Persistence | 6 | High |
+| Browser Compatibility | 7 | High |
+| Navigation/Routing | 6 | Medium |
 
-**Total E2E Test Cases: 107** (based on actual frontend structure)
-
-**Note**: This is a revision from scratch. Existing E2E test files are invalid (over-mocked).
+**Total E2E Test Cases: 65**
 
 --------------------------------------------------------------------------------
 ## 7. Test Summary
@@ -725,66 +721,52 @@ The `playwright.config.ts` automatically starts the preview server via `webServe
 
 ### 7.1 Current Implementation Status
 
-**⚠️ IMPORTANT**: Existing E2E tests in `src/frontend/e2e/specs/` are **NOT VALID**:
-- Over-mocked: Don't test real frontend components
-- Incorrect selectors: Don't match actual data-testid or component structure
-- Wrong approach: Mock components instead of mocking at network layer
+**Implemented (as of current commit):**
+- ✅ Onboarding flow tests (3 cases in `onboarding.spec.ts`)
+- ✅ Basic simulation tests (2 cases in `simulation-flow.spec.ts`)
+- ✅ Error handling basics (1 case in `error-handling.spec.ts`)
+- ✅ Mobile responsive tests (2 cases in `mobile.spec.ts`)
+- ✅ PWA manifest test (1 case in `pwa.spec.ts`)
+- ✅ Session persistence tests (2 cases in `persistence.spec.ts`)
 
-**This plan guides re-implementation from scratch** based on:
-- **Real frontend pages** in `src/frontend/src/pages/`
-- **Real components** in `src/frontend/src/components/`
-- **Real AppController** orchestration and state management
-- **Real API calls** via `services/api.ts` (mocked at network boundary)
-- **Real auth flow** via `useAuth()` hook
+**Total Implemented: ~11 test cases**
 
-**To Implement: 107 test cases** across 10 categories
+**Remaining to Implement:**
+- ⏸️ Additional simulation CRUD scenarios (13 cases)
+- ⏸️ Comprehensive error recovery paths (6 cases)
+- ⏸️ Extended mobile interactions (6 cases)
+- ⏸️ PWA service worker and offline behavior (5 cases)
+- ⏸️ State persistence edge cases (4 cases)
+- ⏸️ Cross-browser specific tests (7 cases)
+- ⏸️ Navigation and routing scenarios (6 cases)
 
-### 7.2 Implementation Approach
+**Total Remaining: ~54 test cases**
 
-**Step 1: Setup Infrastructure**
-- Create real selectors based on actual frontend components
-- Implement API mocking at Playwright route level
-- Create helpers that interact with real MUI components
+### 7.2 Test Execution Time
 
-**Step 2: Implement Critical Paths (Priority Order)**
-1. Pre-Auth Journey (12 cases) - test real onboarding flow
-2. Authentication & Session (8 cases) - test real useAuth() integration
-3. Main Dashboard (16 cases) - test real MainPage and SimulationTable
-4. Plan Editor Wizard (20 cases) - test real PlanEditor multi-step form
-5. Results Display (7 cases) - test real ResultsPage
+**Current benchmarks (local development, single browser):**
+- Onboarding suite: ~15 seconds
+- Simulation suite: ~10 seconds
+- Error handling: ~5 seconds
+- Mobile tests: ~8 seconds
+- PWA tests: ~3 seconds
+- Persistence tests: ~7 seconds
 
-**Step 3: Implement Support Features**
-6. Error Handling (10 cases) - test real error boundaries and alerts
-7. Responsive & Mobile (10 cases) - test real MUI breakpoints
-8. State Persistence (8 cases) - test real localStorage keys
-9. Admin Features (8 cases) - test real AdminPolicyPage
-10. PWA Features (8 cases) - test real manifest and service worker
+**Total: ~48 seconds for current test suite**
 
-### 7.3 Key Differences from Invalid Existing Tests
+**Projected full suite time:**
+- Single browser: ~3-4 minutes
+- All browsers (6 projects): ~15-20 minutes
+- CI with retries: ~25-30 minutes
 
-| Aspect | ❌ Invalid Existing Tests | ✅ This Plan (Real Frontend) |
-|--------|--------------------------|------------------------------|
-| **Target** | Mocked components | Real pages in src/pages/ |
-| **Selectors** | Generic text matchers | Actual data-testid from components |
-| **State** | Mocked hooks | Real useAuth(), real localStorage |
-| **API** | Component-level mocks | Network-layer route interception |
-| **Components** | Test helpers | Real Material-UI components |
-| **Flow** | Linear test scripts | Real AppController page transitions |
+### 7.3 Known Limitations
 
-### 7.4 Validation Checklist
-
-Before accepting any E2E test implementation, verify:
-
-- [ ] Uses actual data-testid from frontend components
-- [ ] Tests real page transitions via AppController
-- [ ] Mocks only at network layer (Playwright route interception)
-- [ ] Verifies real localStorage keys (ui.page, ui.editingPlan, etc.)
-- [ ] Tests real MUI components (Stepper, TextField, Button, etc.)
-- [ ] Validates real API service calls
-- [ ] Checks real auth state from useAuth() hook
-- [ ] Tests real responsive behavior (MUI breakpoints xs, md)
-
-
+1. **Authentication Mocking**: E2E tests mock Supabase OAuth instead of testing real OAuth flow
+2. **API Mocking**: Backend API calls are mocked at network layer, not testing real backend
+3. **SMS Verification**: OTP SMS sending is mocked, not testing actual SMS provider
+4. **Offline Mode**: Full offline functionality not yet implemented in tests
+5. **Performance**: E2E tests don't measure performance metrics (LCP, FID, CLS)
+6. **Accessibility**: A11y testing not included in E2E suite (covered separately)
 
 --------------------------------------------------------------------------------
 ## 8. E2E Testing Principles
@@ -884,28 +866,3 @@ Before accepting any E2E test implementation, verify:
 **Test Implementation Status**: ~17% complete (11/65 test cases)  
 **Target Coverage**: 65+ E2E test cases across 8 categories  
 **Browser Support**: Chrome, Firefox, Safari, Edge + Mobile variants
-
---------------------------------------------------------------------------------
-
-**⚠️ CRITICAL NOTE ON EXISTING E2E TESTS**
-
-The existing E2E test files in `src/frontend/e2e/specs/` should be **discarded and rewritten from scratch**.
-
-**Why they are invalid:**
-1. **Over-mocked**: Tests mock components/hooks instead of testing real UI
-2. **Wrong selectors**: Don't use actual data-testid from real components
-3. **Incorrect state**: Mock useAuth() instead of testing real Supabase integration
-4. **Missing real flows**: Don't test AppController page transitions
-5. **Component-level mocks**: Mock at wrong layer (should be network only)
-
-**This plan is based on:**
-- ✅ Real frontend structure in `src/frontend/src/`
-- ✅ Actual pages: WhitelistCheckPage, MainPage, PlanEditor, etc.
-- ✅ Actual components: SimulationTable, NoticeBoardModal, MemoModal, etc.
-- ✅ Actual state management: AppController, useAuth(), localStorage
-- ✅ Actual API calls: services/api.ts (mock at network boundary only)
-
-**Document Version**: 2.0 (Revised for real frontend testing)
-**Last Updated**: 2025-01-15
-**Status**: Ready for implementation from scratch
-**Target**: 107 test cases based on actual frontend codebase
