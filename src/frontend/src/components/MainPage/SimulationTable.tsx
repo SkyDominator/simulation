@@ -76,14 +76,14 @@ const SimulationTable: React.FC<SimulationTableProps> = ({
 
   if (plans.length === 0) {
     return (
-      <Box py={4} textAlign="center" color="text.secondary">
+      <Box py={4} textAlign="center" color="text.secondary" data-testid="empty-state">
         아직 생성된 플랜이 없습니다. '새 시뮬레이션' 버튼을 눌러 시작하세요.
       </Box>
     );
   }
 
   return (
-    <TableContainer component={Paper} variant="outlined">
+    <TableContainer component={Paper} variant="outlined" data-testid="simulation-table">
       <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>
@@ -243,7 +243,7 @@ const SimulationTable: React.FC<SimulationTableProps> = ({
                           size="small"
                           onClick={() => handleViewResults(plan)}
                           disabled={isRunning}
-                          data-testid={`run-${plan.simulation_id}`}
+                          data-testid={`results-${plan.simulation_id}`}
                         >
                           <PlayArrowIcon fontSize="small" />
                         </IconButton>

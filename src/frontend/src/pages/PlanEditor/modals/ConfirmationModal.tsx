@@ -47,6 +47,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           onClick={onConfirm}
           disabled={isLoading}
           className="bg-blue-600 hover:bg-blue-700"
+          data-testid="create-button"
         >
           {isLoading ? "처리 중..." : "최종 저장"}
         </Button>

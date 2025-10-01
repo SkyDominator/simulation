@@ -297,7 +297,7 @@ const MainPage: React.FC<MainPageProps> = ({
         >
           <Stack direction="row" spacing={1}>
             {openNotice && (
-              <Button onClick={openNotice} variant="contained" color="warning">
+              <Button onClick={openNotice} variant="contained" color="warning" data-testid="notice-button">
                 공지사항
               </Button>
             )}
@@ -306,6 +306,7 @@ const MainPage: React.FC<MainPageProps> = ({
               variant="contained"
               color="info"
               startIcon={<HelpOutlineIcon />}
+              data-testid="help-button"
             >
               문의하기
             </Button>
@@ -331,6 +332,7 @@ const MainPage: React.FC<MainPageProps> = ({
               onClick={() => setPage("admin-policy")}
               variant="outlined"
               color="secondary"
+              data-testid="admin-button"
               // startIcon={<PolicyIcon />}
             >
               개인 정보 보호 정책
