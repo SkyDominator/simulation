@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { TestHelpers, APIHelpers } from "../utils/test-helpers";
+import { TestHelpers, APIHelpers, initE2EMode } from "../utils/test-helpers";
 import { loginTestUser } from "../utils/auth-helpers";
 
 /**
@@ -11,6 +11,7 @@ test.describe("Main Dashboard - Simulation List", () => {
   let helpers: TestHelpers;
 
   test.beforeEach(async ({ page }) => {
+    await initE2EMode(page); // Initialize E2E mode first
     helpers = new TestHelpers(page);
     await loginTestUser(page);
     await APIHelpers.mockSimulationAPI(page);

@@ -1,6 +1,16 @@
 import { Page, expect } from "@playwright/test";
 
 /**
+ * Initialize E2E mode for the page
+ * This should be called in beforeEach hooks before any other setup
+ */
+export async function initE2EMode(page: Page) {
+  await page.addInitScript(() => {
+    (window as any).__E2E_MODE__ = true;
+  });
+}
+
+/**
  * Test helpers for common page interactions
  */
 export class TestHelpers {

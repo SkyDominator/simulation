@@ -10,6 +10,9 @@ import { Page } from "@playwright/test";
 export async function loginTestUser(page: Page) {
   // Mock Supabase auth for testing
   await page.addInitScript(() => {
+    // Set E2E mode flag
+    (window as any).__E2E_MODE__ = true;
+
     // Mock successful authentication
     window.localStorage.setItem(
       "supabase.auth.token",
@@ -35,6 +38,9 @@ export async function loginTestUser(page: Page) {
 
   try {
     await page.evaluate(() => {
+      // Set E2E mode flag
+      (window as any).__E2E_MODE__ = true;
+
       window.localStorage.setItem(
         "supabase.auth.token",
         JSON.stringify({
@@ -76,6 +82,9 @@ export async function logoutTestUser(page: Page) {
  */
 export async function loginAdminUser(page: Page) {
   await page.addInitScript(() => {
+    // Set E2E mode flag
+    (window as any).__E2E_MODE__ = true;
+
     window.localStorage.setItem(
       "supabase.auth.token",
       JSON.stringify({
@@ -101,6 +110,9 @@ export async function loginAdminUser(page: Page) {
 
   try {
     await page.evaluate(() => {
+      // Set E2E mode flag
+      (window as any).__E2E_MODE__ = true;
+
       window.localStorage.setItem(
         "supabase.auth.token",
         JSON.stringify({
