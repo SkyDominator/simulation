@@ -173,7 +173,7 @@ const SimulationTable: React.FC<SimulationTableProps> = ({
                 : memoDisplay;
 
             return (
-              <TableRow key={plan.simulation_id} hover selected={isSelected}>
+              <TableRow key={plan.simulation_id} hover selected={isSelected} data-testid={`simulation-row-${idx}`}>
                 <TableCell padding="checkbox">
                   <Tooltip
                     title={
@@ -191,6 +191,7 @@ const SimulationTable: React.FC<SimulationTableProps> = ({
                           handleSimulationSelection(plan.simulation_id)
                         }
                         disabled={!canSelect && !isSelected}
+                        data-testid={`simulation-checkbox-${plan.simulation_id}`}
                       />
                     </span>
                   </Tooltip>
@@ -217,6 +218,7 @@ const SimulationTable: React.FC<SimulationTableProps> = ({
                       variant={plan.memo ? "filled" : "outlined"}
                       color={plan.memo ? "primary" : "default"}
                       sx={{ maxWidth: 200 }}
+                      data-testid={`memo-chip-${plan.simulation_id}`}
                     />
                   </Tooltip>
                 </TableCell>
@@ -228,6 +230,7 @@ const SimulationTable: React.FC<SimulationTableProps> = ({
                           color="primary"
                           size="small"
                           onClick={() => onEditPlan(plan)}
+                          data-testid={`edit-${plan.simulation_id}`}
                         >
                           <EditIcon fontSize="small" />
                         </IconButton>
@@ -240,6 +243,7 @@ const SimulationTable: React.FC<SimulationTableProps> = ({
                           size="small"
                           onClick={() => handleViewResults(plan)}
                           disabled={isRunning}
+                          data-testid={`run-${plan.simulation_id}`}
                         >
                           <PlayArrowIcon fontSize="small" />
                         </IconButton>
@@ -252,6 +256,7 @@ const SimulationTable: React.FC<SimulationTableProps> = ({
                           size="small"
                           onClick={() => openDeleteConfirm(plan, idx + 1)}
                           disabled={isDeleting}
+                          data-testid={`delete-${plan.simulation_id}`}
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
