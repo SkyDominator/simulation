@@ -1,5 +1,6 @@
+# Test Strategy Overview
 
-# Enterpise-level test codes
+## Enterprise-level test codes
 
 1. backend
     1. unit test
@@ -51,9 +52,9 @@
     2. automated regression suite
     3. coverage reports (backend 80%+, frontend 70%+)
 
-# Small App Test Strategy
+## Small App Test Strategy
 
-## MUST-HAVE Tests (Critical Path)
+### MUST-HAVE Tests (Critical Path)
 
 1. **Backend essentials**
    - Unit tests for business logic (OTP, simulation, JWT)
@@ -73,7 +74,7 @@
     1. pre-commit hooks (linting, basic tests)
     2. basic CI pipeline (run tests on PR)
 
-## If time allows: (Non-Critical Path)
+### If time allows: (Non-Critical Path)
 
 5. monitoring
     1. basic error logging (console or simple service)
@@ -93,7 +94,7 @@
 * Prioritize tests based on risk/impact
 
 
-# Common Bug Types in React Related to User Flows (UX Flow)
+## Common Bug Types in React Related to User Flows (UX Flow)
 
 ## 1. Routing Bugs
 
@@ -130,7 +131,7 @@
 - **Token expiration not handled**: Session expired but user continues until an API call fails.
 - **Role mismatch**: Non-admin users can enter admin pages, or admins are blocked incorrectly.
 
-# React User Flow Bug Types (for Test Checklist)
+## React User Flow Bug Types (for Test Checklist)
 
 ## 1. Routing
 
@@ -168,23 +169,21 @@
 - [ ] Ensure role-based access works (admins vs regular users).
 - [ ] Confirm error messages appear for unauthorized access.
 
----
+## Tools for User Flow Tracking & Bug Detection
 
-# Tools for User Flow Tracking & Bug Detection
-
-## Logging & Error Monitoring
+### Logging & Error Monitoring
 
 - **Sentry**: Captures runtime errors, navigation breadcrumbs, user actions.
 - **LogRocket**: Session replay with network + state tracking for debugging flows.
 - **Datadog RUM**: Real User Monitoring, tracks navigation performance and errors.
 
-## Analytics & User Behavior
+### Analytics & User Behavior
 
 - **Mixpanel**: Funnel analysis, tracks where users drop off in multi-step flows.
 - **Amplitude**: Behavior analytics, cohort analysis, flow visualization.
 - **PostHog (open-source)**: Event tracking, feature flags, user flow mapping.
 
-## Performance & Tracing
+### Performance & Tracing
 
 - **New Relic Browser**: Tracks frontend performance issues affecting flows.
 - **OpenTelemetry (with custom events)**: Trace navigation and async API calls.
@@ -200,9 +199,9 @@ For a typical React app, combine:
 
 This stack covers both **technical issues** and **user behavior insights**.
 
-# Testing Strategies for React User Flows
+## Testing Strategies for React User Flows
 
-## 1. Routing
+### 1. Routing
 
 - **Strategy**:
   - Use **unit tests** with React Testing Library to assert correct component rendering per route.
@@ -214,7 +213,7 @@ This stack covers both **technical issues** and **user behavior insights**.
 
 ---
 
-## 2. State Consistency
+### 2. State Consistency
 
 - **Strategy**:
   - Write **unit tests** to verify reducers/selectors (Redux/Zustand/Recoil).
@@ -227,7 +226,7 @@ This stack covers both **technical issues** and **user behavior insights**.
 
 ---
 
-## 3. Navigation Flow
+### 3. Navigation Flow
 
 - **Strategy**:
   - Use **E2E tests** with Cypress/Playwright to simulate back/forward button clicks.
@@ -240,7 +239,7 @@ This stack covers both **technical issues** and **user behavior insights**.
 
 ---
 
-## 4. Asynchronous Behavior
+### 4. Asynchronous Behavior
 
 - **Strategy**:
   - Mock APIs in Jest/MSW (Mock Service Worker) to simulate slow or failed requests.
@@ -253,7 +252,7 @@ This stack covers both **technical issues** and **user behavior insights**.
 
 ---
 
-## 5. UI/Interaction
+### 5. UI/Interaction
 
 - **Strategy**:
   - **Unit tests** for form validation and button disabling logic.
@@ -266,7 +265,7 @@ This stack covers both **technical issues** and **user behavior insights**.
 
 ---
 
-## 6. Authentication & Permissions
+### 6. Authentication & Permissions
 
 - **Strategy**:
   - **Integration tests** with mock auth tokens.
@@ -279,91 +278,12 @@ This stack covers both **technical issues** and **user behavior insights**.
 
 ---
 
-# Cross-Cutting Strategies
+## Cross-Cutting Strategies
 
 - **Error Monitoring**: Use Sentry/LogRocket to capture untested edge cases in production.
 - **Analytics Validation**: Validate Mixpanel/Amplitude/PostHog events during test runs.
 - **Regression Testing**: Automate critical user journeys as E2E smoke tests (login, checkout, profile update).
 - **CI/CD Integration**: Run unit + integration + E2E tests in pipelines for every pull request.
-
-
-# Step-by-Step QA Workflow for React User Flows
-
-## 1. Development Stage (Local)
-
-- **Unit Tests** (fast feedback, per component/function)
-
-  - Tools: Jest + React Testing Library
-  - Examples:
-    - Component renders correct UI for given props.
-    - Reducer updates state as expected.
-    - Utility functions return correct values.
-
-- **Integration Tests** (component + state + API mocking)
-  - Tools: Jest + React Testing Library + MSW (Mock Service Worker)
-  - Examples:
-    - Login form submits data and updates global state.
-    - Navigation bar updates when auth state changes.
-    - Multi-step form validates each step before proceeding.
-
-👉 Run automatically on each file save (via watch mode).
-
----
-
-## 2. Pre-Commit Stage (Developer Machine)
-
-- **Lint & Static Checks**
-  - ESLint, TypeScript, Prettier
-- **Unit Test Suite**
-  - All unit tests must pass.
-- **Small Integration Tests**
-  - Focus on high-priority flows (auth, routing).
-
-👉 Use pre-commit hooks (Husky) to prevent pushing broken code.
-
----
-
-## 3. Pull Request Stage (CI Pipeline)
-
-- **Full Test Suite**
-  - Unit + Integration tests.
-- **E2E Smoke Tests**
-  - Tools: Cypress or Playwright
-  - Run against a test build or staging environment.
-  - Examples:
-    - User can log in and see dashboard.
-    - User can add item to cart and check out.
-    - Unauthorized user is blocked from protected routes.
-
-👉 Run in parallel for speed (split tests across CI runners).
-
----
-
-## 4. Pre-Release Stage (Staging Environment)
-
-- **Extended E2E Tests**
-  - Full user flows end-to-end (signup → purchase → logout).
-  - Browser/device matrix (Chrome, Safari, mobile viewports).
-- **Accessibility Tests**
-  - axe-core, jest-axe, Lighthouse.
-- **Performance Tests**
-  - Measure load times, API response times.
-
----
-
-## 5. Post-Release Stage (Production Monitoring)
-
-- **Error Monitoring**
-  - Tools: Sentry, LogRocket
-  - Capture runtime errors + breadcrumbs of user actions.
-- **Analytics Validation**
-  - Tools: Mixpanel, Amplitude, PostHog
-  - Confirm users follow intended flows (funnel analysis).
-- **Synthetic Monitoring**
-  - Tools: Pingdom, Datadog
-  - Automated scripts mimic user flows continuously.
-
----
 
 # Summary Flow
 
