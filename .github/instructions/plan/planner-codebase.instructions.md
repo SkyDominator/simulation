@@ -38,15 +38,20 @@ Once you are provided with the specifications or report, thoroughly analyze them
 
 Your implementation plan structure should follow the [Sample Plan](/docs/examples/example1-plan.md). Plus, it should also include:
 
-2. **Scope**: What is in-scope and out-of-scope
-3. **Prerequisites**: Dependencies, refactorings, or setup needed
+1. **Scope**: What is in-scope and out-of-scope
+2. **Prerequisites**: Dependencies, refactorings, or setup needed
+3. **Testability Requirements**: 
+   - Frontend: List of all `data-testid` attributes to be added
+   - Backend: Dependency injection points and mockable interfaces
+   - Test mode considerations
 4. **Implementation Steps**: Detailed, ordered steps with:
    - Module/file to create or modify
    - Functions/classes to implement
    - Key logic and algorithms
    - Error handling approach
    - Data validation requirements
-6. **Integration Points**: How new code integrates with existing codebase
+   - **Testability considerations**: Where to add test IDs, dependency injection points
+5. **Integration Points**: How new code integrates with existing codebase
 
 ### Completeness of a plan
 
@@ -64,6 +69,12 @@ Your implementation plan structure should follow the [Sample Plan](/docs/example
    - Avoid vague instructions like "implement the feature" - specify what files, functions, classes need to be created/modified
    - Include code structure examples when helpful
 
+4. **Testability**
+   - All React components must include `data-testid` specifications
+   - Backend code must specify dependency injection points
+   - Implementation steps must include where to add test IDs
+   - No component should be implemented without testability considerations
+
 ### The use of utilities
 
 Include the plan for the installation and the use of any utility (e.g., libraries, frameworks, tools, etc.) that you think necessary to facilitate correct, effective, and efficient implementation of the codes by the plan file.
@@ -73,6 +84,97 @@ Specify:
 - Installation command
 - Configuration requirements
 - Usage examples in the implementation context
+
+
+## Testability-First Principles
+
+All codebase implementation plans MUST consider testability from the beginning. Code should be designed and implemented to be easily testable.
+
+### Frontend Component Testability
+
+**EVERY React component MUST include `data-testid` attributes** for test automation:
+
+```typescript
+// Example: Component implementation with test IDs
+export const LoginForm: React.FC = () => {
+  return (
+    <form data-testid="login-form">
+      <TextField
+        data-testid="username-input"
+        label="Username"
+        name="username"
+      />
+      <TextField
+        data-testid="password-input"
+        label="Password"
+        name="password"
+        type="password"
+      />
+      <Button 
+        data-testid="login-submit-button"
+        type="submit"
+      >
+        Login
+      </Button>
+      <Link data-testid="forgot-password-link" href="/forgot">
+        Forgot Password?
+      </Link>
+    </form>
+  );
+};
+```
+
+**Requirements**:
+- Add `data-testid` to ALL interactive elements (buttons, inputs, links, etc.)
+- Add `data-testid` to container elements (forms, dialogs, sections)
+- Add `data-testid` to dynamic/conditional elements
+- Use kebab-case naming: `{component-name}-{element-type}`
+- Ensure test IDs are unique within the component scope
+
+**Plan Requirements**:
+- Include a section documenting all `data-testid` attributes for new components
+- Specify test IDs for components being modified
+- Follow the naming convention: `{feature}-{component}-{element}`
+- Examples: `login-form-submit-button`, `profile-avatar-image`, `simulation-results-table`
+
+### Backend Testability
+
+**Design for dependency injection and loose coupling**:
+
+```python
+# Example: Testable service with dependency injection
+class SimulationService:
+    def __init__(self, db_client=None, cache_client=None):
+        """Initialize with injectable dependencies for testability."""
+        self.db = db_client or get_default_db_client()
+        self.cache = cache_client or get_default_cache_client()
+    
+    def create_simulation(self, user_id: str, plan_data: dict):
+        """Create simulation with clear interface for mocking."""
+        # Business logic here
+        pass
+```
+
+**Requirements**:
+- Use dependency injection for external services (database, APIs, etc.)
+- Separate business logic from I/O operations
+- Make functions pure and side-effect-free where possible
+- Use interfaces/protocols for dependencies
+- Avoid tight coupling to infrastructure
+
+**Plan Requirements**:
+- Specify dependency injection points
+- Document which dependencies can be mocked
+- Include interface definitions for key abstractions
+
+### General Testability Principles
+
+1. **Decoupling**: Components/functions should have minimal dependencies
+2. **Single Responsibility**: Each unit should have one clear purpose
+3. **Clear Interfaces**: Well-defined inputs and outputs
+4. **Avoid Hidden State**: Make state explicit and controllable
+5. **Error Handling**: Predictable error responses for testing
+6. **Configuration**: Use environment variables or config for test overrides
 
 ## Common Guidelines
 
@@ -92,3 +194,8 @@ Before finalizing the plan, verify:
 - [ ] No ambiguity in instructions
 - [ ] No redundancy in content
 - [ ] Rollback approach is documented
+- [ ] **Testability**: All React components include `data-testid` attributes in implementation steps
+- [ ] **Testability**: Frontend test IDs are documented with naming convention
+- [ ] **Testability**: Backend dependency injection points are specified
+- [ ] **Testability**: Mockable interfaces/abstractions are identified
+- [ ] **Testability**: Code architecture supports isolated unit testing
