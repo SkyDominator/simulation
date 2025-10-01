@@ -4,6 +4,8 @@ This covers unit-level tests for frontend components, context providers, and uti
 
 Target: Unit tests in `src/frontend/src/test/` with focus on smoke tests, context providers, and page components.
 
+**Testability Note**: As of commit 080669f, key pages and components support API dependency injection via optional `apiService` prop (PlanEditor, ConsentPage, AdminPolicyPage, MainPage, NoticeBoardModal), enabling proper network-layer mocking in tests.
+
 --------------------------------------------------------------------------------
 ## 1. Scope & Principles
 --------------------------------------------------------------------------------
@@ -14,6 +16,7 @@ Target: Unit tests in `src/frontend/src/test/` with focus on smoke tests, contex
 * Test infrastructure verification
 * Authentication context state management
 * Component prop handling and state updates
+* API dependency injection for testable components
 
 **Out of Scope:**
 * API integration (covered in integration tests)
@@ -23,10 +26,11 @@ Target: Unit tests in `src/frontend/src/test/` with focus on smoke tests, contex
 
 **Test Philosophy:**
 * Pure unit tests with minimal external dependencies
-* Mock all external services (API, Supabase)
+* Mock all external services (API, Supabase) via dependency injection
 * Test component behavior in isolation
 * Verify proper prop and state handling
 * Ensure proper error boundaries
+* Use injected apiService for network-layer mocking
 
 --------------------------------------------------------------------------------
 ## 2. Test Category Matrix
@@ -63,23 +67,26 @@ Target: Unit tests in `src/frontend/src/test/` with focus on smoke tests, contex
 
 ### 2.3 Page Component Tests (CAT-PAGE)
 
-**Why**: Validate page-level component behavior  
+**Why**: Validate page-level component behavior with dependency injection  
 **Location**: `src/test/pages/MainPage.improved.test.tsx`  
+**Testability**: All tested pages support `apiService` prop for mocking (MainPage, PlanEditor, ConsentPage, AdminPolicyPage)  
 **Cases**:
 
 * PAGE-001: Should render basic MainPage structure
 * PAGE-002: Should display simulation table when data is available
 * PAGE-003: Should handle API error without crashing
 * PAGE-004: Should retry API calls with different tokens
-* PAGE-005: Should run simulation with real API service
+* PAGE-005: Should run simulation with real API service (via injected apiService)
 * PAGE-006: Should delete simulation with confirmation
-* PAGE-007: Should update memo using real API
+* PAGE-007: Should update memo using real API (via injected apiService)
 * PAGE-008: Should handle network timeout gracefully
 
 ### 2.4 Real Component Tests (CAT-COMP)
 
-**Why**: Test actual components instead of test-only mocks  
+**Why**: Test actual components instead of test-only mocks with dependency injection  
 **Location**: `src/test/components/RealComponentTests.test.tsx`  
+**Testability**: Components like SimulationTable, NoticeBoardModal support apiService injection for testing  
+**Data-testid**: SimulationTable now has data-testid attributes (row-{idx}, checkbox-{id}, edit-{id}, run-{id}, delete-{id})  
 **Cases**:
 
 * COMP-001: Should handle empty simulation list correctly
