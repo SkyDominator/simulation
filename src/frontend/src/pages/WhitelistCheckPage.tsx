@@ -15,7 +15,21 @@ import OtpVerificationPage from "./OtpVerificationPage";
 
 interface WhitelistCheckPageProps {
   onVerified: (userHash: string) => void;
-  // Dependency injection for testing
+  /**
+   * Optional API service instance for dependency injection.
+   * 
+   * If not provided, defaults to the legacy `api` object.
+   * Use this prop to inject a mock or alternative implementation for testing or customization.
+   * 
+   * Example usage:
+   * 
+   *   <WhitelistCheckPage
+   *     onVerified={...}
+   *     apiService={myMockApiService}
+   *   />
+   * 
+   * The legacy `api` object implements the same interface and is used by default for backward compatibility.
+   */
   apiService?: ApiServiceInterface;
 }
 
