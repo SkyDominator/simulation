@@ -57,3 +57,7 @@ When modifying the existing plans, maintain the structure, format, and the style
     1. Ensure that all contents within the plan are consistent with each other. They should not contradict each other or there should be no ambiguity.
 2. no redundancy
     1. Ensure that there is no redundancy within the plan. If there are redundant contents, consolidate them into one and remove the others.
+
+### The use of utilities
+
+Include the plan for the installation and the use of any utility (e.g., mocking libraries, test data builders, etc.) that you think necessary that facilitates correct, effective, and efficient testing in the plan file.
