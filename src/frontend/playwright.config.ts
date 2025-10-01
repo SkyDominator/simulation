@@ -20,13 +20,13 @@ export default defineConfig({
     baseURL: 'http://localhost:4173', // Vite preview server
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+    trace: 'off', // Disable trace to avoid ffmpeg dependency
     
     /* Take screenshots on failure */
     screenshot: 'only-on-failure',
     
-    /* Record video on failure */
-    video: 'retain-on-failure',
+    /* Record video on failure - disabled to avoid ffmpeg dependency in CI */
+    video: 'off',
   },
 
   /* Configure projects for major browsers */
@@ -72,6 +72,6 @@ export default defineConfig({
     command: 'npm run preview',
     port: 4173,
     cwd: './',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true, // Always reuse existing server for now
   },
 })
