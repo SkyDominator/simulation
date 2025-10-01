@@ -36,7 +36,7 @@ Once you are provided with the specifications or report, thoroughly analyze them
 
 ### Plan Structure
 
-Your implementation plan should follow the [Sample Plan](/docs/examples/example1-plan.md). Plus, it should also include:
+Your implementation plan structure should follow the [Sample Plan](/docs/examples/example1-plan.md). Plus, it should also include:
 
 2. **Scope**: What is in-scope and out-of-scope
 3. **Prerequisites**: Dependencies, refactorings, or setup needed

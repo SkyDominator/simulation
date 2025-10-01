@@ -38,17 +38,14 @@ Once you are provided with the commit hashes, PR numbers, or specifications, tho
 * What existing tests need updates
 * What edge cases and error scenarios need coverage
 
-### Asking user for refactorings
-
-You MUST ask user to perform refactoring of the codebase if you find any of the following issues in the codebase before you can proceed with creating/modifying the plan:
-
-[Refactoring criteria](/.github/instructions/plan/refactor.instructions.md)
-
-In such cases, you MUST notify user of the issues you found and ask user to perform the necessary refactorings before you can proceed with creating/modifying the plan.
-
 ### Test Plan Structure
 
-Your test implementation plan should include:
+Your implementation plan structure should follow the these:
+
+* [Sample Plan 1](/docs/plans/test-code-v1/test-plan-03-frontend-smoke.md)
+* [Sample Plan 2](/docs/plans/test-code-v1/test-plan-01-backend-unit.md)
+
+Plus, it should also include:
 
 1. **Scope & Principles**: What will be tested and testing approach
 2. **Test Categories**: Organized by functionality or test type
@@ -81,10 +78,6 @@ it('should description of expected behavior', () => {
   // CAT-XXX-### test implementation
 });
 ```
-
-### Format consistency (modifying the existing plans)
-
-When modifying the existing plan files, follow the structure, format, and style of the original text. The final contents should be natural as it was created as it is after modification, not looking like modified interim.
 
 ### Completeness of a plan
 
@@ -150,13 +143,9 @@ Specify:
 - **Integration tests**: Mock external services, use real internal components
 - **E2E tests**: Minimize mocking, test against real or realistic services
 
-### Review & Refine loop
+## Common Guidelines
 
-Once you finished writing a plan, you will loop through the following steps until no issue, conflict (against the user instructions), or ambiguity is found.
-
-1. **Review**: Check for completeness, consistency, and clarity
-2. **Refinement**: Address any issues found
-3. Goes back to Step 1, and repeat Steps 1~3
+Refer to **Common Guidelines (Both Plan Types)** section in `./planner.instructions.md`.
 
 ### Quality Checklist
 
