@@ -1,6 +1,11 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
+// Mock environment variables for tests
+process.env.VITE_SUPABASE_URL = 'https://test.supabase.co'
+process.env.VITE_SUPABASE_PUBLISHABLE_KEY = 'test-publishable-key'
+process.env.VITE_API_BASE_URL = 'http://localhost:8001/api'
+
 // Mock IntersectionObserver
 global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
