@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { api } from "../services/api";
+import { type ApiServiceInterface } from "../services/ApiService";
 import {
   Box,
   Paper,
@@ -14,10 +15,27 @@ import OtpVerificationPage from "./OtpVerificationPage";
 
 interface WhitelistCheckPageProps {
   onVerified: (userHash: string) => void;
+  /**
+   * Optional API service instance for dependency injection.
+   * 
+   * If not provided, defaults to the legacy `api` object.
+   * Use this prop to inject a mock or alternative implementation for testing or customization.
+   * 
+   * Example usage:
+   * 
+   *   <WhitelistCheckPage
+   *     onVerified={...}
+   *     apiService={myMockApiService}
+   *   />
+   * 
+   * The legacy `api` object implements the same interface and is used by default for backward compatibility.
+   */
+  apiService?: ApiServiceInterface;
 }
 
 const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
   onVerified,
+  apiService = api, // Default to legacy api object
 }) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -63,7 +81,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
 
     try {
       // Send OTP after whitelist check is integrated in the backend
-      const result = await api.sendOtp(name, phone);
+      const result = await apiService.sendOtp(name, phone);
 
       if (result.success && result.user_hash) {
         // Store hash for OTP verification
@@ -98,6 +116,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
         userHash={userHash}
         onVerified={onVerified}
         onBack={handleBack}
+        apiService={apiService}
       />
     );
   }
@@ -119,6 +138,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
         sx={{ p: 4, width: "100%", maxWidth: 500, boxShadow: 3 }}
         component="form"
         onSubmit={handleSubmit}
+        data-testid="whitelist-form"
       >
         <Stack spacing={3}>
           <Box textAlign="center">
@@ -149,6 +169,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
             onChange={(e) => setName(e.target.value)}
             disabled={loading}
             autoFocus
+            inputProps={{ "data-testid": "name-input" }}
           />
 
           <TextField
@@ -162,7 +183,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
             InputProps={{
               inputMode: "tel",
             }}
-            inputProps={{ maxLength: 13 }}
+            inputProps={{ maxLength: 13, "data-testid": "phone-input" }}
           />
 
           <Button
@@ -172,6 +193,7 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
             type="submit"
             disabled={loading}
             size="large"
+            data-testid="submit-whitelist"
           >
             {loading ? (
               <CircularProgress size={24} color="inherit" />

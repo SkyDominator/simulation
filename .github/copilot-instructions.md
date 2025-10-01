@@ -494,27 +494,6 @@ Frontend:
 - **LCP/FID/CLS**: Core Web Vitals metrics
 - **Pre-auth user**: User before OTP + consent + OAuth completion
   - **Context Detection**: Determines flow based on authentication state and calling context
-- **Privacy Policy Integration**:
-  - Fetches current policy version via `api.getPrivacyPolicy()`
-  - Inline summary with key data collection points
-  - Modal dialog for full policy text with ReactMarkdown rendering
-  - Version tracking and last updated date display
-- **Consent UI**:
-  - Checkbox with explicit consent text
-  - Two-button layout: "취소" (decline) and "계속하기" (accept)
-  - Disabled submit until checkbox is checked
-- **Data Recording**: Records consent with `userHash`, `consent_type: "privacy_policy"`, `policyVersion`
-- **Flow Control**:
-  - Accept: Stores `consentVersion` in sessionStorage, proceeds to login
-  - Decline: Returns to whitelist check
-
-**Step 4: LoginPage** (`page: "login"`):
-
-- **OAuth Integration**: Supabase auth with Google and Kakao providers
-- **Provider Buttons**: Branded buttons with loading states and error handling
-- **Navigation**: "이전으로" option to return to whitelist check
-- **Loading States**: Individual loading indicators per provider to prevent double-clicks
-- **Error Recovery**: Alert messages for authentication failures with retry options
 
 ### 13.3 Authentication State Transitions
 
@@ -1226,6 +1205,8 @@ ALWAYS FOLLOW these patterns when doing tasks.
 - Focus ONLY on requested tasks
 - Take time to think and plan before executing
 - Raise questions for issues/improvements outside scope
+- For test codes: The codebase is the single source of truth
+- For test codes: Re-test and report after you modified test codes.
 
 **DON'T:**
 - Add unrequested features or fixes
@@ -1282,6 +1263,7 @@ Evaluate ALL requests against these priorities (highest to lowest):
 - [ ] Applied priority evaluation
 - [ ] No unauthorized additions
 - [ ] No assumption-based decisions
+- [ ] Removed the legacy codes not used anymore
 
 **ACTION:** If verification fails, revisit implementation or ASK user for clarification.
 
@@ -1922,7 +1904,7 @@ create table public.simulations (
   investments jsonb not null,
   simulation_results jsonb null,
   created_at timestamp with time zone null default (now() AT TIME ZONE 'Asia/Seoul'::text),
-  updated_at timestamp with time zone null default (now() AT TIME ZONE 'utc'::text),
+  updated_at timestamp with time zone null default (now() AT TIME ZONE 'Asia/Seoul'::text),
   memo text null,
   sales_achievement_rates jsonb null,
   current_company_round smallint null,

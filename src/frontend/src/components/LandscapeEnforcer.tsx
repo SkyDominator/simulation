@@ -1,24 +1,36 @@
 import React, { useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
+import { isE2EMode } from "../utils/testMode";
 
 // Overlay that blocks interaction when device is in portrait.
 // Attempts to lock orientation to landscape where supported.
 const LandscapeEnforcer: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isPortrait, setIsPortrait] = useState(
-    () => window.matchMedia("(orientation: portrait)").matches
-  );
+  const e2eMode = isE2EMode();
+
+  const [isPortrait, setIsPortrait] = useState(() => {
+    if (e2eMode || typeof window === "undefined") {
+      return false;
+    }
+    return window.matchMedia("(orientation: portrait)").matches;
+  });
   const [lockTried, setLockTried] = useState(false);
 
   useEffect(() => {
+    if (e2eMode || typeof window === "undefined") {
+      return;
+    }
     const mq = window.matchMedia("(orientation: portrait)");
     const handler = () => setIsPortrait(mq.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, []);
+  }, [e2eMode]);
 
   useEffect(() => {
+    if (e2eMode || typeof window === "undefined") {
+      return;
+    }
     interface MaybeScreenOrientation {
       lock?: (o: string) => Promise<void>;
     }
@@ -33,7 +45,11 @@ const LandscapeEnforcer: React.FC<{ children: React.ReactNode }> = ({
         })
         .finally(() => setLockTried(true));
     }
-  }, [lockTried]);
+  }, [e2eMode, lockTried]);
+
+  if (e2eMode) {
+    return <>{children}</>;
+  }
 
   return (
     <>

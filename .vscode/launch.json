@@ -49,12 +49,12 @@
       "subProcess": true,
       "justMyCode": true
     },
-        {
+    {
       "name": "Unit Test: Frontend",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
-      "args": ["run", "src/test", "--exclude", "src/test/security", "--reporter=verbose"],
+      "args": ["run", "src/test/pages", "--reporter=verbose"],
       "cwd": "${workspaceFolder}/src/frontend",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"],
@@ -62,7 +62,33 @@
         "NODE_ENV": "test"
       }
     },
-        {
+    {
+      "name": "Smoke Test (Basic Setup): Frontend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+      "args": ["run", "src/test/smoke.test.tsx", "--reporter=verbose"],
+      "cwd": "${workspaceFolder}/src/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NODE_ENV": "test"
+      }
+    },
+    {
+      "name": "Component Test: Frontend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+      "args": ["run", "src/test/components", "--reporter=verbose"],
+      "cwd": "${workspaceFolder}/src/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NODE_ENV": "test"
+      }
+    },
+    {
       "name": "Integration Test: Backend",
       "type": "debugpy",
       "request": "launch",
@@ -76,6 +102,19 @@
       "console": "integratedTerminal",
       "subProcess": true,
       "justMyCode": true
+    },
+    {
+      "name": "Integration Test: Frontend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/frontend/node_modules/vitest/vitest.mjs",
+      "args": ["run", "src/test/integration", "--reporter=verbose"],
+      "cwd": "${workspaceFolder}/src/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NODE_ENV": "test"
+      }
     },
     {
       "name": "Security Test: Backend",
@@ -92,7 +131,7 @@
       "subProcess": true,
       "justMyCode": true
     },
-        {
+    {
       "name": "Security Test: Frontend",
       "type": "node",
       "request": "launch",
@@ -172,6 +211,13 @@
       ]
     },
     {
+      "name": "All Integration Tests",
+      "configurations": [
+        "Integration Test: Backend",
+        "Integration Test: Frontend"
+      ]
+    },
+    {
       "name": "All Security Tests",
       "configurations": [
         "Security Test: Backend",
@@ -179,9 +225,34 @@
       ]
     },
     {
-      "name": "All E2E Tests",
+      "name": "All Frontend Tests (Excl. E2E)",
       "configurations": [
-        "E2E Test: Frontend"
+        "Unit Test: Frontend",
+        "Smoke Test (Basic Setup): Frontend",
+        "Component Test: Frontend",
+        "Integration Test: Frontend",
+        "Security Test: Frontend"
+      ]
+    },
+    {
+      "name": "All Backend Tests",
+      "configurations": [
+        "Unit Test: Backend",
+        "Integration Test: Backend",
+        "Security Test: Backend"
+      ]
+    },
+    {
+      "name": "All Tests (Excl. E2E)",
+      "configurations": [
+        "Unit Test: Backend",
+        "Integration Test: Backend",
+        "Security Test: Backend",
+        "Unit Test: Frontend",
+        "Smoke Test (Basic Setup): Frontend",
+        "Component Test: Frontend",
+        "Integration Test: Frontend",
+        "Security Test: Frontend",
       ]
     }
   ]

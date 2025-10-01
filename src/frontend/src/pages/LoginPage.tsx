@@ -10,6 +10,7 @@ import {
   IconButton,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { isE2EMode } from "../utils/testMode";
 
 type OAuthProvider = "google" | "kakao";
 
@@ -22,12 +23,23 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
     null
   );
   const [error, setError] = useState<string | null>(null);
+  const e2eMode = isE2EMode();
 
   const handleSocialLogin = async (provider: OAuthProvider) => {
     if (loadingProvider) return; // prevent double clicks
     setError(null);
     setLoadingProvider(provider);
     try {
+      if (e2eMode) {
+        // In E2E mode Supabase OAuth redirects would break the flow. The
+        // AuthProvider reads the injected token and will treat the user as
+        // authenticated after the click.
+        setLoadingProvider(null);
+        window.dispatchEvent(
+          new CustomEvent("e2e:oauth-click", { detail: { provider } })
+        );
+        return;
+      }
       await supabase.auth.signInWithOAuth({
         provider,
         options: { redirectTo: window.location.origin },
@@ -53,6 +65,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
       <Paper
         elevation={4}
         sx={{ p: 4, width: "100%", maxWidth: 420, position: "relative" }}
+        data-testid="login-form"
       >
         {onBackToWhitelist && (
           <Box sx={{ position: "absolute", top: 16, left: 16 }}>
@@ -91,6 +104,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
             size="large"
             onClick={() => handleSocialLogin("google")}
             disabled={!!loadingProvider}
+            data-testid="google-login"
           >
             {loadingProvider === "google"
               ? "Google 로그인 중..."
@@ -98,6 +112,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
           </Button>
           <Button
             variant="contained"
+            data-testid="kakao-login"
             fullWidth
             size="large"
             onClick={() => handleSocialLogin("kakao")}

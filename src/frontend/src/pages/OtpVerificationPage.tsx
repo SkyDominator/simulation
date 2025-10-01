@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../services/api";
+import { type ApiServiceInterface } from "../services/ApiService";
 import {
   Box,
   Paper,
@@ -17,6 +18,8 @@ interface OtpVerificationPageProps {
   userHash: string;
   onVerified: (userHash: string) => void;
   onBack: () => void;
+  // Dependency injection for testing
+  apiService?: ApiServiceInterface;
 }
 
 const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
@@ -25,6 +28,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
   userHash,
   onVerified,
   onBack,
+  apiService = api, // Default to legacy api object
 }) => {
   const [otpCode, setOtpCode] = useState("");
   const [error, setError] = useState("");
@@ -46,7 +50,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
     setError("");
 
     try {
-      const result = await api.sendOtp(name, phone);
+      const result = await apiService.sendOtp(name, phone);
 
       if (result.success) {
         setCountdown(result.expires_in_seconds || 180); // Default 3 minutes
@@ -72,7 +76,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
     setError("");
 
     try {
-      const result = await api.verifyOtp(phone, otpCode);
+      const result = await apiService.verifyOtp(phone, otpCode);
 
       if (result.success) {
         onVerified(userHash);
@@ -97,6 +101,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
           maxWidth: 500,
           boxShadow: 3,
         }}
+        data-testid="otp-form"
       >
         <Stack spacing={3}>
           <Box textAlign="center">
@@ -132,12 +137,13 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
               pattern: "[0-9]*",
               inputMode: "numeric",
               autoComplete: "one-time-code", // Enable auto-fill on supporting browsers
+              "data-testid": "otp-input",
             }}
           />
 
           <Box sx={{ textAlign: "center" }}>
             {countdown > 0 && (
-              <Typography color="text.secondary">
+              <Typography color="text.secondary" data-testid="otp-timer">
                 {Math.floor(countdown / 60)}:
                 {(countdown % 60).toString().padStart(2, "0")} 내에 입력하세요
               </Typography>
@@ -150,6 +156,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
             fullWidth
             onClick={handleVerify}
             disabled={loading || !otpCode.trim()}
+            data-testid="verify-otp"
           >
             {loading ? (
               <CircularProgress size={24} color="inherit" />
@@ -173,6 +180,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
               color="primary"
               onClick={handleSendOtp}
               disabled={loading || countdown > 0}
+              data-testid="resend-otp"
             >
               {countdown > 0
                 ? `재전송 ${Math.floor(countdown / 60)}:${(countdown % 60)
