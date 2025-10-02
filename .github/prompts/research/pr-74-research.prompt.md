@@ -11,6 +11,8 @@ The research provides the implementation snapshot of matters so that you don't h
 
 ### Implementation plan
 
+Before starting the research, you MUST read the implementation plan of the codes of [matter](#implementation-of-matter) in the following files:
+
 * `docs/plans/test-code/test-plan-08-frontend-e2e.md`.
 
 ### Issues
