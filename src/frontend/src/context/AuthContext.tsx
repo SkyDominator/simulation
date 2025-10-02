@@ -123,6 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     // Manual storage purge (covers iOS Safari quirks)
     try {
       if (isE2EMode()) {
+        // Set logout flag to prevent init scripts from re-adding tokens on future navigations
+        (window as any).__E2E_LOGGED_OUT__ = true;
         localStorage.clear();
         sessionStorage.clear();
       } else {

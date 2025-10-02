@@ -26,6 +26,8 @@ test.describe("Authentication & Session Management", () => {
     await page.evaluate(() => {
       window.localStorage.clear();
       window.sessionStorage.clear();
+      // Clear logout flag for next test
+      delete (window as any).__E2E_LOGGED_OUT__;
     });
   });
 

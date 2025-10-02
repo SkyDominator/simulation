@@ -13,33 +13,51 @@ export async function loginTestUser(page: Page) {
     // Set E2E mode flag
     (window as any).__E2E_MODE__ = true;
 
-    // Mock successful authentication
-    window.localStorage.setItem(
-      "supabase.auth.token",
-      JSON.stringify({
-        access_token: "mock-jwt-token",
-        refresh_token: "mock-refresh-token",
-        expires_at: Date.now() + 3600000, // 1 hour from now
-        user: {
-          id: "test-user-123",
-          email: "test@example.com",
-          user_metadata: {
-            name: "Test User",
-            phone: "010-1234-5678",
-          },
-        },
-      })
-    );
+    // Don't re-add tokens if user has explicitly logged out
+    // Check for explicit true value to avoid issues with undefined
+    if ((window as any).__E2E_LOGGED_OUT__ === true) {
+      return;
+    }
 
-    // Mock session state
-    window.localStorage.setItem("ui.page", '"main"');
-    window.localStorage.setItem("ui.noticeOpen", "false");
+    // Only add token if not already present or if explicitly logging in
+    const existingToken = window.localStorage.getItem("supabase.auth.token");
+    if (!existingToken || (window as any).__E2E_LOGIN_REQUESTED__ === true) {
+      // Clear the login request flag
+      delete (window as any).__E2E_LOGIN_REQUESTED__;
+      
+      // Mock successful authentication
+      window.localStorage.setItem(
+        "supabase.auth.token",
+        JSON.stringify({
+          access_token: "mock-jwt-token",
+          refresh_token: "mock-refresh-token",
+          expires_at: Date.now() + 3600000, // 1 hour from now
+          user: {
+            id: "test-user-123",
+            email: "test@example.com",
+            user_metadata: {
+              name: "Test User",
+              phone: "010-1234-5678",
+            },
+          },
+        })
+      );
+
+      // Mock session state
+      window.localStorage.setItem("ui.page", '"main"');
+      window.localStorage.setItem("ui.noticeOpen", "false");
+    }
   });
 
   try {
     await page.evaluate(() => {
       // Set E2E mode flag
       (window as any).__E2E_MODE__ = true;
+
+      // Set flag to request login on next page load
+      (window as any).__E2E_LOGIN_REQUESTED__ = true;
+      // Clear logout flag when explicitly logging in
+      delete (window as any).__E2E_LOGGED_OUT__;
 
       window.localStorage.setItem(
         "supabase.auth.token",
@@ -85,33 +103,50 @@ export async function loginAdminUser(page: Page) {
     // Set E2E mode flag
     (window as any).__E2E_MODE__ = true;
 
-    window.localStorage.setItem(
-      "supabase.auth.token",
-      JSON.stringify({
-        access_token: "mock-admin-jwt-token",
-        refresh_token: "mock-admin-refresh-token",
-        expires_at: Date.now() + 3600000,
-        user: {
-          id: "admin-user-123",
-          email: "admin@example.com",
-          user_metadata: {
-            name: "Admin User",
-            role: "admin",
-          },
-        },
-      })
-    );
+    // Don't re-add tokens if user has explicitly logged out
+    if ((window as any).__E2E_LOGGED_OUT__ === true) {
+      return;
+    }
 
-    // Set admin privileges
-    window.localStorage.setItem("ui.page", '"main"');
-    window.localStorage.setItem("ui.noticeOpen", "false");
-    window.sessionStorage.setItem("user.isAdmin", "true");
+    // Only add token if not already present or if explicitly logging in
+    const existingToken = window.localStorage.getItem("supabase.auth.token");
+    if (!existingToken || (window as any).__E2E_LOGIN_REQUESTED__ === true) {
+      // Clear the login request flag
+      delete (window as any).__E2E_LOGIN_REQUESTED__;
+
+      window.localStorage.setItem(
+        "supabase.auth.token",
+        JSON.stringify({
+          access_token: "mock-admin-jwt-token",
+          refresh_token: "mock-admin-refresh-token",
+          expires_at: Date.now() + 3600000,
+          user: {
+            id: "admin-user-123",
+            email: "admin@example.com",
+            user_metadata: {
+              name: "Admin User",
+              role: "admin",
+            },
+          },
+        })
+      );
+
+      // Set admin privileges
+      window.localStorage.setItem("ui.page", '"main"');
+      window.localStorage.setItem("ui.noticeOpen", "false");
+      window.sessionStorage.setItem("user.isAdmin", "true");
+    }
   });
 
   try {
     await page.evaluate(() => {
       // Set E2E mode flag
       (window as any).__E2E_MODE__ = true;
+
+      // Set flag to request login on next page load
+      (window as any).__E2E_LOGIN_REQUESTED__ = true;
+      // Clear logout flag when explicitly logging in
+      delete (window as any).__E2E_LOGGED_OUT__;
 
       window.localStorage.setItem(
         "supabase.auth.token",
