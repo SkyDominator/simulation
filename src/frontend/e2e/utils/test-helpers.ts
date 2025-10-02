@@ -399,11 +399,11 @@ export class APIHelpers {
     });
 
     try {
-      await page.unroute("**/api/consents");
+      await page.unroute("**/api/consents**");
     } catch {
       // ignore
     }
-    await page.route("**/api/consents", async (route) => {
+    await page.route("**/api/consents**", async (route) => {
       if (route.request().method() === "POST") {
         await route.fulfill({
           status: 200,
