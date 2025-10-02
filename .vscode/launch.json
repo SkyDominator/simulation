@@ -35,6 +35,23 @@
       "port": 9222
     },
     {
+      "name": "Debug E2E Auth Tests (Mobile)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test:e2e:mobile:auth"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/src/frontend"
+    },
+    {
+      "name": "Debug: Python Single File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
       "name": "Unit Test: Backend",
       "type": "debugpy",
       "request": "launch",
@@ -185,15 +202,6 @@
     //     "PWDEBUG": "1"
     //   }
     // },
-
-    {
-      "name": "Debug: Python Single File",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${file}",
-      "console": "integratedTerminal",
-      "justMyCode": true
-    }
   ],
   "compounds": [
     {

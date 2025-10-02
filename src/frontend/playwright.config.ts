@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { defineConfig, devices } from "@playwright/test";
 
 /**
@@ -58,11 +59,18 @@ export default defineConfig({
     /* Test against mobile viewports. */
     {
       name: "Mobile Chrome",
-      use: { ...devices["Pixel 5"] },
+      use: {
+        ...devices["Pixel 5"],
+        // Force landscape orientation to avoid LandscapeEnforcer overlay during tests
+        viewport: { width: 851, height: 393 },
+      },
     },
     {
       name: "Mobile Safari",
-      use: { ...devices["iPhone 12"] },
+      use: {
+        ...devices["iPhone 12"],
+        viewport: { width: 844, height: 390 },
+      },
     },
 
     /* Test against branded browsers. */

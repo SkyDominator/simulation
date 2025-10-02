@@ -22,6 +22,7 @@ PWA React/TypeScript application guidelines.
 - Use TypeScript for all props/state/API responses
 - Use `import type` for type-only imports
 - Treat props as immutable
+- Follow the existing code style and conventions when modifying code
 
 **DON'T:**
 - Use class components
