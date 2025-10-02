@@ -378,6 +378,7 @@ export class APIHelpers {
    * Mock privacy policy retrieval and consent recording
    */
   static async mockConsentSuccess(page: Page) {
+    // Mock GET /api/privacy-policy (with optional query params)
     try {
       await page.unroute("**/api/privacy-policy**");
     } catch {
@@ -398,30 +399,50 @@ export class APIHelpers {
       });
     });
 
+    // Mock POST /api/consents - Record consent
     try {
-      await page.unroute("**/api/consents**");
+      await page.unroute("**/api/consents");
     } catch {
       // ignore
     }
-    await page.route("**/api/consents**", async (route) => {
+    await page.route("**/api/consents", async (route) => {
       if (route.request().method() === "POST") {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
           body: JSON.stringify({
-            success: true,
             user_hash: "test-hash-123",
-            consent_type: "privacy",
+            consent_type: "privacy_policy",
             consent_version: "v1",
             consent_given_at: new Date().toISOString(),
+            ip_address: "127.0.0.1",
+            user_agent: "Mozilla/5.0",
           }),
         });
       } else {
+        // Unexpected method on /api/consents
+        await route.continue();
+      }
+    });
+
+    // Mock GET /api/consents/{user_hash} - Get user consents
+    try {
+      await page.unroute("**/api/consents/*");
+    } catch {
+      // ignore
+    }
+    await page.route("**/api/consents/*", async (route) => {
+      if (route.request().method() === "GET") {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ success: true, consents: [] }),
+          body: JSON.stringify({
+            consents: [],
+            success: true,
+          }),
         });
+      } else {
+        await route.continue();
       }
     });
   }

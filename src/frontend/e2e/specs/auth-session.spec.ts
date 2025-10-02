@@ -62,9 +62,7 @@ test.describe("Authentication & Session Management", () => {
     await acceptButton.first().click();
 
     // On login page, click Google login
-    await expect(
-      page.getByTestId("login-form").or(page.locator("text=/로그인|login/i"))
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("login-form")).toBeVisible({ timeout: 5000 });
 
     const googleLoginButton = page
       .getByTestId("google-login")
@@ -98,9 +96,7 @@ test.describe("Authentication & Session Management", () => {
     await acceptButton.first().click();
 
     // On login page, check for Kakao login button
-    await expect(
-      page.getByTestId("login-form").or(page.locator("text=/로그인|login/i"))
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("login-form")).toBeVisible({ timeout: 5000 });
 
     const kakaoLoginButton = page
       .getByTestId("kakao-login")
@@ -187,6 +183,9 @@ test.describe("Authentication & Session Management", () => {
         .or(page.locator("text=환영합니다!"))
         .first()
     ).toBeVisible({ timeout: 5000 });
+
+    // Wait a moment for storage to be fully cleared
+    await page.waitForTimeout(500);
 
     // Session should be cleared
     const isAuth = await isUserAuthenticated(page);
