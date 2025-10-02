@@ -29,3 +29,4 @@ Do the following tasks:
 Do not:
 
 1. Create any report documents.
+2. Stary to solve other issues not mentioned in the $PLAN$. If other issues are found, they will be fixed in subsequent iterations of research, planning and implementation.

@@ -30,6 +30,8 @@ test.describe("Authentication & Session Management", () => {
   let helpers: TestHelpers;
 
   test.beforeEach(async ({ page }) => {
+    // Mobile projects run in landscape viewports (851×393 / 844×390) to avoid
+    // LandscapeEnforcer overlay. See landscape-enforcer.spec.ts for orientation tests.
     await initE2EMode(page);
     helpers = new TestHelpers(page);
     await APIHelpers.mockOTPSuccess(page);

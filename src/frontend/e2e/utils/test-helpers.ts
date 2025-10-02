@@ -24,16 +24,23 @@ type ConsentMockSnapshot = {
 const consentMockStates = new WeakMap<Page, ConsentMockInternalState>();
 
 /**
- * Initialize E2E mode for the page
- * This should be called in beforeEach hooks before any other setup
+ * Initialize E2E mode for the page.
+ * Ensures the flag is available before scripts execute on navigation.
  */
 export async function initE2EMode(page: Page) {
   await page.addInitScript(() => {
-    (
-      window as unknown as {
-        __E2E_MODE__: boolean;
-      }
-    ).__E2E_MODE__ = true;
+    Object.defineProperty(window, "__E2E_MODE__", {
+      value: true,
+      writable: false,
+      configurable: false,
+      enumerable: true,
+    });
+
+    try {
+      localStorage.setItem("__E2E_MODE__", "true");
+    } catch {
+      // Ignore if storage is unavailable (e.g., sandboxed contexts)
+    }
   });
 }
 

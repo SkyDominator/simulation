@@ -9,11 +9,31 @@ const LandscapeEnforcer: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const e2eMode = isE2EMode();
 
+  if (import.meta.env.DEV || e2eMode) {
+    console.log("[LandscapeEnforcer] Initialized:", {
+      e2eMode,
+      viewport:
+        typeof window !== "undefined"
+          ? { width: window.innerWidth, height: window.innerHeight }
+          : null,
+      orientation:
+        typeof window !== "undefined"
+          ? window.matchMedia("(orientation: portrait)").matches
+            ? "portrait"
+            : "landscape"
+          : null,
+    });
+  }
+
   const [isPortrait, setIsPortrait] = useState(() => {
     if (e2eMode || typeof window === "undefined") {
       return false;
     }
-    return window.matchMedia("(orientation: portrait)").matches;
+    const matches = window.matchMedia("(orientation: portrait)").matches;
+    if (import.meta.env.DEV) {
+      console.log("[LandscapeEnforcer] Initial portrait detection:", matches);
+    }
+    return matches;
   });
   const [lockTried, setLockTried] = useState(false);
 

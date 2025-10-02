@@ -190,6 +190,8 @@ This plan guides **re-implementation from scratch** of E2E tests for the fronten
 * **Why**: 60% of users on mobile, landscape orientation preferred
 * **Frontend Target**: MUI breakpoints (xs, md), LandscapeEnforcer component
 * **Real Implementation**: theme.tsx breakpoints, responsive MUI props
+
+**Viewport Configuration Note:** Mobile Playwright projects run with landscape viewports (Mobile Chrome: 851×393, Mobile Safari: 844×390) to prevent the orientation overlay from blocking automated flows. Portrait enforcement is exercised separately in `e2e/specs/landscape-enforcer.spec.ts`.
 * **Cases**:
     - E2E-MOB-001: Whitelist page renders correctly at mobile width (375px)
     - E2E-MOB-002: OTP page renders correctly at mobile width
@@ -197,7 +199,7 @@ This plan guides **re-implementation from scratch** of E2E tests for the fronten
     - E2E-MOB-004: Plan editor steps render in single column on mobile
     - E2E-MOB-005: Buttons meet minimum touch target size (44px)
     - E2E-MOB-006: Modal dialogs are full-screen on mobile
-    - E2E-MOB-007: LandscapeEnforcer shows overlay in portrait mode
+  - E2E-MOB-007: LandscapeEnforcer shows overlay in portrait mode (coverage: `e2e/specs/landscape-enforcer.spec.ts` – validates portrait enforcement and E2E bypass behaviour while keeping other flows in landscape)
     - E2E-MOB-008: MUI breakpoint transitions work (xs → md)
     - E2E-MOB-009: Header actions collapse to menu on mobile
     - E2E-MOB-010: Table pagination works on mobile
