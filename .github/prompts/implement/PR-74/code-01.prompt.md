@@ -29,4 +29,5 @@ Do the following tasks:
 Do not:
 
 1. Create any report documents.
-2. Stary to solve other issues not mentioned in the $PLAN$. If other issues are found, they will be fixed in subsequent iterations of research, planning and implementation.
+2. Stary to solve other issues not mentioned in the $PLAN$. If other issues are found, they will be fixed in subsequent iterations (research, planning, implementation).
+3. Refactor the codebase beyond what is necessary to solve the mentioned issues in the $PLAN$. Refactoring will be handled in separate iterations if needed.
