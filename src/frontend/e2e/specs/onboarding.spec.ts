@@ -213,22 +213,31 @@ test.describe("User Onboarding Flow", () => {
   }) => {
     // Set up network request spy
     const consentRequests: any[] = [];
-    await page.route("**/api/consents", async (route) => {
-      consentRequests.push({
-        method: route.request().method(),
-        body: route.request().postDataJSON(),
-      });
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          user_hash: "test-hash-123",
-          consent_type: "privacy_policy",
-          consent_version: "v1",
-          consent_given_at: new Date().toISOString(),
-        }),
-      });
+    await page.route("**/api/consents**", async (route) => {
+      if (route.request().method() === "POST") {
+        consentRequests.push({
+          method: route.request().method(),
+          body: route.request().postDataJSON(),
+        });
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            user_hash: "test-hash-123",
+            consent_type: "privacy_policy",
+            consent_version: "v1",
+            consent_given_at: new Date().toISOString(),
+          }),
+        });
+      } else {
+        // Handle GET requests for checking existing consents
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ success: true, consents: [] }),
+        });
+      }
     });
 
     await page.goto("/");
