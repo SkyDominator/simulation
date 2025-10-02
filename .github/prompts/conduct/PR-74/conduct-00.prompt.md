@@ -29,7 +29,7 @@ You are a conductor who orchestrates the research and planning process to solve 
 
 $INIT_RESEARCHER$: `.github/prompts/research/PR-74/research-00.prompt.md`
 $INIT_RESEARCH_RESULT$: `docs/research/PR-74/research-00.md`
-$INIT_PLANNER$: `.github/prompts/planners/PR-74/plan-00.prompt.md`
+$INIT_PLANNER$: `.github/prompts/plan/PR-74/plan-00.prompt.md`
 $INIT_PLAN$: `docs/plans/PR-74/plan-00.md`
 
 The following file should be provided by users in advance:

@@ -89,14 +89,15 @@ Call log:
 
 ## Targets
 
-$EXAMPLE_RESEARCHER$: `.github/prompts/research/PR-74/research-00.prompt.md`
 $RESEARCHER$: `.github/prompts/research/PR-74/research-01.prompt.md`
-$EXAMPLE_RESEARCH_RESULT$: `docs/research/PR-74/research-00.md`
 $RESEARCH_RESULT$: `docs/research/PR-74/research-01.md`
-$EXAMPLE_PLANNER$: `.github/prompts/plans/PR-74/planner-00.prompt.md`
-$PLANNER$: `.github/prompts/plans/PR-74/planner-01.prompt.md`
-$EXAMPLE_PLAN$: `docs/plans/PR-74/plan-00.md`
+$PLANNER$: `.github/prompts/plan/PR-74/plan-01.prompt.md`
 $PLAN$: `docs/plans/PR-74/plan-01.md`
+
+$EXAMPLE_RESEARCHER$: `.github/prompts/research/PR-74/research-00.prompt.md`
+$EXAMPLE_RESEARCH_RESULT$: `docs/research/PR-74/research-00.md`
+$EXAMPLE_PLANNER$: `.github/prompts/plan/PR-74/plan-00.prompt.md`
+$EXAMPLE_PLAN$: `docs/plans/PR-74/plan-00.md`
 
 ## Tasks
 
@@ -121,7 +122,10 @@ For the format, structure, style, refer to $EXAMPLE_PLANNER$
 
 For the format, structure, style, refer to $EXAMPLE_PLAN$
 
-5. Stop and wait for my order.
+5. Continuously iterate on a review-and-self-correct loop until the criteria are met:
+    - $RESEARCHER$, $RESEARCH_RESULT$, $PLANNER$, $PLAN$ format STRICTLY follow the EXAMPLE formats.
+
+6. Stop and wait for my order.
 
 Do not:
 
