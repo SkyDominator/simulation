@@ -14,6 +14,7 @@ import {
   Divider,
 } from "@mui/material";
 import { api } from "../services/api";
+import type { ApiServiceInterface } from "../services/ApiService";
 import ReactMarkdown from "react-markdown";
 
 // Consent gate: fetch privacy policy, require acknowledgement, and record consent
@@ -22,12 +23,14 @@ interface ConsentPageProps {
   userHash: string;
   onAccept: () => void;
   onDecline: () => void;
+  apiService?: ApiServiceInterface;
 }
 
 const ConsentPage: React.FC<ConsentPageProps> = ({
   userHash,
   onAccept,
   onDecline,
+  apiService = api,
 }) => {
   const [checkboxChecked, setCheckboxChecked] = useState(false);
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
@@ -42,7 +45,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
     const fetchPrivacyPolicy = async () => {
       try {
         const userLocale = navigator.language || "ko-KR";
-        const response = await api.getPrivacyPolicy({ locale: userLocale });
+        const response = await apiService.getPrivacyPolicy({ locale: userLocale });
         setPolicyContent(response.content);
         setPolicyVersion(response.version);
         if (response.last_updated) setPolicyLastUpdated(response.last_updated);
@@ -57,7 +60,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
     };
 
     fetchPrivacyPolicy();
-  }, []);
+  }, [apiService]);
 
   const handleAccept = async () => {
     if (!checkboxChecked) {
@@ -69,7 +72,7 @@ const ConsentPage: React.FC<ConsentPageProps> = ({
     setError("");
 
     try {
-      await api.recordConsent(userHash, "privacy_policy", policyVersion);
+      await apiService.recordConsent(userHash, "privacy_policy", policyVersion);
       onAccept();
     } catch (err) {
       console.error("Error recording consent:", err);

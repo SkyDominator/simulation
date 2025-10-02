@@ -459,43 +459,92 @@ def mock_otp_service(monkeypatch):
 
 @pytest.fixture
 def mock_simulation_service(monkeypatch, mock_supabase_client):
-    """Mock SimulationService for simulation endpoints."""
+    """Mock SimulationService with validation logic that matches real implementation."""
     class MockSimulationService:
         def __init__(self):
             # Use the same mock client as other fixtures
             self.client = mock_supabase_client
             
-        def list_for_user(self, user_id):
-            if user_id == "test-user-123":
-                return {
-                    "simulations": [
-                        {
-                            "id": "sim-1",
-                            "name": "Test Simulation",
-                            "plan_id": "A"
-                        }
-                    ],
-                    "success": True
+            # Track "existing" simulations with ownership information
+            # This simulates what would be in the database
+            self.test_simulations = {
+                "sim-1": {
+                    "id": "sim-1",
+                    "user_id": "test-user-123",
+                    "plan_id": "A",
+                    "name": "Test Simulation",
+                    "starting_company_round": 1,
+                    "current_company_round": 1,
+                    "simulation_rounds": 3,
+                    "scheduled_payment": {"1": 100000},
+                    "sales_achievement_rates": {"1": 80}
+                },
+                "sim-123": {
+                    "id": "sim-123",
+                    "user_id": "test-user-123",
+                    "plan_id": "A",
+                    "name": "Test Simulation 123",
+                    "starting_company_round": 1,
+                    "current_company_round": 1,
+                    "simulation_rounds": 3,
+                    "scheduled_payment": {"1": 100000},
+                    "sales_achievement_rates": {"1": 80}
+                },
+                "other-user-sim": {
+                    "id": "other-user-sim",
+                    "user_id": "different-user-456",
+                    "plan_id": "B",
+                    "name": "Other User's Simulation",
+                    "starting_company_round": 1,
+                    "current_company_round": 1,
+                    "simulation_rounds": 3,
+                    "scheduled_payment": {"1": 200000},
+                    "sales_achievement_rates": {"1": 80}
                 }
-            return {"simulations": [], "success": True}
+            }
+            
+        def list_for_user(self, user_id):
+            # Return simulations owned by this user
+            user_sims = [sim for sim in self.test_simulations.values() if sim["user_id"] == user_id]
+            return {
+                "simulations": user_sims,
+                "success": True
+            }
         
         def create(self, request, user_id):
+            # Create operation always succeeds for valid data
+            new_id = "new-sim-123"
             return {
-                "simulation_id": "new-sim-123",
+                "simulation_id": new_id,
                 "plan_id": request.plan_id,
                 "message": "Simulation created successfully",
                 "success": True
             }
         
         def run(self, request, user_id):
+            """Run simulation - validates existence and ownership like real implementation."""
+            from exceptions import SimulationNotFoundError
+            
+            simulation_id = request.simulation_id
+            
+            # Check if simulation exists
+            sim = self.test_simulations.get(simulation_id)
+            
+            # Simulate the real implementation: check existence AND ownership in one query
+            # Real code: db.select("*").eq("id", simulation_id).eq("user_id", user_id)
+            if not sim or sim["user_id"] != user_id:
+                # This matches the real implementation behavior
+                raise SimulationNotFoundError(simulation_id)
+            
+            # Return mock success response
             return {
-                "simulation_id": request.simulation_id,
-                "plan_id": "A",
-                "starting_company_round": 1,
-                "current_company_round": 1,
-                "simulation_rounds": 1,
-                "scheduled_payment": {"1": 100000},
-                "sales_achievement_rates": {"1": 80},
+                "simulation_id": simulation_id,
+                "plan_id": sim["plan_id"],
+                "starting_company_round": sim["starting_company_round"],
+                "current_company_round": sim["current_company_round"],
+                "simulation_rounds": sim["simulation_rounds"],
+                "scheduled_payment": sim["scheduled_payment"],
+                "sales_achievement_rates": sim["sales_achievement_rates"],
                 "history": [
                     {
                         "company_round": 1,
@@ -523,6 +572,16 @@ def mock_simulation_service(monkeypatch, mock_supabase_client):
             }
         
         def update(self, simulation_id, request, user_id):
+            """Update simulation - validates existence and ownership like real implementation."""
+            from exceptions import SimulationNotFoundError
+            
+            # Check if simulation exists and belongs to user
+            sim = self.test_simulations.get(simulation_id)
+            
+            # Real code: db.select("id").eq("id", simulation_id).eq("user_id", user_id)
+            if not sim or sim["user_id"] != user_id:
+                raise SimulationNotFoundError(simulation_id)
+            
             return {
                 "simulation_id": simulation_id,
                 "plan_id": request.plan_id,
@@ -531,6 +590,13 @@ def mock_simulation_service(monkeypatch, mock_supabase_client):
             }
         
         def update_memo(self, simulation_id, request, user_id):
+            """Update memo - validates existence and ownership."""
+            from exceptions import SimulationNotFoundError
+            
+            sim = self.test_simulations.get(simulation_id)
+            if not sim or sim["user_id"] != user_id:
+                raise SimulationNotFoundError(simulation_id)
+            
             return {
                 "simulation_id": simulation_id,
                 "message": "Memo updated successfully",
@@ -538,6 +604,16 @@ def mock_simulation_service(monkeypatch, mock_supabase_client):
             }
         
         def delete(self, simulation_id, user_id):
+            """Delete simulation - validates existence and ownership like real implementation."""
+            from exceptions import SimulationNotFoundError
+            
+            # Check if simulation exists and belongs to user
+            sim = self.test_simulations.get(simulation_id)
+            
+            # Real code: db.select("id").eq("id", simulation_id).eq("user_id", user_id)
+            if not sim or sim["user_id"] != user_id:
+                raise SimulationNotFoundError(simulation_id)
+            
             return {
                 "simulation_id": simulation_id,
                 "message": "Simulation deleted successfully",

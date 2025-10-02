@@ -100,18 +100,17 @@ class TestSimulationEndpoints:
     
     def test_SIM_010_run_simulation_nonexistent_returns_404(self, client, mock_auth_regular_user, mock_simulation_service, valid_auth_headers):
         """POST /api/simulation/run with non-existent simulation returns 404."""
-        # In a real implementation, this would check if simulation exists
-        # For now, we test that the endpoint accepts the request
         data = {
-            "simulation_id": "nonexistent-sim"
+            "simulation_id": "nonexistent-sim-that-does-not-exist"
         }
         
         response = client.post("/api/simulation/run", json=data, headers=valid_auth_headers)
         
-        # Our mock always succeeds, but real implementation should check existence
-        assert response.status_code == 200  # Mock behavior
+        # Smart mock now validates existence - should return 404
+        assert response.status_code == 404
         result = response.json()
-        assert "simulation_id" in result
+        assert "detail" in result
+        assert "not found" in result["detail"].lower()
     
     def test_SIM_011_update_simulation_without_auth_returns_401(self, client, no_auth_headers):
         """PATCH /api/simulations/{id} without auth returns 401."""
@@ -139,8 +138,11 @@ class TestSimulationEndpoints:
         
         response = client.patch(f"/api/simulations/{nonexistent_id}", json=data, headers=valid_auth_headers)
         
-        # Our mock always succeeds, real implementation should check existence
-        assert response.status_code == 200  # Mock behavior
+        # Smart mock validates existence - should return 404
+        assert response.status_code == 404
+        result = response.json()
+        assert "detail" in result
+        assert "not found" in result["detail"].lower()
     
     def test_SIM_013_update_simulation_other_user_returns_404(self, client, mock_auth_regular_user, mock_simulation_service, valid_auth_headers):
         """PATCH /api/simulations/{id} accessing other user's simulation returns 404."""
@@ -155,8 +157,11 @@ class TestSimulationEndpoints:
         
         response = client.patch(f"/api/simulations/{other_user_sim_id}", json=data, headers=valid_auth_headers)
         
-        # Our mock always succeeds, real implementation should check ownership
-        assert response.status_code == 200  # Mock behavior
+        # Smart mock validates ownership - should return 404 for other user's simulation
+        assert response.status_code == 404
+        result = response.json()
+        assert "detail" in result
+        assert "not found" in result["detail"].lower()
     
     def test_SIM_014_delete_simulation_without_auth_returns_401(self, client, no_auth_headers):
         """DELETE /api/simulations/{id} without auth returns 401."""
@@ -185,5 +190,8 @@ class TestSimulationEndpoints:
         
         response = client.delete(f"/api/simulations/{nonexistent_id}", headers=valid_auth_headers)
         
-        # Our mock always succeeds, real implementation should check existence
-        assert response.status_code == 200  # Mock behavior
+        # Smart mock validates existence - should return 404
+        assert response.status_code == 404
+        result = response.json()
+        assert "detail" in result
+        assert "not found" in result["detail"].lower()

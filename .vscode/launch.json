@@ -149,7 +149,7 @@
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/src/frontend/node_modules/@playwright/test/cli.js",
-      "args": ["test", "--reporter=list", "--project=chromium"],
+      "args": ["test", "--reporter=list", "--project=Mobile Chrome"],
       "cwd": "${workspaceFolder}/src/frontend",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"],

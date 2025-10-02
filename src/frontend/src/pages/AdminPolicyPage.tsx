@@ -15,14 +15,16 @@ import {
 } from "@mui/material";
 import ReactMarkdown from "react-markdown";
 import { api } from "../services/api";
+import type { ApiServiceInterface } from "../services/ApiService";
 import type { Page } from "../types/types";
 import { useAuth } from "../context/useAuth";
 
 interface AdminPolicyPageProps {
   setPage: (page: Page) => void;
+  apiService?: ApiServiceInterface;
 }
 
-const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
+const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage, apiService = api }) => {
   const { session } = useAuth();
   const token = session?.access_token || "";
 
@@ -147,7 +149,7 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
       setError("");
       setMessage("");
       if (!policyId) {
-        const resp = await api.createPrivacyPolicy(token, {
+        const resp = await apiService.createPrivacyPolicy(token, {
           version: version.trim(),
           content,
           locale: locale.trim() || "ko-KR",
@@ -157,7 +159,7 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
         setPolicyId(resp.id);
         setMessage("정책이 생성되었습니다.");
       } else {
-        await api.updatePrivacyPolicy(token, policyId, {
+        await apiService.updatePrivacyPolicy(token, policyId, {
           version: version.trim(),
           content,
           locale: locale.trim() || "ko-KR",
@@ -180,7 +182,7 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
       setBusy(true);
       setError("");
       setMessage("");
-      await api.publishPrivacyPolicy(token, policyId);
+      await apiService.publishPrivacyPolicy(token, policyId);
       setMessage("정책이 게시되었습니다.");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -245,7 +247,7 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
 
   // Admin full editor rendering
   return (
-    <Box sx={{ p: { xs: 1.5, md: 3 }, maxWidth: 1000, mx: "auto" }}>
+    <Box sx={{ p: { xs: 1.5, md: 3 }, maxWidth: 1000, mx: "auto" }} data-testid="admin-policy-page">
       <Stack
         direction="row"
         alignItems="center"
@@ -292,7 +294,7 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
                     if (!token) return;
                     try {
                       setBusy(true);
-                      const res = await api.getPrivacyPolicyAdmin(token, id);
+                      const res = await apiService.getPrivacyPolicyAdmin(token, id);
                       const p = res.policy;
                       setPolicyId(id);
                       setVersion(p.version || "");
@@ -397,6 +399,7 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
               onClick={createOrUpdate}
               variant="contained"
               disabled={!canSave || busy}
+              data-testid="save-policy"
             >
               {policyId ? "수정 저장" : "새로 만들기"}
             </Button>
@@ -405,6 +408,7 @@ const AdminPolicyPage: React.FC<AdminPolicyPageProps> = ({ setPage }) => {
               variant="outlined"
               color="success"
               disabled={!policyId || busy}
+              data-testid="publish-policy"
             >
               게시
             </Button>

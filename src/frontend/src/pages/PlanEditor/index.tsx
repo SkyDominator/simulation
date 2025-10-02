@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Button } from "../../components/Button";
 import { useAuth } from "../../context/useAuth";
 import { api } from "../../services/api";
+import type { ApiServiceInterface } from "../../services/ApiService";
 import type { Plan, Page } from "../../types/types";
 import type { ValidationData } from "./types/index";
 import { getJSON, setJSON } from "../../utils/persist";
@@ -9,6 +10,7 @@ import { getJSON, setJSON } from "../../utils/persist";
 interface PlanEditorPageProps {
   setPage: (page: Page) => void;
   editingPlan: Plan | null;
+  apiService?: ApiServiceInterface;
 }
 import {
   PlanTypeSelector,
@@ -51,6 +53,7 @@ const steps = [
 const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
   setPage,
   editingPlan,
+  apiService = api,
 }) => {
   const { session } = useAuth();
   const [step, setStep] = useState<number>(() =>
@@ -391,7 +394,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
 
       if (plan.simulation_id) {
         // Update existing simulation
-        await api.updateSimulation(
+        await apiService.updateSimulation(
           session.access_token,
           plan.simulation_id,
           plan.plan_id,
@@ -403,7 +406,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         );
       } else {
         // Create new simulation
-        const createResponse = await api.createSimulation(
+        const createResponse = await apiService.createSimulation(
           session.access_token,
           plan.plan_id,
           plan.starting_company_round,
@@ -577,14 +580,14 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
         {editingPlan ? "플랜 수정하기" : "새 플랜 만들기"}
       </Typography>
       <Paper elevation={3} sx={{ p: { xs: 2.5, md: 4 }, borderRadius: 3 }}>
-        <Stepper activeStep={step - 1} alternativeLabel sx={{ mb: 4 }}>
-          {steps.map((label) => (
-            <Step key={label}>
+        <Stepper activeStep={step - 1} alternativeLabel sx={{ mb: 4 }} data-testid="plan-stepper">
+          {steps.map((label, index) => (
+            <Step key={label} data-testid={`step-${index + 1}`}>
               <StepLabel>{label}</StepLabel>
             </Step>
           ))}
         </Stepper>
-        <Box>{renderStep()}</Box>
+        <Box data-testid={`step-content-${step}`}>{renderStep()}</Box>
         <Divider sx={{ my: 4 }} />
         <Stack
           direction="row"
@@ -596,6 +599,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
             <Button
               onClick={handleBack}
               className="bg-gray-500 hover:bg-gray-600"
+              data-testid="back-button"
             >
               뒤로 가기
             </Button>
@@ -607,6 +611,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
               <Button
                 onClick={handleNext}
                 className="bg-blue-600 hover:bg-blue-700"
+                data-testid="next-button"
               >
                 다음 단계
               </Button>
@@ -615,6 +620,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
               <Button
                 onClick={handleSaveClick}
                 className="bg-green-600 hover:bg-green-700"
+                data-testid="save-button"
               >
                 저장
               </Button>
@@ -664,6 +670,7 @@ const PlanEditorPage: React.FC<PlanEditorPageProps> = ({
             setPage("main");
           }}
           className="bg-gray-200 text-black hover:bg-gray-300"
+          data-testid="cancel-button"
         >
           메인으로 돌아가기
         </Button>

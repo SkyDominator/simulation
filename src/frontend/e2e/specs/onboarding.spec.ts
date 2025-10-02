@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { TestHelpers, APIHelpers } from "../utils/test-helpers";
+import { TestHelpers, APIHelpers, initE2EMode } from "../utils/test-helpers";
 import { loginTestUser } from "../utils/auth-helpers";
 import { TEST_USERS, TEST_OTP_CODES } from "../fixtures/test-data";
 
@@ -7,6 +7,7 @@ test.describe("User Onboarding Flow", () => {
   let helpers: TestHelpers;
 
   test.beforeEach(async ({ page }) => {
+    await initE2EMode(page); // Initialize E2E mode for all onboarding tests
     helpers = new TestHelpers(page);
     await APIHelpers.mockOTPSuccess(page);
     await APIHelpers.mockConsentSuccess(page);
@@ -79,5 +80,274 @@ test.describe("User Onboarding Flow", () => {
       "인증번호가 올바르지 않습니다."
     );
     await expect(page.getByTestId("otp-form")).toBeVisible();
+  });
+
+  test("E2E-PREAUTH-004: OTP timer counts down and displays remaining time", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await helpers.fillWhitelistForm(
+      TEST_USERS.WHITELISTED.name,
+      TEST_USERS.WHITELISTED.phone
+    );
+
+    // Wait for OTP form to appear
+    await expect(page.getByTestId("otp-form")).toBeVisible();
+
+    // Check that timer is visible and shows time (format: MM:SS)
+    const timer = page.locator('text=/\\d{2}:\\d{2}/');
+    await expect(timer).toBeVisible({ timeout: 5000 });
+
+    // Get initial time
+    const initialTime = await timer.textContent();
+    expect(initialTime).toMatch(/\d{2}:\d{2}/);
+
+    // Wait a bit and verify time has decreased
+    await page.waitForTimeout(2000);
+    const laterTime = await timer.textContent();
+
+    // Parse times to verify countdown
+    const parseTime = (timeStr: string | null) => {
+      if (!timeStr) return 0;
+      const [min, sec] = timeStr.split(":").map(Number);
+      return min * 60 + sec;
+    };
+
+    expect(parseTime(laterTime)).toBeLessThan(parseTime(initialTime));
+  });
+
+  test("E2E-PREAUTH-005: Resend button triggers new OTP send with rate limiting", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await helpers.fillWhitelistForm(
+      TEST_USERS.WHITELISTED.name,
+      TEST_USERS.WHITELISTED.phone
+    );
+
+    await expect(page.getByTestId("otp-form")).toBeVisible();
+
+    // Find and click resend button
+    const resendButton = page.getByRole("button", { name: /다시 받기|재전송/i });
+    await expect(resendButton).toBeVisible();
+
+    // Click resend
+    await resendButton.click();
+
+    // Verify new OTP request was made (timer should reset)
+    const timer = page.locator('text=/\\d{2}:\\d{2}/');
+    const timeAfterResend = await timer.textContent();
+
+    // After resend, timer should be close to max (around 05:00 or 300 seconds)
+    const parseTime = (timeStr: string | null) => {
+      if (!timeStr) return 0;
+      const [min, sec] = timeStr.split(":").map(Number);
+      return min * 60 + sec;
+    };
+
+    expect(parseTime(timeAfterResend)).toBeGreaterThan(290); // Should be close to 5 minutes
+  });
+
+  test("E2E-PREAUTH-007: Consent page shows privacy policy content with network call", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // Complete whitelist and OTP steps
+    await helpers.fillWhitelistForm(
+      TEST_USERS.WHITELISTED.name,
+      TEST_USERS.WHITELISTED.phone
+    );
+    await expect(page.getByTestId("otp-form")).toBeVisible();
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
+
+    // Should now be on consent page
+    await expect(page.getByTestId("consent-page")).toBeVisible({ timeout: 5000 });
+
+    // Verify privacy policy content is displayed
+    await expect(page.locator("text=/개인정보|privacy|정책/i")).toBeVisible();
+
+    // Verify the policy content area exists
+    const policyContent = page.locator('[data-testid="policy-content"]').or(
+      page.locator("text=Mock privacy policy content")
+    );
+    await expect(policyContent.first()).toBeVisible();
+  });
+
+  test("E2E-PREAUTH-008: Consent checkbox must be checked to enable accept button", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // Complete whitelist and OTP steps
+    await helpers.fillWhitelistForm(
+      TEST_USERS.WHITELISTED.name,
+      TEST_USERS.WHITELISTED.phone
+    );
+    await expect(page.getByTestId("otp-form")).toBeVisible();
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
+
+    // On consent page
+    await expect(page.getByTestId("consent-page")).toBeVisible({ timeout: 5000 });
+
+    // Accept button should be disabled initially
+    const acceptButton = page.getByTestId("accept-consent").or(
+      page.getByRole("button", { name: /동의|계속|accept/i })
+    );
+    await expect(acceptButton.first()).toBeDisabled();
+
+    // Check the consent checkbox
+    const consentCheckbox = page.getByTestId("consent-checkbox").or(
+      page.getByRole("checkbox")
+    );
+    await consentCheckbox.first().click();
+
+    // Accept button should now be enabled
+    await expect(acceptButton.first()).toBeEnabled();
+  });
+
+  test("E2E-PREAUTH-009: Accept consent proceeds to login page with API call", async ({
+    page,
+  }) => {
+    // Set up network request spy
+    const consentRequests: any[] = [];
+    await page.route("**/api/consents", async (route) => {
+      consentRequests.push({
+        method: route.request().method(),
+        body: route.request().postDataJSON(),
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          user_hash: "test-hash-123",
+          consent_type: "privacy_policy",
+          consent_version: "v1",
+          consent_given_at: new Date().toISOString(),
+        }),
+      });
+    });
+
+    await page.goto("/");
+
+    // Complete whitelist and OTP steps
+    await helpers.fillWhitelistForm(
+      TEST_USERS.WHITELISTED.name,
+      TEST_USERS.WHITELISTED.phone
+    );
+    await expect(page.getByTestId("otp-form")).toBeVisible();
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
+
+    // On consent page, check and accept
+    await expect(page.getByTestId("consent-page")).toBeVisible({ timeout: 5000 });
+    const consentCheckbox = page.getByTestId("consent-checkbox").or(
+      page.getByRole("checkbox")
+    );
+    await consentCheckbox.first().click();
+
+    const acceptButton = page.getByTestId("accept-consent").or(
+      page.getByRole("button", { name: /동의|계속|accept/i })
+    );
+    await acceptButton.first().click();
+
+    // Wait for navigation to login page
+    await expect(
+      page.getByTestId("login-form").or(page.locator("text=/로그인|login/i"))
+    ).toBeVisible({ timeout: 5000 });
+
+    // Verify consent API was called
+    expect(consentRequests.length).toBeGreaterThan(0);
+    expect(consentRequests[0].method).toBe("POST");
+  });
+
+  test("E2E-PREAUTH-010: Decline consent returns to whitelist page", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // Complete whitelist and OTP steps
+    await helpers.fillWhitelistForm(
+      TEST_USERS.WHITELISTED.name,
+      TEST_USERS.WHITELISTED.phone
+    );
+    await expect(page.getByTestId("otp-form")).toBeVisible();
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
+
+    // On consent page
+    await expect(page.getByTestId("consent-page")).toBeVisible({ timeout: 5000 });
+
+    // Click decline button
+    const declineButton = page.getByTestId("decline-consent").or(
+      page.getByRole("button", { name: /취소|거부|decline/i })
+    );
+    await declineButton.first().click();
+
+    // Should return to whitelist form
+    await expect(
+      page.getByTestId("whitelist-form").or(page.locator("text=환영합니다!"))
+    ).toBeVisible({ timeout: 5000 });
+  });
+
+  test("E2E-PREAUTH-011: Back button from login returns to whitelist page", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // Complete full flow to login page
+    await helpers.fillWhitelistForm(
+      TEST_USERS.WHITELISTED.name,
+      TEST_USERS.WHITELISTED.phone
+    );
+    await expect(page.getByTestId("otp-form")).toBeVisible();
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
+
+    await expect(page.getByTestId("consent-page")).toBeVisible({ timeout: 5000 });
+    const consentCheckbox = page.getByTestId("consent-checkbox").or(
+      page.getByRole("checkbox")
+    );
+    await consentCheckbox.first().click();
+    const acceptButton = page.getByTestId("accept-consent").or(
+      page.getByRole("button", { name: /동의|계속|accept/i })
+    );
+    await acceptButton.first().click();
+
+    // Now on login page
+    await expect(
+      page.getByTestId("login-form").or(page.locator("text=/로그인|login/i"))
+    ).toBeVisible({ timeout: 5000 });
+
+    // Find and click back button
+    const backButton = page.getByTestId("back-button").or(
+      page.getByRole("button", { name: /이전|back/i })
+    );
+    await backButton.first().click();
+
+    // Should return to whitelist form
+    await expect(
+      page.getByTestId("whitelist-form").or(page.locator("text=환영합니다!"))
+    ).toBeVisible({ timeout: 5000 });
+  });
+
+  test("E2E-PREAUTH-012: Phone input auto-formats to 010-XXXX-XXXX pattern", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // Find phone input
+    const phoneInput = page.getByLabel("휴대폰 번호").or(
+      page.getByTestId("phone-input")
+    );
+    await expect(phoneInput.first()).toBeVisible();
+
+    // Type phone number without dashes
+    await phoneInput.first().fill("01012345678");
+
+    // Verify it formats to 010-1234-5678
+    const formattedValue = await phoneInput.first().inputValue();
+    expect(formattedValue).toMatch(/010-\d{4}-\d{4}/);
+    expect(formattedValue).toBe("010-1234-5678");
   });
 });

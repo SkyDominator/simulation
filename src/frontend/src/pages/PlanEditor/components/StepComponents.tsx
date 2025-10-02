@@ -377,6 +377,7 @@ export const PlanTypeSelector: React.FC<PlanTypeSelectorProps> = ({
           label="플랜"
           value={planType}
           onChange={(e) => onChange(e.target.value as string)}
+          data-testid="plan-selector"
         >
           {options.map((p) => (
             <MenuItem key={p} value={p}>
@@ -414,6 +415,7 @@ export const StartingCompanyRoundSelector: React.FC<
         value={companyRound === 0 ? "" : companyRound}
         placeholder={`회차를 입력하세요 (최소: ${MIN_ROUND}, 최대: ${MAX_ROUND})`}
         onChange={handleChange}
+        data-testid="starting-round-input"
       />
     </div>
   );
@@ -444,6 +446,7 @@ export const CurrentCompanyRoundSelector: React.FC<
         value={companyRound === 0 ? "" : companyRound}
         placeholder={`회차를 입력하세요 (최소: ${MIN_ROUND}, 최대: ${MAX_ROUND})`}
         onChange={handleChange}
+        data-testid="current-round-input"
       />
     </div>
   );
@@ -469,6 +472,7 @@ export const SimulationRoundsSelector: React.FC<
             e.target.value === "" ? NaN : parseInt(e.target.value, 10);
           onChange(value);
         }}
+        data-testid="simulation-rounds-input"
       />
     </div>
   );
