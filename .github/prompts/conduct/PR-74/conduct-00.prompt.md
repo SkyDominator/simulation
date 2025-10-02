@@ -32,6 +32,13 @@ $INIT_RESEARCH_RESULT$: `docs/research/PR-74/research-00.md`
 $INIT_PLANNER$: `.github/prompts/planners/PR-74/plan-00.prompt.md`
 $INIT_PLAN$: `docs/plans/PR-74/plan-00.md`
 
+The following file should be provided by users in advance:
+
+- $INIT_RESEARCHER$
+- $INIT_PLANNER$
+
+Ask users to provide it if not provided.
+
 ## Tasks
 
 Do the following tasks:
