@@ -47,7 +47,7 @@ As the 2 test cases are almost similar, I think it is because of the following r
 
 The basic goal of this research is to identify:
 
-1. ALL frontend codes related to the [issues](#issues).
+1. ALL codebases related to the [issues](#issues).
 2. The followings of the identified codes:
    1. code map
     * The references to the exact source code file paths and the line numbers
