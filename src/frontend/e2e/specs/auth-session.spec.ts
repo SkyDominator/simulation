@@ -1,15 +1,30 @@
 import { test, expect } from "@playwright/test";
+import type { Page, Response } from "@playwright/test";
 import { TestHelpers, APIHelpers, initE2EMode } from "../utils/test-helpers";
-import {
-  loginTestUser,
-  logoutTestUser,
-  isUserAuthenticated,
-} from "../utils/auth-helpers";
+import { loginTestUser, isUserAuthenticated } from "../utils/auth-helpers";
 
 /**
  * CAT-AUTH: Authentication & Session Tests
  * Tests authentication state management, session persistence, and access control
  */
+
+async function waitForPersistedConsent(page: Page): Promise<Response> {
+  return page.waitForResponse(async (response) => {
+    if (
+      !response.url().includes("/api/consents/") ||
+      response.request().method() !== "GET"
+    ) {
+      return false;
+    }
+
+    try {
+      const data = await response.json();
+      return Array.isArray(data?.consents) && data.consents.length > 0;
+    } catch {
+      return false;
+    }
+  });
+}
 
 test.describe("Authentication & Session Management", () => {
   let helpers: TestHelpers;
@@ -53,11 +68,26 @@ test.describe("Authentication & Session Management", () => {
       timeout: 5000,
     });
     await page.getByTestId("consent-checkbox").click();
+    const consentSyncPromise = waitForPersistedConsent(page);
     await page.getByTestId("accept-consent").click();
+    await consentSyncPromise;
+
+    await expect
+      .poll(
+        () =>
+          APIHelpers.getConsentMockState(page)?.consentsByHash?.[
+            "test-hash-123"
+          ]?.length ?? 0,
+        { timeout: 5000 }
+      )
+      .toBeGreaterThan(0);
 
     // On login page, click Google login
     await expect(page.getByTestId("login-form")).toBeVisible({ timeout: 5000 });
     await page.getByTestId("google-login").click({ timeout: 5000 });
+
+    const consentState = APIHelpers.getConsentMockState(page);
+    expect(consentState?.getCount ?? 0).toBeGreaterThanOrEqual(1);
 
     // Check that OAuth redirect was triggered
     expect(oauthTriggered).toBe(true);
@@ -77,10 +107,24 @@ test.describe("Authentication & Session Management", () => {
       timeout: 5000,
     });
     await page.getByTestId("consent-checkbox").click();
+    const consentSyncPromise = waitForPersistedConsent(page);
     await page.getByTestId("accept-consent").click();
+    await consentSyncPromise;
+
+    await expect
+      .poll(
+        () =>
+          APIHelpers.getConsentMockState(page)?.consentsByHash?.[
+            "test-hash-123"
+          ]?.length ?? 0,
+        { timeout: 5000 }
+      )
+      .toBeGreaterThan(0);
 
     // On login page, check for Kakao login button
     await expect(page.getByTestId("login-form")).toBeVisible({ timeout: 5000 });
+    const consentState = APIHelpers.getConsentMockState(page);
+    expect(consentState?.getCount ?? 0).toBeGreaterThanOrEqual(1);
     await expect(page.getByTestId("kakao-login")).toBeVisible();
   });
 

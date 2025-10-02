@@ -1,12 +1,39 @@
 import { Page, expect } from "@playwright/test";
 
+type ConsentRecordMock = {
+  user_hash: string;
+  consent_type: string;
+  consent_version: string;
+  consent_given_at: string;
+  ip_address?: string;
+  user_agent?: string;
+};
+
+type ConsentMockInternalState = {
+  consentMap: Map<string, ConsentRecordMock[]>;
+  postCount: number;
+  getCount: number;
+};
+
+type ConsentMockSnapshot = {
+  postCount: number;
+  getCount: number;
+  consentsByHash: Record<string, ConsentRecordMock[]>;
+};
+
+const consentMockStates = new WeakMap<Page, ConsentMockInternalState>();
+
 /**
  * Initialize E2E mode for the page
  * This should be called in beforeEach hooks before any other setup
  */
 export async function initE2EMode(page: Page) {
   await page.addInitScript(() => {
-    (window as any).__E2E_MODE__ = true;
+    (
+      window as unknown as {
+        __E2E_MODE__: boolean;
+      }
+    ).__E2E_MODE__ = true;
   });
 }
 
@@ -378,6 +405,14 @@ export class APIHelpers {
    * Mock privacy policy retrieval and consent recording
    */
   static async mockConsentSuccess(page: Page) {
+    const state: ConsentMockInternalState = {
+      consentMap: new Map(),
+      postCount: 0,
+      getCount: 0,
+    };
+    consentMockStates.set(page, state);
+    page.once("close", () => consentMockStates.delete(page));
+
     // Mock GET /api/privacy-policy (with optional query params)
     try {
       await page.unroute("**/api/privacy-policy**");
@@ -407,17 +442,48 @@ export class APIHelpers {
     }
     await page.route("**/api/consents", async (route) => {
       if (route.request().method() === "POST") {
+        let requestBody: Record<string, unknown> = {};
+        try {
+          requestBody = route.request().postDataJSON?.() ?? {};
+        } catch {
+          requestBody = {};
+        }
+        const userHash =
+          typeof requestBody.user_hash === "string"
+            ? requestBody.user_hash
+            : "test-hash-123";
+        const consentType =
+          typeof requestBody.consent_type === "string"
+            ? requestBody.consent_type
+            : "privacy_policy";
+        const consentVersion =
+          typeof requestBody.consent_version === "string"
+            ? requestBody.consent_version
+            : "v1";
+
+        const consentRecord: ConsentRecordMock = {
+          user_hash: userHash,
+          consent_type: consentType,
+          consent_version: consentVersion,
+          consent_given_at: new Date().toISOString(),
+          ip_address:
+            typeof requestBody.ip_address === "string"
+              ? requestBody.ip_address
+              : "127.0.0.1",
+          user_agent:
+            typeof requestBody.user_agent === "string"
+              ? requestBody.user_agent
+              : "Mozilla/5.0 (E2E)",
+        };
+
+        const existingConsents = state.consentMap.get(userHash) ?? [];
+        state.consentMap.set(userHash, [...existingConsents, consentRecord]);
+        state.postCount += 1;
+
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({
-            user_hash: "test-hash-123",
-            consent_type: "privacy_policy",
-            consent_version: "v1",
-            consent_given_at: new Date().toISOString(),
-            ip_address: "127.0.0.1",
-            user_agent: "Mozilla/5.0",
-          }),
+          body: JSON.stringify(consentRecord),
         });
       } else {
         // Unexpected method on /api/consents
@@ -433,11 +499,17 @@ export class APIHelpers {
     }
     await page.route("**/api/consents/*", async (route) => {
       if (route.request().method() === "GET") {
+        const url = route.request().url();
+        const hashMatch = url.match(/\/api\/consents\/([^/?#]+)/);
+        const userHash = hashMatch?.[1] ?? "test-hash-123";
+        const consents = state.consentMap.get(userHash) ?? [];
+        state.getCount += 1;
+
         await route.fulfill({
           status: 200,
           contentType: "application/json",
           body: JSON.stringify({
-            consents: [],
+            consents,
             success: true,
           }),
         });
@@ -709,5 +781,29 @@ export class APIHelpers {
         await route.continue();
       }
     });
+  }
+
+  /**
+   * Retrieve consent mock state for diagnostics
+   */
+  static getConsentMockState(page: Page): ConsentMockSnapshot | null {
+    const state = consentMockStates.get(page);
+    if (!state) {
+      return null;
+    }
+
+    const consentsByHash: Record<string, ConsentRecordMock[]> =
+      Object.fromEntries(
+        Array.from(state.consentMap.entries()).map(([hash, records]) => [
+          hash,
+          records.map((record) => ({ ...record })),
+        ])
+      );
+
+    return {
+      postCount: state.postCount,
+      getCount: state.getCount,
+      consentsByHash,
+    };
   }
 }
