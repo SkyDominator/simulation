@@ -10,9 +10,9 @@ You are a planner who creates implementation plans by reading the research artif
 
 ## Mappings
 
-$RESEARCHER$: `.github/prompts/conduct/PR-74/conduct-00.prompt.md`:$INIT_RESEARCHER$
-$RESEARCH_RESULT$: `.github/prompts/conduct/PR-74/conduct-00.prompt.md`:$INIT_RESEARCH_RESULT$
-$PLAN$: `.github/prompts/conduct/PR-74/conduct-00.prompt.md`:$INIT_PLAN$
+$RESEARCHER$: `.github/prompts/rnd/PR-74/rnd-00.prompt.md`:$INIT_RESEARCHER$
+$RESEARCH_RESULT$: `.github/prompts/rnd/PR-74/rnd-00.prompt.md`:$INIT_RESEARCH_RESULT$
+$PLAN$: `.github/prompts/rnd/PR-74/rnd-00.prompt.md`:$INIT_PLAN$
 
 ## Tasks
 

@@ -14,7 +14,7 @@ It should provide the context and details of the implementation, the code map, t
 
 ## Mappings
 
-$RESEARCH_RESULT$: `.github/prompts/conduct/PR-74/conduct-00.prompt.md`:$INIT_RESEARCH_RESULT$
+$RESEARCH_RESULT$: `.github/prompts/rnd/PR-74/rnd-00.prompt.md`:$INIT_RESEARCH_RESULT$
 
 ## The issue statements
 
