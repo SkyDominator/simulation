@@ -27,7 +27,8 @@ export default defineConfig({
     baseURL: "http://localhost:4173", // Vite preview server
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: "off", // Disable trace to avoid ffmpeg dependency
+    // trace: "off", // Disable trace to avoid ffmpeg dependency
+    trace: "on-first-retry", // Disable trace to avoid ffmpeg dependency
 
     /* Take screenshots on failure */
     // screenshot: 'only-on-failure',
