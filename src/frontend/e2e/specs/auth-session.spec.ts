@@ -57,10 +57,10 @@ test.describe("Authentication & Session Management", () => {
 
     // On login page, click Google login
     await expect(page.getByTestId("login-form")).toBeVisible({ timeout: 5000 });
-    await page.getByTestId("google-login").click();
+    await page.getByTestId("google-login").click({ timeout: 5000 });
 
-    // Verify button exists and is clickable
-    await expect(page.getByTestId("google-login")).toBeVisible();
+    // Check that OAuth redirect was triggered
+    expect(oauthTriggered).toBe(true);
   });
 
   test("E2E-AUTH-002: Login button triggers Supabase OAuth (Kakao)", async ({
