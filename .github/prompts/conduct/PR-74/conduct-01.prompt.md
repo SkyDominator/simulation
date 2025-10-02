@@ -121,4 +121,9 @@ For the format, structure, style, refer to $EXAMPLE_PLANNER$
 
 For the format, structure, style, refer to $EXAMPLE_PLAN$
 
-5. Stop and wait for my order. Do not proceed to implementation.
+5. Stop and wait for my order.
+
+Do not:
+
+1. Create any files other than the above 2 files.
+2. Proceed to implementation.

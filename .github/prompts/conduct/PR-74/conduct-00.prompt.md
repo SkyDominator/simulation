@@ -49,4 +49,9 @@ Do the following tasks:
 
 2. Generate $INIT_PLAN$ by following instructions in $INIT_PLANNER$
 
-3. Stop and wait for user order. Do not proceed to implementation.
+3. Stop and wait for user order.
+
+Do not:
+
+1. Create any files other than the above 2 files.
+2. Proceed to implementation.
