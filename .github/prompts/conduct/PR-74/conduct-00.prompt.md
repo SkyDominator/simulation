@@ -6,7 +6,7 @@ model: Claude Sonnet 4.5 (Preview) (copilot)
 
 # Conductor for Research and Planning
 
-You are a conductor who orchestrates the research and planning process to solve issues in the codebase. 
+You are a conductor who orchestrates the research and planning process to solve issues in the codebase.
 
 ## Issue Description
 
