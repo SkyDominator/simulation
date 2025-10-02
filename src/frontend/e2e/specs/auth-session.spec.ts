@@ -52,25 +52,15 @@ test.describe("Authentication & Session Management", () => {
     await expect(page.getByTestId("consent-page")).toBeVisible({
       timeout: 5000,
     });
-    const consentCheckbox = page
-      .getByTestId("consent-checkbox")
-      .or(page.getByRole("checkbox"));
-    await consentCheckbox.first().click();
-    const acceptButton = page
-      .getByTestId("accept-consent")
-      .or(page.getByRole("button", { name: /동의|계속|accept/i }));
-    await acceptButton.first().click();
+    await page.getByTestId("consent-checkbox").click();
+    await page.getByTestId("accept-consent").click();
 
     // On login page, click Google login
     await expect(page.getByTestId("login-form")).toBeVisible({ timeout: 5000 });
+    await page.getByTestId("google-login").click();
 
-    const googleLoginButton = page
-      .getByTestId("google-login")
-      .or(page.getByRole("button", { name: /google/i }));
-    await googleLoginButton.first().click();
-
-    // Verify OAuth was triggered (or button exists and is clickable)
-    await expect(googleLoginButton.first()).toBeVisible();
+    // Verify button exists and is clickable
+    await expect(page.getByTestId("google-login")).toBeVisible();
   });
 
   test("E2E-AUTH-002: Login button triggers Supabase OAuth (Kakao)", async ({
@@ -86,22 +76,12 @@ test.describe("Authentication & Session Management", () => {
     await expect(page.getByTestId("consent-page")).toBeVisible({
       timeout: 5000,
     });
-    const consentCheckbox = page
-      .getByTestId("consent-checkbox")
-      .or(page.getByRole("checkbox"));
-    await consentCheckbox.first().click();
-    const acceptButton = page
-      .getByTestId("accept-consent")
-      .or(page.getByRole("button", { name: /동의|계속|accept/i }));
-    await acceptButton.first().click();
+    await page.getByTestId("consent-checkbox").click();
+    await page.getByTestId("accept-consent").click();
 
     // On login page, check for Kakao login button
     await expect(page.getByTestId("login-form")).toBeVisible({ timeout: 5000 });
-
-    const kakaoLoginButton = page
-      .getByTestId("kakao-login")
-      .or(page.getByRole("button", { name: /kakao|카카오/i }));
-    await expect(kakaoLoginButton.first()).toBeVisible();
+    await expect(page.getByTestId("kakao-login")).toBeVisible();
   });
 
   test("E2E-AUTH-003: Successful auth sets user state in useAuth()", async ({
@@ -163,26 +143,22 @@ test.describe("Authentication & Session Management", () => {
     await expect(page.getByTestId("main-page")).toBeVisible({ timeout: 5000 });
 
     // Find and click logout button
-    const logoutButton = page
-      .getByTestId("logout-button")
-      .or(page.getByRole("button", { name: /로그아웃|logout/i }));
-    await logoutButton.first().click();
+    await page.getByTestId("logout-button").click();
 
     // Handle confirmation dialog if present
-    const confirmButton = page
-      .getByRole("button", { name: /확인|yes|logout/i })
-      .first();
-    if (await confirmButton.isVisible()) {
-      await confirmButton.click();
+    const confirmButton = page.getByRole("button", {
+      name: /확인|yes|logout/i,
+    });
+    try {
+      await confirmButton.click({ timeout: 1000 });
+    } catch {
+      // No confirmation dialog, continue
     }
 
     // Should return to whitelist page
-    await expect(
-      page
-        .getByTestId("whitelist-form")
-        .or(page.locator("text=환영합니다!"))
-        .first()
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("whitelist-form")).toBeVisible({
+      timeout: 5000,
+    });
 
     // Wait a moment for storage to be fully cleared
     await page.waitForTimeout(500);
@@ -199,12 +175,9 @@ test.describe("Authentication & Session Management", () => {
     await page.goto("/");
 
     // Should see whitelist page instead
-    await expect(
-      page
-        .getByTestId("whitelist-form")
-        .or(page.locator("text=환영합니다!"))
-        .first()
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("whitelist-form")).toBeVisible({
+      timeout: 5000,
+    });
 
     // Should not see main page
     await expect(page.getByTestId("main-page")).not.toBeVisible();
@@ -217,12 +190,9 @@ test.describe("Authentication & Session Management", () => {
     await page.goto("/");
 
     // Without auth, should see whitelist page
-    await expect(
-      page
-        .getByTestId("whitelist-form")
-        .or(page.locator("text=환영합니다!"))
-        .first()
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("whitelist-form")).toBeVisible({
+      timeout: 5000,
+    });
 
     // Now login and try again
     await loginTestUser(page);

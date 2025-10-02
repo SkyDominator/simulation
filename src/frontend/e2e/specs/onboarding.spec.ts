@@ -199,26 +199,20 @@ test.describe("User Onboarding Flow", () => {
     });
 
     // Accept button should be disabled initially
-    const acceptButton = page
-      .getByTestId("accept-consent")
-      .or(page.getByRole("button", { name: /동의|계속|accept/i }));
-    await expect(acceptButton.first()).toBeDisabled();
+    await expect(page.getByTestId("accept-consent")).toBeDisabled();
 
     // Check the consent checkbox
-    const consentCheckbox = page
-      .getByTestId("consent-checkbox")
-      .or(page.getByRole("checkbox"));
-    await consentCheckbox.first().click();
+    await page.getByTestId("consent-checkbox").click();
 
     // Accept button should now be enabled
-    await expect(acceptButton.first()).toBeEnabled();
+    await expect(page.getByTestId("accept-consent")).toBeEnabled();
   });
 
   test("E2E-PREAUTH-009: Accept consent proceeds to login page with API call", async ({
     page,
   }) => {
     // Network spy to verify API call was made
-    const consentRequests: any[] = [];
+    const consentRequests: Array<{ method: string; url: string }> = [];
     page.on("request", (request) => {
       if (
         request.url().includes("/api/consents") &&
@@ -245,20 +239,11 @@ test.describe("User Onboarding Flow", () => {
     await expect(page.getByTestId("consent-page")).toBeVisible({
       timeout: 5000,
     });
-    const consentCheckbox = page
-      .getByTestId("consent-checkbox")
-      .or(page.getByRole("checkbox"));
-    await consentCheckbox.first().click();
-
-    const acceptButton = page
-      .getByTestId("accept-consent")
-      .or(page.getByRole("button", { name: /동의|계속|accept/i }));
-    await acceptButton.first().click();
+    await page.getByTestId("consent-checkbox").click();
+    await page.getByTestId("accept-consent").click();
 
     // Wait for navigation to login page
-    await expect(
-      page.getByTestId("login-form").or(page.locator("text=/로그인|login/i"))
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("login-form")).toBeVisible({ timeout: 5000 });
 
     // Verify consent API was called
     expect(consentRequests.length).toBeGreaterThan(0);
@@ -284,15 +269,12 @@ test.describe("User Onboarding Flow", () => {
     });
 
     // Click decline button
-    const declineButton = page
-      .getByTestId("decline-consent")
-      .or(page.getByRole("button", { name: /취소|거부|decline/i }));
-    await declineButton.first().click();
+    await page.getByTestId("decline-consent").click();
 
     // Should return to whitelist form
-    await expect(
-      page.getByTestId("whitelist-form").or(page.locator("text=환영합니다!"))
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("whitelist-form")).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("E2E-PREAUTH-011: Back button from login returns to whitelist page", async ({
@@ -311,30 +293,19 @@ test.describe("User Onboarding Flow", () => {
     await expect(page.getByTestId("consent-page")).toBeVisible({
       timeout: 5000,
     });
-    const consentCheckbox = page
-      .getByTestId("consent-checkbox")
-      .or(page.getByRole("checkbox"));
-    await consentCheckbox.first().click();
-    const acceptButton = page
-      .getByTestId("accept-consent")
-      .or(page.getByRole("button", { name: /동의|계속|accept/i }));
-    await acceptButton.first().click();
+    await page.getByTestId("consent-checkbox").click();
+    await page.getByTestId("accept-consent").click();
 
     // Now on login page
-    await expect(
-      page.getByTestId("login-form").or(page.locator("text=/로그인|login/i"))
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("login-form")).toBeVisible({ timeout: 5000 });
 
-    // Find and click back button
-    const backButton = page
-      .getByTestId("back-button")
-      .or(page.getByRole("button", { name: /이전|back/i }));
-    await backButton.first().click();
+    // Find and click back button (use aria-label since there's no test-id for it)
+    await page.getByRole("button", { name: /이전 단계로/i }).click();
 
     // Should return to whitelist form
-    await expect(
-      page.getByTestId("whitelist-form").or(page.locator("text=환영합니다!"))
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("whitelist-form")).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("E2E-PREAUTH-012: Phone input auto-formats to 010-XXXX-XXXX pattern", async ({
@@ -342,11 +313,9 @@ test.describe("User Onboarding Flow", () => {
   }) => {
     await page.goto("/");
 
-    // Find phone input
-    const phoneInput = page
-      .getByLabel("휴대폰 번호")
-      .or(page.getByTestId("phone-input"));
-    await expect(phoneInput.first()).toBeVisible();
+    // Find phone input using label (MUI TextField)
+    const phoneInput = page.getByLabel("휴대폰 번호");
+    await expect(phoneInput).toBeVisible();
 
     // Type phone number without dashes
     await phoneInput.first().fill("01012345678");
