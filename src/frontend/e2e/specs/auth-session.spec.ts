@@ -1,20 +1,37 @@
 import { test, expect } from "@playwright/test";
+import type { Page, Response } from "@playwright/test";
 import { TestHelpers, APIHelpers, initE2EMode } from "../utils/test-helpers";
-import {
-  loginTestUser,
-  logoutTestUser,
-  isUserAuthenticated,
-} from "../utils/auth-helpers";
+import { loginTestUser, isUserAuthenticated } from "../utils/auth-helpers";
 
 /**
  * CAT-AUTH: Authentication & Session Tests
  * Tests authentication state management, session persistence, and access control
  */
 
+async function waitForPersistedConsent(page: Page): Promise<Response> {
+  return page.waitForResponse(async (response) => {
+    if (
+      !response.url().includes("/api/consents/") ||
+      response.request().method() !== "GET"
+    ) {
+      return false;
+    }
+
+    try {
+      const data = await response.json();
+      return Array.isArray(data?.consents) && data.consents.length > 0;
+    } catch {
+      return false;
+    }
+  });
+}
+
 test.describe("Authentication & Session Management", () => {
   let helpers: TestHelpers;
 
   test.beforeEach(async ({ page }) => {
+    // Mobile projects run in landscape viewports (851×393 / 844×390) to avoid
+    // LandscapeEnforcer overlay. See landscape-enforcer.spec.ts for orientation tests.
     await initE2EMode(page);
     helpers = new TestHelpers(page);
     await APIHelpers.mockOTPSuccess(page);
@@ -52,27 +69,30 @@ test.describe("Authentication & Session Management", () => {
     await expect(page.getByTestId("consent-page")).toBeVisible({
       timeout: 5000,
     });
-    const consentCheckbox = page
-      .getByTestId("consent-checkbox")
-      .or(page.getByRole("checkbox"));
-    await consentCheckbox.first().click();
-    const acceptButton = page
-      .getByTestId("accept-consent")
-      .or(page.getByRole("button", { name: /동의|계속|accept/i }));
-    await acceptButton.first().click();
+    await page.getByTestId("consent-checkbox").click();
+    const consentSyncPromise = waitForPersistedConsent(page);
+    await page.getByTestId("accept-consent").click();
+    await consentSyncPromise;
+
+    await expect
+      .poll(
+        () =>
+          APIHelpers.getConsentMockState(page)?.consentsByHash?.[
+            "test-hash-123"
+          ]?.length ?? 0,
+        { timeout: 5000 }
+      )
+      .toBeGreaterThan(0);
 
     // On login page, click Google login
-    await expect(
-      page.getByTestId("login-form").or(page.locator("text=/로그인|login/i"))
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("login-form")).toBeVisible({ timeout: 5000 });
+    await page.getByTestId("google-login").click({ timeout: 5000 });
 
-    const googleLoginButton = page
-      .getByTestId("google-login")
-      .or(page.getByRole("button", { name: /google/i }));
-    await googleLoginButton.first().click();
+    const consentState = APIHelpers.getConsentMockState(page);
+    expect(consentState?.getCount ?? 0).toBeGreaterThanOrEqual(1);
 
-    // Verify OAuth was triggered (or button exists and is clickable)
-    await expect(googleLoginButton.first()).toBeVisible();
+    // Check that OAuth redirect was triggered
+    expect(oauthTriggered).toBe(true);
   });
 
   test("E2E-AUTH-002: Login button triggers Supabase OAuth (Kakao)", async ({
@@ -88,24 +108,26 @@ test.describe("Authentication & Session Management", () => {
     await expect(page.getByTestId("consent-page")).toBeVisible({
       timeout: 5000,
     });
-    const consentCheckbox = page
-      .getByTestId("consent-checkbox")
-      .or(page.getByRole("checkbox"));
-    await consentCheckbox.first().click();
-    const acceptButton = page
-      .getByTestId("accept-consent")
-      .or(page.getByRole("button", { name: /동의|계속|accept/i }));
-    await acceptButton.first().click();
+    await page.getByTestId("consent-checkbox").click();
+    const consentSyncPromise = waitForPersistedConsent(page);
+    await page.getByTestId("accept-consent").click();
+    await consentSyncPromise;
+
+    await expect
+      .poll(
+        () =>
+          APIHelpers.getConsentMockState(page)?.consentsByHash?.[
+            "test-hash-123"
+          ]?.length ?? 0,
+        { timeout: 5000 }
+      )
+      .toBeGreaterThan(0);
 
     // On login page, check for Kakao login button
-    await expect(
-      page.getByTestId("login-form").or(page.locator("text=/로그인|login/i"))
-    ).toBeVisible({ timeout: 5000 });
-
-    const kakaoLoginButton = page
-      .getByTestId("kakao-login")
-      .or(page.getByRole("button", { name: /kakao|카카오/i }));
-    await expect(kakaoLoginButton.first()).toBeVisible();
+    await expect(page.getByTestId("login-form")).toBeVisible({ timeout: 5000 });
+    const consentState = APIHelpers.getConsentMockState(page);
+    expect(consentState?.getCount ?? 0).toBeGreaterThanOrEqual(1);
+    await expect(page.getByTestId("kakao-login")).toBeVisible();
   });
 
   test("E2E-AUTH-003: Successful auth sets user state in useAuth()", async ({
@@ -167,26 +189,25 @@ test.describe("Authentication & Session Management", () => {
     await expect(page.getByTestId("main-page")).toBeVisible({ timeout: 5000 });
 
     // Find and click logout button
-    const logoutButton = page
-      .getByTestId("logout-button")
-      .or(page.getByRole("button", { name: /로그아웃|logout/i }));
-    await logoutButton.first().click();
+    await page.getByTestId("logout-button").click();
 
     // Handle confirmation dialog if present
-    const confirmButton = page
-      .getByRole("button", { name: /확인|yes|logout/i })
-      .first();
-    if (await confirmButton.isVisible()) {
-      await confirmButton.click();
+    const confirmButton = page.getByRole("button", {
+      name: /확인|yes|logout/i,
+    });
+    try {
+      await confirmButton.click({ timeout: 1000 });
+    } catch {
+      // No confirmation dialog, continue
     }
 
     // Should return to whitelist page
-    await expect(
-      page
-        .getByTestId("whitelist-form")
-        .or(page.locator("text=환영합니다!"))
-        .first()
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("whitelist-form")).toBeVisible({
+      timeout: 5000,
+    });
+
+    // Wait a moment for storage to be fully cleared
+    await page.waitForTimeout(500);
 
     // Session should be cleared
     const isAuth = await isUserAuthenticated(page);
@@ -200,12 +221,9 @@ test.describe("Authentication & Session Management", () => {
     await page.goto("/");
 
     // Should see whitelist page instead
-    await expect(
-      page
-        .getByTestId("whitelist-form")
-        .or(page.locator("text=환영합니다!"))
-        .first()
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("whitelist-form")).toBeVisible({
+      timeout: 5000,
+    });
 
     // Should not see main page
     await expect(page.getByTestId("main-page")).not.toBeVisible();
@@ -218,12 +236,9 @@ test.describe("Authentication & Session Management", () => {
     await page.goto("/");
 
     // Without auth, should see whitelist page
-    await expect(
-      page
-        .getByTestId("whitelist-form")
-        .or(page.locator("text=환영합니다!"))
-        .first()
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("whitelist-form")).toBeVisible({
+      timeout: 5000,
+    });
 
     // Now login and try again
     await loginTestUser(page);

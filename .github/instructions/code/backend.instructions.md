@@ -18,6 +18,7 @@ Python backend application guidelines.
 - Keep modules loosely coupled with clear interfaces
 - Use configuration files/env variables for settings
 - Write testable code (easy to test in isolation)
+- Follow the existing code style and conventions when modifying code
 
 **DON'T:**
 - Create monolithic functions/classes
