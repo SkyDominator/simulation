@@ -87,7 +87,7 @@ Call log:
     - paragraph [ref=e27]: 이 앱은 가로(landscape) 모드에서만 사용할 수 있습니다. 기기를 회전해주세요.
 ```
 
-## Targets
+## Mappings
 
 $RESEARCHER$: `.github/prompts/research/PR-74/research-01.prompt.md`
 $RESEARCH_RESULT$: `docs/research/PR-74/research-01.md`
@@ -125,7 +125,7 @@ For the format, structure, style, refer to $EXAMPLE_PLAN$
 5. Continuously iterate on a review-and-self-correct loop until the criteria are met:
     - $RESEARCHER$, $RESEARCH_RESULT$, $PLANNER$, $PLAN$ format STRICTLY follow the EXAMPLE formats.
 
-6. Stop and wait for my order.
+6. Stop and wait for user order.
 
 Do not:
 
