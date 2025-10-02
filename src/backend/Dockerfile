@@ -1,22 +1,20 @@
-FROM python:3.11.6
+# src/backend/Dockerfile
+FROM python:3.11-slim
 
-RUN apt-get update \
- && apt-get install -y --no-install-recommends git curl bash ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-ENV VIRTUAL_ENV=/opt/venv
-RUN python -m venv "$VIRTUAL_ENV" \
- && "$VIRTUAL_ENV/bin/pip" install --upgrade pip setuptools wheel
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+# 최소 빌드 도구 — 일부 패키지 빌드시 필요
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential gcc libpq-dev \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+COPY ./src/backend/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Bake entrypoint scripts into image for self-contained runtime
-COPY entrypoints /entrypoints
-RUN chmod +x /entrypoints/*.sh
+# 애플리케이션 코드 복사
+COPY ./src/backend /app
 
-# The application source will be cloned at container start (see common-init.sh)
-
-EXPOSE 8000
-
-CMD ["/entrypoints/backend-entrypoint.sh"]
+# 권장: Uvicorn single worker (1vCPU/1GB)
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

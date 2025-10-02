@@ -1,59 +1,41 @@
-version: '3.8'
+version: "3.8"
 
 services:
   backend:
     build:
-      context: ./src/backend
-      dockerfile: Dockerfile
-    env_file:
-      - ./.env
+      context: .
+      dockerfile: src/backend/Dockerfile
+    image: simulation_backend:latest
+    container_name: simulation_backend
+    restart: always
     environment:
-      PYTHONPATH: /app/src/backend
-      REPO_URL: https://github.com/SkyDominator/simulation.git
-      GIT_BRANCH: main
-      GITHUB_PAT_FILE: /run/secrets/github_pat
-    working_dir: /app/src/backend
-    volumes:
-      - workspace:/app
-    secrets:
-      - github_pat
-    ports:
-      - "8000:8000"
-    networks:
-      - appnet
+      - ENV=production
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     build:
-      context: ./src/frontend
-      dockerfile: Dockerfile
-    environment:
-      VITE_HOST: 0.0.0.0
-    working_dir: /app/src/frontend
-    volumes:
-      - workspace:/app
-    secrets:
-      - github_pat
-    depends_on:
-      backend:
-        condition: service_healthy
+      context: .
+      dockerfile: src/frontend/Dockerfile
+    image: simulation_frontend:latest
+    container_name: simulation_frontend
+    restart: always
     ports:
-      - "5173:5173"
-    networks:
-      - appnet
-
-volumes:
-  workspace:
-
-secrets:
-  github_pat:
-    file: ./.secrets/github_pat.txt   # Put your PAT file here (add to .gitignore)
-
-networks:
-  appnet:
-    driver: bridge
+      - "8080:80" # Cloudflare Tunnel will forward to host:8080
+    depends_on:
+      - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
