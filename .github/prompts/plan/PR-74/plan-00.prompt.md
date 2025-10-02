@@ -19,6 +19,8 @@ $PLAN$: `.github/prompts/conduct/PR-74/conduct-00.prompt.md`:$INIT_PLAN$
 1. Read $RESEARCHER$
 2. Read $RESEARCH_RESULT$ and analyze issues.
 3. Create $PLAN$ based on the insights gained from the research artifacts to solve issues.
+    - Take a holistic view of the codebase. Do not stray from the coding guideine.
+    - Consider side effects and edge cases.
     - Refer to the following examples for the structure, format, style of the plan:
         - `/docs/examples/example1-plan.md`
         - `docs/plans/test-code/test-plan-01-backend-unit.md`
