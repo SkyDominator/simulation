@@ -11,7 +11,8 @@ services:
     environment:
       - ENV=production
       - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY}
+      - SOLAPI_API_KEY=${SOLAPI_API_KEY}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health || exit 1"]
       interval: 30s
@@ -31,7 +32,7 @@ services:
     container_name: simulation_frontend
     restart: always
     ports:
-      - "8080:80" # Cloudflare Tunnel will forward to host:8080
+      - "8080:80"
     depends_on:
       - backend
     logging:
