@@ -393,7 +393,7 @@ Backend:
 - `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_SENDER_NUMBER`
 
 Frontend:
-- `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`
 - `VITE_API_BASE_URL=https://simulation.lightoflifeclub.com/api`
 
 **CORS**: `simulation.lightoflifeclub.com`, localhost:5173/4173, 127.0.0.1, local IPs
@@ -833,7 +833,7 @@ http://localhost:4173, http://127.0.0.1:4173
 
 **Frontend**:
 - `VITE_SUPABASE_URL`: Same as backend
-- `VITE_SUPABASE_PUBLISHABLE_KEY`: Client key
+- `SUPABASE_PUBLISHABLE_KEY`: Client key
 - `VITE_API_BASE_URL`: Defaults in `vite.config.ts`
 
 ### Backend Patterns
@@ -917,7 +917,7 @@ Logic → `services/`
 **Supabase**:
 - Client: `src/frontend/src/supabaseClient.ts`
 - Auto-refresh enabled
-- Config: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
+- Config: `VITE_SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`
 
 **State**:
 - Controller: `AppController.tsx`

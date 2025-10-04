@@ -397,7 +397,7 @@ Backend:
 - `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_SENDER_NUMBER`
 
 Frontend:
-- `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`
 - `VITE_API_BASE_URL=https://simulation.lightoflifeclub.com/api`
 
 **CORS**: `simulation.lightoflifeclub.com`, localhost:5173/4173, 127.0.0.1, local IPs
@@ -625,7 +625,7 @@ Frontend:
 - **Environment variables**:
   - Backend: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (preferred) or `SUPABASE_PUBLISHABLE_KEY`, `OTP_SECRET_KEY`, `OTP_VALIDITY_MINUTES` (default: 5), `OTP_RESEND_LIMIT_PER_15MIN` (default: 3), `otp_max_verification_attempts` (default: 6), `OTP_RESEND_LIMIT_PER_DAY` (default: 10)
   - SMS Provider: `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_SENDER_NUMBER` (primary); Legacy: `NHN_CLOUD_APPKEY`, `NHN_CLOUD_SECRET_KEY`, `NHN_CLOUD_SENDER_NUMBER`
-  - Frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_BASE_URL` (default: `https://simulation.lightoflifeclub.com/api`)
+  - Frontend: `VITE_SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `VITE_API_BASE_URL` (default: `https://simulation.lightoflifeclub.com/api`)
 - **CORS Configuration**: Includes `simulation.lightoflifeclub.com`, localhost and 127.0.0.1 on ports 5173 (dev), 4173 (preview), plus local network IP addresses for development (`10.10.113.129`, `172.30.1.39` but can vary by environment)
 - **Supabase RLS** should be configured on user-owned tables; admin APIs rely on server checks
 - **Whitelist table** exists with user_hash; seeding/management handled out-of-band
