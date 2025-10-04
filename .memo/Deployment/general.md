@@ -12,4 +12,4 @@
       3. Optional: SUPABASE_PUBLISHABLE_KEY (not required server-side)
    2. Frontend (Vite build-time, public)
       1. VITE_SUPABASE_URL
-      2. SUPABASE_PUBLISHABLE_KEY
+      2. VITE_SUPABASE_PUBLISHABLE_KEY
