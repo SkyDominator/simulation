@@ -11,5 +11,5 @@
       2. SUPABASE_SECRET_KEY ← new (preferred)
       3. Optional: SUPABASE_PUBLISHABLE_KEY (not required server-side)
    2. Frontend (Vite build-time, public)
-      1. VITE_SUPABASE_URL
+      1. SUPABASE_URL
       2. SUPABASE_PUBLISHABLE_KEY

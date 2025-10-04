@@ -116,7 +116,7 @@ http://localhost:4173, http://127.0.0.1:4173
 ```
 
 **Frontend**:
-- `VITE_SUPABASE_URL`: Same as backend
+- `SUPABASE_URL`: Same as backend
 - `SUPABASE_PUBLISHABLE_KEY`: Client key
 - `VITE_API_BASE_URL`: Defaults in `vite.config.ts`
 
@@ -201,7 +201,7 @@ Logic → `services/`
 **Supabase**:
 - Client: `src/frontend/src/supabaseClient.ts`
 - Auto-refresh enabled
-- Config: `VITE_SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`
+- Config: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`
 
 **State**:
 - Controller: `AppController.tsx`
