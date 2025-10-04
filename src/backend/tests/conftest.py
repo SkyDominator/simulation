@@ -187,7 +187,6 @@ def isolated_unit_test(monkeypatch):
     monkeypatch.setattr('socket.socket', mock_socket)
 
 
-# Legacy fixture - maintained for backward compatibility but prefer explicit marking
 @pytest.fixture(autouse=True)
 def mock_network_access(request):
     """Prevent network calls during tests by patching socket creation."""
