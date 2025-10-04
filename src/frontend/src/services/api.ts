@@ -1,11 +1,7 @@
 // Convenience API facade that delegates to the default ApiService instance
 import { defaultApiService } from "./ApiService";
 
-export const API_BASE_URL =
-  (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
-  "https://simulation.lightoflifeclub.com/api";
-
-// Backward compatibility - delegate to the default service instance
+// Delegate to the default service instance
 export const api = {
   deleteSimulation: (simulation_id: string, token: string) =>
     defaultApiService.deleteSimulation(simulation_id, token),
@@ -63,18 +59,50 @@ export const api = {
   adminMe: (token: string) => defaultApiService.adminMe(token),
   listNotices: () => defaultApiService.listNotices(),
   getNotice: (notice_id: string) => defaultApiService.getNotice(notice_id),
-  createNotice: (token: string, payload: any) =>
-    defaultApiService.createNotice(token, payload),
-  updateNotice: (token: string, notice_id: string, payload: any) =>
-    defaultApiService.updateNotice(token, notice_id, payload),
+  createNotice: (
+    token: string,
+    payload: {
+      title: string;
+      content: string;
+      pinned?: boolean;
+      published?: boolean;
+    }
+  ) => defaultApiService.createNotice(token, payload),
+  updateNotice: (
+    token: string,
+    notice_id: string,
+    payload: {
+      title?: string;
+      content?: string;
+      pinned?: boolean;
+      published?: boolean;
+    }
+  ) => defaultApiService.updateNotice(token, notice_id, payload),
   deleteNotice: (token: string, notice_id: string) =>
     defaultApiService.deleteNotice(token, notice_id),
-  getPrivacyPolicy: (params?: any) =>
+  getPrivacyPolicy: (params?: { version?: string; locale?: string }) =>
     defaultApiService.getPrivacyPolicy(params),
-  createPrivacyPolicy: (token: string, payload: any) =>
-    defaultApiService.createPrivacyPolicy(token, payload),
-  updatePrivacyPolicy: (token: string, policy_id: string, payload: any) =>
-    defaultApiService.updatePrivacyPolicy(token, policy_id, payload),
+  createPrivacyPolicy: (
+    token: string,
+    payload: {
+      version: string;
+      content: string;
+      locale?: string;
+      effective_date?: string;
+      last_updated?: string;
+    }
+  ) => defaultApiService.createPrivacyPolicy(token, payload),
+  updatePrivacyPolicy: (
+    token: string,
+    policy_id: string,
+    payload: {
+      version?: string;
+      content?: string;
+      locale?: string;
+      effective_date?: string;
+      last_updated?: string;
+    }
+  ) => defaultApiService.updatePrivacyPolicy(token, policy_id, payload),
   publishPrivacyPolicy: (token: string, policy_id: string) =>
     defaultApiService.publishPrivacyPolicy(token, policy_id),
   listPrivacyPolicies: (token: string) =>

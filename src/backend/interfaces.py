@@ -50,6 +50,11 @@ class QueryBuilder(ABC):
         pass
     
     @abstractmethod
+    def gt(self, column: str, value: Any) -> "QueryBuilder":
+        """Add greater than filter."""
+        pass
+    
+    @abstractmethod
     def execute(self) -> "QueryResult":
         """Execute the query."""
         pass
@@ -77,6 +82,11 @@ class SMSClient(ABC):
     @abstractmethod
     def send(self, phone: str, message: str) -> bool:
         """Send SMS message to phone number."""
+        pass
+    
+    @abstractmethod
+    def send_otp(self, phone: str, otp_code: str) -> Dict[str, Any]:
+        """Send OTP message to phone number."""
         pass
 
 

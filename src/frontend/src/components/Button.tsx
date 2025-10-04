@@ -2,9 +2,8 @@ import React from "react";
 import MuiButton from "@mui/material/Button";
 import type { ButtonProps as MuiButtonProps } from "@mui/material/Button";
 
-// Extend MUI Button props while keeping backward compatibility
 export interface ButtonProps extends MuiButtonProps {
-  className?: string; // allow legacy tailwind classes if still present
+  className?: string;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

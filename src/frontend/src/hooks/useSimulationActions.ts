@@ -6,7 +6,7 @@ import { type ApiServiceInterface } from "../services/ApiService";
 export const useSimulationActions = (
   session: { access_token: string } | null,
   refreshPlans: () => Promise<void>,
-  apiService: ApiServiceInterface = api // Default to legacy api object
+  apiService: ApiServiceInterface = api
 ) => {
   const [runningId, setRunningId] = React.useState<string>("");
   const [deletingId, setDeletingId] = React.useState<string>("");

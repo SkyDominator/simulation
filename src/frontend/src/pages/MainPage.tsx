@@ -38,7 +38,6 @@ interface MainPageProps {
   // Opens global notice board modal
   openNotice?: () => void;
   setSimulationResult: (result: SimulationRunResponse | null) => void;
-  // Dependency injection for testing
   apiService?: ApiServiceInterface;
 }
 
@@ -47,7 +46,7 @@ const MainPage: React.FC<MainPageProps> = ({
   setEditingPlan,
   openNotice,
   setSimulationResult,
-  apiService = api, // Default to legacy api object
+  apiService = api,
 }) => {
   const { user, session, signOut } = useAuth();
   const [plans, setPlans] = React.useState<Plan[]>([]);
@@ -297,7 +296,12 @@ const MainPage: React.FC<MainPageProps> = ({
         >
           <Stack direction="row" spacing={1}>
             {openNotice && (
-              <Button onClick={openNotice} variant="contained" color="warning" data-testid="notice-button">
+              <Button
+                onClick={openNotice}
+                variant="contained"
+                color="warning"
+                data-testid="notice-button"
+              >
                 공지사항
               </Button>
             )}

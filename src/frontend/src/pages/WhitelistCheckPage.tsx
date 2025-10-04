@@ -17,25 +17,16 @@ interface WhitelistCheckPageProps {
   onVerified: (userHash: string) => void;
   /**
    * Optional API service instance for dependency injection.
-   * 
-   * If not provided, defaults to the legacy `api` object.
+   *
+   * If not provided, defaults to the `api` object.
    * Use this prop to inject a mock or alternative implementation for testing or customization.
-   * 
-   * Example usage:
-   * 
-   *   <WhitelistCheckPage
-   *     onVerified={...}
-   *     apiService={myMockApiService}
-   *   />
-   * 
-   * The legacy `api` object implements the same interface and is used by default for backward compatibility.
    */
   apiService?: ApiServiceInterface;
 }
 
 const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
   onVerified,
-  apiService = api, // Default to legacy api object
+  apiService = api,
 }) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");

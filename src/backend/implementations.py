@@ -56,6 +56,9 @@ class SupabaseQueryBuilder(QueryBuilder):
     def gte(self, column: str, value: Any) -> QueryBuilder:
         return SupabaseQueryBuilder(self._query.gte(column, value))
     
+    def gt(self, column: str, value: Any) -> QueryBuilder:
+        return SupabaseQueryBuilder(self._query.gt(column, value))
+    
     def execute(self) -> QueryResult:
         result = self._query.execute()
         return SupabaseQueryResult(result)
@@ -100,6 +103,13 @@ class SolapiSMSClientAdapter(SMSClient):
             return result.get("success", False)
         except Exception:
             return False
+    
+    def send_otp(self, phone: str, otp_code: str) -> Dict[str, Any]:
+        try:
+            result = self._client.send_otp(phone, otp_code)
+            return result
+        except Exception:
+            return {"success": False, "error": "Failed to send OTP"}
 
 
 class SettingsConfigProvider(ConfigProvider):

@@ -51,8 +51,6 @@ def _supabase_client():
     )
     return create_client(settings.supabase_url, key)
 
-# Remove global service instances - use dependency injection instead
-
 @router.get("/")
 async def root():
     return {"message": "Investment Simulator API is running"}

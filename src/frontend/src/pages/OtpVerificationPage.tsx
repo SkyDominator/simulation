@@ -28,7 +28,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
   userHash,
   onVerified,
   onBack,
-  apiService = api, // Default to legacy api object
+  apiService = api,
 }) => {
   const [otpCode, setOtpCode] = useState("");
   const [error, setError] = useState("");

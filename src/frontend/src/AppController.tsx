@@ -12,7 +12,6 @@ import { type Plan, type Page } from "./types/types";
 import { NoticeBoardModal } from "./components/NoticeBoardModal";
 import type { SimulationRunResponse } from "./types/types";
 import { getJSON, setJSON } from "./utils/persist";
-// api import no longer needed here
 import { useConsentFlow } from "./hooks/useConsentFlow";
 
 const AppController = () => {
