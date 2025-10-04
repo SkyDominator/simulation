@@ -42,8 +42,10 @@ router = APIRouter()
 
 
 def _supabase_client():
-    """Create Supabase client preferring new Secret/Publishable keys.
-    Falls back to legacy envs when not provided.
+    """Create a Supabase client preferring the server secret key.
+
+    Falls back to the publishable key when the secret key is unavailable so
+    the service remains usable in limited scenarios (e.g., local previews).
     """
     key = (
         settings.supabase_secret_key
