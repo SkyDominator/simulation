@@ -2,14 +2,14 @@
 import { createClient } from "@supabase/supabase-js";
 
 // Read from Vite env (provided at build time). No hard-coded secrets in code.
-const { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } = import.meta.env;
-const supabaseUrl = SUPABASE_URL as string;
+const { VITE_SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } = import.meta.env;
+const supabaseUrl = VITE_SUPABASE_URL as string;
 const supabasePublishableKey = SUPABASE_PUBLISHABLE_KEY as string;
 
 if (!supabaseUrl || !supabasePublishableKey) {
   // eslint-disable-next-line no-console
   console.warn(
-    "Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY. Supabase client may fail to initialize."
+    "Missing VITE_SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY. Supabase client may fail to initialize."
   );
 }
 
