@@ -63,3 +63,19 @@ workspace-root/
 
 
 현재 상황: 기존 tunnel은 npm run preview로 Windows 11 Home 노트북에서 돌아가고 있으며 simulation.lightoflifeclub.com hostname을 사용중이다. 원하는 상황: Windows 11 노트북(=local)에서 사용중인 기존 tunnel 이제 사용을 중단하고, Droplet에서 production, preview용 새 tunnel을 2개 운용하려고 한다. 사용자들에게 서버 점검 등을 공지하고 Droplet으로 production과 preview 배포 환경을 모두 옮길 것이다. production은 hostname은 simulation.lightoflifeclub.com, preview hostname은 preview.simulation.lightoflifeclub.com으로 하려고 한다. 그래서 Droplet에 git clone한 내 repostiroy의 release branch가 production 환경을, preview branch치가 preview 환경으로 배포될 수 있도록 해야한다.
+
+
+
+Cloudflared Tunnel → Nginx (8080 포트)
+
+Hostname A: simulation.lightoflifeclub.com (Production)
+
+Hostname B: preview.simulation.lightoflifeclub.com (Staging)
+
+Tunnel 1개 + 포트 1개(8080) + 두 사이트 운영
+
+Cloudflared는 “하나의 터널”을 통해 “하나의 포트(8080)”로 들어옴.
+
+Nginx는 “들어온 요청의 Host 헤더 (즉, 도메인 이름)”를 보고 어디로 보낼지 판단.
+
+이렇게 도메인 기반 라우팅(host-based routing) 으로 하나의 포트에서 다중 서비스 제공이 가능해지는 거야.
