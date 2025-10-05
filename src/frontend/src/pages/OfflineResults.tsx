@@ -32,7 +32,7 @@ interface ProcessedRoundData {
   total_payment: number;
   total_revenue_before_tax: number;
   net_profit_before_tax: number;
-  cumulative_net_profit_before_tax: number; // cumulative sum of net_profit_before_tax
+  cum_total_revenue_before_tax: number; // cumulative sum of net_profit_before_tax
   investor_details: InvestorDetail[]; // raw details for cell-level rendering
 }
 
@@ -55,17 +55,17 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
     if (!result?.history) return [];
 
     const data: ProcessedRoundData[] = [];
-    let NetProfitBeforeTaxCumSum = 0;
+    let CumTotRevenueBeforeTax = 0;
 
     for (const round of result.history) {
-      NetProfitBeforeTaxCumSum += round.net_profit_before_tax as number;
+      CumTotRevenueBeforeTax += round.total_revenue_before_tax as number;
 
       const roundData: ProcessedRoundData = {
         company_round: round.company_round as number,
         total_payment: round.total_payment as number,
         total_revenue_before_tax: round.total_revenue_before_tax as number,
         net_profit_before_tax: round.net_profit_before_tax as number,
-        cumulative_net_profit_before_tax: NetProfitBeforeTaxCumSum,
+        cum_total_revenue_before_tax: CumTotRevenueBeforeTax,
         investor_details: [],
       };
 
@@ -382,7 +382,7 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                           fontWeight: 500,
                         }}
                       >
-                        {formatValue(round.cumulative_net_profit_before_tax)}
+                        {formatValue(round.cum_total_revenue_before_tax)}
                       </TableCell>
                       <TableCell
                         sx={{
@@ -453,7 +453,7 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                         fontWeight: 700,
                       }}
                     >
-                      {formatValue(columnTotals.sumNetProfit)}
+                      {"없음(수당누계는 그 자체로 누적값)"}
                     </TableCell>
                     <TableCell
                       sx={{
