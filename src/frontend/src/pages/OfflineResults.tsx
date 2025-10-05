@@ -32,6 +32,7 @@ interface ProcessedRoundData {
   total_payment: number;
   total_revenue_before_tax: number;
   net_profit_before_tax: number;
+  cum_total_revenue_before_tax: number; // cumulative sum of net_profit_before_tax
   investor_details: InvestorDetail[]; // raw details for cell-level rendering
 }
 
@@ -54,13 +55,17 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
     if (!result?.history) return [];
 
     const data: ProcessedRoundData[] = [];
+    let CumTotRevenueBeforeTax = 0;
 
     for (const round of result.history) {
+      CumTotRevenueBeforeTax += round.total_revenue_before_tax as number;
+
       const roundData: ProcessedRoundData = {
         company_round: round.company_round as number,
         total_payment: round.total_payment as number,
         total_revenue_before_tax: round.total_revenue_before_tax as number,
         net_profit_before_tax: round.net_profit_before_tax as number,
+        cum_total_revenue_before_tax: CumTotRevenueBeforeTax,
         investor_details: [],
       };
 
@@ -241,6 +246,19 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                         minWidth: "120px",
                       }}
                     >
+                      수당누계
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        top: 0,
+                        backgroundColor: "background.paper",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                        minWidth: "120px",
+                      }}
+                    >
                       실납입(세전)
                     </TableCell>
                   </TableRow>
@@ -276,6 +294,13 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                         </TableCell>
                       );
                     })}
+                    <TableCell
+                      sx={{
+                        textAlign: "right",
+                        fontVariantNumeric: "tabular-nums",
+                        fontWeight: 600,
+                      }}
+                    ></TableCell>
                     <TableCell
                       sx={{
                         textAlign: "right",
@@ -357,6 +382,15 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                           fontWeight: 500,
                         }}
                       >
+                        {formatValue(round.cum_total_revenue_before_tax)}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          textAlign: "right",
+                          fontVariantNumeric: "tabular-nums",
+                          fontWeight: 500,
+                        }}
+                      >
                         {formatValue(round.net_profit_before_tax)}
                       </TableCell>
                     </TableRow>
@@ -411,6 +445,15 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                       }}
                     >
                       {formatValue(columnTotals.totalRevenue)}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        textAlign: "right",
+                        fontVariantNumeric: "tabular-nums",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {""}
                     </TableCell>
                     <TableCell
                       sx={{
