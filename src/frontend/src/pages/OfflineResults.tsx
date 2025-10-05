@@ -453,7 +453,7 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                         fontWeight: 700,
                       }}
                     >
-                      {"없음(수당누계는 그 자체로 누적값)"}
+                      {""}
                     </TableCell>
                     <TableCell
                       sx={{
