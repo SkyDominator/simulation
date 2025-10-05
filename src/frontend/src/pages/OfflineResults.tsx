@@ -32,7 +32,7 @@ interface ProcessedRoundData {
   total_payment: number;
   total_revenue_before_tax: number;
   net_profit_before_tax: number;
-  cumulative_commission: number; // cumulative sum of net_profit_before_tax
+  cumulative_net_profit_before_tax: number; // cumulative sum of net_profit_before_tax
   investor_details: InvestorDetail[]; // raw details for cell-level rendering
 }
 
@@ -55,17 +55,17 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
     if (!result?.history) return [];
 
     const data: ProcessedRoundData[] = [];
-    let cumulativeSum = 0;
+    let NetProfitBeforeTaxCumSum = 0;
 
     for (const round of result.history) {
-      cumulativeSum += round.net_profit_before_tax as number;
-      
+      NetProfitBeforeTaxCumSum += round.net_profit_before_tax as number;
+
       const roundData: ProcessedRoundData = {
         company_round: round.company_round as number,
         total_payment: round.total_payment as number,
         total_revenue_before_tax: round.total_revenue_before_tax as number,
         net_profit_before_tax: round.net_profit_before_tax as number,
-        cumulative_commission: cumulativeSum,
+        cumulative_net_profit_before_tax: NetProfitBeforeTaxCumSum,
         investor_details: [],
       };
 
@@ -382,7 +382,7 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
                           fontWeight: 500,
                         }}
                       >
-                        {formatValue(round.cumulative_commission)}
+                        {formatValue(round.cumulative_net_profit_before_tax)}
                       </TableCell>
                       <TableCell
                         sx={{
