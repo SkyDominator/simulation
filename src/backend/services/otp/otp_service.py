@@ -147,8 +147,6 @@ class OTPService:
             .eq("phone", normalized_phone) \
             .eq("used", False) \
             .gt("expires_at", now) \
-            .order("created_at", desc=True) \
-            .limit(1) \
             .execute()
             
         if not otp_records.data or len(otp_records.data) == 0:
@@ -156,8 +154,10 @@ class OTPService:
                 "success": False,
                 "message": "유효하지 않거나 만료된 인증번호입니다."
             }
-            
-        otp_record = otp_records.data[0]
+        
+        # Sort by created_at in descending order (newest first) and get the first one
+        sorted_records = sorted(otp_records.data, key=lambda x: x["created_at"], reverse=True)
+        otp_record = sorted_records[0]
         
         # Check attempts
         if otp_record["attempts"] >= self.config.get_otp_max_verification_attempts():
