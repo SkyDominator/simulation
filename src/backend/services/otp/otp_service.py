@@ -27,23 +27,25 @@ class OTPService:
         day_ago = now - timedelta(hours=24)
         
         # Check 15-minute limit
-        fifteen_min_count = self.db_client.table("phone_otps") \
-            .select("count", count="exact") \
+        fifteen_min_result = self.db_client.table("phone_otps") \
+            .select("id") \
             .eq("phone", phone) \
             .gte("created_at", fifteen_min_ago.isoformat()) \
             .execute()
             
-        if fifteen_min_count.count and fifteen_min_count.count >= self.config.get_otp_resend_limit_per_15min():
+        fifteen_min_count = len(fifteen_min_result.data) if fifteen_min_result.data else 0
+        if fifteen_min_count >= self.config.get_otp_resend_limit_per_15min():
             return False, f"Maximum OTP requests reached. Try again in a few minutes."
         
         # Check daily limit
-        day_count = self.db_client.table("phone_otps") \
-            .select("count", count="exact") \
+        day_result = self.db_client.table("phone_otps") \
+            .select("id") \
             .eq("phone", phone) \
             .gte("created_at", day_ago.isoformat()) \
             .execute()
             
-        if day_count.count and day_count.count >= self.config.get_otp_resend_limit_per_day():
+        day_count = len(day_result.data) if day_result.data else 0
+        if day_count >= self.config.get_otp_resend_limit_per_day():
             return False, f"Daily OTP limit reached. Try again tomorrow."
         
         # IP-based rate limiting could be added here
@@ -145,8 +147,6 @@ class OTPService:
             .eq("phone", normalized_phone) \
             .eq("used", False) \
             .gt("expires_at", now) \
-            .order("created_at", desc=True) \
-            .limit(1) \
             .execute()
             
         if not otp_records.data or len(otp_records.data) == 0:
@@ -154,8 +154,10 @@ class OTPService:
                 "success": False,
                 "message": "유효하지 않거나 만료된 인증번호입니다."
             }
-            
-        otp_record = otp_records.data[0]
+        
+        # Sort by created_at in descending order (newest first) and get the first one
+        sorted_records = sorted(otp_records.data, key=lambda x: x["created_at"], reverse=True)
+        otp_record = sorted_records[0]
         
         # Check attempts
         if otp_record["attempts"] >= self.config.get_otp_max_verification_attempts():
