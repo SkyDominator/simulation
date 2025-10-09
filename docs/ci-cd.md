@@ -18,7 +18,7 @@
 **프로덕션 CI/CD 환경**:
 - **위치**: DigitalOcean Droplet (24/7 운영)
 - **Production**: 포트 3000 (Frontend), 8000 (Backend) → `simulation.lightoflifeclub.com`
-- **Staging**: 포트 5173 (Frontend), 8001 (Backend) → `staging.simulation.lightoflifeclub.com`
+- **Staging**: 포트 4173 (Frontend), 8001 (Backend) → `staging.simulation.lightoflifeclub.com`
 - **배포**: 자동화 (GitHub Actions)
 - **고가용성**: 무중단 배포, Health Check
 
@@ -98,7 +98,7 @@
 │  │              Nginx (Port 8080)                        │   │
 │  │  Host-based Routing:                                  │   │
 │  │  - simulation.lightoflifeclub.com → localhost:3000   │   │
-│  │  - staging.simulation.lightoflifeclub.com → :5173    │   │
+│  │  - staging.simulation.lightoflifeclub.com → :4173    │   │
 │  └──────┬────────────────────────────┬──────────────────┘   │
 │         │                            │                       │
 │         ▼                            ▼                       │
@@ -108,11 +108,11 @@
 │  │  /srv/../prod/  │         │  /srv/../staging/ │          │
 │  │                 │         │                 │            │
 │  │  Docker Compose │         │  Docker Compose │            │
-│  │  (Port 3000)    │         │  (Port 5173)    │            │
+│  │  (Port 3000)    │         │  (Port 4173)    │            │
 │  │  ┌───────────┐  │         │  ┌───────────┐  │            │
 │  │  │ Frontend  │  │         │  │ Frontend  │  │            │
 │  │  │ (Port 80) │  │         │  │ (Port 80) │  │            │
-│  │  │ → 3000    │  │         │  │ → 5173    │  │            │
+│  │  │ → 3000    │  │         │  │ → 4173    │  │            │
 │  │  └─────┬─────┘  │         │  └─────┬─────┘  │            │
 │  │        │        │         │        │        │            │
 │  │        │ /api   │         │        │ /api   │            │
@@ -144,7 +144,7 @@
 | Nginx (공용 프록시) | 8080 | Cloudflare Tunnel |
 | Production - Frontend | 80 | Host 3000 → Nginx 8080 |
 | Production - Backend | 8000 | Host 8000 (내부 통신만) |
-| Staging - Frontend | 80 | Host 5173 → Nginx 8080 |
+| Staging - Frontend | 80 | Host 4173 → Nginx 8080 |
 | Staging - Backend | 8000 | Host 8001 (내부 통신만) |
 
 **환경별 포트 정리**:
@@ -154,11 +154,11 @@
   - Backend: Host 8000 → Container 8000
   
 - **Staging**: `/srv/lol/simulation/staging`
-  - Frontend: Host 5173 → Container 80
+  - Frontend: Host 4173 → Container 80
   - Backend: Host 8001 → Container 8000
 
 - **개발/디버그**: (로컬 개발 시)
-  - Frontend: 5173 (`npm run dev`)
+  - Frontend Dev: 5173 (`npm run dev`)
   - Frontend Preview: 4173 (`npm run preview`)
   - Backend: 8002
 
@@ -491,7 +491,7 @@ upstream production_frontend {
 }
 
 upstream staging_frontend {
-    server localhost:5173;
+    server localhost:4173;
 }
 
 # Production Server Block
@@ -905,7 +905,7 @@ networks:
 
 **파일 위치**: Repository Root → `docker-compose.staging.yml`
 
-이 파일은 Staging 환경을 정의합니다. Frontend는 포트 5173, Backend는 포트 8001을 사용합니다.
+이 파일은 Staging 환경을 정의합니다. Frontend는 포트 4173, Backend는 포트 8001을 사용합니다.
 
 ```yaml
 version: "3.8"
@@ -957,7 +957,7 @@ services:
     container_name: simulation_frontend_staging
     restart: unless-stopped
     ports:
-      - "5173:80"
+      - "4173:80"
     depends_on:
       backend:
         condition: service_healthy
@@ -1467,8 +1467,8 @@ jobs:
           echo "Waiting for Staging services to be healthy..."
           for i in {1..20}; do
             sleep 3
-            if curl -f http://localhost:5173/health > /dev/null 2>&1; then
-              echo "✅ Staging is healthy (port 5173)"
+            if curl -f http://localhost:4173/health > /dev/null 2>&1; then
+              echo "✅ Staging is healthy (port 4173)"
               exit 0
             fi
             echo "Attempt $i/20 - waiting..."
@@ -1666,14 +1666,14 @@ git push origin main
 ```bash
 ssh deploy@<DROPLET_IP>
 
-# Staging이 5173 포트에서 실행 중인지 확인
-curl http://localhost:5173/health
+# Staging이 4173 포트에서 실행 중인지 확인
+curl http://localhost:4173/health
 # 예상 결과: {"status":"healthy"} 또는 HTTP 200
 
 # 컨테이너 상태 확인
 docker ps --format "table {{.Names}}\t{{.Ports}}"
 # 예상 출력:
-# simulation_frontend_staging  0.0.0.0:5173->80/tcp
+# simulation_frontend_staging  0.0.0.0:4173->80/tcp
 # simulation_backend_staging   0.0.0.0:8001->8000/tcp
 ```
 
@@ -1687,8 +1687,8 @@ docker ps --format "table {{.Names}}\t{{.Ports}}"
 ```bash
 ssh deploy@<DROPLET_IP>
 
-# Staging이 5173 포트에서 실행 중인지 확인
-curl http://localhost:5173/health
+# Staging이 4173 포트에서 실행 중인지 확인
+curl http://localhost:4173/health
 # 예상 결과: {"status":"healthy"} 또는 HTTP 200
 
 # Production이 실행 중이면 3000도 확인
@@ -1697,7 +1697,7 @@ curl http://localhost:3000/health
 # 컨테이너 포트 매핑 확인
 docker ps --format "table {{.Names}}\t{{.Ports}}"
 # 예상 출력:
-# simulation_frontend_staging  0.0.0.0:5173->80/tcp
+# simulation_frontend_staging  0.0.0.0:4173->80/tcp
 # simulation_backend_staging   0.0.0.0:8001->8000/tcp
 # simulation_frontend_production  0.0.0.0:3000->80/tcp
 # simulation_backend_production   0.0.0.0:8000->8000/tcp
@@ -2410,7 +2410,7 @@ Production과 동일하되, `VITE_API_BASE_URL`은 `https://staging.simulation.l
 | Backend (Production) | 8000 | 8000 | Docker 내부 네트워크만 |
 | Frontend (Production) | 80 | 3000 | Nginx 8080 통해서만 |
 | Backend (Staging) | 8000 | 8001 | Docker 내부 네트워크만 |
-| Frontend (Staging) | 80 | 5173 | Nginx 8080 통해서만 |
+| Frontend (Staging) | 80 | 4173 | Nginx 8080 통해서만 |
 | Nginx (Host) | 8080 | 8080 | Cloudflare Tunnel |
 | Cloudflare Tunnel | - | - | 443 (HTTPS) |
 
@@ -2420,14 +2420,14 @@ Production과 동일하되, `VITE_API_BASE_URL`은 `https://staging.simulation.l
 2. Cloudflare Tunnel → Droplet Nginx (Port 8080)
 3. Nginx → Host header 확인
    - `simulation.lightoflifeclub.com` → `localhost:3000` (Production)
-   - `staging.simulation.lightoflifeclub.com` → `localhost:5173` (Staging)
+   - `staging.simulation.lightoflifeclub.com` → `localhost:4173` (Staging)
 4. Frontend 컨테이너 → Backend 컨테이너 (Docker 네트워크 내 `backend:8000`)
 
 **포트 사용 정리**:
 
 - **3000**: Production Frontend (표준 Node.js 프로덕션 포트)
-- **5173**: Staging Frontend (Vite dev 서버 포트와 동일)
-- **4173**: 로컬 개발 시 `npm run preview` 전용
+- **4173**: Staging Frontend (Vite preview 서버 포트와 동일)
+- **5173**: 로컬 개발 시 `npm run dev` 전용
 - **8000**: Production Backend
 - **8001**: Staging Backend
 - **8002**: 로컬 디버그 Backend (문서화 목적)
