@@ -1,25 +1,54 @@
-# CI/CD 구성 가이드 (Production & Staging)
+# CI/CD 구성 가이드 (Windows 임시 환경 → Production & Staging)
 
-이 문서는 DigitalOcean Droplet(1 CPU, 1GB RAM)에서 GitHub Actions Self-Hosted Runner와 Docker를 사용하여 무중단 CI/CD 환경을 처음부터 끝까지 구성하는 전체 과정을 설명합니다.
+이 문서는 **Windows 11 Home 노트북의 임시 개발 환경**을 **DigitalOcean Droplet(1 CPU, 1GB RAM) 기반의 프로덕션 환경**으로 마이그레이션하는 전체 과정을 설명합니다. GitHub Actions Self-Hosted Runner와 Docker를 사용하여 Production과 Staging 환경을 분리하여 무중단 운영합니다.
 
-## ⚠️ 시작하기 전에
+## ⚠️ 시작하기 전에 - 마이그레이션 개요
 
-이 가이드는 Production과 Staging 환경을 완전히 분리하여 동시에 운영하는 방법을 설명합니다. 기존에 단일 환경으로 운영 중이었다면 이 가이드를 따라 마이그레이션할 수 있습니다.
+### 현재 상태 (마이그레이션 전)
+
+**임시 개발 환경**:
+- **위치**: Windows 11 Home 노트북
+- **Backend**: FastAPI (포트 8000)
+- **Frontend**: `npm run preview` (포트 4173)
+- **접근**: Cloudflare Tunnel → `simulation.lightoflifeclub.com`
+- **목적**: 내부 테스터용 임시 서비스 (60-100명)
+
+### 목표 상태 (마이그레이션 후)
+
+**프로덕션 CI/CD 환경**:
+- **위치**: DigitalOcean Droplet (24/7 운영)
+- **Production**: 포트 3000 (Frontend), 8000 (Backend) → `simulation.lightoflifeclub.com`
+- **Staging**: 포트 5173 (Frontend), 8001 (Backend) → `staging.simulation.lightoflifeclub.com`
+- **배포**: 자동화 (GitHub Actions)
+- **고가용성**: 무중단 배포, Health Check
+
+### 마이그레이션 전략
+
+이 가이드는 **병렬 운영 후 전환** 방식을 사용합니다:
+
+1. ✅ **준비 단계**: Droplet에 새 환경 구축 (섹션 3-10)
+2. ✅ **검증 단계**: Staging 도메인으로 테스트 (섹션 12)
+3. ✅ **전환 단계**: DNS 전환 및 Windows 터널 중단 (섹션 12.4)
+4. ✅ **정리 단계**: Windows 환경 백업 후 제거 (섹션 12.5)
+
+**예상 소요 시간**: 3-4시간 (Droplet 구축 2시간 + 검증 1시간 + 전환 30분)
+
+**롤백 계획**: 문제 발생 시 DNS를 다시 Windows로 전환 (5-10분)
 
 ## 목차
 
 1. [시스템 아키텍처 개요](#1-시스템-아키텍처-개요)
-2. [사전 준비사항](#2-사전-준비사항)
+2. [사전 준비사항 및 Windows 환경 문서화](#2-사전-준비사항-및-windows-환경-문서화)
 3. [DigitalOcean Droplet 초기 설정](#3-digitalocean-droplet-초기-설정)
 4. [Docker 및 Docker Compose 설치](#4-docker-및-docker-compose-설치)
 5. [Nginx 설치 및 설정](#5-nginx-설치-및-설정)
-6. [Cloudflare Tunnel 설정](#6-cloudflare-tunnel-설정)
+6. [Cloudflare Tunnel 재구성 (Windows → Droplet)](#6-cloudflare-tunnel-재구성-windows--droplet)
 7. [GitHub Self-Hosted Runner 설정](#7-github-self-hosted-runner-설정)
-8. [Docker 및 Docker Compose 파일 수정](#8-docker-및-docker-compose-파일-수정)
+8. [Docker 및 Docker Compose 파일 생성](#8-docker-및-docker-compose-파일-생성)
 9. [GitHub Secrets 및 Variables 설정](#9-github-secrets-및-variables-설정)
 10. [GitHub Actions Workflow 설정](#10-github-actions-workflow-설정)
 11. [테스트 레이어 제어 설정](#11-테스트-레이어-제어-설정)
-12. [배포 테스트 및 검증](#12-배포-테스트-및-검증)
+12. [마이그레이션 실행 및 검증](#12-마이그레이션-실행-및-검증)
 13. [무중단 배포 전략](#13-무중단-배포-전략)
 14. [트러블슈팅](#14-트러블슈팅)
 15. [부록](#15-부록)
@@ -135,51 +164,123 @@
 
 ---
 
-## 2. 사전 준비사항
+## 2. 사전 준비사항 및 Windows 환경 문서화
 
-### 2.1 필요한 계정 및 서비스
+### 2.1 현재 Windows 환경 정보 수집
 
-- [x] DigitalOcean 계정 (Droplet 생성용)
-- [x] Cloudflare 계정 (Tunnel 및 DNS 관리)
-- [x] GitHub 계정 (Repository 및 Actions)
-- [x] Supabase 계정 (데이터베이스 및 인증)
-- [x] Solapi 계정 (SMS OTP 발송)
+마이그레이션을 시작하기 전에 현재 Windows 환경의 설정을 문서화하세요. 문제 발생 시 롤백에 필요합니다.
 
-### 2.2 로컬 환경 준비
+#### 2.1.1 Windows에서 실행 중인 서비스 확인
 
-다음 도구들을 로컬 컴퓨터에 설치해야 합니다:
+**PowerShell에서 실행**:
 
-```bash
-# SSH 클라이언트 (Windows의 경우)
-# - PuTTY 또는 Windows Terminal 사용
+```powershell
+# Backend 프로세스 확인
+Get-Process | Where-Object {$_.ProcessName -like "*python*" -or $_.ProcessName -like "*uvicorn*"}
 
-# Cloudflare CLI (cloudflared)
-# Windows: https://github.com/cloudflare/cloudflared/releases
-# Linux/Mac: 
-curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-sudo dpkg -i cloudflared.deb
+# Frontend 프로세스 확인
+Get-Process | Where-Object {$_.ProcessName -like "*node*"}
+
+# Cloudflared 프로세스 확인
+Get-Process | Where-Object {$_.ProcessName -like "*cloudflared*"}
+
+# 포트 사용 현황 확인
+netstat -ano | findstr "8000 4173"
 ```
+
+#### 2.1.2 Cloudflare Tunnel 설정 백업
+
+**Windows에서 실행**:
+
+```powershell
+# Tunnel 목록 확인 및 저장
+cloudflared tunnel list > tunnel-backup.txt
+
+# 현재 사용 중인 tunnel 상세 정보
+cloudflared tunnel info <TUNNEL_NAME> > tunnel-details.txt
+
+# Tunnel 설정 파일 위치 확인 (일반적으로)
+# C:\Users\<USERNAME>\.cloudflared\config.yml
+# 이 파일을 별도로 백업하세요
+Copy-Item "$env:USERPROFILE\.cloudflared\config.yml" -Destination ".\cloudflared-config-backup.yml"
+```
+
+**중요**: `tunnel-backup.txt`, `tunnel-details.txt`, `cloudflared-config-backup.yml` 파일을 안전한 곳에 보관하세요.
+
+#### 2.1.3 환경 변수 백업
+
+현재 Windows 환경에서 사용 중인 환경 변수를 기록하세요:
+
+```powershell
+# .env 파일이 있는 경우
+# Backend
+Get-Content ".\src\backend\.env" > backend-env-backup.txt
+
+# Frontend
+Get-Content ".\src\frontend\.env.local" > frontend-env-backup.txt
+```
+
+### 2.2 필요한 계정 및 서비스
+
+다음 서비스 계정이 이미 있어야 합니다 (Windows 환경에서 사용 중):
+
+- [x] DigitalOcean 계정 (Droplet 생성용 - 신규 필요)
+- [x] Cloudflare 계정 (Tunnel 및 DNS 관리 - 기존 사용 중)
+- [x] GitHub 계정 (Repository 및 Actions - 기존 사용 중)
+- [x] Supabase 계정 (데이터베이스 및 인증 - 기존 사용 중)
+- [x] Solapi 계정 (SMS OTP 발송 - 기존 사용 중)
 
 ### 2.3 수집해야 할 정보
 
-배포 전에 다음 정보를 준비하세요:
+**Windows 환경에서 이미 사용 중인** 다음 정보를 Droplet에서도 동일하게 사용합니다:
 
-**Supabase**:
+**Supabase** (기존 값 확인):
 - `SUPABASE_URL`: Supabase 프로젝트 URL
 - `SUPABASE_PUBLISHABLE_KEY`: Anon/Public key
 - `SUPABASE_SECRET_KEY`: Service role key (절대 노출 금지)
 
-**Solapi**:
+**Solapi** (기존 값 확인):
 - `SOLAPI_API_KEY`: API Key
 - `SOLAPI_API_SECRET`: API Secret
 - `SOLAPI_SENDER_NUMBER`: 발신 번호
 
-**Cloudflare**:
-- 도메인: `lightoflifeclub.com` (이미 Cloudflare에 등록되어 있어야 함)
+**OTP** (기존 값 확인 또는 신규 생성):
+- `OTP_SECRET_KEY`: OTP 암호화 키 (기존 키 사용 시 기존 OTP 코드 유효)
+
+**Cloudflare** (기존 도메인):
+- 도메인: `lightoflifeclub.com` (이미 Cloudflare에 등록되어 있음)
+- 서브도메인: `simulation.lightoflifeclub.com` (현재 Windows로 라우팅 중)
+- 서브도메인: `staging.simulation.lightoflifeclub.com` (신규 생성 필요)
 
 **GitHub**:
 - Repository: `SkyDominator/simulation`
-- Personal Access Token (Self-hosted runner 등록용)
+- Personal Access Token (Self-hosted runner 등록용 - 신규 생성)
+
+### 2.4 마이그레이션 체크리스트 (시작 전)
+
+다음 항목을 확인한 후 마이그레이션을 시작하세요:
+
+- [ ] Windows 환경의 Cloudflare Tunnel 설정 백업 완료
+- [ ] 모든 환경 변수 (Supabase, Solapi, OTP) 값 기록 완료
+- [ ] 내부 테스터에게 마이그레이션 일정 공지 완료 (예상 다운타임: 5-10분)
+- [ ] 현재 서비스 접속 가능 확인 (`https://simulation.lightoflifeclub.com`)
+- [ ] DigitalOcean 계정 준비 완료 (결제 수단 등록)
+- [ ] 긴급 연락망 준비 (문제 발생 시 내부 테스터 공지 방법)
+
+### 2.5 롤백 계획
+
+마이그레이션 중 문제 발생 시:
+
+1. **즉시 롤백** (5-10분 소요):
+   - Cloudflare Dashboard → DNS 설정 → `simulation.lightoflifeclub.com`의 Tunnel을 Windows Tunnel로 재전환
+   - Windows에서 cloudflared 재시작: `cloudflared tunnel run <TUNNEL_NAME>`
+   - 서비스 접근 확인
+
+2. **Windows 환경 유지**:
+   - Droplet 환경 디버깅
+   - 문제 해결 후 재시도
+
+**중요**: Droplet 구축이 완료되고 검증되기 전까지 Windows 환경을 절대 중단하지 마세요.
 
 ---
 
@@ -481,13 +582,25 @@ nginx: configuration file /etc/nginx/nginx.conf test is successful
 
 ---
 
-## 6. Cloudflare Tunnel 설정
+## 6. Cloudflare Tunnel 재구성 (Windows → Droplet)
 
-### 6.1 Cloudflare 계정에서 터널 생성 준비
+이 섹션에서는 Windows에서 실행 중인 Cloudflare Tunnel을 중단하고, Droplet에서 새 터널을 생성합니다. **DNS 전환은 섹션 12.4에서 진행**하므로, 여기서는 터널 생성만 수행합니다.
 
-1. **Cloudflare Dashboard 접속**
-   - https://dash.cloudflare.com/ 로그인
-   - 도메인 `lightoflifeclub.com` 선택
+### 6.1 Windows 터널 정보 확인 (참고용)
+
+마이그레이션 전에 Windows 터널 설정을 확인해두세요 (섹션 2.1.2에서 백업한 파일 참조):
+
+```powershell
+# Windows PowerShell에서 실행
+cloudflared tunnel list
+# 출력 예시:
+# ID                                   NAME              CREATED
+# abc12345-6789-...                    old-tunnel        2024-XX-XX
+
+cloudflared tunnel info <TUNNEL_NAME>
+```
+
+**중요**: Windows 터널은 아직 중단하지 마세요. Droplet 환경이 완전히 검증된 후 섹션 12.4에서 중단합니다.
 
 ### 6.2 Droplet에 cloudflared 설치
 
@@ -601,6 +714,29 @@ journalctl -u cloudflared -f
 # 터널 상태 확인 (Cloudflare Dashboard)
 # Zero Trust → Access → Tunnels → simulation-tunnel (Status: HEALTHY)
 ```
+
+### 6.9 Windows 터널 제거 (마이그레이션 후 - 섹션 12.5에서 진행)
+
+**주의**: 이 단계는 **마이그레이션 완료 후 24시간 경과 후**에 진행합니다. 섹션 12.4에서 Windows 터널을 중단한 후, 24시간 동안 안정성을 확인한 뒤 Cloudflare에서 완전히 제거합니다.
+
+**Windows PowerShell에서 (마이그레이션 24시간+ 후)**:
+
+```powershell
+# 기존 Windows 터널 목록 확인
+cloudflared tunnel list
+
+# 기존 터널 삭제
+cloudflared tunnel delete <OLD_TUNNEL_NAME>
+
+# 삭제 확인
+cloudflared tunnel list
+# 기존 터널이 목록에 없으면 성공
+```
+
+**Cloudflare Dashboard에서 확인**:
+- Zero Trust → Access → Tunnels
+- 기존 Windows 터널이 목록에서 제거되었는지 확인
+- Droplet의 `simulation-tunnel`만 HEALTHY 상태로 표시되어야 함
 
 ---
 
@@ -1501,26 +1637,50 @@ def test_full_simulation():
 
 ---
 
-## 12. 배포 테스트 및 검증
+## 12. 마이그레이션 실행 및 검증
 
-### 12.1 Staging 배포 테스트
+이 섹션에서는 Droplet 환경을 검증하고, Windows 터널을 중단한 후, DNS를 Droplet으로 전환합니다.
 
-1. **코드 변경 후 main 브랜치에 푸시**:
+### 12.1 Staging 배포 및 검증 (Droplet)
+
+#### 12.1.1 Staging 배포 실행
+
+**코드 변경 후 main 브랜치에 푸시**:
 
 ```bash
 git checkout main
 git add .
-git commit -m "Test staging deployment"
+git commit -m "Test staging deployment on Droplet"
 git push origin main
 ```
 
-2. **GitHub Actions 확인**:
-   - Repository → Actions → 워크플로우 실행 확인
-   - 각 job 상태 모니터링 (test-unit, test-integration, lint, build, deploy-staging)
+#### 12.1.2 GitHub Actions 확인
 
-3. **Staging 접속 확인**:
-   - <https://staging.simulation.lightoflifeclub.com>
-   - 로그인, 시뮬레이션 생성 등 기능 테스트
+- Repository → Actions → 워크플로우 실행 확인
+- 각 job 상태 모니터링 (test-unit, test-integration, lint, build, deploy-staging)
+
+#### 12.1.3 Staging 접속 확인 (새 터널 사용)
+
+**Droplet에서 로컬 테스트**:
+
+```bash
+ssh deploy@<DROPLET_IP>
+
+# Staging이 5173 포트에서 실행 중인지 확인
+curl http://localhost:5173/health
+# 예상 결과: {"status":"healthy"} 또는 HTTP 200
+
+# 컨테이너 상태 확인
+docker ps --format "table {{.Names}}\t{{.Ports}}"
+# 예상 출력:
+# simulation_frontend_staging  0.0.0.0:5173->80/tcp
+# simulation_backend_staging   0.0.0.0:8001->8000/tcp
+```
+
+**브라우저에서 접속**:
+
+- <https://staging.simulation.lightoflifeclub.com> (새 Droplet 터널)
+- 로그인, 시뮬레이션 생성 등 **모든 기능 철저히 테스트**
 
 4. **포트 분리 확인** (Droplet에서):
 
@@ -1543,16 +1703,24 @@ docker ps --format "table {{.Names}}\t{{.Ports}}"
 # simulation_backend_production   0.0.0.0:8000->8000/tcp
 ```
 
-5. **로그 확인**:
+#### 12.1.4 Staging 기능 검증 체크리스트
 
-```bash
-cd /srv/lol/simulation/staging
-docker compose -f docker-compose.staging.yml logs -f
-```
+Droplet Staging 환경에서 다음 기능이 **모두 정상 작동하는지 확인**하세요:
 
-### 12.2 Production 배포 테스트
+- [ ] Google OAuth 로그인
+- [ ] Kakao OAuth 로그인
+- [ ] OTP 발송 및 검증
+- [ ] 시뮬레이션 생성 (모든 플랜: A, B, C, D, E, F, G, K, P, R)
+- [ ] 시뮬레이션 실행 및 결과 조회
+- [ ] 공지사항 조회
+- [ ] API 응답 시간 확인 (Windows 환경과 비교)
+- [ ] 로그에 에러 없음 확인
 
-1. **release 브랜치에 머지**:
+**검증 통과 기준**: 위 모든 항목이 Windows 환경과 동일하게 작동
+
+### 12.2 Production 배포 (Droplet)
+
+#### 12.2.1 Production 배포 실행
 
 ```bash
 git checkout release
@@ -1560,28 +1728,234 @@ git merge main
 git push origin release
 ```
 
-2. **GitHub Actions 확인**:
-   - Environment protection rules 확인 (설정한 경우 승인 필요)
-   - deploy-production job 실행 확인
+#### 12.2.2 GitHub Actions 확인
 
-3. **Production 접속 확인**:
-   - https://simulation.lightoflifeclub.com
-   - 전체 기능 검증
+- Environment protection rules 확인 (설정한 경우 승인 필요)
+- deploy-production job 실행 확인
 
-4. **Rollback 테스트** (필요 시):
+#### 12.2.3 Production 로컬 테스트
+
+**Droplet에서**:
 
 ```bash
-# Droplet에서
 ssh deploy@<DROPLET_IP>
 
-# 이전 이미지로 롤백
-docker compose -f docker-compose.production.yml down
-docker compose -f docker-compose.production.yml up -d --force-recreate
+# Production이 3000 포트에서 실행 중인지 확인
+curl http://localhost:3000/health
 
-# 또는 특정 이미지 태그 사용
-docker tag simulation_frontend:production simulation_frontend:production-backup
-# ... 이전 백업 이미지로 복원
+# 컨테이너 상태 확인
+docker ps | grep production
 ```
+
+**주의**: Production은 아직 **외부에서 접근 불가**합니다 (DNS가 Windows를 가리키고 있음). 섹션 12.4에서 DNS를 전환한 후 외부 접근이 가능합니다.
+
+### 12.3 최종 검증 (마이그레이션 전)
+
+#### 12.3.1 Droplet 환경 최종 점검
+
+```bash
+# 모든 컨테이너 정상 실행 확인
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Health check 상태 확인
+docker inspect --format='{{.State.Health.Status}}' simulation_backend_production
+docker inspect --format='{{.State.Health.Status}}' simulation_backend_staging
+
+# 예상 출력: healthy
+
+# 로그에 에러 없음 확인
+cd /srv/lol/simulation/production
+docker compose logs --tail=50 | grep -i error
+
+cd /srv/lol/simulation/staging
+docker compose logs --tail=50 | grep -i error
+```
+
+#### 12.3.2 Windows 환경 최종 확인
+
+**Windows PowerShell에서**:
+
+```powershell
+# 현재 Windows 서비스가 정상 작동 중인지 확인
+# 브라우저에서 접속
+Start-Process "https://simulation.lightoflifeclub.com"
+
+# 로그인 및 기본 기능 테스트
+# 문제 없으면 마이그레이션 진행
+```
+
+#### 12.3.3 마이그레이션 Go/No-Go 결정
+
+**다음 조건이 모두 충족되면 마이그레이션 진행**:
+
+- [x] Droplet Staging 환경 모든 기능 검증 완료
+- [x] Droplet Production 환경 컨테이너 정상 실행
+- [x] Windows 환경 정상 작동 중 (롤백 가능 상태)
+- [x] 내부 테스터에게 마이그레이션 공지 완료
+- [x] 마이그레이션 시간대 확정 (권장: 사용자 적은 시간대)
+
+**하나라도 미충족 시**: 문제 해결 후 재검증
+
+### 12.4 DNS 전환 및 Windows 터널 중단 (마이그레이션 실행)
+
+**예상 다운타임**: 5-10분
+
+#### 12.4.1 내부 테스터 공지
+
+마이그레이션 시작 **10분 전** 공지:
+
+```
+[공지] 시스템 업그레이드 진행
+
+오늘 [시간]부터 약 5-10분간 서비스 점검이 진행됩니다.
+점검 중에는 일시적으로 서비스 접속이 불가할 수 있습니다.
+완료 후 다시 공지드리겠습니다.
+```
+
+#### 12.4.2 Windows Cloudflare Tunnel 중단
+
+**Windows PowerShell에서 (관리자 권한)**:
+
+```powershell
+# Cloudflared 프로세스 확인
+Get-Process | Where-Object {$_.ProcessName -like "*cloudflared*"}
+
+# Cloudflared 서비스 중단 (서비스로 실행 중인 경우)
+Stop-Service cloudflared
+
+# 또는 프로세스 직접 종료
+Stop-Process -Name cloudflared -Force
+
+# 중단 확인
+Get-Process | Where-Object {$_.ProcessName -like "*cloudflared*"}
+# 출력 없음 = 중단 성공
+```
+
+#### 12.4.3 Cloudflare DNS 확인
+
+**Cloudflare Dashboard에서**:
+
+1. <https://dash.cloudflare.com/> 로그인
+2. 도메인 `lightoflifeclub.com` 선택
+3. **Zero Trust → Access → Tunnels** 이동
+4. `simulation-tunnel` (Droplet) 상태 확인: **HEALTHY** 여부 확인
+5. **DNS → Records** 이동
+6. 다음 레코드 확인:
+   - `simulation.lightoflifeclub.com` → CNAME `<DROPLET_TUNNEL_ID>.cfargotunnel.com` (이미 생성됨, 섹션 6.5.1)
+   - `staging.simulation.lightoflifeclub.com` → CNAME `<DROPLET_TUNNEL_ID>.cfargotunnel.com` (이미 생성됨, 섹션 6.5.2)
+
+**중요**: DNS 레코드가 이미 Droplet 터널을 가리키고 있으므로, Windows 터널 중단 시 자동으로 Droplet으로 전환됩니다.
+
+#### 12.4.4 DNS 전파 대기 및 접속 테스트
+
+**DNS 전파 확인** (로컬 컴퓨터에서):
+
+```bash
+# DNS 캐시 플러시 (Windows)
+ipconfig /flushdns
+
+# 또는 (macOS/Linux)
+sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder
+
+# DNS 조회 확인
+nslookup simulation.lightoflifeclub.com
+# A 레코드 또는 CNAME이 Droplet 터널을 가리키는지 확인
+```
+
+**브라우저 테스트**:
+
+```bash
+# 1-2분 대기 후 브라우저에서 접속
+https://simulation.lightoflifeclub.com
+
+# Production 접속 확인
+# - 로그인
+# - 시뮬레이션 생성
+# - 기능 정상 작동 확인
+
+# Staging도 확인
+https://staging.simulation.lightoflifeclub.com
+```
+
+#### 12.4.5 마이그레이션 완료 확인
+
+**Droplet에서**:
+
+```bash
+# Nginx 액세스 로그 실시간 확인
+tail -f /var/log/nginx/access.log
+
+# 예상 출력: 외부 IP에서 요청이 들어오는 것을 확인
+# 예: 123.45.67.89 - - [date] "GET / HTTP/1.1" 200 ...
+
+# Production 컨테이너 로그 확인
+cd /srv/lol/simulation/production
+docker compose logs -f --tail=20
+
+# 사용자 요청이 들어오는지 확인
+```
+
+**마이그레이션 성공 기준**:
+
+- [x] `https://simulation.lightoflifeclub.com` 접속 성공
+- [x] 로그인 및 모든 기능 정상 작동
+- [x] Droplet Nginx 로그에 외부 요청 확인
+- [x] Windows 터널 중단 확인 (프로세스 없음)
+
+#### 12.4.6 내부 테스터 공지 (완료)
+
+```
+[공지] 시스템 업그레이드 완료
+
+업그레이드가 성공적으로 완료되었습니다.
+이제 더 안정적인 환경에서 서비스를 이용하실 수 있습니다.
+문제 발생 시 즉시 연락 부탁드립니다.
+```
+
+### 12.5 Windows 환경 정리 (마이그레이션 후)
+
+**주의**: 마이그레이션 후 **최소 24시간** 동안 Windows 환경을 유지하세요. 안정성 확인 후 제거합니다.
+
+#### 12.5.1 24시간 모니터링
+
+**Droplet에서 모니터링**:
+
+```bash
+# 리소스 사용량 확인
+htop
+
+# Docker 상태 확인
+docker stats
+
+# 에러 로그 확인
+docker compose -f /srv/lol/simulation/production/docker-compose.production.yml logs --tail=100 | grep -i error
+```
+
+#### 12.5.2 안정성 확인 후 Windows 정리 (24시간+ 경과 후)
+
+**Windows PowerShell에서**:
+
+```powershell
+# 1. Cloudflare Tunnel 삭제 (선택사항)
+cloudflared tunnel list
+cloudflared tunnel delete <OLD_TUNNEL_NAME>
+
+# 2. Backend/Frontend 프로세스 종료 (이미 중단되어 있을 것)
+Stop-Process -Name python -Force
+Stop-Process -Name node -Force
+
+# 3. 백업 파일 보관
+# tunnel-backup.txt, backend-env-backup.txt, frontend-env-backup.txt
+# 안전한 곳에 보관 후 로컬 삭제
+
+# 4. Cloudflared 설정 백업
+Copy-Item "$env:USERPROFILE\.cloudflared" -Destination ".\cloudflared-backup" -Recurse
+```
+
+**Windows 환경 완전 정리** (선택사항):
+
+- Windows에서 프로젝트 디렉토리 정리
+- 개발 환경 유지 또는 제거 (재개발 필요 시 유지 권장)
 
 ### 12.3 Health Check 모니터링
 
@@ -2178,18 +2552,62 @@ netstat -tulpn | grep -E '(8080|8081|8082)'
 
 ## 결론
 
-이 가이드를 따라 완료하면 다음이 구성됩니다:
+### 마이그레이션 완료 상태
 
-1. ✅ DigitalOcean Droplet에서 Production과 Staging 환경 분리 운영
-2. ✅ 단일 Cloudflare Tunnel로 두 도메인 서빙
-3. ✅ Nginx를 통한 Host-based routing
-4. ✅ GitHub Actions Self-Hosted Runner로 CI/CD 자동화
-5. ✅ Docker Compose로 컨테이너화된 배포
-6. ✅ 선택적 테스트 레이어 실행 기능
-7. ✅ Health check 기반 무중단 배포
-8. ✅ 브랜치별 자동 배포 (release → production, main → staging)
+이 가이드를 따라 마이그레이션을 완료하면 다음이 달성됩니다:
 
-문제가 발생하면 트러블슈팅 섹션을 참고하거나, 로그를 수집하여 분석하세요.
+**마이그레이션 전 (Windows 임시 환경)**:
+- ❌ Windows 11 Home 노트북 (불안정, 24/7 운영 불가)
+- ❌ 단일 환경 (Production/Staging 분리 없음)
+- ❌ 수동 배포 (개발자 직접 실행)
+- ❌ 포트 4173 (`npm run preview` - 개발용)
 
-**배포 성공을 기원합니다! 🚀**
+**마이그레이션 후 (Droplet 프로덕션 환경)**:
+1. ✅ **DigitalOcean Droplet 24/7 운영** (안정적인 프로덕션 인프라)
+2. ✅ **Production과 Staging 완전 분리** (독립적인 테스트 환경)
+3. ✅ **단일 Cloudflare Tunnel로 두 도메인 서빙** (비용 효율적)
+4. ✅ **Nginx Host-based routing** (유연한 트래픽 관리)
+5. ✅ **GitHub Actions Self-Hosted Runner CI/CD 자동화** (코드 푸시 → 자동 배포)
+6. ✅ **Docker Compose 컨테이너화** (일관된 배포 환경)
+7. ✅ **선택적 테스트 레이어 실행** (유연한 테스트 전략)
+8. ✅ **Health check 기반 무중단 배포** (사용자 영향 최소화)
+9. ✅ **브랜치별 자동 배포** (release → production, main → staging)
+10. ✅ **프로덕션 포트 표준화** (3000 Frontend, 8000 Backend)
+
+### 운영 가이드
+
+**일상적인 배포**:
+- Staging 테스트: `git push origin main`
+- Production 배포: `git push origin release`
+- 긴급 롤백: 섹션 14.3 참조
+
+**모니터링**:
+- Health check: `curl https://simulation.lightoflifeclub.com/health`
+- Droplet 리소스: `ssh deploy@<IP>`, `htop`, `docker stats`
+- 로그: `docker compose logs -f`
+
+**문제 발생 시**:
+- 섹션 14 (트러블슈팅) 참조
+- 로그 수집 및 분석
+- Windows 환경 백업 활용 (24시간 이내)
+
+### 다음 단계 (선택사항)
+
+**고급 기능 구현**:
+- Uptime 모니터링 (UptimeRobot, Pingdom)
+- 알림 시스템 (Slack, Discord)
+- 자동 백업 스크립트
+- Blue-Green 배포 전략
+- CDN 최적화
+
+**확장 계획**:
+- Droplet 업그레이드 (2GB RAM)
+- Load Balancer 추가 (다중 Droplet)
+- Database 마이그레이션 (Supabase → 자체 호스팅)
+
+---
+
+**축하합니다! Windows 임시 환경에서 프로덕션 CI/CD 환경으로의 마이그레이션이 완료되었습니다! 🚀**
+
+이제 안정적이고 확장 가능한 인프라 위에서 서비스를 운영할 수 있습니다.
 
