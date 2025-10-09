@@ -604,8 +604,14 @@ cloudflared tunnel info <TUNNEL_NAME>
 
 ### 6.2 Droplet에 cloudflared 설치
 
+**중요**: 항상 최신 버전을 확인하세요: [Cloudflared Releases](https://github.com/cloudflare/cloudflared/releases/latest)
+
 ```bash
-# cloudflared 다운로드 및 설치
+# 최신 버전 확인 (선택사항)
+curl -s https://api.github.com/repos/cloudflare/cloudflared/releases/latest | grep -o '"tag_name": *"[^"]*"' | sed 's/.*"\(.*\)"/\1/'
+
+# cloudflared 다운로드 및 설치 (2025년 10월 기준: 2025.9.1)
+# 'latest' URL을 사용하면 항상 최신 버전 다운로드
 curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
 dpkg -i cloudflared.deb
 
@@ -766,13 +772,19 @@ cd ~/actions-runner
 
 ### 7.3 Runner 다운로드 및 설치
 
+**중요**: 항상 최신 버전을 확인하세요: https://github.com/actions/runner/releases/latest
+
 ```bash
-# Runner 다운로드 (최신 버전 사용)
-curl -o actions-runner-linux-x64-2.311.0.tar.gz -L \
-  https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-linux-x64-2.311.0.tar.gz
+# 최신 버전 확인 (선택사항)
+curl -s https://api.github.com/repos/actions/runner/releases/latest | grep -o '"tag_name": *"[^"]*"' | sed 's/.*"v\(.*\)"/\1/'
+
+# Runner 다운로드 (2025년 10월 기준 최신 버전: v2.328.0)
+# 최신 버전으로 교체하세요
+curl -o actions-runner-linux-x64-2.328.0.tar.gz -L \
+  https://github.com/actions/runner/releases/download/v2.328.0/actions-runner-linux-x64-2.328.0.tar.gz
 
 # 압축 해제
-tar xzf ./actions-runner-linux-x64-2.311.0.tar.gz
+tar xzf ./actions-runner-linux-x64-2.328.0.tar.gz
 
 # 설치 스크립트 실행
 ./config.sh --url https://github.com/SkyDominator/simulation \

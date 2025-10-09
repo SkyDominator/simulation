@@ -1,0 +1,1 @@
+1. Run web search to check all the commands, parameters, syntax, and all the methodologies in this doc are not deprecated as to the latest. If found, update any outdated commands or syntax based on your findings.
