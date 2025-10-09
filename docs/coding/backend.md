@@ -1,12 +1,8 @@
----
-applyTo: "/src/backend/**/*.py"
----
-
-# Back-end Coding Guidelines
+## Back-end Coding Guidelines
 
 Python backend application guidelines.
 
-## Core Principles
+### Core Principles
 
 **DO:**
 - Apply SOLID principles (SRP, OCP, LSP, ISP, DIP)
@@ -19,6 +15,7 @@ Python backend application guidelines.
 - Use configuration files/env variables for settings
 - Write testable code (easy to test in isolation)
 - Follow the existing code style and conventions when modifying code
+- Clean-up codes after modification (remove unused imports, variables, functions, comments, and unnecessary changes that were prooved to be not needed anymore)
 
 **DON'T:**
 - Create monolithic functions/classes
@@ -26,7 +23,7 @@ Python backend application guidelines.
 - Hard-code configuration values
 - Write tightly coupled modules
 
-## Code Quality
+### Code Quality
 
 **DO:**
 - Add docstrings to all functions/classes
@@ -45,7 +42,7 @@ Python backend application guidelines.
 - Mix responsibilities in single function
 - Ignore type hints
 
-## Error Handling
+### Error Handling
 
 **DO:**
 - Implement structured, categorized exceptions
@@ -59,7 +56,7 @@ Python backend application guidelines.
 - Swallow exceptions silently
 - Expose internal error details to users
 
-## API Standards
+### API Standards
 
 **Status Codes:**
 - `200`: Successful GET
@@ -71,7 +68,7 @@ Python backend application guidelines.
 - `422`: Request validation errors
 - `500`: Server errors
 
-## Performance & Security
+### Performance & Security
 
 **DO:**
 - Optimize for performance after ensuring readability
@@ -85,7 +82,7 @@ Python backend application guidelines.
 - Trust user input without validation
 - Log sensitive data
 
-## Refactoring & Testing
+### Refactoring & Testing
 
 **DO:**
 - Refactor code while preserving functionality
