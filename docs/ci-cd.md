@@ -2,6 +2,10 @@
 
 이 문서는 DigitalOcean Droplet(1 CPU, 1GB RAM)에서 GitHub Actions Self-Hosted Runner와 Docker를 사용하여 무중단 CI/CD 환경을 처음부터 끝까지 구성하는 전체 과정을 설명합니다.
 
+## ⚠️ 시작하기 전에
+
+이 가이드는 Production과 Staging 환경을 완전히 분리하여 동시에 운영하는 방법을 설명합니다. 기존에 단일 환경으로 운영 중이었다면 이 가이드를 따라 마이그레이션할 수 있습니다.
+
 ## 목차
 
 1. [시스템 아키텍처 개요](#1-시스템-아키텍처-개요)
@@ -64,20 +68,22 @@
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │              Nginx (Port 8080)                        │   │
 │  │  Host-based Routing:                                  │   │
-│  │  - simulation.lightoflifeclub.com → Production       │   │
-│  │  - staging.simulation.lightoflifeclub.com → Staging  │   │
+│  │  - simulation.lightoflifeclub.com → localhost:3000   │   │
+│  │  - staging.simulation.lightoflifeclub.com → :5173    │   │
 │  └──────┬────────────────────────────┬──────────────────┘   │
 │         │                            │                       │
 │         ▼                            ▼                       │
 │  ┌─────────────────┐         ┌─────────────────┐            │
 │  │  Production     │         │  Staging        │            │
 │  │  Environment    │         │  Environment    │            │
+│  │  /srv/../prod/  │         │  /srv/../staging/ │          │
 │  │                 │         │                 │            │
 │  │  Docker Compose │         │  Docker Compose │            │
-│  │  (Port 8081)    │         │  (Port 8082)    │            │
+│  │  (Port 3000)    │         │  (Port 5173)    │            │
 │  │  ┌───────────┐  │         │  ┌───────────┐  │            │
 │  │  │ Frontend  │  │         │  │ Frontend  │  │            │
-│  │  │ (Nginx)   │  │         │  │ (Nginx)   │  │            │
+│  │  │ (Port 80) │  │         │  │ (Port 80) │  │            │
+│  │  │ → 3000    │  │         │  │ → 5173    │  │            │
 │  │  └─────┬─────┘  │         │  └─────┬─────┘  │            │
 │  │        │        │         │        │        │            │
 │  │        │ /api   │         │        │ /api   │            │
@@ -85,6 +91,7 @@
 │  │  ┌───────────┐  │         │  ┌───────────┐  │            │
 │  │  │ Backend   │  │         │  │ Backend   │  │            │
 │  │  │ (FastAPI) │  │         │  │ (FastAPI) │  │            │
+│  │  │ (Port 8000)│  │         │  │ (Port 8001)│  │            │
 │  │  └───────────┘  │         │  └───────────┘  │            │
 │  └─────────────────┘         └─────────────────┘            │
 │                                                              │
@@ -106,10 +113,25 @@
 | 서비스 | 내부 포트 | 외부 접근 |
 |--------|----------|----------|
 | Nginx (공용 프록시) | 8080 | Cloudflare Tunnel |
-| Production - Frontend+Backend | 8081 | Nginx → 8081 |
-| Staging - Frontend+Backend | 8082 | Nginx → 8082 |
-| Backend (컨테이너 내부) | 8000 | 내부 네트워크만 |
-| Frontend (컨테이너 내부) | 80 | 내부 네트워크만 |
+| Production - Frontend | 80 | Host 3000 → Nginx 8080 |
+| Production - Backend | 8000 | Host 8000 (내부 통신만) |
+| Staging - Frontend | 80 | Host 5173 → Nginx 8080 |
+| Staging - Backend | 8000 | Host 8001 (내부 통신만) |
+
+**환경별 포트 정리**:
+
+- **Production**: `/srv/lol/simulation/production`
+  - Frontend: Host 3000 → Container 80
+  - Backend: Host 8000 → Container 8000
+  
+- **Staging**: `/srv/lol/simulation/staging`
+  - Frontend: Host 5173 → Container 80
+  - Backend: Host 8001 → Container 8000
+
+- **개발/디버그**: (로컬 개발 시)
+  - Frontend: 5173 (`npm run dev`)
+  - Frontend Preview: 4173 (`npm run preview`)
+  - Backend: 8002
 
 ---
 
@@ -364,11 +386,11 @@ rm /etc/nginx/sites-enabled/default
 cat > /etc/nginx/sites-available/simulation << 'EOF'
 # Upstream definitions
 upstream production_frontend {
-    server localhost:8081;
+    server localhost:3000;
 }
 
 upstream staging_frontend {
-    server localhost:8082;
+    server localhost:5173;
 }
 
 # Production Server Block
@@ -654,27 +676,41 @@ GitHub Repository → Settings → Actions → Runners에서 `droplet-runner`가
 
 ### 8.1 프로젝트 디렉토리 구조 생성
 
+**중요**: Production과 Staging은 완전히 분리된 디렉토리에 배포됩니다.
+
 ```bash
 # 배포 디렉토리 생성
-mkdir -p /srv/lol/simulation/{production,staging}
+mkdir -p /srv/lol/simulation/production
+mkdir -p /srv/lol/simulation/staging
 chown -R deploy:deploy /srv/lol/simulation
+
+# 디렉토리 구조 확인
+tree /srv/lol/simulation -L 2
+# 결과:
+# /srv/lol/simulation
+# ├── production/  ← release 브랜치 배포 위치
+# └── staging/     ← main 브랜치 배포 위치
 ```
 
 ### 8.2 Production 환경용 Docker Compose 파일
 
 **파일 위치**: Repository Root → `docker-compose.production.yml`
 
+이 파일은 Production 환경을 정의합니다. Frontend는 포트 3000, Backend는 포트 8000을 사용합니다.
+
 ```yaml
 version: "3.8"
 
 services:
-  backend-production:
+  backend:
     build:
       context: .
       dockerfile: src/backend/Dockerfile
     image: simulation_backend:production
     container_name: simulation_backend_production
     restart: unless-stopped
+    ports:
+      - "8000:8000"
     environment:
       - ENV=production
       - SUPABASE_URL=${SUPABASE_URL}
@@ -683,13 +719,15 @@ services:
       - SOLAPI_API_KEY=${SOLAPI_API_KEY}
       - SOLAPI_API_SECRET=${SOLAPI_API_SECRET}
       - SOLAPI_SENDER_NUMBER=${SOLAPI_SENDER_NUMBER}
-      - OTP_SECRET_KEY=${OTP_SECRET_KEY:-default-otp-secret-key-change-me}
+      - OTP_SECRET_KEY=${OTP_SECRET_KEY}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    mem_limit: 512m
+    memswap_limit: 768m
     networks:
       - production-network
     logging:
@@ -698,7 +736,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  frontend-production:
+  frontend:
     build:
       context: .
       dockerfile: src/frontend/Dockerfile
@@ -710,9 +748,9 @@ services:
     container_name: simulation_frontend_production
     restart: unless-stopped
     ports:
-      - "8081:80"
+      - "3000:80"
     depends_on:
-      backend-production:
+      backend:
         condition: service_healthy
     networks:
       - production-network
@@ -731,17 +769,21 @@ networks:
 
 **파일 위치**: Repository Root → `docker-compose.staging.yml`
 
+이 파일은 Staging 환경을 정의합니다. Frontend는 포트 5173, Backend는 포트 8001을 사용합니다.
+
 ```yaml
 version: "3.8"
 
 services:
-  backend-staging:
+  backend:
     build:
       context: .
       dockerfile: src/backend/Dockerfile
     image: simulation_backend:staging
     container_name: simulation_backend_staging
     restart: unless-stopped
+    ports:
+      - "8001:8000"
     environment:
       - ENV=staging
       - SUPABASE_URL=${SUPABASE_URL}
@@ -750,13 +792,15 @@ services:
       - SOLAPI_API_KEY=${SOLAPI_API_KEY}
       - SOLAPI_API_SECRET=${SOLAPI_API_SECRET}
       - SOLAPI_SENDER_NUMBER=${SOLAPI_SENDER_NUMBER}
-      - OTP_SECRET_KEY=${OTP_SECRET_KEY:-default-otp-secret-key-change-me}
+      - OTP_SECRET_KEY=${OTP_SECRET_KEY}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    mem_limit: 512m
+    memswap_limit: 768m
     networks:
       - staging-network
     logging:
@@ -765,7 +809,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  frontend-staging:
+  frontend:
     build:
       context: .
       dockerfile: src/frontend/Dockerfile
@@ -777,9 +821,9 @@ services:
     container_name: simulation_frontend_staging
     restart: unless-stopped
     ports:
-      - "8082:80"
+      - "5173:80"
     depends_on:
-      backend-staging:
+      backend:
         condition: service_healthy
     networks:
       - staging-network
@@ -886,9 +930,11 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-### 8.6 Nginx Frontend Config 수정
+### 8.6 Frontend Nginx Config 수정 (컨테이너 내부)
 
 **파일 위치**: `config/nginx/frontend.conf`
+
+**중요**: 이 설정은 frontend 컨테이너 내부의 Nginx 설정입니다. Backend로의 프록시는 Docker 네트워크를 통해 `backend` 서비스명으로 연결됩니다.
 
 ```nginx
 server {
@@ -916,9 +962,9 @@ server {
     try_files $uri $uri/ /index.html;
   }
 
-  # Proxy API requests to backend
+  # Proxy API requests to backend (Docker service name)
   location /api/ {
-    proxy_pass http://backend-production:8000/api/;
+    proxy_pass http://backend:8000/api/;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
@@ -933,7 +979,7 @@ server {
 
   # Health check endpoint
   location /health {
-    proxy_pass http://backend-production:8000/api/health;
+    proxy_pass http://backend:8000/api/health;
     access_log off;
   }
 
@@ -945,188 +991,10 @@ server {
 }
 ```
 
-**Note**: Production과 Staging에서 backend 서비스 이름이 다르므로, 빌드 시 동적으로 처리하거나 별도 파일을 사용해야 합니다. 간단한 방법은 환경별로 다른 nginx config를 사용하는 것입니다.
-
-
-#### 8.6.1 Production용 Nginx Config 생성
-
-**파일 위치**: `config/nginx/frontend.production.conf`
-
-```nginx
-server {
-  listen 80;
-  server_name _;
-
-  root /usr/share/nginx/html;
-  index index.html;
-
-  gzip on;
-  gzip_vary on;
-  gzip_min_length 1024;
-  gzip_types text/plain text/css text/xml text/javascript 
-             application/x-javascript application/xml+rss 
-             application/javascript application/json image/svg+xml;
-
-  add_header X-Frame-Options "SAMEORIGIN" always;
-  add_header X-Content-Type-Options "nosniff" always;
-  add_header X-XSS-Protection "1; mode=block" always;
-
-  location / {
-    try_files $uri $uri/ /index.html;
-  }
-
-  location /api/ {
-    proxy_pass http://backend-production:8000/api/;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_connect_timeout 60s;
-    proxy_send_timeout 60s;
-    proxy_read_timeout 60s;
-  }
-
-  location /health {
-    proxy_pass http://backend-production:8000/api/health;
-    access_log off;
-  }
-
-  location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-  }
-}
-```
-
-#### 8.6.2 Staging용 Nginx Config 생성
-
-**파일 위치**: `config/nginx/frontend.staging.conf`
-
-```nginx
-server {
-  listen 80;
-  server_name _;
-
-  root /usr/share/nginx/html;
-  index index.html;
-
-  gzip on;
-  gzip_vary on;
-  gzip_min_length 1024;
-  gzip_types text/plain text/css text/xml text/javascript 
-             application/x-javascript application/xml+rss 
-             application/javascript application/json image/svg+xml;
-
-  add_header X-Frame-Options "SAMEORIGIN" always;
-  add_header X-Content-Type-Options "nosniff" always;
-  add_header X-XSS-Protection "1; mode=block" always;
-
-  location / {
-    try_files $uri $uri/ /index.html;
-  }
-
-  location /api/ {
-    proxy_pass http://backend-staging:8000/api/;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_connect_timeout 60s;
-    proxy_send_timeout 60s;
-    proxy_read_timeout 60s;
-  }
-
-  location /health {
-    proxy_pass http://backend-staging:8000/api/health;
-    access_log off;
-  }
-
-  location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-  }
-}
-```
-
-#### 8.6.3 Frontend Dockerfile에서 환경별 Config 사용
-
-**파일 위치**: `src/frontend/Dockerfile` (수정)
-
-```dockerfile
-# Multi-stage build for optimized image size
-
-# Stage 1: Build
-FROM node:18-alpine AS builder
-
-WORKDIR /app
-
-COPY ./src/frontend/package*.json ./
-RUN npm ci
-
-COPY ./src/frontend .
-
-ARG VITE_API_BASE_URL
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_PUBLISHABLE_KEY
-
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
-ENV VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
-ENV VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
-
-RUN npm run build
-
-# Stage 2: Production
-FROM nginx:stable-alpine
-
-# Build arg to select config file
-ARG NGINX_CONFIG=frontend.conf
-
-# Copy environment-specific nginx configuration
-COPY ./config/nginx/${NGINX_CONFIG} /etc/nginx/conf.d/default.conf
-
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-EXPOSE 80
-
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
-
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-#### 8.6.4 Docker Compose에서 NGINX_CONFIG 전달
-
-**Production** (`docker-compose.production.yml` 수정):
-
-```yaml
-  frontend-production:
-    build:
-      context: .
-      dockerfile: src/frontend/Dockerfile
-      args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
-        - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
-        - NGINX_CONFIG=frontend.production.conf
-    # ... rest of config
-```
-
-**Staging** (`docker-compose.staging.yml` 수정):
-
-```yaml
-  frontend-staging:
-    build:
-      context: .
-      dockerfile: src/frontend/Dockerfile
-      args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
-        - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
-        - NGINX_CONFIG=frontend.staging.conf
-    # ... rest of config
-```
+**설명**:
+- Production과 Staging 모두 동일한 nginx config 사용
+- Docker Compose 내에서 서비스명은 항상 `backend`로 통일
+- Production과 Staging의 분리는 호스트의 Nginx(포트 8080)에서 처리
 
 ---
 
@@ -1194,9 +1062,11 @@ GitHub Repository → Settings → Secrets and variables → Actions → Variabl
 
 ## 10. GitHub Actions Workflow 설정
 
-### 10.1 Workflow 파일 생성
+### 10.1 Workflow 파일 생성 (완전히 새로 작성)
 
 **파일 위치**: `.github/workflows/ci-cd.yml`
+
+**주의**: 기존 workflow 파일이 있다면 아래 내용으로 **완전히 교체**하세요.
 
 ```yaml
 name: CI/CD Pipeline (Production & Staging)
@@ -1347,9 +1217,24 @@ jobs:
         with:
           ref: release
 
+      - name: Create deployment directory
+        run: |
+          DEPLOY_DIR="/srv/lol/simulation/production"
+          mkdir -p "$DEPLOY_DIR"
+          cd "$DEPLOY_DIR"
+          
+          # Copy source code to deployment directory
+          rsync -av --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='__pycache__' \
+            --exclude='.env' \
+            $GITHUB_WORKSPACE/ ./
+
       - name: Create .env file
         run: |
-          cat > .env << EOF
+          DEPLOY_DIR="/srv/lol/simulation/production"
+          cat > "$DEPLOY_DIR/.env" << EOF
           ENV=production
           VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
           VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
@@ -1365,22 +1250,24 @@ jobs:
 
       - name: Build and Deploy
         run: |
+          cd /srv/lol/simulation/production
           docker compose -f docker-compose.production.yml pull || true
           docker compose -f docker-compose.production.yml build --no-cache
           docker compose -f docker-compose.production.yml up -d --remove-orphans
 
       - name: Health Check
         run: |
-          echo "Waiting for services to be healthy..."
+          echo "Waiting for Production services to be healthy..."
           for i in {1..20}; do
             sleep 3
-            if curl -f http://localhost:8081/health > /dev/null 2>&1; then
-              echo "✅ Production is healthy"
+            if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+              echo "✅ Production is healthy (port 3000)"
               exit 0
             fi
             echo "Attempt $i/20 - waiting..."
           done
           echo "❌ Production health check failed"
+          cd /srv/lol/simulation/production
           docker compose -f docker-compose.production.yml logs --tail=100
           exit 1
 
@@ -1401,9 +1288,24 @@ jobs:
         with:
           ref: main
 
+      - name: Create deployment directory
+        run: |
+          DEPLOY_DIR="/srv/lol/simulation/staging"
+          mkdir -p "$DEPLOY_DIR"
+          cd "$DEPLOY_DIR"
+          
+          # Copy source code to deployment directory
+          rsync -av --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='__pycache__' \
+            --exclude='.env' \
+            $GITHUB_WORKSPACE/ ./
+
       - name: Create .env file
         run: |
-          cat > .env << EOF
+          DEPLOY_DIR="/srv/lol/simulation/staging"
+          cat > "$DEPLOY_DIR/.env" << EOF
           ENV=staging
           VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
           VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
@@ -1419,22 +1321,24 @@ jobs:
 
       - name: Build and Deploy
         run: |
+          cd /srv/lol/simulation/staging
           docker compose -f docker-compose.staging.yml pull || true
           docker compose -f docker-compose.staging.yml build --no-cache
           docker compose -f docker-compose.staging.yml up -d --remove-orphans
 
       - name: Health Check
         run: |
-          echo "Waiting for services to be healthy..."
+          echo "Waiting for Staging services to be healthy..."
           for i in {1..20}; do
             sleep 3
-            if curl -f http://localhost:8082/health > /dev/null 2>&1; then
-              echo "✅ Staging is healthy"
+            if curl -f http://localhost:5173/health > /dev/null 2>&1; then
+              echo "✅ Staging is healthy (port 5173)"
               exit 0
             fi
             echo "Attempt $i/20 - waiting..."
           done
           echo "❌ Staging health check failed"
+          cd /srv/lol/simulation/staging
           docker compose -f docker-compose.staging.yml logs --tail=100
           exit 1
 
@@ -1615,13 +1519,34 @@ git push origin main
    - 각 job 상태 모니터링 (test-unit, test-integration, lint, build, deploy-staging)
 
 3. **Staging 접속 확인**:
-   - https://staging.simulation.lightoflifeclub.com
+   - <https://staging.simulation.lightoflifeclub.com>
    - 로그인, 시뮬레이션 생성 등 기능 테스트
 
-4. **로그 확인** (Droplet에서):
+4. **포트 분리 확인** (Droplet에서):
 
 ```bash
 ssh deploy@<DROPLET_IP>
+
+# Staging이 5173 포트에서 실행 중인지 확인
+curl http://localhost:5173/health
+# 예상 결과: {"status":"healthy"} 또는 HTTP 200
+
+# Production이 실행 중이면 3000도 확인
+curl http://localhost:3000/health
+
+# 컨테이너 포트 매핑 확인
+docker ps --format "table {{.Names}}\t{{.Ports}}"
+# 예상 출력:
+# simulation_frontend_staging  0.0.0.0:5173->80/tcp
+# simulation_backend_staging   0.0.0.0:8001->8000/tcp
+# simulation_frontend_production  0.0.0.0:3000->80/tcp
+# simulation_backend_production   0.0.0.0:8000->8000/tcp
+```
+
+5. **로그 확인**:
+
+```bash
+cd /srv/lol/simulation/staging
 docker compose -f docker-compose.staging.yml logs -f
 ```
 
@@ -2108,12 +2033,31 @@ Production과 동일하되, `VITE_API_BASE_URL`은 `https://staging.simulation.l
 
 | 서비스 | 컨테이너 내부 | Host (Droplet) | 외부 접근 |
 |--------|--------------|----------------|----------|
-| Backend (Production) | 8000 | - | Nginx를 통해서만 |
-| Frontend (Production) | 80 | 8081 | Nginx를 통해서만 |
-| Backend (Staging) | 8000 | - | Nginx를 통해서만 |
-| Frontend (Staging) | 80 | 8082 | Nginx를 통해서만 |
-| Nginx | 8080 | 8080 | Cloudflare Tunnel |
+| Backend (Production) | 8000 | 8000 | Docker 내부 네트워크만 |
+| Frontend (Production) | 80 | 3000 | Nginx 8080 통해서만 |
+| Backend (Staging) | 8000 | 8001 | Docker 내부 네트워크만 |
+| Frontend (Staging) | 80 | 5173 | Nginx 8080 통해서만 |
+| Nginx (Host) | 8080 | 8080 | Cloudflare Tunnel |
 | Cloudflare Tunnel | - | - | 443 (HTTPS) |
+
+**요청 흐름**:
+
+1. 사용자 → `simulation.lightoflifeclub.com` (HTTPS:443)
+2. Cloudflare Tunnel → Droplet Nginx (Port 8080)
+3. Nginx → Host header 확인
+   - `simulation.lightoflifeclub.com` → `localhost:3000` (Production)
+   - `staging.simulation.lightoflifeclub.com` → `localhost:5173` (Staging)
+4. Frontend 컨테이너 → Backend 컨테이너 (Docker 네트워크 내 `backend:8000`)
+
+**포트 사용 정리**:
+
+- **3000**: Production Frontend (표준 Node.js 프로덕션 포트)
+- **5173**: Staging Frontend (Vite dev 서버 포트와 동일)
+- **4173**: 로컬 개발 시 `npm run preview` 전용
+- **8000**: Production Backend
+- **8001**: Staging Backend
+- **8002**: 로컬 디버그 Backend (문서화 목적)
+- **8080**: Host Nginx (Cloudflare 터널 연결)
 
 ### 15.4 유용한 명령어 모음
 
