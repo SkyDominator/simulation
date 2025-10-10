@@ -73,18 +73,29 @@
 │         ┌────────────────┐                                   │
 │         │ GitHub Actions │                                   │
 │         │  (CI/CD)       │                                   │
-│         └────────┬───────┘                                   │
-└──────────────────┼──────────────────────────────────────────┘
-                   │
-                   │ Trigger Self-Hosted Runner
-                   ▼
+│         └────┬───────────┘                                   │
+│              │                                               │
+│              ├─────────────────────────────────────┐         │
+│              │                                     │         │
+│              ▼                                     ▼         │
+│    ┌──────────────────┐              ┌─────────────────┐    │
+│    │ GitHub-Hosted    │              │ Trigger         │    │
+│    │ Runners          │              │ Self-Hosted     │    │
+│    │ - Run tests      │              │ Runner          │    │
+│    │   (unit,         │              │                 │    │
+│    │    integration,  │              │                 │    │
+│    │    e2e - 선택적) │              │                 │    │
+│    └──────────────────┘              └────────┬────────┘    │
+│                                               │             │
+└───────────────────────────────────────────────┼─────────────┘
+                                                │
+                                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            DigitalOcean Droplet (1 CPU, 1GB RAM)            │
 │                                                              │
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │          GitHub Self-Hosted Runner                     │  │
 │  │  - Build Docker images                                 │  │
-│  │  - Run tests (unit, integration, e2e - 선택적)        │  │
 │  │  - Deploy containers                                   │  │
 │  └───────────────────────────────────────────────────────┘  │
 │                                                              │
@@ -132,10 +143,37 @@
 - **단일 Cloudflare Tunnel**: 1개의 터널로 Production과 Staging 모두 커버
 - **Host-based Routing**: Nginx가 도메인(Host 헤더)을 기반으로 요청을 적절한 환경으로 라우팅
 - **무중단 배포**: Docker Compose의 rolling update와 health check 활용
-- **브랜치 기반 배포**: 
+- **브랜치 기반 배포**:
   - `release` branch → Production
   - `main` branch → Staging
 - **선택적 테스트 실행**: Workflow에서 각 테스트 레이어를 제어 가능
+- **하이브리드 Runner 전략**: 
+  - **Tests**: GitHub-hosted runners (ubuntu-latest) 사용
+  - **Build & Deploy**: Self-hosted runner (Droplet) 사용
+
+### 1.2.1 왜 테스트는 GitHub-hosted Runner에서 실행하나?
+
+**GitHub-hosted Runner 사용 (Tests)**:
+
+- ✅ **무료 GitHub Actions 분 활용**: Public/private 저장소에서 제공되는 무료 실행 시간 사용
+- ✅ **깨끗한 환경**: 매 테스트마다 새로운 환경 제공, 상태 오염 없음
+- ✅ **병렬 실행**: 여러 테스트 job을 동시에 실행 가능
+- ✅ **사전 설치된 도구**: Node.js, Python, Playwright 브라우저 등 즉시 사용 가능
+- ✅ **리소스 격리**: 테스트가 프로덕션/스테이징 서비스에 영향 없음
+
+**Self-hosted Runner 사용 (Build & Deploy)**:
+
+- ✅ **직접 배포**: 같은 머신에서 바로 배포 가능
+- ✅ **이미지 전송 불필요**: Docker 이미지를 레지스트리에 push/pull 할 필요 없음
+- ✅ **배포 디렉토리 직접 접근**: `/srv/lol/simulation/` 경로에 직접 접근
+- ✅ **환경 일치**: 빌드와 실행 환경이 동일
+
+**Droplet(1GB RAM)에서 테스트를 실행하지 않는 이유**:
+
+- ❌ **메모리 부족**: 1GB RAM으로 테스트 + 프로덕션/스테이징 컨테이너 동시 실행 시 메모리 부족 위험
+- ❌ **성능 저하**: 리소스 경쟁으로 테스트 및 서비스 성능 저하
+- ❌ **단일 장애점**: Droplet 장애 시 테스트와 배포 모두 불가능
+- ❌ **환경 오염**: 테스트 실행이 프로덕션 환경에 영향을 줄 수 있음
 
 ### 1.3 포트 매핑
 

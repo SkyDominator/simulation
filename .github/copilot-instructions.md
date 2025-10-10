@@ -1,42 +1,35 @@
 # Copilot Instructions
 
-This document helps you understand my project for improving the quality of tasks including planning, code suggestions, and implementations.
+This document helps you understand my project for improving the quality of tasks including planning, code suggestions, and implementations. MUST ALWAYS read and follow the instructions below carefully.
 
-* MUST read & follow the **Must-follow Instructions**.
-* MAY read & follow the **On-demand Instructions** as needed.
+## Software Specification Document (SSD)
 
-## Must-follow Instructions
+Adhere to the [SSD](/docs/spec/ssd.md).
 
-### Software Specification Document (SSD)
-
-Read and adhere to the [SSD](/docs/spec/ssd.md).
-
-### Agent Behavior
+## Agent Behavior
 
 Follow the [Agent Behavior Guidelines](/docs/agent/behavior.md).
 
-### Schema and RLS
+## Schema and RLS
 
-Read and adhere to the [Database Schema and RLS Policies](/docs/spec/schema.md)
+Adhere to the [Database Schema and RLS Policies](/docs/spec/schema.md)
 
-## On-demand Instructions
+## Technical Specification
 
-### Technical Specification
+Adhere to the [Technical Specification](/docs/spec/tech-details.md) for the technical details of the project development.
 
-Read and adhere to the [Technical Specification](/docs/spec/tech-details.md) for the technical details of the project development.
+## Back-end Coding Guidelines
 
-### Back-end Coding Guidelines
+Adhere to the [Back-end Coding Guidelines](/docs/coding/backend.md) for Python backend.
 
-Read and adhere to the [Back-end Coding Guidelines](/docs/coding/backend.md) for Python backend.
+## Pull Request Guidelines
 
-### Pull Request Guidelines
+Adhere to the [Pull Request Guidelines](/docs/cicd/pr-guide.md) for creating commit messages and PRs.
 
-Read and adhere to the [Pull Request Guidelines](/docs/cicd/pr-guide.md) for creating commit messages and PRs.
+## Front-end Coding Guidelines
 
-### Front-end Coding Guidelines
+Adhere to the [Front-end Coding Guidelines](/docs/coding/frontend.md) for PWA React/TypeScript.
 
-Read and adhere to the [Front-end Coding Guidelines](/docs/coding/frontend.md) for PWA React/TypeScript.
+## Documentation Standards
 
-### Documentation Standards
-
-Read and adhere to the [Documentation Standards](/docs/markdown.md) for writing or editing markdown docs.
+Adhere to the [Documentation Standards](/docs/markdown.md) for writing or editing markdown docs.
