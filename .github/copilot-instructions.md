@@ -2,13 +2,14 @@
 
 This document helps you understand my project for improving the quality of tasks including planning, code suggestions, and implementations.
 
-Follow these instructions carefully to do your best work.
+* MUST read & follow the **Must-follow Instructions**.
+* MAY read & follow the **On-demand Instructions** as needed.
 
 ## Must-follow Instructions
 
 ### Software Specification Document (SSD)
 
-Read the [SSD](/docs/spec/ssd.md).
+Read and adhere to the [SSD](/docs/spec/ssd.md).
 
 ### Agent Behavior
 
@@ -16,26 +17,26 @@ Follow the [Agent Behavior Guidelines](/docs/agent/behavior.md).
 
 ### Schema and RLS
 
-Read the [Database Schema and RLS Policies](/docs/spec/schema.md)
+Read and adhere to the [Database Schema and RLS Policies](/docs/spec/schema.md)
 
 ## On-demand Instructions
 
 ### Technical Specification
 
-Read the [Technical Specification](/docs/spec/tech-details.md) for the technical details of the project development.
+Read and adhere to the [Technical Specification](/docs/spec/tech-details.md) for the technical details of the project development.
 
 ### Back-end Coding Guidelines
 
-Read the [Back-end Coding Guidelines](/docs/coding/backend.md) for Python backend.
+Read and adhere to the [Back-end Coding Guidelines](/docs/coding/backend.md) for Python backend.
 
 ### Pull Request Guidelines
 
-Read the [Pull Request Guidelines](/docs/cicd/pr-guide.md) for creating commit messages and PRs.
+Read and adhere to the [Pull Request Guidelines](/docs/cicd/pr-guide.md) for creating commit messages and PRs.
 
 ### Front-end Coding Guidelines
 
-Read the [Front-end Coding Guidelines](/docs/coding/frontend.md) for PWA React/TypeScript.
+Read and adhere to the [Front-end Coding Guidelines](/docs/coding/frontend.md) for PWA React/TypeScript.
 
 ### Documentation Standards
 
-Read the [Documentation Standards](/docs/markdown.md) for writing or editing markdown docs.
+Read and adhere to the [Documentation Standards](/docs/markdown.md) for writing or editing markdown docs.
