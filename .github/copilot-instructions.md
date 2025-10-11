@@ -1,18 +1,18 @@
 # Copilot Instructions
 
-This document helps you understand my project for improving the quality of tasks including planning, code suggestions, and implementations. MUST ALWAYS read and follow the instructions below carefully.
+This document helps you understand my project for improving the quality of tasks including planning, code suggestions, and implementations.
 
 ## Software Specification Document (SSD)
 
-Adhere to the [SSD](/docs/spec/ssd.md).
+MUST ALWAYS read [SSD](/docs/spec/ssd.md) before initiating any tasks and adhere to it for all tasks.
 
 ## Agent Behavior
 
-Follow the [Agent Behavior Guidelines](/docs/agent/behavior.md).
+MUST ALWAYS read [Agent Behavior Guidelines](/docs/agent/behavior.md) before initiating any tasks and follow it for all tasks.
 
 ## Schema and RLS
 
-Adhere to the [Database Schema and RLS Policies](/docs/spec/schema.md)
+MUST ALWAYS read [Database Schema and RLS Policies](/docs/spec/schema.md) before initiating any tasks and adhere to it for all tasks.
 
 ## Technical Specification
 
