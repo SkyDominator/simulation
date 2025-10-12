@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: src/backend/Dockerfile
+    image: simulation_backend:production
+    container_name: simulation_backend_production
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=production
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY}
+      - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY}
+      - SOLAPI_API_KEY=${SOLAPI_API_KEY}
+      - SOLAPI_API_SECRET=${SOLAPI_API_SECRET}
+      - SOLAPI_SENDER_NUMBER=${SOLAPI_SENDER_NUMBER}
+      - OTP_SECRET_KEY=${OTP_SECRET_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    mem_limit: 512m
+    memswap_limit: 768m
+    networks:
+      - production-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: src/frontend/Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
+    image: simulation_frontend:production
+    container_name: simulation_frontend_production
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - production-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  production-network:
+    driver: bridge
