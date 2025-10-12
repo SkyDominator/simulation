@@ -299,13 +299,15 @@ class TestOTPLimitsValidation:
             # First 3 sends should succeed
             for i in range(3):
                 # Mock rate limit count (i requests in 15min window)
-                mock_execute_result.execute.return_value = Mock(count=i)
+                mock_result_with_data = Mock(count=i, data=[])
+                mock_execute_result.execute.return_value = mock_result_with_data
                 
                 result = otp_service.request_otp(phone)
                 assert result["success"] is True, f"Send {i+1} should succeed"
             
             # 4th send within 15 minutes should fail (rate limit reached)
-            mock_execute_result.execute.return_value = Mock(count=3)
+            mock_result_limit_reached = Mock(count=3, data=[{"id": 1}, {"id": 2}, {"id": 3}])
+            mock_execute_result.execute.return_value = mock_result_limit_reached
             
             result = otp_service.request_otp(phone)
             assert result["success"] is False
@@ -369,8 +371,19 @@ class TestOTPSendLimiterHelper:
             # Test with backend rate limiting logic
             # Mock database to return count that simulates rolling window behavior
             # Since we have 3 sends in window, but rate limit is 3, we should test with 2 to allow one more
-            fake_supabase_client.table().select().eq().gte().execute.return_value.count = 2
-            fake_supabase_client.table().insert().execute.return_value.data = [{"id": "test-window"}]
+            mock_select_result = Mock(count=2, data=[{"id": "1"}, {"id": "2"}])
+            mock_insert_result = Mock(data=[{"id": "test-window"}])
+            
+            # Setup proper mock chain for database queries
+            mock_chain = Mock()
+            mock_chain.select.return_value = mock_chain
+            mock_chain.eq.return_value = mock_chain
+            mock_chain.gte.return_value = mock_chain
+            mock_chain.execute.return_value = mock_select_result
+            mock_chain.insert.return_value = Mock(execute=Mock(return_value=mock_insert_result))
+            mock_chain.update.return_value = Mock(eq=Mock(return_value=Mock(eq=Mock(return_value=Mock(execute=Mock(return_value=Mock()))))))
+            
+            fake_supabase_client.table.return_value = mock_chain
             
             # This should succeed as we're under the limit (2 < 3)
             result = otp_service.request_otp(phone)

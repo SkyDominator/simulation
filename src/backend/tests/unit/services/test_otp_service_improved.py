@@ -94,6 +94,7 @@ class MockQueryBuilder:
             if table_name == "phone_otps":
                 new_item.setdefault("attempts", 0)
                 new_item.setdefault("used", False)
+                new_item.setdefault("created_at", datetime.now().isoformat())
             
             db.data[table_name].append(new_item)
             return MockQueryResult([new_item])
@@ -236,6 +237,7 @@ class TestOTPServiceImproved:
             "code_hash": code_hash,
             "attempts": 0,
             "used": False,
+            "created_at": datetime.now().isoformat(),
             "expires_at": (datetime.now() + timedelta(minutes=5)).isoformat()
         }
         
@@ -265,6 +267,7 @@ class TestOTPServiceImproved:
             "code_hash": code_hash,
             "attempts": 5,  # One attempt left (max is 6)
             "used": False,
+            "created_at": datetime.now().isoformat(),
             "expires_at": (datetime.now() + timedelta(minutes=5)).isoformat()
         }
         
@@ -323,6 +326,7 @@ class TestOTPServiceImproved:
             "code_hash": code_hash,
             "attempts": 3,  # At custom limit
             "used": False,
+            "created_at": datetime.now().isoformat(),
             "expires_at": (datetime.now() + timedelta(minutes=5)).isoformat()
         }
         

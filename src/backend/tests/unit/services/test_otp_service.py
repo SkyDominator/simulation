@@ -259,13 +259,14 @@ class TestOTPServiceRateLimiting:
         phone = "+821012345678"
         wrong_code = "654321"
         
-        # Mock existing OTP record with correct field names
+        # Mock existing OTP record with correct field names including created_at
         existing_record = {
             "id": 1,
             "phone": phone,
             "code_hash": "stored_hash",
             "attempts": 2,
             "expires_at": (datetime.now() + timedelta(minutes=5)).isoformat(),
+            "created_at": datetime.now().isoformat(),
             "used": False
         }
         
@@ -286,13 +287,14 @@ class TestOTPServiceRateLimiting:
         phone = "+821012345678"
         otp_code = "123456"
         
-        # Mock record with max attempts reached
+        # Mock record with max attempts reached including created_at
         existing_record = {
             "id": 1,
             "phone": phone,
             "code_hash": "stored_hash",
             "attempts": settings_override.otp_max_verification_attempts,  # Already at max
             "expires_at": (datetime.now() + timedelta(minutes=5)).isoformat(),
+            "created_at": datetime.now().isoformat(),
             "used": False
         }
         
@@ -311,13 +313,14 @@ class TestOTPServiceRateLimiting:
         phone = "+821012345678"
         correct_code = "123456"
         
-        # Mock existing record with some attempts (correct field names)
+        # Mock existing record with some attempts (correct field names including created_at)
         existing_record = {
             "id": 1,
             "phone": phone,
             "code_hash": "stored_hash",
             "attempts": 3,
             "expires_at": (datetime.now() + timedelta(minutes=5)).isoformat(),
+            "created_at": datetime.now().isoformat(),
             "used": False
         }
         
