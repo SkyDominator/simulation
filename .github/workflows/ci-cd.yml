@@ -114,9 +114,12 @@ jobs:
 
             - name: Frontend Unit Suites
               working-directory: src/frontend
+              env:
+                  NODE_OPTIONS: --require ./scripts/vitest-node-polyfill.cjs
               run: |
                   npm ci
-                  export NODE_OPTIONS="--require ./scripts/vitest-node-polyfill.cjs"
+                  echo "NODE_OPTIONS=$NODE_OPTIONS"
+                  node -p "globalThis.SharedArrayBuffer ? 'SharedArrayBuffer available' : 'SharedArrayBuffer missing'"
                   npx vitest run src/test/pages --reporter=verbose
                   npx vitest run src/test/components --reporter=verbose
                   npx vitest run src/test/smoke.test.tsx --reporter=verbose
@@ -184,9 +187,12 @@ jobs:
 
             - name: Frontend Security Tests
               working-directory: src/frontend
+              env:
+                  NODE_OPTIONS: --require ./scripts/vitest-node-polyfill.cjs
               run: |
                   npm ci
-                  export NODE_OPTIONS="--require ./scripts/vitest-node-polyfill.cjs"
+                  echo "NODE_OPTIONS=$NODE_OPTIONS"
+                  node -p "globalThis.SharedArrayBuffer ? 'SharedArrayBuffer available' : 'SharedArrayBuffer missing'"
                   npx vitest run src/test/security --reporter=verbose
 
             - name: Setup Python
