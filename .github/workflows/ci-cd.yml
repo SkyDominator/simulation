@@ -1,197 +1,317 @@
-name: CI/CD (hosted tests + self-hosted deploy with env .env generation)
+name: CI/CD Pipeline (Production & Staging)
 
 on:
-  push:
-    branches:
-      - release       # production trigger
-      - main    # staging/preview trigger
-  workflow_dispatch:
-    inputs:
-      deploy_env:
-        description: 'deploy environment (production / staging)'
-        required: false
-        default: 'staging'
+    push:
+        branches:
+            - release # Production trigger
+            - main # Staging trigger
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: "Deploy environment (production / staging)"
+                required: true
+                default: "staging"
+                type: choice
+                options:
+                    - production
+                    - staging
+            skip_tests:
+                description: "Skip test layers (comma-separated: unit,integration,e2e)"
+                required: false
+                default: ""
+                type: string
 
 jobs:
-  lint-and-unit:
-    name: Lint & Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    # Test control: Unit & Integration Tests
+    test-unit:
+        name: Unit Tests
+        if: |
+            !contains(github.event.inputs.skip_tests, 'unit')
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 18
+                  cache: "npm"
+                  cache-dependency-path: src/frontend/package-lock.json
 
-      - name: Frontend: install & lint & unit tests
-        working-directory: src/frontend
-        run: |
-          npm ci
-          npm run lint
-          npm run test:unit
+            - name: Frontend Unit Tests
+              working-directory: src/frontend
+              run: |
+                  npm ci
+                  npm run test:run
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+                  cache: "pip"
+                  cache-dependency-path: src/backend/requirements.txt
 
-      - name: Backend: install & pytest
-        working-directory: src/backend
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pytest -q
+            - name: Backend Unit Tests
+              working-directory: src/backend
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements.txt
+                  pytest tests/unit -v
 
-  build-frontend:
-    name: Build Frontend Artifact
-    needs: lint-and-unit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-      - name: Build frontend (Vite)
-        working-directory: src/frontend
-        run: |
-          npm ci
-          npm run build
-      - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: src/frontend/dist
+    test-integration:
+        name: Integration Tests
+        if: |
+            !contains(github.event.inputs.skip_tests, 'integration')
+        runs-on: ubuntu-latest
+        needs: test-unit
+        steps:
+            - uses: actions/checkout@v4
 
-  deploy-staging:
-    name: Deploy (staging)
-    needs: [build-frontend]
-    runs-on: [ self-hosted, linux, droplet ]
-    if: |
-      github.ref == 'refs/heads/main' || github.event.inputs.deploy_env == 'staging'
-    environment: staging
-    steps:
-      - uses: actions/checkout@v4
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+                  cache: "pip"
+                  cache-dependency-path: src/backend/requirements.txt
 
-      - name: Download frontend artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: ./src/frontend/dist
+            - name: Backend Integration Tests
+              working-directory: src/backend
+              env:
+                  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+                  SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements.txt
+                  pytest tests/integration -v
 
-      - name: Create .env for staging (secure)
-        run: |
-          DEST_DIR="/srv/lol/simulation"
-          mkdir -p "$DEST_DIR"
-          # Compose uses .env in same dir
-          cat > "$DEST_DIR/.env" <<EOF
-          VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY=${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
-          SUPABASE_URL=${{ vars.SUPABASE_URL }}
-          SOLAPI_API_KEY=${{ vars.SOLAPI_API_KEY }}
-          SUPABASE_SECRET_KEY=${{ secrets.SUPABASE_SECRET_KEY }}
-          SOLAPI_API_SECRET=${{ secrets.SOLAPI_API_SECRET }}
-          SOLAPI_SENDER_NUMBER=${{ secrets.SOLAPI_SENDER_NUMBER }}
-          ENV=staging
-          EOF
-          chmod 600 "$DEST_DIR/.env"
-          chown deploy:deploy "$DEST_DIR/.env"
-        shell: bash
+    # Lint checks
+    lint:
+        name: Lint & Type Check
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Deploy to droplet (staging)
-        run: |
-          cd /srv/lol/simulation
-          docker compose -f docker-compose.yml pull || true
-          docker compose -f docker-compose.yml up -d --remove-orphans --build
-        shell: bash
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 18
+                  cache: "npm"
+                  cache-dependency-path: src/frontend/package-lock.json
 
-      - name: Staging healthcheck
-        run: |
-          for i in $(seq 1 20); do
-            status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health || echo "000")
-            if [ "$status" = "200" ]; then
-              echo "staging healthy"
-              exit 0
-            fi
-            sleep 3
-          done
-          docker compose -f docker-compose.yml logs --no-color --tail=200
-          exit 1
-        shell: bash
+            - name: Frontend Lint
+              working-directory: src/frontend
+              run: |
+                  npm ci
+                  npm run lint
 
-  deploy-production:
-    name: Deploy (production)
-    needs: [build-frontend]
-    runs-on: [ self-hosted, linux, droplet ]
-    if: |
-      github.ref == 'refs/heads/release' || github.event.inputs.deploy_env == 'production'
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
+    # Build Docker images
+    build:
+        name: Build & Push Docker Images
+        needs: [test-unit, test-integration, lint]
+        if: |
+            always() &&
+            (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped') &&
+            (needs.test-integration.result == 'success' || needs.test-integration.result == 'skipped') &&
+            needs.lint.result == 'success'
+        runs-on: ubuntu-latest
+        outputs:
+            should_deploy_production: ${{ steps.check.outputs.production }}
+            should_deploy_staging: ${{ steps.check.outputs.staging }}
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Download frontend artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: ./src/frontend/dist
+            - name: Check deployment target
+              id: check
+              run: |
+                  if [[ "${{ github.ref }}" == "refs/heads/release" ]] || [[ "${{ github.event.inputs.environment }}" == "production" ]]; then
+                    echo "production=true" >> $GITHUB_OUTPUT
+                    echo "staging=false" >> $GITHUB_OUTPUT
+                  elif [[ "${{ github.ref }}" == "refs/heads/main" ]] || [[ "${{ github.event.inputs.environment }}" == "staging" ]]; then
+                    echo "production=false" >> $GITHUB_OUTPUT
+                    echo "staging=true" >> $GITHUB_OUTPUT
+                  else
+                    echo "production=false" >> $GITHUB_OUTPUT
+                    echo "staging=false" >> $GITHUB_OUTPUT
+                  fi
 
-      - name: Create .env for production (secure)
-        run: |
-          DEST_DIR="/srv/lol/simulation"
-          mkdir -p "$DEST_DIR"
-          cat > "$DEST_DIR/.env" <<EOF
-          VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY=${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
-          SUPABASE_URL=${{ vars.SUPABASE_URL }}
-          SOLAPI_API_KEY=${{ vars.SOLAPI_API_KEY }}
-          SUPABASE_SECRET_KEY=${{ secrets.SUPABASE_SECRET_KEY }}
-          SOLAPI_API_SECRET=${{ secrets.SOLAPI_API_SECRET }}
-          SOLAPI_SENDER_NUMBER=${{ secrets.SOLAPI_SENDER_NUMBER }}
-          ENV=production
-          EOF
-          chmod 600 "$DEST_DIR/.env"
-          chown deploy:deploy "$DEST_DIR/.env"
-        shell: bash
+    # Deploy to Production
+    deploy-production:
+        name: Deploy to Production
+        needs: build
+        if: needs.build.outputs.should_deploy_production == 'true'
+        runs-on: [self-hosted, linux, droplet]
+        environment: production
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  ref: release
 
-      - name: Deploy to droplet (production)
-        run: |
-          cd /srv/lol/simulation
-          docker compose -f docker-compose.yml pull || true
-          docker compose -f docker-compose.yml up -d --remove-orphans --build
-        shell: bash
+            - name: Create deployment directory
+              run: |
+                  DEPLOY_DIR="/srv/lol/simulation/production"
+                  mkdir -p "$DEPLOY_DIR"
+                  cd "$DEPLOY_DIR"
 
-      - name: Production healthcheck
-        run: |
-          for i in $(seq 1 20); do
-            status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health || echo "000")
-            if [ "$status" = "200" ]; then
-              echo "production healthy"
-              exit 0
-            fi
-            sleep 3
-          done
-          docker compose -f docker-compose.yml logs --no-color --tail=200
-          exit 1
-        shell: bash
+                  # Copy source code to deployment directory
+                  rsync -av --delete \
+                    --exclude='.git' \
+                    --exclude='node_modules' \
+                    --exclude='__pycache__' \
+                    --exclude='.env' \
+                    $GITHUB_WORKSPACE/ ./
 
-  e2e:
-    name: E2E (Playwright)
-    if: ${{ github.event.inputs.deploy_env == 'staging' || github.ref == 'refs/heads/staging' }}
-    runs-on: ubuntu-latest
-    needs: [deploy-staging]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-      - name: Run Playwright E2E
-        run: |
-          cd src/frontend
-          npm ci
-          npm run test:e2e   # or npx playwright test
+            - name: Create .env file
+              run: |
+                  DEPLOY_DIR="/srv/lol/simulation/production"
+                  cat > "$DEPLOY_DIR/.env" << EOF
+                  ENV=production
+                  VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
+                  VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
+                  VITE_SUPABASE_PUBLISHABLE_KEY=${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+                  SUPABASE_URL=${{ vars.SUPABASE_URL }}
+                  SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+                  SUPABASE_SECRET_KEY=${{ secrets.SUPABASE_SECRET_KEY }}
+                  SOLAPI_API_KEY=${{ vars.SOLAPI_API_KEY }}
+                  SOLAPI_API_SECRET=${{ secrets.SOLAPI_API_SECRET }}
+                  SOLAPI_SENDER_NUMBER=${{ secrets.SOLAPI_SENDER_NUMBER }}
+                  OTP_SECRET_KEY=${{ secrets.OTP_SECRET_KEY }}
+                  EOF
+
+            - name: Build and Deploy
+              run: |
+                  cd /srv/lol/simulation/production
+                  docker compose -f docker-compose.production.yml pull || true
+                  docker compose -f docker-compose.production.yml build --no-cache
+                  docker compose -f docker-compose.production.yml up -d --remove-orphans
+
+            - name: Health Check
+              run: |
+                  echo "Waiting for Production services to be healthy..."
+                  for i in {1..20}; do
+                    sleep 3
+                    if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+                      echo "✅ Production is healthy (port 3000)"
+                      exit 0
+                    fi
+                    echo "Attempt $i/20 - waiting..."
+                  done
+                  echo "❌ Production health check failed"
+                  cd /srv/lol/simulation/production
+                  docker compose -f docker-compose.production.yml logs --tail=100
+                  exit 1
+
+            - name: Cleanup old images
+              run: |
+                  docker image prune -f
+                  docker volume prune -f
+
+    # Deploy to Staging
+    deploy-staging:
+        name: Deploy to Staging
+        needs: build
+        if: needs.build.outputs.should_deploy_staging == 'true'
+        runs-on: [self-hosted, linux, droplet]
+        environment: staging
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  ref: main
+
+            - name: Create deployment directory
+              run: |
+                  DEPLOY_DIR="/srv/lol/simulation/staging"
+                  mkdir -p "$DEPLOY_DIR"
+                  cd "$DEPLOY_DIR"
+
+                  # Copy source code to deployment directory
+                  rsync -av --delete \
+                    --exclude='.git' \
+                    --exclude='node_modules' \
+                    --exclude='__pycache__' \
+                    --exclude='.env' \
+                    $GITHUB_WORKSPACE/ ./
+
+            - name: Create .env file
+              run: |
+                  DEPLOY_DIR="/srv/lol/simulation/staging"
+                  cat > "$DEPLOY_DIR/.env" << EOF
+                  ENV=staging
+                  VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
+                  VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
+                  VITE_SUPABASE_PUBLISHABLE_KEY=${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+                  SUPABASE_URL=${{ vars.SUPABASE_URL }}
+                  SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+                  SUPABASE_SECRET_KEY=${{ secrets.SUPABASE_SECRET_KEY }}
+                  SOLAPI_API_KEY=${{ vars.SOLAPI_API_KEY }}
+                  SOLAPI_API_SECRET=${{ secrets.SOLAPI_API_SECRET }}
+                  SOLAPI_SENDER_NUMBER=${{ secrets.SOLAPI_SENDER_NUMBER }}
+                  OTP_SECRET_KEY=${{ secrets.OTP_SECRET_KEY }}
+                  EOF
+
+            - name: Build and Deploy
+              run: |
+                  cd /srv/lol/simulation/staging
+                  docker compose -f docker-compose.staging.yml pull || true
+                  docker compose -f docker-compose.staging.yml build --no-cache
+                  docker compose -f docker-compose.staging.yml up -d --remove-orphans
+
+            - name: Health Check
+              run: |
+                  echo "Waiting for Staging services to be healthy..."
+                  for i in {1..20}; do
+                    sleep 3
+                    if curl -f http://localhost:4173/health > /dev/null 2>&1; then
+                      echo "✅ Staging is healthy (port 4173)"
+                      exit 0
+                    fi
+                    echo "Attempt $i/20 - waiting..."
+                  done
+                  echo "❌ Staging health check failed"
+                  cd /srv/lol/simulation/staging
+                  docker compose -f docker-compose.staging.yml logs --tail=100
+                  exit 1
+
+            - name: Cleanup old images
+              run: |
+                  docker image prune -f
+                  docker volume prune -f
+
+    # E2E Tests (Optional, runs after staging deployment)
+    test-e2e:
+        name: E2E Tests (Playwright)
+        needs: deploy-staging
+        if: |
+            !contains(github.event.inputs.skip_tests, 'e2e') &&
+            needs.deploy-staging.result == 'success'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 18
+                  cache: "npm"
+                  cache-dependency-path: src/frontend/package-lock.json
+
+            - name: Install dependencies
+              working-directory: src/frontend
+              run: npm ci
+
+            - name: Install Playwright browsers
+              working-directory: src/frontend
+              run: npx playwright install --with-deps
+
+            - name: Run E2E tests
+              working-directory: src/frontend
+              env:
+                  BASE_URL: https://staging.simulation.lightoflifeclub.com
+              run: npm run test:e2e
+
+            - name: Upload test results
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: playwright-report
+                  path: src/frontend/playwright-report/
+                  retention-days: 7
