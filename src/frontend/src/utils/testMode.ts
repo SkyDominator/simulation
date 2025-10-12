@@ -1,5 +1,6 @@
 export const isE2EMode = (): boolean => {
   // Check for explicit E2E flag set by test runner
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (typeof window !== "undefined" && (window as any).__E2E_MODE__) {
     return true;
   }

@@ -82,7 +82,9 @@ test.describe("Plan Editor Wizard - Step Navigation", () => {
     await helpers.clickNext();
 
     // Should be on step 2
-    await expect(page.locator("text=/가입.*회차|starting.*round/i")).toBeVisible({
+    await expect(
+      page.locator("text=/가입.*회차|starting.*round/i")
+    ).toBeVisible({
       timeout: 5000,
     });
 
@@ -136,9 +138,11 @@ test.describe("Plan Editor Wizard - Step Navigation", () => {
     await helpers.clickNext();
 
     // Should be on step 3
-    await expect(page.locator("text=/현재.*회차|current.*round/i")).toBeVisible({
-      timeout: 5000,
-    });
+    await expect(page.locator("text=/현재.*회차|current.*round/i")).toBeVisible(
+      {
+        timeout: 5000,
+      }
+    );
 
     const currentRoundInput = page.locator('input[type="number"]').first();
     await expect(currentRoundInput).toBeVisible();
@@ -222,9 +226,9 @@ test.describe("Plan Editor Wizard - Step Navigation", () => {
     await currentRoundInput.fill("1");
     await helpers.clickNext();
 
-    await expect(
-      page.locator("text=/시뮬레이션.*라운드/i")
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("text=/시뮬레이션.*라운드/i")).toBeVisible({
+      timeout: 5000,
+    });
 
     // Try invalid rounds (Plan A max is 15)
     const simulationRoundsInput = page.locator('input[type="number"]').first();
@@ -413,7 +417,7 @@ test.describe("Plan Editor Wizard - Step Navigation", () => {
     page,
   }) => {
     // Set up request spy
-    const createRequests: any[] = [];
+    const createRequests: Array<{ method: string; body: unknown }> = [];
     await page.route("**/api/simulation/create", async (route) => {
       createRequests.push({
         method: route.request().method(),

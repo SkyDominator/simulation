@@ -11,6 +11,7 @@ export async function loginTestUser(page: Page) {
   // Mock Supabase auth for testing
   await page.addInitScript(() => {
     // Set E2E mode flag
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).__E2E_MODE__ = true;
 
     // Mock successful authentication
@@ -39,6 +40,7 @@ export async function loginTestUser(page: Page) {
   try {
     await page.evaluate(() => {
       // Set E2E mode flag
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).__E2E_MODE__ = true;
 
       window.localStorage.setItem(
@@ -83,6 +85,7 @@ export async function logoutTestUser(page: Page) {
 export async function loginAdminUser(page: Page) {
   await page.addInitScript(() => {
     // Set E2E mode flag
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).__E2E_MODE__ = true;
 
     window.localStorage.setItem(
@@ -111,6 +114,7 @@ export async function loginAdminUser(page: Page) {
   try {
     await page.evaluate(() => {
       // Set E2E mode flag
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).__E2E_MODE__ = true;
 
       window.localStorage.setItem(

@@ -2,13 +2,13 @@
  * XSS Prevention Security Tests
  * Tests XSS prevention in React components and form handling
  */
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 
-import React from 'react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { renderWithProviders } from '../utils/renderWithProviders'
-import { mockFetchResponse } from '../utils/testUtils'
+import React from "react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { renderWithProviders } from "../utils/renderWithProviders";
 
 // XSS Test Payloads
 const XSS_PAYLOADS = [
@@ -25,17 +25,17 @@ const XSS_PAYLOADS = [
   '{{constructor.constructor("alert(\\"xss\\")")()}}',
   '<details open ontoggle=alert("xss")>',
   '"-alert("xss")-"',
-  '\\"><svg onload=alert("xss")>'
-]
+  '\\"><svg onload=alert("xss")>',
+];
 
 // Mock components that might be vulnerable to XSS
 const MockNoticeComponent = ({ content }: { content: string }) => (
   <div data-testid="notice-content">{content}</div>
-)
+);
 
 const MockFormComponent = ({ initialValue }: { initialValue?: string }) => {
-  const [value, setValue] = React.useState(initialValue || '')
-  
+  const [value, setValue] = React.useState(initialValue || "");
+
   return (
     <form data-testid="test-form">
       <input
@@ -45,173 +45,178 @@ const MockFormComponent = ({ initialValue }: { initialValue?: string }) => {
       />
       <div data-testid="output-display">{value}</div>
     </form>
-  )
-}
+  );
+};
 
-describe('XSS Prevention Tests', () => {
+describe("XSS Prevention Tests", () => {
   beforeEach(() => {
     // Reset mocks before each test
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
-  describe('React JSX Escaping', () => {
-    it('should escape XSS payloads in React text content', () => {
+  describe("React JSX Escaping", () => {
+    it("should escape XSS payloads in React text content", () => {
       for (const payload of XSS_PAYLOADS) {
-        const { unmount } = render(<MockNoticeComponent content={payload} />)
-        
-        const content = screen.getByTestId('notice-content')
-        
+        const { unmount } = render(<MockNoticeComponent content={payload} />);
+
+        const content = screen.getByTestId("notice-content");
+
         // React should escape the content, so script tags should appear as text
-        expect(content.textContent).toBe(payload)
-        
+        expect(content.textContent).toBe(payload);
+
         // The HTML should NOT contain unescaped script elements that could execute
-        expect(content.innerHTML).not.toContain('<script>alert')
-        
+        expect(content.innerHTML).not.toContain("<script>alert");
+
         // For javascript: URLs, check if they're handled (React may pass them through)
-        if (payload.includes('javascript:')) {
+        if (payload.includes("javascript:")) {
           // This demonstrates that developers need to sanitize - React doesn't do it automatically
-          console.warn(`XSS Warning: React passed through javascript: URL: ${payload}`)
+          console.warn(
+            `XSS Warning: React passed through javascript: URL: ${payload}`
+          );
           // In production, you would use DOMPurify or similar to sanitize
         }
-        
-        unmount()
+
+        unmount();
       }
-    })
+    });
 
-    it('should safely handle XSS in form inputs', async () => {
-      const user = userEvent.setup()
-      
+    it("should safely handle XSS in form inputs", async () => {
+      const user = userEvent.setup();
+
       // Test with a smaller, safer XSS payload to avoid timeout
-      const testPayload = '<script>alert("xss")</script>'
-      
-      const { unmount } = render(<MockFormComponent />)
-      
-      const input = screen.getByTestId('test-input')
-      const output = screen.getByTestId('output-display')
-      
-      // Type XSS payload into input
-      await user.clear(input)
-      await user.type(input, testPayload)
-      
-      // Output should display escaped content
-      expect(output.textContent).toBe(testPayload)
-      expect(output.innerHTML).not.toContain('<script>')
-      
-      unmount()
-    }, 15000)
+      const testPayload = '<script>alert("xss")</script>';
 
-    it('should prevent XSS in dynamic content rendering', () => {
+      const { unmount } = render(<MockFormComponent />);
+
+      const input = screen.getByTestId("test-input");
+      const output = screen.getByTestId("output-display");
+
+      // Type XSS payload into input
+      await user.clear(input);
+      await user.type(input, testPayload);
+
+      // Output should display escaped content
+      expect(output.textContent).toBe(testPayload);
+      expect(output.innerHTML).not.toContain("<script>");
+
+      unmount();
+    }, 15000);
+
+    it("should prevent XSS in dynamic content rendering", () => {
       // Test with dangerouslySetInnerHTML-like scenarios
-      const maliciousHTML = '<img src=x onerror=alert("xss")>'
-      
+      const maliciousHTML = '<img src=x onerror=alert("xss")>';
+
       // This should be safe in React (content is escaped)
       const { container } = render(
         <div data-testid="dynamic-content">{maliciousHTML}</div>
-      )
-      
-      const content = container.querySelector('[data-testid="dynamic-content"]')
-      
-      // Should not contain actual executable img tag
-      expect(content?.innerHTML).not.toContain('<img src=x onerror=')
-      
-      // Should contain escaped text (React escapes the content)
-      expect(content?.textContent).toBe(maliciousHTML)
-    })
-  })
+      );
 
-  describe('API Response XSS Prevention', () => {
-    it('should safely handle XSS in API responses', async () => {
-      const xssContent = '<script>alert("api-xss")</script>'
-      
+      const content = container.querySelector(
+        '[data-testid="dynamic-content"]'
+      );
+
+      // Should not contain actual executable img tag
+      expect(content?.innerHTML).not.toContain("<img src=x onerror=");
+
+      // Should contain escaped text (React escapes the content)
+      expect(content?.textContent).toBe(maliciousHTML);
+    });
+  });
+
+  describe("API Response XSS Prevention", () => {
+    it("should safely handle XSS in API responses", async () => {
+      const xssContent = '<script>alert("api-xss")</script>';
+
       // Mock fetch for this test
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({
-          success: true,
-          notices: [
-            {
-              id: '123',
-              title: 'Test Notice',
-              content: xssContent,
-              published: true
-            }
-          ]
-        })
-      })
+        json: () =>
+          Promise.resolve({
+            success: true,
+            notices: [
+              {
+                id: "123",
+                title: "Test Notice",
+                content: xssContent,
+                published: true,
+              },
+            ],
+          }),
+      });
 
       // This would be in a real component that fetches and displays notices
       const MockNoticesComponent = () => {
-        const [notices, setNotices] = React.useState<any[]>([])
-        
+        const [notices, setNotices] = React.useState<any[]>([]);
+
         React.useEffect(() => {
-          fetch('/api/notices')
-            .then(res => res.json())
-            .then(data => setNotices(data.notices))
-        }, [])
-        
+          fetch("/api/notices")
+            .then((res) => res.json())
+            .then((data) => setNotices(data.notices));
+        }, []);
+
         return (
           <div>
-            {notices.map(notice => (
+            {notices.map((notice) => (
               <div key={notice.id} data-testid={`notice-${notice.id}`}>
                 {notice.content}
               </div>
             ))}
           </div>
-        )
-      }
+        );
+      };
 
-      const { container } = renderWithProviders(<MockNoticesComponent />)
-      
+      const { container } = renderWithProviders(<MockNoticesComponent />);
+
       // Wait for API call and rendering
       await waitFor(() => {
-        const notice = screen.queryByTestId('notice-123')
-        expect(notice).toBeInTheDocument()
-      })
-      
-      const noticeElement = screen.getByTestId('notice-123')
-      
-      // Content should be escaped by React
-      expect(noticeElement.textContent).toBe(xssContent)
-      expect(noticeElement.innerHTML).not.toContain('<script>')
-    })
+        const notice = screen.queryByTestId("notice-123");
+        expect(notice).toBeInTheDocument();
+      });
 
-    it('should sanitize user input before API submission', async () => {
-      const user = userEvent.setup()
-      let submittedData: any = null
-      
+      const noticeElement = screen.getByTestId("notice-123");
+
+      // Content should be escaped by React
+      expect(noticeElement.textContent).toBe(xssContent);
+      expect(noticeElement.innerHTML).not.toContain("<script>");
+    });
+
+    it("should sanitize user input before API submission", async () => {
+      const user = userEvent.setup();
+      let submittedData: any = null;
+
       // Mock API endpoint
       global.fetch = vi.fn().mockImplementation((url, options) => {
-        if (url.includes('/api/admin/notices') && options?.method === 'POST') {
-          submittedData = JSON.parse(options.body as string)
+        if (url.includes("/api/admin/notices") && options?.method === "POST") {
+          submittedData = JSON.parse(options.body as string);
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({ success: true })
-          })
+            json: () => Promise.resolve({ success: true }),
+          });
         }
-        return Promise.reject('Not found')
-      })
-      
+        return Promise.reject("Not found");
+      });
+
       const MockCreateNoticeForm = () => {
-        const [content, setContent] = React.useState('')
-        
+        const [content, setContent] = React.useState("");
+
         const handleSubmit = async (e: React.FormEvent) => {
-          e.preventDefault()
-          
+          e.preventDefault();
+
           // In real implementation, this should sanitize content before sending
           const sanitizedContent = content
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-            .replace(/javascript:/gi, '')
-            .replace(/on\w+=/gi, '')
-          
-          await fetch('/api/admin/notices', {
-            method: 'POST',
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+            .replace(/javascript:/gi, "")
+            .replace(/on\w+=/gi, "");
+
+          await fetch("/api/admin/notices", {
+            method: "POST",
             body: JSON.stringify({
-              title: 'Test',
-              content: sanitizedContent
-            })
-          })
-        }
-        
+              title: "Test",
+              content: sanitizedContent,
+            }),
+          });
+        };
+
         return (
           <form onSubmit={handleSubmit} data-testid="notice-form">
             <textarea
@@ -219,193 +224,208 @@ describe('XSS Prevention Tests', () => {
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
-            <button type="submit" data-testid="submit-btn">Submit</button>
+            <button type="submit" data-testid="submit-btn">
+              Submit
+            </button>
           </form>
-        )
-      }
+        );
+      };
 
-      render(<MockCreateNoticeForm />)
-      
-      const xssPayload = '<script>alert("xss")</script>Normal content'
-      
-      const textarea = screen.getByTestId('content-input')
-      const submitBtn = screen.getByTestId('submit-btn')
-      
-      await user.type(textarea, xssPayload)
-      await user.click(submitBtn)
-      
+      render(<MockCreateNoticeForm />);
+
+      const xssPayload = '<script>alert("xss")</script>Normal content';
+
+      const textarea = screen.getByTestId("content-input");
+      const submitBtn = screen.getByTestId("submit-btn");
+
+      await user.type(textarea, xssPayload);
+      await user.click(submitBtn);
+
       // Wait for submission
       await waitFor(() => {
-        expect(submittedData).toBeDefined()
-      })
-      
-      // Submitted data should be sanitized
-      expect(submittedData.content).not.toContain('<script>')
-      expect(submittedData.content).not.toContain('alert')
-      expect(submittedData.content).toBe('Normal content')
-    })
-  })
+        expect(submittedData).toBeDefined();
+      });
 
-  describe('URL and Navigation XSS Prevention', () => {
-    it('should prevent javascript: URLs', () => {
+      // Submitted data should be sanitized
+      expect(submittedData.content).not.toContain("<script>");
+      expect(submittedData.content).not.toContain("alert");
+      expect(submittedData.content).toBe("Normal content");
+    });
+  });
+
+  describe("URL and Navigation XSS Prevention", () => {
+    it("should prevent javascript: URLs", () => {
       const maliciousLinks = [
         'javascript:alert("xss")',
         'Javascript:alert("xss")',
         'jAvAsCrIpT:alert("xss")',
         'data:text/html,<script>alert("xss")</script>',
         'vbscript:msgbox("xss")',
-      ]
-      
+      ];
+
       for (const href of maliciousLinks) {
         const { unmount } = render(
-          <a href={href} data-testid="test-link">Test Link</a>
-        )
-        
-        const link = screen.getByTestId('test-link')
-        
+          <a href={href} data-testid="test-link">
+            Test Link
+          </a>
+        );
+
+        const link = screen.getByTestId("test-link");
+
         // React should handle dangerous protocols appropriately
-        const actualHref = link.getAttribute('href')
-        
+        const actualHref = link.getAttribute("href");
+
         // React may pass through some dangerous URLs - this test documents the behavior
-        if (actualHref?.includes('javascript:')) {
-          if (actualHref.includes('React has blocked')) {
+        if (actualHref?.includes("javascript:")) {
+          if (actualHref.includes("React has blocked")) {
             // React transformed it to a safe error message - good!
-            expect(actualHref).toContain('React has blocked')
+            expect(actualHref).toContain("React has blocked");
           } else {
             // React passed it through - developers need to sanitize manually
-            console.warn(`Security Warning: React passed through dangerous URL: ${actualHref}`)
+            console.warn(
+              `Security Warning: React passed through dangerous URL: ${actualHref}`
+            );
             // In production, implement URL sanitization before setting href
           }
         }
-        
+
         // These should be handled safely by React or blocked entirely
         // VBScript URLs may pass through in React - this documents current behavior
         if (actualHref?.match(/^vbscript:/i)) {
-          console.warn(`Security Warning: VBScript URL passed through: ${actualHref}`)
+          console.warn(
+            `Security Warning: VBScript URL passed through: ${actualHref}`
+          );
           // In production, implement URL sanitization to block VBScript URLs
         }
-        
+
         // Data URLs with HTML content are dangerous and may be passed through
         if (actualHref?.match(/^data:text\/html/i)) {
-          console.warn(`Security Warning: Dangerous data URL detected: ${actualHref}`)
+          console.warn(
+            `Security Warning: Dangerous data URL detected: ${actualHref}`
+          );
         }
-        
-        unmount()
-      }
-    })
 
-    it('should safely handle malicious query parameters', () => {
+        unmount();
+      }
+    });
+
+    it("should safely handle malicious query parameters", () => {
       // Mock location with XSS in query params
       const mockLocation = {
-        search: '?name=<script>alert("xss")</script>&redirect=javascript:alert("xss")'
-      }
-      
+        search:
+          '?name=<script>alert("xss")</script>&redirect=javascript:alert("xss")',
+      };
+
       // Component that uses query params
       const MockQueryComponent = () => {
-        const params = new URLSearchParams(mockLocation.search)
-        const name = params.get('name') || ''
-        const redirect = params.get('redirect') || ''
-        
+        const params = new URLSearchParams(mockLocation.search);
+        const name = params.get("name") || "";
+        const redirect = params.get("redirect") || "";
+
         return (
           <div>
             <div data-testid="param-name">{name}</div>
             <div data-testid="param-redirect">{redirect}</div>
           </div>
-        )
-      }
+        );
+      };
 
-      render(<MockQueryComponent />)
-      
-      const nameDisplay = screen.getByTestId('param-name')
-      const redirectDisplay = screen.getByTestId('param-redirect')
-      
+      render(<MockQueryComponent />);
+
+      const nameDisplay = screen.getByTestId("param-name");
+      const redirectDisplay = screen.getByTestId("param-redirect");
+
       // Parameters should be displayed as text (escaped by React)
-      expect(nameDisplay.innerHTML).not.toContain('<script>alert')
-      
+      expect(nameDisplay.innerHTML).not.toContain("<script>alert");
+
       // For the redirect parameter, React may pass through dangerous URLs
-      const redirectHTML = redirectDisplay.innerHTML
-      if (redirectHTML.includes('javascript:')) {
+      const redirectHTML = redirectDisplay.innerHTML;
+      if (redirectHTML.includes("javascript:")) {
         // This demonstrates that React doesn't automatically sanitize all content
-        console.warn(`Security Warning: React displayed dangerous URL: ${redirectHTML}`)
+        console.warn(
+          `Security Warning: React displayed dangerous URL: ${redirectHTML}`
+        );
         // In production, sanitize URLs before displaying
       }
-      
-      // But text content should show the original (as text, not executable)
-      expect(nameDisplay.textContent).toContain('script')
-      expect(redirectDisplay.textContent).toContain('javascript')
-    })
-  })
 
-  describe('Content Security Policy Testing', () => {
-    it('should handle event handlers safely', () => {
+      // But text content should show the original (as text, not executable)
+      expect(nameDisplay.textContent).toContain("script");
+      expect(redirectDisplay.textContent).toContain("javascript");
+    });
+  });
+
+  describe("Content Security Policy Testing", () => {
+    it("should handle event handlers safely", () => {
       // Test that React properly rejects string event handlers (security feature)
-      
+
       const maliciousProps = {
-        'data-onclick': 'alert("xss")', // This is safe as it's just a data attribute
-        'data-malicious': 'javascript:alert("xss")'
-      }
-      
+        "data-onclick": 'alert("xss")', // This is safe as it's just a data attribute
+        "data-malicious": 'javascript:alert("xss")',
+      };
+
       // React should handle data attributes safely (they don't execute)
       const { container } = render(
         <button {...maliciousProps} data-testid="test-button">
           Test Button
         </button>
-      )
-      
-      const button = screen.getByTestId('test-button')
-      
+      );
+
+      const button = screen.getByTestId("test-button");
+
       // Data attributes should be present but harmless
-      expect(button.getAttribute('data-onclick')).toBe('alert("xss")')
-      expect(button.getAttribute('data-malicious')).toBe('javascript:alert("xss")')
-      
+      expect(button.getAttribute("data-onclick")).toBe('alert("xss")');
+      expect(button.getAttribute("data-malicious")).toBe(
+        'javascript:alert("xss")'
+      );
+
       // Clicking should work normally (no malicious code execution)
-      fireEvent.click(button)
-      
+      fireEvent.click(button);
+
       // Test passed if we get here without executing any alerts
-      expect(true).toBe(true)
-    })
-    
-    it('should reject string onClick handlers', () => {
+      expect(true).toBe(true);
+    });
+
+    it("should reject string onClick handlers", () => {
       // This test documents that React correctly rejects string onClick handlers
       // Note: In development mode, React throws an error for string event handlers
-      
+
       const TestComponent = () => {
         // Simulate what might happen if user input somehow gets into props
-        const userInput = 'alert("xss")'
-        
+        const userInput = 'alert("xss")';
+
         // In a real app, this would be prevented by proper validation
         // But React provides a safety net by rejecting string handlers
-        
+
         return (
           <div data-testid="safe-element" data-user-input={userInput}>
             Safe content: {userInput}
           </div>
-        )
-      }
-      
-      render(<TestComponent />)
-      
-      const element = screen.getByTestId('safe-element')
-      
-      // User input should be safely displayed as text content and data attributes
-      expect(element.textContent).toContain('alert("xss")')
-      expect(element.getAttribute('data-user-input')).toBe('alert("xss")')
-      
-      // No executable code - just safe text display
-      expect(true).toBe(true)
-    })
-  })
+        );
+      };
 
-  describe('DOM Manipulation Safety', () => {
-    it('should safely handle dynamic DOM updates', () => {
+      render(<TestComponent />);
+
+      const element = screen.getByTestId("safe-element");
+
+      // User input should be safely displayed as text content and data attributes
+      expect(element.textContent).toContain('alert("xss")');
+      expect(element.getAttribute("data-user-input")).toBe('alert("xss")');
+
+      // No executable code - just safe text display
+      expect(true).toBe(true);
+    });
+  });
+
+  describe("DOM Manipulation Safety", () => {
+    it("should safely handle dynamic DOM updates", () => {
       const MockDynamicComponent = () => {
-        const [html, setHtml] = React.useState('')
-        
+        const [html, setHtml] = React.useState("");
+
         const updateContent = () => {
-          const maliciousHTML = '<img src=x onerror=alert("dom-xss")>'
-          setHtml(maliciousHTML)
-        }
-        
+          const maliciousHTML = '<img src=x onerror=alert("dom-xss")>';
+          setHtml(maliciousHTML);
+        };
+
         return (
           <div>
             <button onClick={updateContent} data-testid="update-btn">
@@ -413,64 +433,68 @@ describe('XSS Prevention Tests', () => {
             </button>
             <div data-testid="dynamic-content">{html}</div>
           </div>
-        )
-      }
+        );
+      };
 
-      render(<MockDynamicComponent />)
-      
-      const updateBtn = screen.getByTestId('update-btn')
-      const content = screen.getByTestId('dynamic-content')
-      
-      fireEvent.click(updateBtn)
-      
+      render(<MockDynamicComponent />);
+
+      const updateBtn = screen.getByTestId("update-btn");
+      const content = screen.getByTestId("dynamic-content");
+
+      fireEvent.click(updateBtn);
+
       // Content should be escaped by React - should not contain executable img tag
-      expect(content.innerHTML).not.toContain('<img src=x onerror=')
-      expect(content.textContent).toContain('img src=x')
-    })
+      expect(content.innerHTML).not.toContain("<img src=x onerror=");
+      expect(content.textContent).toContain("img src=x");
+    });
 
-    it('should prevent prototype pollution in form data', () => {
+    it("should prevent prototype pollution in form data", () => {
       const MockFormComponent = () => {
-        const [formData, setFormData] = React.useState<any>({})
-        
+        const [formData, setFormData] = React.useState<any>({});
+
         const handleInput = (key: string, value: string) => {
           // Simulate vulnerable form handling
-          const newData = { ...formData }
-          
+          const newData = { ...formData };
+
           // This pattern could be vulnerable to prototype pollution
-          if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+          if (
+            key === "__proto__" ||
+            key === "constructor" ||
+            key === "prototype"
+          ) {
             // Properly filter out dangerous keys
-            return
+            return;
           }
-          
-          newData[key] = value
-          setFormData(newData)
-        }
-        
+
+          newData[key] = value;
+          setFormData(newData);
+        };
+
         return (
           <div>
             <input
               data-testid="key-input"
               placeholder="Key"
-              onChange={(e) => handleInput(e.target.value, 'test')}
+              onChange={(e) => handleInput(e.target.value, "test")}
             />
             <div data-testid="data-display">{JSON.stringify(formData)}</div>
           </div>
-        )
-      }
+        );
+      };
 
-      render(<MockFormComponent />)
-      
-      const keyInput = screen.getByTestId('key-input')
-      
+      render(<MockFormComponent />);
+
+      const keyInput = screen.getByTestId("key-input");
+
       // Try to pollute prototype
-      fireEvent.change(keyInput, { target: { value: '__proto__' } })
-      fireEvent.change(keyInput, { target: { value: 'constructor' } })
-      
-      const dataDisplay = screen.getByTestId('data-display')
-      
+      fireEvent.change(keyInput, { target: { value: "__proto__" } });
+      fireEvent.change(keyInput, { target: { value: "constructor" } });
+
+      const dataDisplay = screen.getByTestId("data-display");
+
       // Should not contain prototype pollution keys
-      expect(dataDisplay.textContent).not.toContain('__proto__')
-      expect(dataDisplay.textContent).not.toContain('constructor')
-    })
-  })
-})
+      expect(dataDisplay.textContent).not.toContain("__proto__");
+      expect(dataDisplay.textContent).not.toContain("constructor");
+    });
+  });
+});

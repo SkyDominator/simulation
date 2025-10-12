@@ -2,20 +2,27 @@
  * Authentication Security Tests
  * Tests frontend authentication security measures
  */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
-import { renderWithProviders } from "../utils/renderWithProviders";
 
 // Mock authentication context
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MockAuthContext = React.createContext<any>(null);
+
+interface MockAuthProviderProps {
+  children: React.ReactNode;
+  mockUser?: unknown;
+  mockSession?: unknown;
+}
 
 const MockAuthProvider = ({
   children,
   mockUser = null,
   mockSession = null,
-}: any) => {
+}: MockAuthProviderProps) => {
   const [user, setUser] = React.useState(mockUser);
   const [session, setSession] = React.useState(mockSession);
 
@@ -63,19 +70,19 @@ const ProtectedComponent = () => {
   );
 };
 
-const TokenDisplayComponent = () => {
-  const { session } = useAuth();
-
-  // This simulates a bad practice - displaying tokens
-  return (
-    <div>
-      <div data-testid="token-display">
-        Token: {session?.access_token || "No token"}
-      </div>
-      <div data-testid="debug-info">Debug: {JSON.stringify(session)}</div>
-    </div>
-  );
-};
+// Unused component demonstrating token display antipattern - kept for reference
+// const TokenDisplayComponent = () => {
+//   const { session } = useAuth();
+//   // This simulates a bad practice - displaying tokens
+//   return (
+//     <div>
+//       <div data-testid="token-display">
+//         Token: {session?.access_token || "No token"}
+//       </div>
+//       <div data-testid="debug-info">Debug: {JSON.stringify(session)}</div>
+//     </div>
+//   );
+// };
 
 const LogoutComponent = () => {
   const { signOut, user } = useAuth();
@@ -141,6 +148,7 @@ describe("Authentication Security Tests", () => {
     });
 
     it("should handle authentication state changes properly", async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let authControls: any = null;
 
       const TestComponent = () => {
@@ -384,7 +392,11 @@ describe("Authentication Security Tests", () => {
               "secret",
             ];
 
-            if (!sensitiveKeys.some((sk) => key.toLowerCase().includes(sk.toLowerCase()))) {
+            if (
+              !sensitiveKeys.some((sk) =>
+                key.toLowerCase().includes(sk.toLowerCase())
+              )
+            ) {
               localStorage.setItem(key, value);
             }
           });

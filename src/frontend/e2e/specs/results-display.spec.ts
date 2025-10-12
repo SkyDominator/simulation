@@ -121,19 +121,34 @@ test.describe("Results Display and Export", () => {
 
       // Check for key column headers
       await expect(
-        page.locator("th").filter({ hasText: /회차|round/i }).first()
+        page
+          .locator("th")
+          .filter({ hasText: /회차|round/i })
+          .first()
       ).toBeVisible();
       await expect(
-        page.locator("th").filter({ hasText: /투자자|investor/i }).first()
+        page
+          .locator("th")
+          .filter({ hasText: /투자자|investor/i })
+          .first()
       ).toBeVisible();
       await expect(
-        page.locator("th").filter({ hasText: /납입|payment/i }).first()
+        page
+          .locator("th")
+          .filter({ hasText: /납입|payment/i })
+          .first()
       ).toBeVisible();
       await expect(
-        page.locator("th").filter({ hasText: /수익|revenue/i }).first()
+        page
+          .locator("th")
+          .filter({ hasText: /수익|revenue/i })
+          .first()
       ).toBeVisible();
       await expect(
-        page.locator("th").filter({ hasText: /이익|profit/i }).first()
+        page
+          .locator("th")
+          .filter({ hasText: /이익|profit/i })
+          .first()
       ).toBeVisible();
     }
   });
@@ -173,9 +188,7 @@ test.describe("Results Display and Export", () => {
     }
   });
 
-  test("E2E-RESULTS-004: Back button returns to MainPage", async ({
-    page,
-  }) => {
+  test("E2E-RESULTS-004: Back button returns to MainPage", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTestId("main-page")).toBeVisible({ timeout: 5000 });
 
@@ -240,7 +253,7 @@ test.describe("Results Display and Export", () => {
           expect(download.suggestedFilename()).toMatch(
             /simulation|results|시뮬레이션/i
           );
-        } catch (e) {
+        } catch {
           // Download might not trigger in test environment, that's ok
           console.log("Download test skipped in test environment");
         }
@@ -263,11 +276,8 @@ test.describe("Results Display and Export", () => {
       await runButton.click();
       await helpers.waitForSimulationResults();
 
-      // Get result data before refresh
-      const beforeRefresh = await page
-        .locator("tbody tr")
-        .first()
-        .textContent();
+      // Get result data before refresh - stored but not used in minimal check
+      await page.locator("tbody tr").first().textContent();
 
       // Reload the page
       await page.reload();

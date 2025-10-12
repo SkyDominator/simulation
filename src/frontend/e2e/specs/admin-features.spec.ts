@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { TestHelpers, APIHelpers, initE2EMode } from "../utils/test-helpers";
+import { APIHelpers, initE2EMode } from "../utils/test-helpers";
 import { loginAdminUser, loginTestUser } from "../utils/auth-helpers";
 
 /**
@@ -8,11 +8,8 @@ import { loginAdminUser, loginTestUser } from "../utils/auth-helpers";
  */
 
 test.describe("Admin Features - Access Control", () => {
-  let helpers: TestHelpers;
-
   test.beforeEach(async ({ page }) => {
     await initE2EMode(page);
-    helpers = new TestHelpers(page);
     await APIHelpers.mockAdminAPI(page);
     await APIHelpers.mockNoticesAPI(page);
   });
@@ -79,10 +76,7 @@ test.describe("Admin Features - Access Control", () => {
 });
 
 test.describe("Admin Features - Privacy Policy Management", () => {
-  let helpers: TestHelpers;
-
   test.beforeEach(async ({ page }) => {
-    helpers = new TestHelpers(page);
     await loginAdminUser(page);
     await APIHelpers.mockAdminAPI(page);
   });
@@ -112,14 +106,14 @@ test.describe("Admin Features - Privacy Policy Management", () => {
       // Policy list should be visible
       const policyList = page
         .locator('[data-testid="policy-list"]')
-        .or(page.locator("table, [role=\"table\"]"))
+        .or(page.locator('table, [role="table"]'))
         .first();
 
       if (await policyList.isVisible()) {
         await expect(policyList).toBeVisible();
 
         // Should have multiple policy entries
-        const rows = page.locator("tr, [role=\"row\"]");
+        const rows = page.locator('tr, [role="row"]');
         expect(await rows.count()).toBeGreaterThan(0);
       }
     }
@@ -188,13 +182,14 @@ test.describe("Admin Features - Privacy Policy Management", () => {
 
         if (await editor.isVisible()) {
           // Type markdown content
-          const markdownContent = "# Privacy Policy\n\n## Section 1\n\nContent here.";
+          const markdownContent =
+            "# Privacy Policy\n\n## Section 1\n\nContent here.";
           await editor.fill(markdownContent);
 
           // Verify content was entered
-          const content = await editor.inputValue().catch(() =>
-            editor.textContent()
-          );
+          const content = await editor
+            .inputValue()
+            .catch(() => editor.textContent());
           expect(content).toContain("Privacy Policy");
         }
       }
@@ -205,7 +200,7 @@ test.describe("Admin Features - Privacy Policy Management", () => {
     page,
   }) => {
     // Set up request spy
-    const createRequests: any[] = [];
+    const createRequests: Array<{ method: string; body: unknown }> = [];
     await page.route("**/api/admin/privacy-policies**", async (route) => {
       if (route.request().method() === "POST") {
         createRequests.push({
@@ -289,25 +284,28 @@ test.describe("Admin Features - Privacy Policy Management", () => {
     page,
   }) => {
     // Set up request spy for publish endpoint
-    const publishRequests: any[] = [];
-    await page.route("**/api/admin/privacy-policies/**/publish", async (route) => {
-      publishRequests.push({
-        method: route.request().method(),
-        url: route.request().url(),
-      });
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          data: {
-            id: "policy-2",
-            published: true,
-            effective_date: new Date().toISOString(),
-          },
-        }),
-      });
-    });
+    const publishRequests: Array<{ method: string; url: string }> = [];
+    await page.route(
+      "**/api/admin/privacy-policies/**/publish",
+      async (route) => {
+        publishRequests.push({
+          method: route.request().method(),
+          url: route.request().url(),
+        });
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            data: {
+              id: "policy-2",
+              published: true,
+              effective_date: new Date().toISOString(),
+            },
+          }),
+        });
+      }
+    );
 
     await page.goto("/");
 
@@ -354,7 +352,7 @@ test.describe("Admin Features - Privacy Policy Management", () => {
     page,
   }) => {
     // Set up request spy
-    const deleteRequests: any[] = [];
+    const deleteRequests: Array<{ method: string; url: string }> = [];
     await page.route("**/api/admin/privacy-policies/**", async (route) => {
       if (route.request().method() === "DELETE") {
         deleteRequests.push({

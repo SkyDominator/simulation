@@ -7,7 +7,6 @@ const supabaseUrl = VITE_SUPABASE_URL as string;
 const supabasePublishableKey = VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
 if (!supabaseUrl || !supabasePublishableKey) {
-  // eslint-disable-next-line no-console
   console.warn(
     "Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY. Supabase client may fail to initialize."
   );

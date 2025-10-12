@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { TestHelpers, APIHelpers, initE2EMode } from "../utils/test-helpers";
+import { APIHelpers, initE2EMode } from "../utils/test-helpers";
 import { loginTestUser } from "../utils/auth-helpers";
 
 /**
@@ -8,11 +8,8 @@ import { loginTestUser } from "../utils/auth-helpers";
  */
 
 test.describe("Main Dashboard - Simulation List", () => {
-  let helpers: TestHelpers;
-
   test.beforeEach(async ({ page }) => {
     await initE2EMode(page); // Initialize E2E mode first
-    helpers = new TestHelpers(page);
     await loginTestUser(page);
     await APIHelpers.mockSimulationAPI(page);
     await APIHelpers.mockNoticesAPI(page);
@@ -68,7 +65,9 @@ test.describe("Main Dashboard - Simulation List", () => {
 
     // Should show empty state message
     const emptyMessage = page
-      .locator("text=/시뮬레이션이 없습니다|아직 시뮬레이션을 생성하지 않았습니다/i")
+      .locator(
+        "text=/시뮬레이션이 없습니다|아직 시뮬레이션을 생성하지 않았습니다/i"
+      )
       .first();
     await expect(emptyMessage).toBeVisible({ timeout: 5000 });
 
@@ -101,13 +100,22 @@ test.describe("Main Dashboard - Simulation List", () => {
 
     // Verify key column headers exist
     await expect(
-      page.locator("th").filter({ hasText: /플랜|plan/i }).first()
+      page
+        .locator("th")
+        .filter({ hasText: /플랜|plan/i })
+        .first()
     ).toBeVisible();
     await expect(
-      page.locator("th").filter({ hasText: /메모|memo/i }).first()
+      page
+        .locator("th")
+        .filter({ hasText: /메모|memo/i })
+        .first()
     ).toBeVisible();
     await expect(
-      page.locator("th").filter({ hasText: /생성일|created|날짜/i }).first()
+      page
+        .locator("th")
+        .filter({ hasText: /생성일|created|날짜/i })
+        .first()
     ).toBeVisible();
   });
 
@@ -384,7 +392,11 @@ test.describe("Main Dashboard - Simulation List", () => {
       // Help/contact modal should appear
       const helpModal = page
         .locator('[data-testid="contact-modal"]')
-        .or(page.locator('[role="dialog"]').filter({ hasText: /도움말|help|문의/i }))
+        .or(
+          page
+            .locator('[role="dialog"]')
+            .filter({ hasText: /도움말|help|문의/i })
+        )
         .first();
 
       await expect(helpModal).toBeVisible({ timeout: 5000 });

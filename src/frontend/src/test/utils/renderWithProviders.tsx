@@ -1,14 +1,14 @@
-import React from 'react'
-import { render, RenderOptions } from '@testing-library/react'
-import { ThemeProvider } from '@mui/material/styles'
-import { createTheme } from '@mui/material/styles'
-import { MockAuthProvider } from '../mocks/AuthContext'
+import React from "react";
+import { render, RenderOptions } from "@testing-library/react";
+import { ThemeProvider } from "@mui/material/styles";
+import { createTheme } from "@mui/material/styles";
+import { MockAuthProvider } from "../mocks/AuthContext";
 
-const theme = createTheme()
+const theme = createTheme();
 
-interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
-  withAuth?: boolean
-  withTheme?: boolean
+interface CustomRenderOptions extends Omit<RenderOptions, "wrapper"> {
+  withAuth?: boolean;
+  withTheme?: boolean;
 }
 
 export function renderWithProviders(
@@ -20,20 +20,23 @@ export function renderWithProviders(
   }: CustomRenderOptions = {}
 ) {
   function Wrapper({ children }: { children: React.ReactNode }) {
-    let wrappedChildren = children
+    let wrappedChildren = children;
 
     if (withAuth) {
-      wrappedChildren = <MockAuthProvider>{wrappedChildren}</MockAuthProvider>
+      wrappedChildren = <MockAuthProvider>{wrappedChildren}</MockAuthProvider>;
     }
 
     if (withTheme) {
-      wrappedChildren = <ThemeProvider theme={theme}>{wrappedChildren}</ThemeProvider>
+      wrappedChildren = (
+        <ThemeProvider theme={theme}>{wrappedChildren}</ThemeProvider>
+      );
     }
 
-    return <>{wrappedChildren}</>
+    return <>{wrappedChildren}</>;
   }
 
-  return render(ui, { wrapper: Wrapper, ...renderOptions })
+  return render(ui, { wrapper: Wrapper, ...renderOptions });
 }
 
-export * from '@testing-library/react'
+// Re-export testing library utilities
+export * from "@testing-library/react";
