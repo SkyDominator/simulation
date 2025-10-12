@@ -7,5 +7,5 @@ if (typeof globalThis.crypto === "undefined") {
 }
 
 if (typeof globalThis.SharedArrayBuffer === "undefined") {
-  globalThis.SharedArrayBuffer = class SharedArrayBuffer extends ArrayBuffer {};
+  globalThis.SharedArrayBuffer = ArrayBuffer;
 }
