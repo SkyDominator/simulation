@@ -114,15 +114,14 @@ jobs:
 
             - name: Frontend Unit Suites
               working-directory: src/frontend
-              env:
-                  NODE_OPTIONS: --require ./scripts/vitest-node-polyfill.cjs
               run: |
                   npm ci
-                  echo "NODE_OPTIONS=$NODE_OPTIONS"
-                  node -p "globalThis.SharedArrayBuffer ? 'SharedArrayBuffer available' : 'SharedArrayBuffer missing'"
-                  npx vitest run src/test/pages --reporter=verbose
-                  npx vitest run src/test/components --reporter=verbose
-                  npx vitest run src/test/smoke.test.tsx --reporter=verbose
+                  POLYFILL_PATH="$(pwd)/scripts/vitest-node-polyfill.cjs"
+                  echo "Using polyfill at $POLYFILL_PATH"
+                  NODE_OPTIONS="--require $POLYFILL_PATH" node -p "globalThis.SharedArrayBuffer ? 'SharedArrayBuffer available' : 'SharedArrayBuffer missing'"
+                  NODE_OPTIONS="--require $POLYFILL_PATH" npx vitest run src/test/pages --reporter=verbose
+                  NODE_OPTIONS="--require $POLYFILL_PATH" npx vitest run src/test/components --reporter=verbose
+                  NODE_OPTIONS="--require $POLYFILL_PATH" npx vitest run src/test/smoke.test.tsx --reporter=verbose
 
             - name: Setup Python
               uses: actions/setup-python@v5
@@ -187,13 +186,12 @@ jobs:
 
             - name: Frontend Security Tests
               working-directory: src/frontend
-              env:
-                  NODE_OPTIONS: --require ./scripts/vitest-node-polyfill.cjs
               run: |
                   npm ci
-                  echo "NODE_OPTIONS=$NODE_OPTIONS"
-                  node -p "globalThis.SharedArrayBuffer ? 'SharedArrayBuffer available' : 'SharedArrayBuffer missing'"
-                  npx vitest run src/test/security --reporter=verbose
+                  POLYFILL_PATH="$(pwd)/scripts/vitest-node-polyfill.cjs"
+                  echo "Using polyfill at ${POLYFILL_PATH}"
+                  NODE_OPTIONS="--require ${POLYFILL_PATH}" node -p 'globalThis.SharedArrayBuffer ? "SharedArrayBuffer available" : "SharedArrayBuffer missing"'
+                  NODE_OPTIONS="--require ${POLYFILL_PATH}" npx vitest run src/test/security --reporter=verbose
 
             - name: Setup Python
               uses: actions/setup-python@v5
