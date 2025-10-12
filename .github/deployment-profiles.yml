@@ -1,0 +1,60 @@
+# Deployment Profiles Configuration
+# This file defines which tests run for each environment when code is pushed to branches.
+# To change a profile, simply edit this file and push to the branch.
+
+# Production Environment (release branch)
+production:
+  # Profile options: full-test, unit-integration, unit-only, e2e-only, no-test
+  profile: full-test
+  
+  # Custom configuration (optional - overrides profile)
+  # Uncomment to customize:
+  # skip_tests: ""  # Empty = run all tests, or comma-separated: "unit,integration,e2e"
+
+# Staging Environment (main branch)
+staging:
+  # Profile options: full-test, unit-integration, unit-only, e2e-only, no-test
+  profile: unit-integration
+  
+  # Custom configuration (optional - overrides profile)
+  # Uncomment to customize:
+  # skip_tests: "e2e"
+
+# Profile Definitions
+# These define what tests to skip for each profile
+profiles:
+  full-test:
+    description: "Run all tests (Unit + Integration + E2E)"
+    skip_tests: ""
+    estimated_time: "20-30 minutes"
+    recommended_for: "Production deployments"
+  
+  unit-integration:
+    description: "Run Unit and Integration tests only (skip E2E)"
+    skip_tests: "e2e"
+    estimated_time: "10-15 minutes"
+    recommended_for: "Staging fast iteration"
+  
+  unit-only:
+    description: "Run Unit tests only"
+    skip_tests: "integration,e2e"
+    estimated_time: "5-7 minutes"
+    recommended_for: "Emergency hotfixes, quick validation"
+  
+  e2e-only:
+    description: "Run E2E tests only (skip Unit and Integration)"
+    skip_tests: "unit,integration"
+    estimated_time: "10-20 minutes"
+    recommended_for: "UI/UX validation, smoke testing"
+  
+  no-test:
+    description: "Skip all tests (build and deploy only)"
+    skip_tests: "unit,integration,e2e"
+    estimated_time: "3-5 minutes"
+    recommended_for: "Emergency deployments only (NOT RECOMMENDED)"
+
+# Notes:
+# - To change production profile: Edit 'production.profile' and push to 'release' branch
+# - To change staging profile: Edit 'staging.profile' and push to 'main' branch
+# - Custom skip_tests overrides the profile setting
+# - Manual workflow dispatch always allows custom skip_tests input

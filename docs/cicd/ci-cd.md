@@ -804,7 +804,24 @@ cloudflared tunnel list
 
 ## 7. GitHub Self-Hosted Runner 설정
 
-### 7.1 Runner 사용자 디렉토리 생성
+### 7.1 소스 코드 클론 관련 주의사항
+
+**중요**: GitHub Actions workflow에서 `actions/checkout@v4` 액션이 자동으로 소스 코드를 클론합니다. 따라서 **수동으로 git clone을 실행할 필요가 없습니다**.
+
+**자동 클론 프로세스**:
+- GitHub-hosted runners (테스트 실행): `actions/checkout@v4`가 자동으로 코드 클론
+- Self-hosted runner (배포): `actions/checkout@v4`가 `$GITHUB_WORKSPACE`에 코드 클론 → `rsync`로 배포 디렉토리(`/srv/lol/simulation/`)에 복사
+
+**배포 디렉토리 구조**:
+```
+/srv/lol/simulation/
+├── production/     # rsync로 자동 복사됨 (release 브랜치)
+└── staging/        # rsync로 자동 복사됨 (main 브랜치)
+```
+
+수동 클론이 필요한 경우는 오직 **로컬 디버깅 또는 수동 배포 테스트**를 할 때뿐입니다.
+
+### 7.2 Runner 사용자 디렉토리 생성
 
 ```bash
 # deploy 사용자로 전환
@@ -1605,9 +1622,116 @@ git push origin main
 
 ## 11. 테스트 레이어 제어 설정
 
-### 11.1 수동 배포 시 테스트 선택
+### 11.1 배포 프로필 시스템 (Profile-based Deployment)
 
-GitHub Actions에서 `workflow_dispatch` 이벤트를 통해 수동으로 배포할 때 테스트를 선택적으로 스킵할 수 있습니다.
+**새로운 방식**: 각 환경(Production, Staging)에 **사전 구성된 프로필**을 사용하여 자동으로 테스트 전략을 적용합니다.
+
+#### 11.1.1 프로필 구성 파일
+
+**파일 위치**: `.github/deployment-profiles.yml`
+
+이 파일에서 각 환경의 테스트 프로필을 정의합니다:
+
+```yaml
+# Production Environment (release branch)
+production:
+  profile: full-test  # 모든 테스트 실행
+
+# Staging Environment (main branch)
+staging:
+  profile: unit-integration  # Unit + Integration만 실행 (E2E 스킵)
+```
+
+#### 11.1.2 사용 가능한 프로필
+
+| 프로필 이름 | 실행 테스트 | 소요 시간 | 권장 용도 |
+|-----------|-----------|----------|----------|
+| **full-test** | Unit + Integration + E2E | 20-30분 | Production 배포 (기본값) |
+| **unit-integration** | Unit + Integration (E2E 스킵) | 10-15분 | Staging 빠른 반복 개발 |
+| **unit-only** | Unit만 | 5-7분 | 긴급 핫픽스, 빠른 검증 |
+| **e2e-only** | E2E만 | 10-20분 | UI/UX 검증, 스모크 테스트 |
+| **no-test** | 테스트 없음 | 3-5분 | 긴급 배포만 (비권장) |
+
+#### 11.1.3 프로필 변경 방법
+
+**Production 프로필 변경**:
+
+```bash
+# 1. release 브랜치로 전환
+git checkout release
+
+# 2. 프로필 파일 수정
+# .github/deployment-profiles.yml에서:
+# production:
+#   profile: unit-integration  # full-test에서 변경
+
+# 3. 변경사항 커밋 및 푸시
+git add .github/deployment-profiles.yml
+git commit -m "chore: Change production profile to unit-integration"
+git push origin release
+
+# 다음 배포부터 새 프로필 적용됨
+```
+
+**Staging 프로필 변경**:
+
+```bash
+# 1. main 브랜치로 전환
+git checkout main
+
+# 2. 프로필 파일 수정
+# .github/deployment-profiles.yml에서:
+# staging:
+#   profile: e2e-only  # unit-integration에서 변경
+
+# 3. 변경사항 커밋 및 푸시
+git add .github/deployment-profiles.yml
+git commit -m "chore: Change staging profile to e2e-only"
+git push origin main
+
+# 다음 배포부터 새 프로필 적용됨
+```
+
+**중요**: `.github/deployment-profiles.yml` 파일 변경은 배포를 트리거하지 않습니다. 다음 코드 변경 시 새 프로필이 적용됩니다.
+
+#### 11.1.4 커스텀 skip_tests 설정 (고급)
+
+프로필 대신 직접 `skip_tests` 값을 지정할 수도 있습니다:
+
+```yaml
+production:
+  profile: full-test
+  skip_tests: "e2e"  # ← 프로필 무시하고 이 값 사용
+
+staging:
+  profile: unit-integration
+  # skip_tests는 주석 처리 → 프로필 사용
+```
+
+### 11.2 브랜치별 자동 배포
+
+**프로필 기반 자동 배포**:
+
+```bash
+# Production 배포 (full-test 프로필)
+git push origin release
+
+# Staging 배포 (unit-integration 프로필)
+git push origin main
+```
+
+- ✅ 각 환경의 프로필 자동 적용
+- ✅ 마크다운 파일 변경은 배포 트리거 안 함
+- ✅ 코드 변경 시에만 배포 실행
+
+**배포 트리거 제외 파일**:
+- `docs/**/*.md` (모든 문서)
+- `*.md` (루트 마크다운 파일)
+- `.github/deployment-profiles.yml` (프로필 설정 파일)
+
+### 11.3 수동 배포 (Workflow Dispatch)
+
+수동 배포 시에는 **프로필을 무시**하고 커스텀 `skip_tests` 값을 사용할 수 있습니다.
 
 **사용 방법**:
 
@@ -1616,7 +1740,30 @@ GitHub Actions에서 `workflow_dispatch` 이벤트를 통해 수동으로 배포
 3. "Run workflow" 클릭
 4. 옵션 설정:
    - **environment**: `production` 또는 `staging`
-   - **skip_tests**: 스킵할 테스트를 쉼표로 구분 (예: `unit,e2e`, `integration`, 빈 칸 = 모든 테스트 실행)
+   - **skip_tests**: 
+     - 빈 칸: 해당 환경의 프로필 사용
+     - 값 입력: 프로필 무시하고 커스텀 값 사용 (예: `e2e`, `integration,e2e`)
+
+**예시**:
+
+```text
+environment: production
+skip_tests: integration,e2e  ← full-test 프로필 무시, Unit만 실행
+```
+
+### 11.4 프로필 시스템 이점
+
+**이전 방식 (수동 입력)**:
+- ❌ 매번 수동으로 `skip_tests` 입력 필요
+- ❌ 실수로 잘못된 값 입력 가능
+- ❌ 팀원마다 다른 테스트 전략 사용
+
+**새 방식 (프로필 기반)**:
+- ✅ 한 번 설정하면 자동으로 적용
+- ✅ Git으로 프로필 변경 이력 추적
+- ✅ 팀 전체가 동일한 테스트 전략 사용
+- ✅ 프로필 이름으로 의도 명확히 표현
+- ✅ 마크다운 파일 변경 시 배포 안 함
 
 ### 11.2 조건부 테스트 실행 설정
 

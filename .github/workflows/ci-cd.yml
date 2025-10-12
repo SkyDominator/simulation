@@ -5,6 +5,10 @@ on:
         branches:
             - release # Production trigger
             - main # Staging trigger
+        paths-ignore:
+            - "docs/**/*.md"
+            - "*.md"
+            - ".github/deployment-profiles.yml"
     workflow_dispatch:
         inputs:
             environment:
@@ -16,17 +20,87 @@ on:
                     - production
                     - staging
             skip_tests:
-                description: "Skip test layers (comma-separated: unit,integration,e2e)"
+                description: "Skip test layers (comma-separated: unit,integration,e2e) - Leave empty to use profile"
                 required: false
                 default: ""
                 type: string
 
 jobs:
+    # Load deployment profile configuration
+    load-profile:
+        name: Load Deployment Profile
+        runs-on: ubuntu-latest
+        outputs:
+            skip_tests: ${{ steps.get-profile.outputs.skip_tests }}
+            profile_name: ${{ steps.get-profile.outputs.profile_name }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install yq
+              run: |
+                  sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+                  sudo chmod +x /usr/local/bin/yq
+
+            - name: Get Deployment Profile
+              id: get-profile
+              run: |
+                  # Determine environment from branch or manual input
+                  if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+                    ENV="${{ github.event.inputs.environment }}"
+                    MANUAL_SKIP="${{ github.event.inputs.skip_tests }}"
+                  elif [[ "${{ github.ref }}" == "refs/heads/release" ]]; then
+                    ENV="production"
+                    MANUAL_SKIP=""
+                  elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+                    ENV="staging"
+                    MANUAL_SKIP=""
+                  else
+                    ENV="staging"
+                    MANUAL_SKIP=""
+                  fi
+
+                  echo "Detected environment: $ENV"
+
+                  # If manual skip_tests provided, use it
+                  if [[ -n "$MANUAL_SKIP" ]]; then
+                    echo "skip_tests=$MANUAL_SKIP" >> $GITHUB_OUTPUT
+                    echo "profile_name=custom" >> $GITHUB_OUTPUT
+                    echo "✅ Using manual skip_tests: $MANUAL_SKIP"
+                    exit 0
+                  fi
+
+                  # Load profile from deployment-profiles.yml
+                  if [[ ! -f .github/deployment-profiles.yml ]]; then
+                    echo "⚠️ Warning: deployment-profiles.yml not found, using full-test profile"
+                    echo "skip_tests=" >> $GITHUB_OUTPUT
+                    echo "profile_name=full-test" >> $GITHUB_OUTPUT
+                    exit 0
+                  fi
+
+                  # Parse YAML to get profile
+                  PROFILE=$(yq eval ".${ENV}.profile" .github/deployment-profiles.yml)
+                  CUSTOM_SKIP=$(yq eval ".${ENV}.skip_tests // \"\"" .github/deployment-profiles.yml)
+
+                  # Check if custom skip_tests is defined
+                  if [[ "$CUSTOM_SKIP" != "null" && -n "$CUSTOM_SKIP" ]]; then
+                    SKIP_TESTS="$CUSTOM_SKIP"
+                    echo "✅ Using custom skip_tests for $ENV: $SKIP_TESTS"
+                  else
+                    # Use profile definition
+                    SKIP_TESTS=$(yq eval ".profiles.${PROFILE}.skip_tests" .github/deployment-profiles.yml)
+                    echo "✅ Using profile '$PROFILE' for $ENV: skip_tests='$SKIP_TESTS'"
+                  fi
+
+                  echo "skip_tests=$SKIP_TESTS" >> $GITHUB_OUTPUT
+                  echo "profile_name=$PROFILE" >> $GITHUB_OUTPUT
+                  echo "Final configuration - Profile: $PROFILE, Skip: $SKIP_TESTS"
+
     # Test control: Unit & Integration Tests
     test-unit:
         name: Unit Tests
+        needs: load-profile
         if: |
-            !contains(github.event.inputs.skip_tests, 'unit')
+            !contains(needs.load-profile.outputs.skip_tests, 'unit')
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -60,10 +134,12 @@ jobs:
 
     test-integration:
         name: Integration Tests
+        needs: [load-profile, test-unit]
         if: |
-            !contains(github.event.inputs.skip_tests, 'integration')
+            always() &&
+            !contains(needs.load-profile.outputs.skip_tests, 'integration') &&
+            (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped')
         runs-on: ubuntu-latest
-        needs: test-unit
         steps:
             - uses: actions/checkout@v4
 
@@ -87,6 +163,7 @@ jobs:
     # Lint checks
     lint:
         name: Lint & Type Check
+        needs: load-profile
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -107,7 +184,7 @@ jobs:
     # Build Docker images
     build:
         name: Build & Push Docker Images
-        needs: [test-unit, test-integration, lint]
+        needs: [load-profile, test-unit, test-integration, lint]
         if: |
             always() &&
             (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped') &&
@@ -117,8 +194,24 @@ jobs:
         outputs:
             should_deploy_production: ${{ steps.check.outputs.production }}
             should_deploy_staging: ${{ steps.check.outputs.staging }}
+            profile_name: ${{ needs.load-profile.outputs.profile_name }}
+            skip_tests: ${{ needs.load-profile.outputs.skip_tests }}
         steps:
             - uses: actions/checkout@v4
+
+            - name: Display Deployment Configuration
+              run: |
+                  echo "🚀 Deployment Configuration" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Profile**: ${{ needs.load-profile.outputs.profile_name }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Skip Tests**: ${{ needs.load-profile.outputs.skip_tests || 'none (all tests run)' }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Branch**: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+
+                  # Also output to console
+                  echo "🚀 Deployment Configuration"
+                  echo "Profile: ${{ needs.load-profile.outputs.profile_name }}"
+                  echo "Skip Tests: ${{ needs.load-profile.outputs.skip_tests }}"
+                  echo "Branch: ${{ github.ref }}"
 
             - name: Check deployment target
               id: check
@@ -279,9 +372,9 @@ jobs:
     # E2E Tests (Optional, runs after staging deployment)
     test-e2e:
         name: E2E Tests (Playwright)
-        needs: deploy-staging
+        needs: [load-profile, deploy-staging]
         if: |
-            !contains(github.event.inputs.skip_tests, 'e2e') &&
+            !contains(needs.load-profile.outputs.skip_tests, 'e2e') &&
             needs.deploy-staging.result == 'success'
         runs-on: ubuntu-latest
         steps:
