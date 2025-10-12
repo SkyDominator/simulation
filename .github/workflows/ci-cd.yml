@@ -112,11 +112,13 @@ jobs:
                   cache: "npm"
                   cache-dependency-path: src/frontend/package-lock.json
 
-            - name: Frontend Unit Tests
+            - name: Frontend Unit Suites
               working-directory: src/frontend
               run: |
                   npm ci
-                  npm run test:run
+                  npx vitest run src/test/pages --reporter=verbose
+                  npx vitest run src/test/components --reporter=verbose
+                  npx vitest run src/test/smoke.test.tsx --reporter=verbose
 
             - name: Setup Python
               uses: actions/setup-python@v5
@@ -130,7 +132,7 @@ jobs:
               run: |
                   python -m pip install --upgrade pip
                   pip install -r requirements.txt
-                  pytest tests/unit -v
+                  pytest tests/unit -v --ignore=tests/unit/security/test_cryptography.py
 
     test-integration:
         name: Integration Tests
@@ -160,6 +162,48 @@ jobs:
                   pip install -r requirements.txt
                   pytest tests/integration -v
 
+    test-security:
+        name: Security Tests
+        needs: [load-profile, test-unit, test-integration]
+        if: |
+            always() &&
+            !contains(needs.load-profile.outputs.skip_tests, 'security') &&
+            (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped') &&
+            (needs.test-integration.result == 'success' || needs.test-integration.result == 'skipped')
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 18
+                  cache: "npm"
+                  cache-dependency-path: src/frontend/package-lock.json
+
+            - name: Frontend Security Tests
+              working-directory: src/frontend
+              run: |
+                  npm ci
+                  npx vitest run src/test/security --reporter=verbose
+
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+                  cache: "pip"
+                  cache-dependency-path: src/backend/requirements.txt
+
+            - name: Backend Security Tests
+              working-directory: src/backend
+              env:
+                  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+                  SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements.txt
+                  pytest tests/integration/api/test_security_e2e.py tests/unit/security/test_cryptography.py -v
+
     # Lint checks
     lint:
         name: Lint & Type Check
@@ -184,11 +228,12 @@ jobs:
     # Build Docker images
     build:
         name: Build & Push Docker Images
-        needs: [load-profile, test-unit, test-integration, lint]
+        needs: [load-profile, test-unit, test-integration, test-security, lint]
         if: |
             always() &&
             (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped') &&
             (needs.test-integration.result == 'success' || needs.test-integration.result == 'skipped') &&
+            (needs.test-security.result == 'success' || needs.test-security.result == 'skipped') &&
             needs.lint.result == 'success'
         runs-on: ubuntu-latest
         outputs:
