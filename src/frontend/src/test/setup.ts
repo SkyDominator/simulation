@@ -2,10 +2,12 @@ import "@testing-library/jest-dom";
 import { vi } from "vitest";
 import { webcrypto } from "crypto";
 
+// Initialize crypto polyfill before jsdom accesses it
 if (!globalThis.crypto) {
   globalThis.crypto = webcrypto as unknown as Crypto;
 }
 
+// Polyfill SharedArrayBuffer for testing environment
 if (typeof globalThis.SharedArrayBuffer === "undefined") {
   globalThis.SharedArrayBuffer =
     ArrayBuffer as unknown as typeof globalThis.SharedArrayBuffer;

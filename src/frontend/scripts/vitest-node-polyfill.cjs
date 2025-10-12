@@ -2,6 +2,36 @@
 
 const { webcrypto } = require("crypto");
 
+// Set up primordials before jsdom loads to avoid webidl-conversions errors
+// The error "Cannot read properties of undefined (reading 'get')" occurs because
+// jsdom's webidl-conversions expects Object.prototype descriptors to be available
+if (typeof globalThis.primordials === "undefined") {
+  const ObjectPrototypeDescriptors = Object.getOwnPropertyDescriptors(
+    Object.prototype
+  );
+
+  globalThis.primordials = {
+    ObjectCreate: Object.create,
+    ObjectDefineProperty: Object.defineProperty,
+    ObjectGetOwnPropertyDescriptor: Object.getOwnPropertyDescriptor,
+    ObjectGetOwnPropertyDescriptors: Object.getOwnPropertyDescriptors,
+    ObjectGetPrototypeOf: Object.getPrototypeOf,
+    ObjectSetPrototypeOf: Object.setPrototypeOf,
+    ObjectPrototype: Object.prototype,
+    ObjectPrototypeHasOwnProperty: Object.prototype.hasOwnProperty,
+    ObjectPrototypeToString: Object.prototype.toString,
+    SymbolIterator: Symbol.iterator,
+    SymbolToStringTag: Symbol.toStringTag,
+    SymbolHasInstance: Symbol.hasInstance,
+    FunctionPrototypeCall: Function.prototype.call,
+    FunctionPrototypeBind: Function.prototype.bind,
+    ArrayPrototypeForEach: Array.prototype.forEach,
+    ArrayPrototypeMap: Array.prototype.map,
+    // Add descriptor accessors that webidl-conversions needs
+    ObjectPrototypeDescriptors: ObjectPrototypeDescriptors,
+  };
+}
+
 if (typeof globalThis.crypto === "undefined") {
   globalThis.crypto = webcrypto;
 }
