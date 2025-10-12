@@ -622,7 +622,26 @@ nginx: configuration file /etc/nginx/nginx.conf test is successful
 
 ## 6. Cloudflare Tunnel 재구성 (Windows → Droplet)
 
-이 섹션에서는 Windows에서 실행 중인 Cloudflare Tunnel을 중단하고, Droplet에서 새 터널을 생성합니다. **DNS 전환은 섹션 12.4에서 진행**하므로, 여기서는 터널 생성만 수행합니다.
+### 6.0 DNS 전환 전략 개요
+
+**⚠️ 중요**: 이 섹션에서는 Droplet에 새 터널을 생성하지만, **Production DNS는 아직 전환하지 않습니다.**
+
+**DNS 전환 타임라인**:
+
+| 단계 | 도메인 | 시점 | 목적 |
+|------|--------|------|------|
+| **섹션 6.5** | `staging.simulation.lightoflifeclub.com` | **지금** | Staging 환경 테스트용 |
+| **섹션 12.4** | `simulation.lightoflifeclub.com` | **마이그레이션 시** | Production 전환 (Windows 터널 중단 후) |
+
+**이유**: Windows 터널이 현재 Production을 서비스하고 있으므로, Droplet 환경이 완전히 검증될 때까지 Windows를 계속 운영합니다.
+
+**이 섹션에서 수행할 작업**:
+
+1. ✅ Droplet에 새 터널 생성
+2. ✅ Staging DNS만 Droplet으로 설정
+3. ❌ Production DNS는 건드리지 않음 (Windows 유지)
+
+**Production DNS 전환은 섹션 12.4에서 진행됩니다.**
 
 ### 6.1 Windows 터널 정보 확인 (참고용)
 
@@ -676,33 +695,32 @@ cloudflared tunnel create simulation-tunnel
 ```
 
 출력 예시:
-```
+
+```text
 Tunnel credentials written to /root/.cloudflared/<TUNNEL_ID>.json
 Created tunnel simulation-tunnel with id <TUNNEL_ID>
 ```
 
 **중요**: `<TUNNEL_ID>`를 메모하세요. (예: `3a97bb01-c92d-4678-957f-68b66061a0e3`)
 
-### 6.5 DNS 레코드 생성
+### 6.5 Staging 전용 DNS 레코드 생성
 
-#### 6.5.1 Production DNS
-
-```bash
-cloudflared tunnel route dns simulation-tunnel simulation.lightoflifeclub.com
-```
-
-#### 6.5.2 Staging DNS
+**⚠️ 중요**: 여기서는 **Staging 도메인만** 생성합니다. Production 도메인(`simulation.lightoflifeclub.com`)은 현재 Windows 터널이 사용 중이므로, 섹션 12.4에서 마이그레이션할 때 전환합니다.
 
 ```bash
+# Staging DNS 레코드만 생성
 cloudflared tunnel route dns simulation-tunnel staging.simulation.lightoflifeclub.com
 ```
 
 확인:
-```
+
+```text
 Cloudflare Dashboard → DNS → Records
-- simulation.lightoflifeclub.com (CNAME to <TUNNEL_ID>.cfargotunnel.com)
-- staging.simulation.lightoflifeclub.com (CNAME to <TUNNEL_ID>.cfargotunnel.com)
+- staging.simulation.lightoflifeclub.com (CNAME to <TUNNEL_ID>.cfargotunnel.com) ← 새로 생성됨
+- simulation.lightoflifeclub.com (기존 Windows 터널 유지) ← 아직 건드리지 않음
 ```
+
+**Production DNS는 아직 생성/변경하지 마세요!** Windows 터널이 `simulation.lightoflifeclub.com`을 계속 서비스하고 있습니다.
 
 ### 6.6 터널 설정 파일 생성
 
@@ -1881,22 +1899,60 @@ Get-Process | Where-Object {$_.ProcessName -like "*cloudflared*"}
 # 출력 없음 = 중단 성공
 ```
 
-#### 12.4.3 Cloudflare DNS 확인
+**중요**: Windows 터널을 중단한 이 시점부터 `simulation.lightoflifeclub.com`은 일시적으로 접속 불가 상태가 됩니다 (5-10분). 다음 단계에서 즉시 Droplet 터널로 DNS를 전환합니다.
 
-**Cloudflare Dashboard에서**:
+#### 12.4.3 Production DNS를 Droplet 터널로 전환
+
+**Droplet SSH에서 실행**:
+
+```bash
+# Production 도메인을 Droplet 터널로 라우팅
+cloudflared tunnel route dns simulation-tunnel simulation.lightoflifeclub.com
+```
+
+**트러블슈팅**: DNS 레코드가 이미 존재하는 경우
+
+만약 다음과 같은 오류가 발생하면:
+
+```text
+Failed to add route: code: 1003, reason: Failed to create record simulation.lightoflifeclub.com 
+with err An A, AAAA, or CNAME record with that host already exists.
+```
+
+이는 Windows 터널 설정 시 이미 DNS 레코드가 생성되었기 때문입니다. **이것은 정상입니다.** 다음 방법으로 해결하세요:
+
+**해결 방법**: Cloudflare Dashboard에서 CNAME 레코드 업데이트
 
 1. <https://dash.cloudflare.com/> 로그인
 2. 도메인 `lightoflifeclub.com` 선택
-3. **Zero Trust → Access → Tunnels** 이동
-4. `simulation-tunnel` (Droplet) 상태 확인: **HEALTHY** 여부 확인
-5. **DNS → Records** 이동
-6. 다음 레코드 확인:
-   - `simulation.lightoflifeclub.com` → CNAME `<DROPLET_TUNNEL_ID>.cfargotunnel.com` (이미 생성됨, 섹션 6.5.1)
-   - `staging.simulation.lightoflifeclub.com` → CNAME `<DROPLET_TUNNEL_ID>.cfargotunnel.com` (이미 생성됨, 섹션 6.5.2)
+3. **DNS → Records** 이동
+4. `simulation.lightoflifeclub.com` CNAME 레코드 찾기
+5. **Edit** 클릭
+6. **Target** 값을 `<DROPLET_TUNNEL_ID>.cfargotunnel.com`으로 변경 (섹션 6.4에서 메모한 Droplet 터널 ID 사용)
+7. **Save** 클릭
 
-**중요**: DNS 레코드가 이미 Droplet 터널을 가리키고 있으므로, Windows 터널 중단 시 자동으로 Droplet으로 전환됩니다.
+**예시**:
 
-#### 12.4.4 DNS 전파 대기 및 접속 테스트
+- 기존 (Windows): `simulation.lightoflifeclub.com` → `abc12345-old.cfargotunnel.com`
+- 변경 후 (Droplet): `simulation.lightoflifeclub.com` → `3a97bb01-new.cfargotunnel.com`
+
+#### 12.4.4 DNS 레코드 최종 확인
+
+**Cloudflare Dashboard에서 확인**:
+
+1. **Zero Trust → Access → Tunnels** 이동
+2. 터널 상태 확인:
+   - `simulation-tunnel` (Droplet): **HEALTHY** ✅
+   - 기존 Windows 터널: **DOWN** 또는 목록에서 제거됨 ❌
+
+3. **DNS → Records** 이동
+4. 다음 레코드 확인:
+   - `simulation.lightoflifeclub.com` → CNAME `<DROPLET_TUNNEL_ID>.cfargotunnel.com` ✅
+   - `staging.simulation.lightoflifeclub.com` → CNAME `<DROPLET_TUNNEL_ID>.cfargotunnel.com` ✅
+
+**모두 Droplet 터널 ID를 가리켜야 합니다.**
+
+#### 12.4.5 DNS 전파 대기 및 접속 테스트
 
 **DNS 전파 확인** (로컬 컴퓨터에서):
 
@@ -1909,8 +1965,11 @@ sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder
 
 # DNS 조회 확인
 nslookup simulation.lightoflifeclub.com
-# A 레코드 또는 CNAME이 Droplet 터널을 가리키는지 확인
+# CNAME이 Droplet 터널을 가리키는지 확인
+# 예상: <DROPLET_TUNNEL_ID>.cfargotunnel.com
 ```
+
+**예상 대기 시간**: 1-5분 (Cloudflare DNS는 매우 빠르게 전파됨)
 
 **브라우저 테스트**:
 
@@ -1918,7 +1977,7 @@ nslookup simulation.lightoflifeclub.com
 # 1-2분 대기 후 브라우저에서 접속
 https://simulation.lightoflifeclub.com
 
-# Production 접속 확인
+# Production 접속 확인 (Droplet에서 실행 중)
 # - 로그인
 # - 시뮬레이션 생성
 # - 기능 정상 작동 확인
@@ -1927,7 +1986,15 @@ https://simulation.lightoflifeclub.com
 https://staging.simulation.lightoflifeclub.com
 ```
 
-#### 12.4.5 마이그레이션 완료 확인
+**접속 실패 시 체크리스트**:
+
+1. Droplet 터널 상태 확인 (Cloudflare Dashboard → Tunnels → HEALTHY?)
+2. Droplet 컨테이너 실행 확인 (`docker ps`)
+3. Nginx 상태 확인 (`systemctl status nginx`)
+4. DNS 레코드 확인 (Cloudflare Dashboard → DNS → 올바른 터널 ID?)
+5. 브라우저 캐시 삭제 후 재시도
+
+#### 12.4.6 마이그레이션 완료 확인
 
 **Droplet에서**:
 
@@ -1952,9 +2019,9 @@ docker compose logs -f --tail=20
 - [x] Droplet Nginx 로그에 외부 요청 확인
 - [x] Windows 터널 중단 확인 (프로세스 없음)
 
-#### 12.4.6 내부 테스터 공지 (완료)
+#### 12.4.7 내부 테스터 공지 (완료)
 
-```
+```text
 [공지] 시스템 업그레이드 완료
 
 업그레이드가 성공적으로 완료되었습니다.
