@@ -116,6 +116,7 @@ jobs:
               working-directory: src/frontend
               run: |
                   npm ci
+                  export NODE_OPTIONS="--require ./scripts/vitest-node-polyfill.cjs"
                   npx vitest run src/test/pages --reporter=verbose
                   npx vitest run src/test/components --reporter=verbose
                   npx vitest run src/test/smoke.test.tsx --reporter=verbose
@@ -185,6 +186,7 @@ jobs:
               working-directory: src/frontend
               run: |
                   npm ci
+                  export NODE_OPTIONS="--require ./scripts/vitest-node-polyfill.cjs"
                   npx vitest run src/test/security --reporter=verbose
 
             - name: Setup Python
