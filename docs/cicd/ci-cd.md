@@ -391,30 +391,29 @@ cd /home/deploy/actions-runner
 # Verify in GitHub: Settings → Actions → Runners (should show "Idle")
 ```
 
-### 5.2 Configure GitHub Secrets
+### 5.2 Configure GitHub Secrets and Variables
 
 **Repository → Settings → Secrets and variables → Actions**
 
-**Secrets** (encrypted):
+**Secrets** (encrypted, sensitive data):
 
 | Name | Value | Notes |
 |------|-------|-------|
-| `SUPABASE_URL` | `https://xxx.supabase.co` | From Windows backup |
-| `SUPABASE_PUBLISHABLE_KEY` | `eyJ...` | Anon/public key |
 | `SUPABASE_SECRET_KEY` | `eyJ...` | Service role (server-side only) |
-| `SOLAPI_API_KEY` | `...` | SMS provider |
-| `SOLAPI_API_SECRET` | `...` | SMS provider |
+| `SOLAPI_API_SECRET` | `...` | SMS provider secret |
 | `SOLAPI_SENDER_NUMBER` | `01012345678` | Verified sender |
 | `OTP_SECRET_KEY` | `...` | 32-char random string |
 
-**Variables** (plain text):
+**Variables** (plain text, non-sensitive configuration):
 
 | Name | Value | Notes |
 |------|-------|-------|
-| `OTP_VALIDITY_MINUTES` | `5` | Default |
-| `OTP_RESEND_LIMIT_PER_15MIN` | `3` | Rate limit |
-| `OTP_RESEND_LIMIT_PER_DAY` | `10` | Rate limit |
-| `otp_max_verification_attempts` | `6` | Lowercase! |
+| `VITE_API_BASE_URL` | `https://simulation.lightoflifeclub.com/api` (prod) / `https://staging-simulation.lightoflifeclub.com/api` (staging) | Frontend API endpoint |
+| `VITE_SUPABASE_URL` | `https://xxx.supabase.co` | Public Supabase URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | `eyJ...` | Anon/public key |
+| `SUPABASE_URL` | `https://xxx.supabase.co` | Backend Supabase URL |
+| `SUPABASE_PUBLISHABLE_KEY` | `eyJ...` | Backend public key |
+| `SOLAPI_API_KEY` | `...` | SMS provider API key |
 
 ### 5.3 Docker Compose Files
 
@@ -429,55 +428,60 @@ services:
   backend:
     build:
       context: .
-      dockerfile: ./src/backend/Dockerfile
-    container_name: prod-backend
-    environment:
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY}
-      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY}
-      SOLAPI_API_KEY: ${SOLAPI_API_KEY}
-      SOLAPI_API_SECRET: ${SOLAPI_API_SECRET}
-      SOLAPI_SENDER_NUMBER: ${SOLAPI_SENDER_NUMBER}
-      OTP_SECRET_KEY: ${OTP_SECRET_KEY}
-      OTP_VALIDITY_MINUTES: ${OTP_VALIDITY_MINUTES:-5}
-      OTP_RESEND_LIMIT_PER_15MIN: ${OTP_RESEND_LIMIT_PER_15MIN:-3}
-      OTP_RESEND_LIMIT_PER_DAY: ${OTP_RESEND_LIMIT_PER_DAY:-10}
-      otp_max_verification_attempts: ${otp_max_verification_attempts:-6}
+      dockerfile: src/backend/Dockerfile
+    image: simulation_backend:production
+    container_name: simulation_backend_production
+    restart: unless-stopped
     ports:
       - "8000:8000"
-    networks:
-      - production-network
-    restart: unless-stopped
+    environment:
+      - ENV=production
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY}
+      - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY}
+      - SOLAPI_API_KEY=${SOLAPI_API_KEY}
+      - SOLAPI_API_SECRET=${SOLAPI_API_SECRET}
+      - SOLAPI_SENDER_NUMBER=${SOLAPI_SENDER_NUMBER}
+      - OTP_SECRET_KEY=${OTP_SECRET_KEY}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    mem_limit: 512m
+    memswap_limit: 768m
+    networks:
+      - production-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     build:
       context: .
-      dockerfile: ./src/frontend/Dockerfile
+      dockerfile: src/frontend/Dockerfile
       args:
-        VITE_SUPABASE_URL: ${SUPABASE_URL}
-        VITE_SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY}
-        VITE_API_BASE_URL: https://simulation.lightoflifeclub.com/api
-    container_name: prod-frontend
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
+    image: simulation_frontend:production
+    container_name: simulation_frontend_production
+    restart: unless-stopped
     ports:
       - "3000:80"
-    networks:
-      - production-network
     depends_on:
       backend:
         condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    networks:
+      - production-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   production-network:
@@ -493,55 +497,60 @@ services:
   backend:
     build:
       context: .
-      dockerfile: ./src/backend/Dockerfile
-    container_name: staging-backend
-    environment:
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY}
-      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY}
-      SOLAPI_API_KEY: ${SOLAPI_API_KEY}
-      SOLAPI_API_SECRET: ${SOLAPI_API_SECRET}
-      SOLAPI_SENDER_NUMBER: ${SOLAPI_SENDER_NUMBER}
-      OTP_SECRET_KEY: ${OTP_SECRET_KEY}
-      OTP_VALIDITY_MINUTES: ${OTP_VALIDITY_MINUTES:-5}
-      OTP_RESEND_LIMIT_PER_15MIN: ${OTP_RESEND_LIMIT_PER_15MIN:-3}
-      OTP_RESEND_LIMIT_PER_DAY: ${OTP_RESEND_LIMIT_PER_DAY:-10}
-      otp_max_verification_attempts: ${otp_max_verification_attempts:-6}
+      dockerfile: src/backend/Dockerfile
+    image: simulation_backend:staging
+    container_name: simulation_backend_staging
+    restart: unless-stopped
     ports:
       - "8001:8000"
-    networks:
-      - staging-network
-    restart: unless-stopped
+    environment:
+      - ENV=staging
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY}
+      - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY}
+      - SOLAPI_API_KEY=${SOLAPI_API_KEY}
+      - SOLAPI_API_SECRET=${SOLAPI_API_SECRET}
+      - SOLAPI_SENDER_NUMBER=${SOLAPI_SENDER_NUMBER}
+      - OTP_SECRET_KEY=${OTP_SECRET_KEY}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    mem_limit: 512m
+    memswap_limit: 768m
+    networks:
+      - staging-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     build:
       context: .
-      dockerfile: ./src/frontend/Dockerfile
+      dockerfile: src/frontend/Dockerfile
       args:
-        VITE_SUPABASE_URL: ${SUPABASE_URL}
-        VITE_SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY}
-        VITE_API_BASE_URL: https://staging-simulation.lightoflifeclub.com/api
-    container_name: staging-frontend
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
+    image: simulation_frontend:staging
+    container_name: simulation_frontend_staging
+    restart: unless-stopped
     ports:
       - "4173:80"
-    networks:
-      - staging-network
     depends_on:
       backend:
         condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    networks:
+      - staging-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   staging-network:
@@ -550,122 +559,84 @@ networks:
 
 ### 5.4 GitHub Actions Workflow
 
-Create `.github/workflows/deploy.yml`:
+The actual workflow file is `.github/workflows/ci-cd.yml` (not `deploy.yml`).
+
+**Key features**:
+- **Hybrid runner strategy**: Tests run on GitHub-hosted runners, deployment on self-hosted
+- **Deployment profiles**: Control which test suites run via `.github/deployment-profiles.yml`
+- **Environment-based deployment**: `main` branch → staging, `release` branch → production
+- **Health checks**: Validates services after deployment
+- **.env file generation**: Creates environment files from GitHub secrets/variables
+
+**Simplified workflow structure**:
 
 ```yaml
-name: Deploy to Production and Staging
+name: CI/CD Pipeline (Production & Staging)
 
 on:
   push:
     branches:
-      - main      # Triggers Staging deployment
-      - release   # Triggers Production deployment
-
-env:
-  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-  SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-  SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-  SOLAPI_API_KEY: ${{ secrets.SOLAPI_API_KEY }}
-  SOLAPI_API_SECRET: ${{ secrets.SOLAPI_API_SECRET }}
-  SOLAPI_SENDER_NUMBER: ${{ secrets.SOLAPI_SENDER_NUMBER }}
-  OTP_SECRET_KEY: ${{ secrets.OTP_SECRET_KEY }}
-  OTP_VALIDITY_MINUTES: ${{ vars.OTP_VALIDITY_MINUTES }}
-  OTP_RESEND_LIMIT_PER_15MIN: ${{ vars.OTP_RESEND_LIMIT_PER_15MIN }}
-  OTP_RESEND_LIMIT_PER_DAY: ${{ vars.OTP_RESEND_LIMIT_PER_DAY }}
-  otp_max_verification_attempts: ${{ vars.otp_max_verification_attempts }}
+      - release   # Production trigger
+      - main      # Staging trigger
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deploy environment (production / staging)"
+        type: choice
+        options:
+          - production
+          - staging
 
 jobs:
-  # Tests run on GitHub-hosted runners
-  test-backend:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      
-      - name: Install dependencies
-        working-directory: src/backend
-        run: |
-          pip install -r requirements.txt
-      
-      - name: Run tests
-        working-directory: src/backend
-        run: |
-          python -m pytest tests/ -v --tb=short
-
-  test-frontend:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-      
-      - name: Install dependencies
-        working-directory: src/frontend
-        run: npm ci
-      
-      - name: Run unit tests
-        working-directory: src/frontend
-        run: npm run test:unit
-
-  # Deploy to Staging (main branch)
-  deploy-staging:
-    needs: [test-backend, test-frontend]
-    if: github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, linux, droplet]
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Deploy source code
-        run: |
-          rsync -av --delete \
-            --exclude 'node_modules' \
-            --exclude '.git' \
-            --exclude '__pycache__' \
-            --exclude '.pytest_cache' \
-            --exclude 'coverage' \
-            $GITHUB_WORKSPACE/ /srv/lol/simulation/staging/
-      
-      - name: Build and deploy containers
-        working-directory: /srv/lol/simulation/staging
-        run: |
-          docker compose -f docker-compose.staging.yml down || true
-          docker compose -f docker-compose.staging.yml up -d --build
-          docker compose -f docker-compose.staging.yml ps
-
-  # Deploy to Production (release branch)
+  load-profile:
+    # Loads test configuration from deployment-profiles.yml
+    
+  test-unit:
+    # Runs frontend & backend unit tests on GitHub-hosted runners
+    
+  test-integration:
+    # Runs backend integration tests on GitHub-hosted runners
+    
+  test-security:
+    # Runs security tests on GitHub-hosted runners
+    
+  lint:
+    # Runs linting and type checking
+    
+  build:
+    # Determines deployment target (production/staging)
+    
   deploy-production:
-    needs: [test-backend, test-frontend]
-    if: github.ref == 'refs/heads/release'
+    # Deploys to production on self-hosted runner
     runs-on: [self-hosted, linux, droplet]
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Deploy source code
-        run: |
-          rsync -av --delete \
-            --exclude 'node_modules' \
-            --exclude '.git' \
-            --exclude '__pycache__' \
-            --exclude '.pytest_cache' \
-            --exclude 'coverage' \
-            $GITHUB_WORKSPACE/ /srv/lol/simulation/production/
-      
-      - name: Build and deploy containers
-        working-directory: /srv/lol/simulation/production
-        run: |
-          docker compose -f docker-compose.production.yml down || true
-          docker compose -f docker-compose.production.yml up -d --build
-          docker compose -f docker-compose.production.yml ps
+      - name: Create .env file
+        # Generates .env from GitHub secrets/variables
+      - name: Build and Deploy
+        # Builds and starts containers with docker compose
+      - name: Health Check
+        # Validates deployment on port 3000
+        
+  deploy-staging:
+    # Deploys to staging on self-hosted runner
+    runs-on: [self-hosted, linux, droplet]
+    steps:
+      - name: Create .env file
+        # Generates .env from GitHub secrets/variables
+      - name: Build and Deploy
+        # Builds and starts containers with docker compose
+      - name: Health Check
+        # Validates deployment on port 4173
+        
+  test-e2e:
+    # Optional E2E tests after staging deployment
 ```
+
+**Important notes**:
+- The workflow creates `.env` files dynamically in deployment directories
+- Uses `vars.*` for public configuration and `secrets.*` for sensitive data
+- Health checks validate services on correct ports (3000 for prod, 4173 for staging)
+- Full workflow definition is in `.github/workflows/ci-cd.yml` (459 lines)
 
 ### 5.5 Test Control (Optional)
 
@@ -716,101 +687,174 @@ Trigger with: `[profile:fast]` in commit message
 
 ## 6. Migration & Verification
 
-### 6.1 Staging Validation
+### 6.1 Deploy and Validate Staging
 
-**Push to main branch** → Triggers staging deployment automatically
-
-**Verify Staging**:
+**Step 1: Push to main branch**
 
 ```bash
-# 1. Check containers on Droplet
+# Triggers staging deployment automatically
+git checkout main
+git push origin main
+```
+
+**Step 2: Monitor GitHub Actions**
+
+1. Go to GitHub repo → Actions tab
+2. Watch the "CI/CD Pipeline (Production & Staging)" workflow
+3. Verify all jobs complete successfully (tests → build → deploy-staging)
+
+**Step 3: Verify Staging Deployment**
+
+```bash
+# 1. SSH into Droplet
 ssh deploy@<DROPLET_IP>
-docker ps  # Should show staging-frontend, staging-backend
 
-# 2. Check logs
-docker logs staging-frontend
-docker logs staging-backend
+# 2. Check containers
+docker ps
+# Should show: simulation_backend_staging, simulation_frontend_staging
 
-# 3. Test domain
+# 3. Check logs
+docker logs simulation_frontend_staging
+docker logs simulation_backend_staging
+
+# 4. Test health endpoint
+curl -f http://localhost:4173/health
+# Should return 200 OK
+
+# 5. Test public domain
 curl -I https://staging-simulation.lightoflifeclub.com
-# Should return 200 OK
-
-# 4. Browser testing
-# Open https://staging-simulation.lightoflifeclub.com
-# Test: Login, create simulation, all features
+# Should return 200 OK with proper headers
 ```
 
-### 6.2 Production DNS Switchover
+**Step 4: Full Browser Testing**
 
-**ONLY proceed if Staging validation is successful!**
+Open `https://staging-simulation.lightoflifeclub.com` and test:
 
-**Step 1: Update Cloudflare DNS**
+- [ ] Login (Google, Kakao OAuth)
+- [ ] Create new simulation
+- [ ] View simulation results
+- [ ] Edit simulation
+- [ ] Delete simulation
+- [ ] View notices
+- [ ] Check mobile responsiveness
+- [ ] Test all major user flows
 
-1. Login to Cloudflare Dashboard
-2. Select domain `lightoflifeclub.com`
-3. Go to DNS → Records
-4. Find `simulation` record (currently pointing to Windows tunnel)
-5. Edit: Change target from `<OLD_TUNNEL_ID>.cfargotunnel.com` to `<DROPLET_TUNNEL_ID>.cfargotunnel.com`
-6. Save (DNS propagation: 1-5 minutes)
+**STOP HERE if any issues found. Debug before proceeding to production.**
 
-**Step 2: Stop Windows Tunnel**
+### 6.2 Deploy to Production (After Staging Success)
 
-```powershell
-# On Windows machine
-# Find cloudflared process
-Get-Process | Where-Object {$_.ProcessName -like "*cloudflared*"}
+**Prerequisites**:
+- ✅ Staging deployed successfully
+- ✅ All browser tests passed
+- ✅ No critical issues found
 
-# Stop it (adjust PID)
-Stop-Process -Id <PID>
-```
-
-**Step 3: Verify Production**
+**Step 1: Create/Update Release Branch**
 
 ```bash
-# Wait 5 minutes for DNS propagation
-
-# Check DNS
-nslookup simulation.lightoflifeclub.com
-# Should resolve to Cloudflare CNAME
-
-# Test
-curl -I https://simulation.lightoflifeclub.com
-# Should return 200 OK
-
-# Browser test
-# Open https://simulation.lightoflifeclub.com
-# Full functionality test
-```
-
-**Step 4: Deploy to Production**
-
-```bash
-# Create release branch (if not exists)
+# Option A: Create release branch from main (first time)
 git checkout -b release
 git push origin release
 
-# Or merge main into release
+# Option B: Update existing release branch
 git checkout release
 git merge main
 git push origin release
 ```
 
-GitHub Actions will automatically deploy to production.
+**Step 2: Monitor Production Deployment**
+
+1. GitHub Actions automatically triggers production deployment
+2. Watch workflow: Tests → Build → Deploy-production
+3. Verify health check passes (port 3000)
+
+**Step 3: Verify Production on Droplet**
+
+```bash
+# SSH into Droplet
+ssh deploy@<DROPLET_IP>
+
+# Check production containers
+docker ps
+# Should show: simulation_backend_production, simulation_frontend_production
+
+# Test local health endpoint
+curl -f http://localhost:3000/health
+# Should return 200 OK
+```
+
+**Step 4: Update DNS (Switchover from Windows)**
+
+**ONLY proceed if production containers are healthy!**
+
+1. Login to Cloudflare Dashboard
+2. Select domain `lightoflifeclub.com`
+3. Go to DNS → Records
+4. Find `simulation` CNAME record (currently pointing to Windows tunnel)
+5. Edit: Change target from `<OLD_TUNNEL_ID>.cfargotunnel.com` to `<DROPLET_TUNNEL_ID>.cfargotunnel.com`
+6. Save (DNS propagation: 1-5 minutes)
+
+**Step 5: Stop Windows Services**
+
+```powershell
+# On Windows machine
+# Find and stop cloudflared process
+Get-Process | Where-Object {$_.ProcessName -like "*cloudflared*"}
+Stop-Process -Id <PID>
+
+# Optionally stop backend/frontend services
+# (Only after confirming production works)
+```
+
+**Step 6: Verify Production Access**
+
+```bash
+# Wait 5 minutes for DNS propagation
+
+# Check DNS resolution
+nslookup simulation.lightoflifeclub.com
+# Should show Cloudflare CNAME
+
+# Test public endpoint
+curl -I https://simulation.lightoflifeclub.com
+# Should return 200 OK
+
+# Browser test
+# Open https://simulation.lightoflifeclub.com
+# Perform full user flow testing
+```
+
+**Congratulations! Production migration complete.**
 
 ### 6.3 Rollback Procedure
 
-**If anything goes wrong**:
+**If production deployment fails or issues are discovered**:
 
 ```bash
-# 1. Revert DNS in Cloudflare (change back to Windows tunnel ID)
-# 2. Restart Windows cloudflared
+# 1. Revert DNS in Cloudflare
+# - Dashboard → DNS → Records → simulation
+# - Change CNAME target back to <OLD_TUNNEL_ID>.cfargotunnel.com
+# - Save (propagation: 1-5 minutes)
+
+# 2. Restart Windows cloudflared (if stopped)
 cloudflared tunnel run <OLD_TUNNEL_NAME>
 
-# 3. Verify Windows service
-curl https://simulation.lightoflifeclub.com
+# 3. Verify Windows service restoration
+curl https://simulation.lightoflifeclub.com/health
 
-# Time: ~5-10 minutes
+# Total rollback time: ~5-10 minutes
 ```
+
+**Container-level rollback** (if DNS not yet switched):
+
+```bash
+# Rollback to previous image version
+cd /srv/lol/simulation/production
+docker compose -f docker-compose.production.yml down
+# Manually pull previous image tags or restore from backup
+docker compose -f docker-compose.production.yml up -d
+```
+
+**Note**: Staging environment remains unaffected during production rollback.
 
 ---
 
@@ -822,12 +866,12 @@ curl https://simulation.lightoflifeclub.com
 
 ```bash
 # Staging
-docker logs -f staging-frontend
-docker logs -f staging-backend
+docker logs -f simulation_frontend_staging
+docker logs -f simulation_backend_staging
 
 # Production
-docker logs -f prod-frontend
-docker logs -f prod-backend
+docker logs -f simulation_frontend_production
+docker logs -f simulation_backend_production
 ```
 
 **Restart services**:
@@ -986,29 +1030,46 @@ docker compose -f docker-compose.staging.yml down
 
 ## Appendix: Environment Variables Reference
 
-### Backend Environment Variables
+### GitHub Secrets (Encrypted, Sensitive)
 
-| Variable | Type | Description | Example |
-|----------|------|-------------|---------|
-| `SUPABASE_URL` | Secret | Supabase project URL | `https://xxx.supabase.co` |
-| `SUPABASE_SECRET_KEY` | Secret | Service role key | `eyJ...` |
-| `SUPABASE_PUBLISHABLE_KEY` | Secret | Anon/public key | `eyJ...` |
-| `SOLAPI_API_KEY` | Secret | SMS provider key | `...` |
-| `SOLAPI_API_SECRET` | Secret | SMS provider secret | `...` |
-| `SOLAPI_SENDER_NUMBER` | Secret | Verified sender | `01012345678` |
-| `OTP_SECRET_KEY` | Secret | OTP encryption key | `random-32-char-string` |
-| `OTP_VALIDITY_MINUTES` | Variable | OTP expiry | `5` |
-| `OTP_RESEND_LIMIT_PER_15MIN` | Variable | Rate limit | `3` |
-| `OTP_RESEND_LIMIT_PER_DAY` | Variable | Daily limit | `10` |
-| `otp_max_verification_attempts` | Variable | Max attempts (lowercase!) | `6` |
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `SUPABASE_SECRET_KEY` | Service role key (server-side only) | `eyJ...` |
+| `SOLAPI_API_SECRET` | SMS provider secret | `...` |
+| `SOLAPI_SENDER_NUMBER` | Verified sender phone | `01012345678` |
+| `OTP_SECRET_KEY` | OTP encryption key | `random-32-char-string` |
 
-### Frontend Build Arguments
+### GitHub Variables (Plain Text, Non-Sensitive)
 
-| Variable | Description | Production | Staging |
-|----------|-------------|------------|---------|
-| `VITE_SUPABASE_URL` | Supabase URL | Same as backend | Same as backend |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Public key | Same as backend | Same as backend |
-| `VITE_API_BASE_URL` | API endpoint | `https://simulation.lightoflifeclub.com/api` | `https://staging-simulation.lightoflifeclub.com/api` |
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `VITE_API_BASE_URL` | Frontend API endpoint | `https://simulation.lightoflifeclub.com/api` |
+| `VITE_SUPABASE_URL` | Public Supabase URL | `https://xxx.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Anon/public key | `eyJ...` |
+| `SUPABASE_URL` | Backend Supabase URL | `https://xxx.supabase.co` |
+| `SUPABASE_PUBLISHABLE_KEY` | Backend public key | `eyJ...` |
+| `SOLAPI_API_KEY` | SMS provider API key | `...` |
+
+### Docker Compose Environment Variables
+
+**Backend** (passed via `.env` file generated by workflow):
+
+- `ENV`: `production` or `staging`
+- `SUPABASE_URL`
+- `SUPABASE_SECRET_KEY`
+- `SUPABASE_PUBLISHABLE_KEY`
+- `SOLAPI_API_KEY`
+- `SOLAPI_API_SECRET`
+- `SOLAPI_SENDER_NUMBER`
+- `OTP_SECRET_KEY`
+
+**Frontend** (build-time arguments):
+
+- `VITE_API_BASE_URL`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+
+**Note**: The workflow dynamically creates `.env` files in `/srv/lol/simulation/{production|staging}/.env` from GitHub secrets and variables. Environment-specific values (like `VITE_API_BASE_URL`) differ between production and staging.
 
 ---
 
