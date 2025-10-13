@@ -5,7 +5,7 @@
 # Production Environment (release branch)
 production:
   # Profile options: full-test, unit-integration, unit-only, e2e-only, no-test
-  profile: full-test
+  profile: unit-integration
   
   # Custom configuration (optional - overrides profile)
   # Uncomment to customize:
