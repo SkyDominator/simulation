@@ -93,6 +93,10 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 4173,
     strictPort: true,
-    allowedHosts: ["simulation.lightoflifeclub.com", "localhost"],
+    allowedHosts: [
+      "simulation.lightoflifeclub.com",
+      "staging-simulation.lightoflifeclub.com",
+      "localhost",
+    ],
   },
 });

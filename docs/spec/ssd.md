@@ -59,12 +59,14 @@ This Software Specification Document (SSD) provides the broad context of my appl
 - **Mobile**: iPhone 11 Pro (iOS 18.1.1) + Chrome
 - **Testing**: Pytest (backend), Vitest + Playwright (frontend)
 
-### 4.3 Production
+### 4.3 Production & Staging
 - **Desktop**: Windows 11+ (Chrome latest-2)
 - **Mobile iOS**: iPhone 11+ (iOS 18.1.1+) Chrome
 - **Mobile Android**: Galaxy S21+ (Android 12+) Chrome
-- **Hosting**: Supabase (DB/Auth) + Windows local (24h)
-- **Ports**: Frontend 4173, Backend 8000
+- **Hosting**: DigitalOcean Droplet (Ubuntu 22.04, 1 CPU, 1GB RAM) + Supabase (DB/Auth)
+- **Deployment**: Docker Compose + GitHub Actions CI/CD
+- **Production**: `simulation.lightoflifeclub.com` (port 3000 frontend, 8000 backend)
+- **Staging**: `staging-simulation.lightoflifeclub.com` (port 4173 frontend, 8001 backend)
 
 ### 4.4 Load
 - Total users: 60–100
@@ -84,9 +86,11 @@ This Software Specification Document (SSD) provides the broad context of my appl
 - JWT via Supabase JWKS
 
 **Infrastructure**:
-- Windows native production
-- Cloudflare Tunnel: `simulation.lightoflifeclub.com`
-- CORS: local dev + tunnel domain
+- DigitalOcean Droplet with Docker Compose
+- Nginx reverse proxy (host-based routing on port 8080)
+- Cloudflare Tunnel: `simulation.lightoflifeclub.com` (production), `staging-simulation.lightoflifeclub.com` (staging)
+- GitHub Actions CI/CD: Hybrid runners (GitHub-hosted for tests, self-hosted for deployment)
+- CORS: Production/staging domains + local dev (localhost:5173, 127.0.0.1)
 
 **Flow**:
 1. Pre-auth: OTP → Consent → Login
@@ -396,12 +400,13 @@ Frontend:
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_API_BASE_URL=https://simulation.lightoflifeclub.com/api`
 
-**CORS**: `simulation.lightoflifeclub.com`, localhost:5173/4173, 127.0.0.1, local IPs
+**CORS**: `simulation.lightoflifeclub.com`, `staging-simulation.lightoflifeclub.com`, localhost:5173, 127.0.0.1
 
 **Dependencies**:
 - Supabase RLS configured
 - Whitelist table pre-seeded
-- Docker/Cloudflare Tunnel deployment
+- DigitalOcean Droplet with Docker + Cloudflare Tunnel
+- GitHub self-hosted runner on Droplet
 
 ## 15. Error Handling
 

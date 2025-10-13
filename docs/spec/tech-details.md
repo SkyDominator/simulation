@@ -59,32 +59,43 @@ admins          → admin roles
 user_onboarding → onboarding flags
 ```
 
-## Local Dev & Runtime
+## Deployment & Runtime
 
-**Production**:
-- Frontend: Vite preview on Windows (port 4173)
-- Backend: Native Windows + uvicorn (port 8000)
-- Access: Cloudflare Tunnel → `https://simulation.lightoflifeclub.com`
-- DB: Supabase cloud
+**Production & Staging**:
+- **Platform**: DigitalOcean Droplet (Ubuntu 22.04, 1 CPU, 1GB RAM)
+- **Deployment**: Docker Compose via GitHub Actions CI/CD
+- **Production**: `simulation.lightoflifeclub.com` (port 3000 frontend, 8000 backend)
+- **Staging**: `staging-simulation.lightoflifeclub.com` (port 4173 frontend, 8001 backend)
+- **Nginx**: Reverse proxy on port 8080 with host-based routing
+- **Tunnel**: Cloudflare Tunnel for secure ingress
+- **DB**: Supabase cloud
 
-**Dev Environment**:
-- Docker: Available but NOT used for deployment
-- Env vars: Backend `.env`, Frontend `.env.local`
-- Scripts: `windows-scripts/` PowerShell automation
+**Local Dev Environment**:
+- **Frontend Dev**: Vite dev server (port 5173)
+- **Backend Dev**: Uvicorn (port 8001)
+- **Env vars**: Backend `.env`, Frontend `.env.local`
+- **Docker**: Used for production builds and testing, not local dev
 
 **Commands**:
 ```powershell
-# Frontend preview
+# Local Development
 cd src/frontend
-npm run preview  # :4173
+npm run dev  # :5173
 
-# Backend dev
 cd src/backend
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+uvicorn main:app --reload --host 0.0.0.0 --port 8001
 
 # Tests
 cd src/backend && python -m pytest -q
 cd src/frontend && npm run test
+
+# Production Build (Docker)
+docker compose -f docker-compose.production.yml build
+docker compose -f docker-compose.production.yml up -d
+
+# Staging Build (Docker)
+docker compose -f docker-compose.staging.yml build
+docker compose -f docker-compose.staging.yml up -d
 ```
 
 ## Configuration
@@ -106,10 +117,9 @@ cd src/frontend && npm run test
 
 **CORS Origins**:
 ```
-https://simulation.lightoflifeclub.com
-http://localhost:5173, http://127.0.0.1:5173
-http://localhost:4173, http://127.0.0.1:4173
-+ Local network IPs
+https://simulation.lightoflifeclub.com (production)
+https://staging-simulation.lightoflifeclub.com (staging)
+http://localhost:5173, http://127.0.0.1:5173 (local dev)
 ```
 
 **Frontend**:
@@ -250,10 +260,13 @@ src/
 - JWTs managed by Supabase client
 - Implement error boundaries
 
-**Windows Deploy**:
-- Backend starts before frontend
-- Ports: 4173 (frontend), 8000 (backend)
-- Cloudflare Tunnel required
+**Docker Compose Deploy**:
+- Backend starts before frontend (healthcheck dependency)
+- Production: 3000 (frontend), 8000 (backend)
+- Staging: 4173 (frontend), 8001 (backend)
+- Nginx on 8080 routes by hostname
+- Cloudflare Tunnel for secure ingress
+- GitHub Actions CI/CD with self-hosted runner
 
 **Database**:
 - RLS on all tables
@@ -261,9 +274,10 @@ src/
 - Migrations: Consider existing data + RLS
 
 **Development**:
-- Windows optimized
-- Ports: 5173 (dev), 4173 (preview), 8000 (backend)
-- Production: `simulation.lightoflifeclub.com`
+- Local: Windows 11 with VS Code
+- Ports: 5173 (frontend dev), 8001 (backend dev)
+- Production: `simulation.lightoflifeclub.com` (DigitalOcean + Docker)
+- Staging: `staging-simulation.lightoflifeclub.com` (DigitalOcean + Docker)
 
 **API Contract**:
 - Truth: `api/routes.py` > spec docs
