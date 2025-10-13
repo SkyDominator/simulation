@@ -16,7 +16,8 @@ Write or edit markdown files according to the following process:
 
 ### 1. Direct Changes Only
 
-If you are modifying the existing documents, do not use wordings that "showing there has been changes". For example, dont use wordings like these: "(Added part)" or "New sections". JUST CHANGE the document if there needs to be change.
+If you are modifying the existing documents, make direct changes without indicating modifications. For example, do not use wordings like these: "(Added part)", "New sections", "변경사항", etc.. JUST CHANGE the document if there needs to be change.
+
 
 ### 2. Consistent to Existing Style
 
