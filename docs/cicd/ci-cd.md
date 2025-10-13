@@ -47,7 +47,7 @@
 8. [Docker 및 Docker Compose 파일 생성](#8-docker-및-docker-compose-파일-생성)
 9. [GitHub Secrets 및 Variables 설정](#9-github-secrets-및-variables-설정)
 10. [GitHub Actions Workflow 설정](#10-github-actions-workflow-설정)
-11. [테스트 레이어 제어 설정](#11-테스트-레이어-제어-설정)
+11. [테스트 레이어 제어 설정 (deployment-profiles.yml)](#11-테스트-레이어-제어-설정-deployment-profilesyml)
 12. [마이그레이션 실행 및 검증](#12-마이그레이션-실행-및-검증)
 13. [무중단 배포 전략](#13-무중단-배포-전략)
 14. [트러블슈팅](#14-트러블슈팅)
@@ -1283,11 +1283,186 @@ GitHub Repository → Settings → Secrets and variables → Actions → Variabl
 
 ## 10. GitHub Actions Workflow 설정
 
-### 10.1 Workflow 파일 생성 (완전히 새로 작성)
+### 10.1 Workflow 파일 구조 개요
 
 **파일 위치**: `.github/workflows/ci-cd.yml`
 
-**주의**: 기존 workflow 파일이 있다면 아래 내용으로 **완전히 교체**하세요.
+현재 워크플로우는 다음과 같은 구조로 구성되어 있습니다:
+
+#### 10.1.1 Job 실행 순서
+
+```mermaid
+graph TD
+    A[load-profile] --> B[test-unit]
+    A --> C[lint]
+    B --> D[test-integration]
+    D --> E[test-security]
+    B --> F[build]
+    C --> F
+    D --> F
+    E --> F
+    F --> G[deploy-production]
+    F --> H[deploy-staging]
+    H --> I[test-e2e]
+```
+
+#### 10.1.2 주요 Job 설명
+
+| Job | 실행 환경 | 조건 | 설명 |
+|-----|----------|------|------|
+| `load-profile` | GitHub-hosted | 항상 | 배포 프로필 및 테스트 제어 설정 로드 |
+| `test-unit` | GitHub-hosted | skip_tests에 'unit' 미포함 | Frontend(Vitest) + Backend(pytest) 단위 테스트 |
+| `test-integration` | GitHub-hosted | skip_tests에 'integration' 미포함 | Backend 통합 테스트 |
+| `test-security` | GitHub-hosted | skip_tests에 'security' 미포함 | Frontend + Backend 보안 테스트 |
+| `lint` | GitHub-hosted | 항상 | Frontend ESLint + TypeScript 타입 체크 |
+| `build` | GitHub-hosted | 테스트 성공 시 | 배포 대상 결정 및 설정 표시 |
+| `deploy-production` | Self-hosted | release 브랜치 또는 수동 선택 | 프로덕션 환경 배포 |
+| `deploy-staging` | Self-hosted | main 브랜치 또는 수동 선택 | 스테이징 환경 배포 |
+| `test-e2e` | GitHub-hosted | skip_tests에 'e2e' 미포함, staging 배포 성공 시 | Playwright E2E 테스트 |
+
+#### 10.1.3 테스트 제어 시스템
+
+**배포 프로필 파일**: `.github/deployment-profiles.yml`
+
+**현재 설정**:
+
+- **Production** (release 브랜치): `full-test` 프로필 (모든 테스트 실행)
+- **Staging** (main 브랜치): `unit-integration` 프로필 (E2E 테스트 제외)
+
+**수동 배포 시**: `workflow_dispatch`에서 `skip_tests` 파라미터로 개별 제어 가능
+
+### 10.2 주요 워크플로우 기능
+
+#### 10.2.1 브랜치 기반 자동 배포
+
+**트리거 조건**:
+
+```yaml
+on:
+  push:
+    branches:
+      - release  # → Production 배포
+      - main     # → Staging 배포
+    paths-ignore:
+      - "docs/**/*.md"
+      - "*.md"
+      - ".github/deployment-profiles.yml"
+```
+
+**수동 배포**:
+```yaml
+workflow_dispatch:
+  inputs:
+    environment:
+      type: choice
+      options: [production, staging]
+    skip_tests:
+      description: "Skip test layers (comma-separated: unit,integration,e2e)"
+```
+
+#### 10.2.2 환경별 상세 설정
+
+**Production 환경**:
+- **브랜치**: `release`
+- **Runner**: `[self-hosted, linux, droplet]`
+- **포트**: Frontend 3000, Backend 8000
+- **헬스체크**: `http://localhost:3000/health`
+- **환경**: `production` GitHub Environment
+
+**Staging 환경**:
+- **브랜치**: `main`
+- **Runner**: `[self-hosted, linux, droplet]`
+- **포트**: Frontend 4173, Backend 8001
+- **헬스체크**: `http://localhost:4173/health`
+- **환경**: `staging` GitHub Environment
+
+#### 10.2.3 테스트 레이어별 상세 구성
+
+**Unit Tests** (`test-unit`):
+```yaml
+# Frontend
+npx vitest run src/test/pages --reporter=verbose
+npx vitest run src/test/components --reporter=verbose
+npx vitest run src/test/smoke.test.tsx --reporter=verbose
+
+# Backend
+pytest tests/unit -v --ignore=tests/unit/security/test_cryptography.py
+```
+
+**Integration Tests** (`test-integration`):
+```yaml
+# Backend만 실행
+pytest tests/integration -v
+```
+
+**Security Tests** (`test-security`):
+```yaml
+# Frontend
+npx vitest run src/test/security --reporter=verbose
+
+# Backend
+pytest tests/integration/api/test_security_e2e.py tests/unit/security/test_cryptography.py -v
+```
+
+**E2E Tests** (`test-e2e`):
+```yaml
+# Staging 환경에서 실행
+env:
+  BASE_URL: https://staging.simulation.lightoflifeclub.com
+run: npm run test:e2e
+```
+
+#### 10.2.4 배포 프로세스 상세
+
+**1. 소스 코드 배포**:
+```bash
+# GitHub Workspace → 배포 디렉토리로 복사
+rsync -av --delete \
+  --exclude='.git' \
+  --exclude='node_modules' \
+  --exclude='__pycache__' \
+  --exclude='.env' \
+  $GITHUB_WORKSPACE/ /srv/lol/simulation/{production|staging}/
+```
+
+**2. 환경 변수 생성**:
+```bash
+# .env 파일 자동 생성
+cat > /srv/lol/simulation/{env}/.env << EOF
+ENV={production|staging}
+VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
+SUPABASE_SECRET_KEY=${{ secrets.SUPABASE_SECRET_KEY }}
+# ... 기타 환경 변수
+EOF
+```
+
+**3. Docker 빌드 및 배포**:
+```bash
+# No-cache 빌드로 최신 상태 보장
+docker compose -f docker-compose.{production|staging}.yml build --no-cache
+docker compose -f docker-compose.{production|staging}.yml up -d --remove-orphans
+```
+
+**4. 헬스체크 및 롤백**:
+```bash
+# 20회 시도 (1분간), 실패 시 로그 출력 후 실패 처리
+for i in {1..20}; do
+  if curl -f http://localhost:{3000|4173}/health; then
+    echo "✅ Healthy"
+    exit 0
+  fi
+  sleep 3
+done
+echo "❌ Health check failed"
+docker compose logs --tail=100
+exit 1
+```
+
+### 10.3 현재 워크플로우 구성 요약
+
+**파일 위치**: `.github/workflows/ci-cd.yml`
+
+현재 워크플로우는 다음과 같은 주요 개선사항을 포함합니다:
 
 ```yaml
 name: CI/CD Pipeline (Production & Staging)
@@ -1614,13 +1789,179 @@ jobs:
 ```bash
 # 로컬에서 또는 GitHub UI에서 파일을 추가하고 커밋
 git add .github/workflows/ci-cd.yml
-git commit -m "Add comprehensive CI/CD workflow with test controls"
+git commit -m "Update CI/CD workflow configuration"
 git push origin main
 ```
 
 ---
 
-## 11. 테스트 레이어 제어 설정
+## 11. 테스트 레이어 제어 설정 (deployment-profiles.yml)
+
+### 11.1 배포 프로필 시스템 개요
+
+**파일 위치**: `.github/deployment-profiles.yml`
+
+이 시스템은 환경별로 실행할 테스트 레이어를 미리 정의하여, 매번 수동으로 설정할 필요 없이 자동으로 적절한 테스트를 실행합니다.
+
+**현재 설정**:
+
+- **Production** (release 브랜치): `full-test` 프로필 (모든 테스트 실행, 20-30분)
+- **Staging** (main 브랜치): `unit-integration` 프로필 (E2E 제외, 10-15분)
+
+### 11.2 현재 배포 프로필 설정
+
+```yaml
+# Production Environment (release branch)
+production:
+  profile: full-test
+  
+# Staging Environment (main branch)  
+staging:
+  profile: unit-integration
+```
+
+### 11.3 사용 가능한 프로필
+
+| 프로필 | 설명 | 제외 테스트 | 예상 시간 | 권장 용도 |
+|--------|------|-------------|-----------|-----------|
+| `full-test` | 모든 테스트 실행 | 없음 | 20-30분 | Production 배포 |
+| `unit-integration` | Unit + Integration만 | E2E | 10-15분 | Staging 빠른 반복 |
+| `unit-only` | Unit 테스트만 | Integration, E2E | 5-7분 | 응급 핫픽스 |
+| `e2e-only` | E2E 테스트만 | Unit, Integration | 10-20분 | UI/UX 검증 |
+| `no-test` | 모든 테스트 제외 | Unit, Integration, E2E | 3-5분 | 응급 배포 (비권장) |
+
+### 11.4 프로필 변경 방법
+
+#### 11.4.1 브랜치별 기본 프로필 변경
+
+**Production 프로필 변경**:
+
+1. `.github/deployment-profiles.yml` 파일 편집
+2. `production.profile` 값 변경
+3. `release` 브랜치에 푸시
+
+**Staging 프로필 변경**:
+
+1. `.github/deployment-profiles.yml` 파일 편집  
+2. `staging.profile` 값 변경
+3. `main` 브랜치에 푸시
+
+#### 11.4.2 커스텀 테스트 제외 설정
+
+프로필 대신 세밀한 제어가 필요한 경우:
+
+```yaml
+production:
+  profile: full-test
+  # 커스텀 설정으로 프로필 무시
+  skip_tests: "e2e"  # E2E만 제외하고 Unit + Integration 실행
+
+staging:
+  profile: unit-integration
+  # 커스텀 설정으로 프로필 무시  
+  skip_tests: "integration,e2e"  # Unit 테스트만 실행
+```
+
+#### 11.4.3 수동 배포 시 임시 제어
+
+**GitHub Actions → Run workflow**에서:
+
+- **environment**: `production` 또는 `staging` 선택
+- **skip_tests**: `unit,integration,e2e` 중 제외할 테스트 입력 (콤마로 구분)
+
+**예시**:
+
+- `unit` → Unit 테스트만 제외
+- `e2e` → E2E 테스트만 제외  
+- `unit,e2e` → Unit과 E2E 제외 (Integration만 실행)
+- 빈 값 → 모든 테스트 실행
+
+### 11.5 테스트 제어 장점
+
+#### 11.5.1 기존 방식 vs 프로필 방식
+
+**기존 방식 (수동 제어)**:
+
+- ❌ 매번 수동으로 `skip_tests` 입력 필요
+- ❌ 실수로 잘못된 테스트 조합 선택 가능  
+- ❌ 환경별 일관성 부족
+
+**프로필 방식 (자동 제어)**:
+
+- ✅ 한 번 설정하면 자동으로 적용
+- ✅ 검증된 테스트 조합으로 일관성 보장
+- ✅ 빠른 배포와 안정성의 균형
+- ✅ 수동 override 여전히 가능
+
+#### 11.5.2 실제 사용 시나리오
+
+**시나리오 1: 일반적인 개발 흐름**
+
+1. **main 브랜치**에 기능 개발 푸시 → `unit-integration` 자동 실행 (10-15분)
+2. **release 브랜치**로 머지 → `full-test` 자동 실행 (20-30분)
+
+**시나리오 2: 응급 핫픽스**
+
+1. 프로필을 `unit-only`로 임시 변경
+2. 또는 수동 배포에서 `skip_tests: "integration,e2e"` 입력
+3. 5-7분 만에 빠른 배포 완료
+
+**시나리오 3: UI 중심 변경사항**
+
+1. 프로필을 `e2e-only`로 변경
+2. UI/UX 중심 검증 (10-20분)
+
+### 11.6 프로필 관리 모범 사례
+
+#### 11.6.1 환경별 권장 설정
+
+**Production (release)**:
+
+- 기본: `full-test` (모든 검증 필수)
+- 응급시: `unit-integration` (최소 검증)
+- 절대 사용 금지: `no-test`
+
+**Staging (main)**:
+
+- 기본: `unit-integration` (빠른 반복)
+- 새 기능 검증: `full-test`  
+- 빠른 테스트: `unit-only`
+
+#### 11.6.2 프로필 변경 가이드라인
+
+1. **변경 전 영향 평가**: 시간 vs 안정성 trade-off 고려
+2. **팀 동의**: 프로필 변경 시 팀 내 공지
+3. **임시 변경**: 프로필 변경보다는 수동 override 활용 권장  
+4. **문서화**: 특수한 프로필 사용 시 이유 문서화
+
+### 11.7 트러블슈팅
+
+#### 11.7.1 프로필이 적용되지 않는 경우
+
+**확인 사항**:
+
+1. `.github/deployment-profiles.yml` 파일이 해당 브랜치에 존재하는지
+2. YAML 문법이 올바른지 (온라인 YAML validator 활용)
+3. GitHub Actions 로그에서 "Get Deployment Profile" 단계 확인
+
+**해결 방법**:
+
+```bash
+# YAML 문법 검증
+# (온라인에서 .github/deployment-profiles.yml 내용 검증)
+
+# 로그 확인
+# GitHub Actions → 해당 워크플로우 → "Get Deployment Profile" 단계 로그 확인
+```
+
+#### 11.7.2 수동 skip_tests가 무시되는 경우
+
+**원인**: 프로필 설정이 수동 입력보다 우선순위가 높음
+
+**해결**: 워크플로우 로그에서 다음 메시지 확인:
+
+- `✅ Using manual skip_tests: xxx` → 수동 설정 적용됨
+- `✅ Using profile 'xxx' for ENV: skip_tests='xxx'` → 프로필 설정 적용됨
 
 ### 11.1 배포 프로필 시스템 (Profile-based Deployment)
 
