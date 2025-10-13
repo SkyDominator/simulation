@@ -2787,7 +2787,87 @@ echo "$NEW" > /etc/nginx/current-env
 - Cloudflare Advanced Certificate 구매 (다단계 서브도메인 지원)
 - Cloudflare Total TLS 활성화 (일부 유료 플랜에서 제공)
 
-#### 문제 2: Self-Hosted Runner가 Offline 상태
+#### 문제 2: 배포 후 브라우저에서 이전 API URL 호출 (ERR_NAME_NOT_RESOLVED)
+
+**증상**: 
+- 배포 완료 후 사이트 접속은 되지만 API 호출이 실패
+- 브라우저 콘솔에 `ERR_NAME_NOT_RESOLVED` 오류 발생
+- 이전 도메인 URL로 API 요청 시도 (예: `staging.simulation.lightoflifeclub.com` 대신 새 URL 사용 안 함)
+
+**예시 에러**:
+```
+staging.simulation.lightoflifeclub.com/api/otp/send:1 Failed to load resource: net::ERR_NAME_NOT_RESOLVED
+OTP send error: TypeError: Failed to fetch
+```
+
+**원인**: 
+PWA(Progressive Web App) 서비스 워커와 브라우저 캐시가 이전 빌드의 JavaScript 번들을 캐싱하고 있어, 새로 배포된 코드가 로드되지 않음
+
+**해결** (클라이언트 브라우저에서 수행):
+
+1. **개발자 도구 열기**: F12 또는 Ctrl+Shift+I (Windows) / Cmd+Option+I (Mac)
+
+2. **Service Worker 제거**:
+   - **Application** 탭 클릭
+   - 왼쪽 메뉴에서 **Service Workers** 선택
+   - 등록된 서비스 워커 옆의 **Unregister** 버튼 클릭
+
+3. **저장된 데이터 삭제**:
+   - **Application** 탭 상단의 **Storage** 섹션
+   - **Clear site data** 버튼 클릭
+   - 모든 항목 선택 확인 (Cache, Local Storage, Session Storage, IndexedDB 등)
+   - 확인 클릭
+
+4. **강제 새로고침**:
+   - **Ctrl+Shift+R** (Windows/Linux) 또는 **Cmd+Shift+R** (Mac)
+   - 또는 주소창에서 새로고침 버튼을 오른쪽 클릭 → **Empty Cache and Hard Reload**
+
+5. **검증**:
+   - 브라우저 콘솔(Console 탭)에서 네트워크 요청 확인
+   - API 호출이 올바른 도메인(`staging-simulation.lightoflifeclub.com`)으로 가는지 확인
+
+**서버 측 추가 확인사항** (문제가 지속되는 경우):
+
+```bash
+# SSH로 Droplet 접속
+ssh root@<DROPLET_IP>
+
+cd /srv/lol/simulation/staging
+
+# 1. .env 파일 확인
+cat .env | grep VITE_API_BASE_URL
+# 출력: VITE_API_BASE_URL=https://staging-simulation.lightoflifeclub.com/api
+
+# 2. Docker Compose 설정 확인
+docker compose -f docker-compose.staging.yml config | grep VITE_API_BASE_URL
+# 출력: VITE_API_BASE_URL: https://staging-simulation.lightoflifeclub.com/api
+
+# 3. Frontend 컨테이너 재빌드 (캐시 없이)
+docker compose -f docker-compose.staging.yml down
+docker rmi simulation_frontend:staging
+docker compose -f docker-compose.staging.yml build --no-cache frontend
+docker compose -f docker-compose.staging.yml up -d
+
+# 4. Cloudflare 터널 설정 확인
+cat /etc/cloudflared/config.yml
+# hostname이 staging-simulation.lightoflifeclub.com인지 확인
+
+# 5. 터널 재시작
+systemctl restart cloudflared
+systemctl status cloudflared
+```
+
+**예방 조치**:
+- 배포 후 항상 Service Worker 버전 업데이트 메시지 표시
+- `vite-plugin-pwa`의 `registerType: 'autoUpdate'` 사용 (이미 설정됨)
+- 중요 변경 시 사용자에게 "새로고침 필요" 알림 제공
+
+**참고**: 
+- Service Worker는 PWA 기능의 일부로, 오프라인 지원을 위해 자산을 캐싱합니다
+- 도메인 변경, API 엔드포인트 변경 등 중요 업데이트 시에는 캐시 무효화가 필수입니다
+- 일반 사용자에게는 앱 업데이트 알림과 함께 페이지 새로고침을 안내하는 것이 좋습니다
+
+#### 문제 3: Self-Hosted Runner가 Offline 상태
 
 **증상**: GitHub Actions에서 "No runners available"
 
