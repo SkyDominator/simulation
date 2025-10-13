@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 os.environ.setdefault("TEST_MODE", "1")
 os.environ.setdefault("SUPABASE_URL", "https://test.supabase.co")
 os.environ.setdefault("SUPABASE_PUBLISHABLE_KEY", "test_key")
+os.environ.setdefault("SUPABASE_SECRET_KEY", "test_secret_key")
 
 from main import app
 
@@ -19,6 +20,29 @@ def reset_container():
     container.reset()
     yield
     container.reset()
+
+
+@pytest.fixture(autouse=True)
+def mock_supabase_client():
+    """Mock Supabase client to avoid real API calls during integration tests."""
+    from unittest.mock import Mock, patch
+    
+    # Create a mock Supabase client
+    mock_client = Mock()
+    mock_table = Mock()
+    mock_client.table.return_value = mock_table
+    
+    # Mock common table operations
+    mock_table.select.return_value = mock_table
+    mock_table.insert.return_value = mock_table
+    mock_table.update.return_value = mock_table
+    mock_table.delete.return_value = mock_table
+    mock_table.eq.return_value = mock_table
+    mock_table.execute.return_value = Mock(data=[])
+    
+    # Mock the _supabase_client function
+    with patch('api.routes._supabase_client', return_value=mock_client):
+        yield mock_client
 
 
 @pytest.fixture(autouse=True)
@@ -45,9 +69,26 @@ def mock_auth_regular_user():
         return "test-user-123"
     
     app.dependency_overrides[authenticate_jwt_token] = mock_authenticate
+    
+    # Also need to mock the admin check to ensure regular users fail
+    original_assert_admin = None
+    try:
+        from api import routes
+        original_assert_admin = routes._assert_admin
+        def mock_assert_admin(user_id: str, client):
+            # Regular users should always fail admin check
+            from exceptions import AdminPrivilegesRequiredError
+            raise AdminPrivilegesRequiredError()
+        routes._assert_admin = mock_assert_admin
+    except ImportError:
+        pass
+        
     yield "test-user-123"
+    
     # Clean up
     app.dependency_overrides.clear()
+    if original_assert_admin:
+        routes._assert_admin = original_assert_admin
 
 
 @pytest.fixture  
@@ -68,9 +109,9 @@ def mock_auth_admin_user():
         original_assert_admin = routes._assert_admin
         def mock_assert_admin(user_id: str, client):
             if user_id == "admin-user-456":
-                return True
-            from fastapi import HTTPException
-            raise HTTPException(status_code=403, detail="Admin privileges required")
+                return True  # Admin user always passes
+            from exceptions import AdminPrivilegesRequiredError
+            raise AdminPrivilegesRequiredError()
         routes._assert_admin = mock_assert_admin
     except ImportError:
         pass
