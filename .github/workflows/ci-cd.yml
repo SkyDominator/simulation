@@ -6,8 +6,7 @@ on:
             - release # Production trigger
             - main # Staging trigger
         paths-ignore:
-            - "docs/**/*.md"
-            - "*.md"
+            - "**/*.md"
             - ".github/deployment-profiles.yml"
     workflow_dispatch:
         inputs:
