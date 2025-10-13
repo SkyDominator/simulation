@@ -111,7 +111,7 @@
 │  │              Nginx (Port 8080)                        │   │
 │  │  Host-based Routing:                                  │   │
 │  │  - simulation.lightoflifeclub.com → localhost:3000   │   │
-│  │  - staging.simulation.lightoflifeclub.com → :4173    │   │
+│  │  - staging-simulation.lightoflifeclub.com → :4173    │   │
 │  └──────┬────────────────────────────┬──────────────────┘   │
 │         │                            │                       │
 │         ▼                            ▼                       │
@@ -290,7 +290,7 @@ Get-Content ".\src\frontend\.env.local" > frontend-env-backup.txt
 **Cloudflare** (기존 도메인):
 - 도메인: `lightoflifeclub.com` (이미 Cloudflare에 등록되어 있음)
 - 서브도메인: `simulation.lightoflifeclub.com` (현재 Windows로 라우팅 중)
-- 서브도메인: `staging.simulation.lightoflifeclub.com` (신규 생성 필요)
+- 서브도메인: `staging-simulation.lightoflifeclub.com` (신규 생성 필요)
 
 **GitHub**:
 - Repository: `SkyDominator/simulation`
@@ -1419,7 +1419,7 @@ pytest tests/integration/api/test_security_e2e.py tests/unit/security/test_crypt
 ```yaml
 # Staging 환경에서 실행
 env:
-  BASE_URL: https://staging.simulation.lightoflifeclub.com
+  BASE_URL: https://staging-simulation.lightoflifeclub.com
 run: npm run test:e2e
 ```
 
@@ -1783,7 +1783,7 @@ jobs:
       - name: Run E2E tests
         working-directory: src/frontend
         env:
-          BASE_URL: https://staging.simulation.lightoflifeclub.com
+          BASE_URL: https://staging-simulation.lightoflifeclub.com
         run: npm run test:e2e
 
       - name: Upload test results
@@ -2246,7 +2246,7 @@ docker ps --format "table {{.Names}}\t{{.Ports}}"
 
 **브라우저에서 접속**:
 
-- <https://staging.simulation.lightoflifeclub.com> (새 Droplet 터널)
+- <https://staging-simulation.lightoflifeclub.com> (새 Droplet 터널)
 - 로그인, 시뮬레이션 생성 등 **모든 기능 철저히 테스트**
 
 4. **포트 분리 확인** (Droplet에서):
@@ -2447,7 +2447,7 @@ with err An A, AAAA, or CNAME record with that host already exists.
 3. **DNS → Records** 이동
 4. 다음 레코드 확인:
    - `simulation.lightoflifeclub.com` → CNAME `<DROPLET_TUNNEL_ID>.cfargotunnel.com` ✅
-   - `staging.simulation.lightoflifeclub.com` → CNAME `<DROPLET_TUNNEL_ID>.cfargotunnel.com` ✅
+   - `staging-simulation.lightoflifeclub.com` → CNAME `<DROPLET_TUNNEL_ID>.cfargotunnel.com` ✅
 
 **모두 Droplet 터널 ID를 가리켜야 합니다.**
 
@@ -2482,7 +2482,7 @@ https://simulation.lightoflifeclub.com
 # - 기능 정상 작동 확인
 
 # Staging도 확인
-https://staging.simulation.lightoflifeclub.com
+https://staging-simulation.lightoflifeclub.com
 ```
 
 **접속 실패 시 체크리스트**:
@@ -2717,8 +2717,8 @@ echo "$NEW" > /etc/nginx/current-env
 **증상**: Staging 도메인 접속 시 `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` 오류 발생
 
 **원인**: Cloudflare Universal SSL 인증서는 다단계 서브도메인(multi-level subdomain)을 지원하지 않습니다.
-- ❌ `staging.simulation.lightoflifeclub.com` (3단계 서브도메인) → SSL 인증서 미지원
-- ✅ `staging-simulation.lightoflifeclub.com` (2단계 서브도메인) → Universal SSL 자동 지원
+- ❌ `staging.simulation.lightoflifeclub.com` (3단계 서브도메인) → SSL 인증서 미지원 (변경 전)
+- ✅ `staging-simulation.lightoflifeclub.com` (2단계 서브도메인) → Universal SSL 자동 지원 (변경 후)
 
 **해결**:
 
@@ -2733,8 +2733,8 @@ echo "$NEW" > /etc/nginx/current-env
 
 2. **Cloudflare Dashboard에서 이전 레코드 삭제**:
    - Cloudflare Dashboard → DNS → Records
-   - `staging.simulation.lightoflifeclub.com` CNAME 레코드 삭제
-   - `staging-simulation.lightoflifeclub.com` CNAME 레코드 확인 (orange cloud 활성화)
+   - 이전 `staging.simulation.lightoflifeclub.com` CNAME 레코드 삭제 (다단계 서브도메인)
+   - 새 `staging-simulation.lightoflifeclub.com` CNAME 레코드 확인 (orange cloud 활성화)
 
 3. **터널 설정 파일 업데이트**:
    ```bash
@@ -2792,11 +2792,11 @@ echo "$NEW" > /etc/nginx/current-env
 **증상**: 
 - 배포 완료 후 사이트 접속은 되지만 API 호출이 실패
 - 브라우저 콘솔에 `ERR_NAME_NOT_RESOLVED` 오류 발생
-- 이전 도메인 URL로 API 요청 시도 (예: `staging.simulation.lightoflifeclub.com` 대신 새 URL 사용 안 함)
+- 이전 도메인 URL로 API 요청 시도 (예: 도메인 변경 후에도 이전 URL 사용)
 
 **예시 에러**:
 ```
-staging.simulation.lightoflifeclub.com/api/otp/send:1 Failed to load resource: net::ERR_NAME_NOT_RESOLVED
+staging-simulation.lightoflifeclub.com/api/otp/send:1 Failed to load resource: net::ERR_NAME_NOT_RESOLVED
 OTP send error: TypeError: Failed to fetch
 ```
 
@@ -3172,7 +3172,7 @@ chmod +x ~/monitor-docker.sh
 
 #### Staging
 
-Production과 동일하되, `VITE_API_BASE_URL`은 `https://staging.simulation.lightoflifeclub.com/api`
+Production과 동일하되, `VITE_API_BASE_URL`은 `https://staging-simulation.lightoflifeclub.com/api`
 
 ### 15.3 포트 매핑 요약
 
@@ -3191,7 +3191,7 @@ Production과 동일하되, `VITE_API_BASE_URL`은 `https://staging.simulation.l
 2. Cloudflare Tunnel → Droplet Nginx (Port 8080)
 3. Nginx → Host header 확인
    - `simulation.lightoflifeclub.com` → `localhost:3000` (Production)
-   - `staging.simulation.lightoflifeclub.com` → `localhost:4173` (Staging)
+   - `staging-simulation.lightoflifeclub.com` → `localhost:4173` (Staging)
 4. Frontend 컨테이너 → Backend 컨테이너 (Docker 네트워크 내 `backend:8000`)
 
 **포트 사용 정리**:
