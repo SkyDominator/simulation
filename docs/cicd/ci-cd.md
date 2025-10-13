@@ -18,9 +18,11 @@
 **프로덕션 CI/CD 환경**:
 - **위치**: DigitalOcean Droplet (24/7 운영)
 - **Production**: 포트 3000 (Frontend), 8000 (Backend) → `simulation.lightoflifeclub.com`
-- **Staging**: 포트 4173 (Frontend), 8001 (Backend) → `staging.simulation.lightoflifeclub.com`
+- **Staging**: 포트 4173 (Frontend), 8001 (Backend) → `staging-simulation.lightoflifeclub.com`
 - **배포**: 자동화 (GitHub Actions)
 - **고가용성**: 무중단 배포, Health Check
+
+**⚠️ 중요 변경사항**: Staging 도메인을 `staging.simulation` → `staging-simulation`으로 변경했습니다. 이는 Cloudflare Universal SSL이 다단계 서브도메인(multi-level subdomain)을 지원하지 않아 `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` 오류가 발생했기 때문입니다. 단일 레벨 서브도메인(`staging-simulation.lightoflifeclub.com`)은 무료 Universal SSL 인증서로 자동 커버됩니다.
 
 ### 마이그레이션 전략
 
@@ -566,7 +568,7 @@ server {
 # Staging Server Block
 server {
     listen 8080;
-    server_name staging.simulation.lightoflifeclub.com;
+    server_name staging-simulation.lightoflifeclub.com;
 
     client_max_body_size 10M;
     
@@ -630,7 +632,7 @@ nginx: configuration file /etc/nginx/nginx.conf test is successful
 
 | 단계 | 도메인 | 시점 | 목적 |
 |------|--------|------|------|
-| **섹션 6.5** | `staging.simulation.lightoflifeclub.com` | **지금** | Staging 환경 테스트용 |
+| **섹션 6.5** | `staging-simulation.lightoflifeclub.com` | **지금** | Staging 환경 테스트용 |
 | **섹션 12.4** | `simulation.lightoflifeclub.com` | **마이그레이션 시** | Production 전환 (Windows 터널 중단 후) |
 
 **이유**: Windows 터널이 현재 Production을 서비스하고 있으므로, Droplet 환경이 완전히 검증될 때까지 Windows를 계속 운영합니다.
@@ -707,18 +709,25 @@ Created tunnel simulation-tunnel with id <TUNNEL_ID>
 
 **⚠️ 중요**: 여기서는 **Staging 도메인만** 생성합니다. Production 도메인(`simulation.lightoflifeclub.com`)은 현재 Windows 터널이 사용 중이므로, 섹션 12.4에서 마이그레이션할 때 전환합니다.
 
+**⚠️ SSL 인증서 이슈 해결**: 원래 `staging.simulation.lightoflifeclub.com`을 사용하려 했으나, Cloudflare Universal SSL은 다단계 서브도메인(multi-level subdomain)을 지원하지 않습니다. 따라서 `staging-simulation.lightoflifeclub.com`으로 변경합니다.
+
 ```bash
-# Staging DNS 레코드만 생성
-cloudflared tunnel route dns simulation-tunnel staging.simulation.lightoflifeclub.com
+# Staging DNS 레코드 생성 (단일 레벨 서브도메인 사용)
+cloudflared tunnel route dns simulation-tunnel staging-simulation.lightoflifeclub.com
 ```
 
 확인:
 
 ```text
 Cloudflare Dashboard → DNS → Records
-- staging.simulation.lightoflifeclub.com (CNAME to <TUNNEL_ID>.cfargotunnel.com) ← 새로 생성됨
+- staging-simulation.lightoflifeclub.com (CNAME to <TUNNEL_ID>.cfargotunnel.com) ← 새로 생성됨
 - simulation.lightoflifeclub.com (기존 Windows 터널 유지) ← 아직 건드리지 않음
 ```
+
+**왜 도메인을 변경했나요?**
+
+- ❌ `staging.simulation.lightoflifeclub.com` (3단계 서브도메인) → Universal SSL 미지원 → `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` 오류
+- ✅ `staging-simulation.lightoflifeclub.com` (2단계 서브도메인) → Universal SSL 자동 지원
 
 **Production DNS는 아직 생성/변경하지 마세요!** Windows 터널이 `simulation.lightoflifeclub.com`을 계속 서비스하고 있습니다.
 
@@ -736,13 +745,15 @@ credentials-file: /root/.cloudflared/<TUNNEL_ID>.json
 ingress:
   - hostname: simulation.lightoflifeclub.com
     service: http://localhost:8080
-  - hostname: staging.simulation.lightoflifeclub.com
+  - hostname: staging-simulation.lightoflifeclub.com
     service: http://localhost:8080
   - service: http_status:404
 EOF
 ```
 
 **중요**: `<TUNNEL_ID>`를 실제 터널 ID로 교체하세요.
+
+**변경사항**: `staging.simulation` → `staging-simulation`으로 변경하여 Universal SSL 인증서 적용
 
 ### 6.7 터널을 시스템 서비스로 설정
 
@@ -1254,7 +1265,7 @@ GitHub Repository → Settings → Secrets and variables → Actions → Variabl
 **Staging Environment Variables**:
 
 1. **New repository variable** 클릭 후 다음 추가:
-   - `VITE_API_BASE_URL`: `https://staging.simulation.lightoflifeclub.com/api`
+   - `VITE_API_BASE_URL`: `https://staging-simulation.lightoflifeclub.com/api`
    - `VITE_SUPABASE_URL`: Supabase Project URL (또는 별도 프로젝트)
    - `VITE_SUPABASE_PUBLISHABLE_KEY`: Supabase Anon Key
    - `SUPABASE_URL`: (Backend용)
@@ -2701,7 +2712,82 @@ echo "$NEW" > /etc/nginx/current-env
 
 ### 14.1 일반적인 문제 및 해결
 
-#### 문제 1: Self-Hosted Runner가 Offline 상태
+#### 문제 1: SSL 인증서 오류 (ERR_SSL_VERSION_OR_CIPHER_MISMATCH)
+
+**증상**: Staging 도메인 접속 시 `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` 오류 발생
+
+**원인**: Cloudflare Universal SSL 인증서는 다단계 서브도메인(multi-level subdomain)을 지원하지 않습니다.
+- ❌ `staging.simulation.lightoflifeclub.com` (3단계 서브도메인) → SSL 인증서 미지원
+- ✅ `staging-simulation.lightoflifeclub.com` (2단계 서브도메인) → Universal SSL 자동 지원
+
+**해결**:
+
+1. **Cloudflare DNS 레코드 업데이트**:
+   ```bash
+   # SSH로 Droplet 접속
+   ssh root@<DROPLET_IP>
+   
+   # 새 DNS 레코드 생성
+   cloudflared tunnel route dns simulation-tunnel staging-simulation.lightoflifeclub.com
+   ```
+
+2. **Cloudflare Dashboard에서 이전 레코드 삭제**:
+   - Cloudflare Dashboard → DNS → Records
+   - `staging.simulation.lightoflifeclub.com` CNAME 레코드 삭제
+   - `staging-simulation.lightoflifeclub.com` CNAME 레코드 확인 (orange cloud 활성화)
+
+3. **터널 설정 파일 업데이트**:
+   ```bash
+   # /etc/cloudflared/config.yml 수정
+   sudo nano /etc/cloudflared/config.yml
+   
+   # 변경: staging.simulation → staging-simulation
+   ingress:
+     - hostname: simulation.lightoflifeclub.com
+       service: http://localhost:8080
+     - hostname: staging-simulation.lightoflifeclub.com
+       service: http://localhost:8080
+     - service: http_status:404
+   
+   # 터널 재시작
+   sudo systemctl restart cloudflared
+   ```
+
+4. **Nginx 설정 업데이트**:
+   ```bash
+   # /etc/nginx/sites-available/simulation 수정
+   sudo nano /etc/nginx/sites-available/simulation
+   
+   # 변경: staging.simulation → staging-simulation
+   server {
+       listen 8080;
+       server_name staging-simulation.lightoflifeclub.com;
+       ...
+   }
+   
+   # Nginx 테스트 및 재시작
+   sudo nginx -t
+   sudo systemctl restart nginx
+   ```
+
+5. **GitHub Actions 환경 변수 업데이트**:
+   - GitHub Repository → Settings → Secrets and variables → Actions → Variables
+   - `VITE_API_BASE_URL` (staging): `https://staging-simulation.lightoflifeclub.com/api`로 변경
+
+6. **검증**:
+   ```bash
+   # 브라우저에서 접속 테스트
+   https://staging-simulation.lightoflifeclub.com
+   
+   # curl로 SSL 인증서 확인
+   curl -vI https://staging-simulation.lightoflifeclub.com 2>&1 | grep -i "SSL\|certificate"
+   ```
+
+**대안 (유료)**:
+- Cloudflare Advanced Certificate 구매 (다단계 서브도메인 지원)
+- Cloudflare Total TLS 활성화 (일부 유료 플랜에서 제공)
+
+#### 문제 2: Self-Hosted Runner가 Offline 상태
 
 **증상**: GitHub Actions에서 "No runners available"
 
