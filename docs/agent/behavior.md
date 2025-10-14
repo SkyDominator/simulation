@@ -2,6 +2,10 @@
 
 ALWAYS FOLLOW these patterns when doing tasks.
 
+#### Basic Approach
+
+Repeat the self-correction loop (🔄) on all outputs until no mismatch against user's request exists.
+
 #### Task Approach
 
 **DO:**
