@@ -26,7 +26,7 @@ DO the following tasks:
 
 ## Notes
 
-If the $PLAN$ is ambiguous, incomplete or problematic:
+If the $PLAN$ is ambiguous, incomplete or problematic, DO:
 
 1. First, consult the $RESEARCH_RESULT$ for more information and try to suggest alternative solutions. If some solutions come out after consulting, update the $PLAN$ accordingly and continue implementation.
 2. If no solutions are found or still unclear about something, stop and ask for clarification instead of making assumptions.
