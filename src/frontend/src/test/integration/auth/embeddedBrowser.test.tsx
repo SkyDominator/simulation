@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderWithProviders, screen, fireEvent, waitFor } from "../../utils/renderWithProviders";
+import {
+  renderWithProviders,
+  screen,
+  fireEvent,
+  waitFor,
+} from "../../utils/renderWithProviders";
 import "@testing-library/jest-dom";
 import LoginPage from "../../../pages/LoginPage";
 import * as browserDetection from "../../../utils/browserDetection";
@@ -8,7 +13,7 @@ import * as browserDetection from "../../../utils/browserDetection";
 describe("Embedded Browser Detection - Integration", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    
+
     // Re-mock window.matchMedia after resetAllMocks
     Object.defineProperty(window, "matchMedia", {
       writable: true,
@@ -24,7 +29,7 @@ describe("Embedded Browser Detection - Integration", () => {
         dispatchEvent: vi.fn(),
       })),
     });
-    
+
     // Set up embedded browser environment
     Object.defineProperty(window.navigator, "userAgent", {
       value: "Mozilla/5.0 (Linux; Android 13) KAKAOTALK 10.0.0",

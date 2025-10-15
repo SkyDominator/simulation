@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import { renderWithProviders, screen, fireEvent, waitFor } from "../utils/renderWithProviders";
+import {
+  renderWithProviders,
+  screen,
+  fireEvent,
+  waitFor,
+} from "../utils/renderWithProviders";
 import "@testing-library/jest-dom";
 import EmbeddedBrowserWarningModal from "../../components/EmbeddedBrowserWarningModal";
 import * as browserDetection from "../../utils/browserDetection";
@@ -12,14 +17,18 @@ vi.mock("../../utils/browserDetection", () => ({
 
 describe("EmbeddedBrowserWarningModal", () => {
   it("renders when open prop is true", () => {
-    renderWithProviders(<EmbeddedBrowserWarningModal open={true} onClose={() => {}} />);
+    renderWithProviders(
+      <EmbeddedBrowserWarningModal open={true} onClose={() => {}} />
+    );
 
     expect(screen.getByText("브라우저에서 열어주세요")).toBeInTheDocument();
     expect(screen.getByText(/KakaoTalk 앱 내부 브라우저/)).toBeInTheDocument();
   });
 
   it("does not render when open prop is false", () => {
-    renderWithProviders(<EmbeddedBrowserWarningModal open={false} onClose={() => {}} />);
+    renderWithProviders(
+      <EmbeddedBrowserWarningModal open={false} onClose={() => {}} />
+    );
 
     expect(
       screen.queryByText("브라우저에서 열어주세요")
@@ -28,7 +37,9 @@ describe("EmbeddedBrowserWarningModal", () => {
 
   it("calls onClose when cancel button is clicked", () => {
     const onCloseMock = vi.fn();
-    renderWithProviders(<EmbeddedBrowserWarningModal open={true} onClose={onCloseMock} />);
+    renderWithProviders(
+      <EmbeddedBrowserWarningModal open={true} onClose={onCloseMock} />
+    );
 
     const cancelButton = screen.getByText("취소");
     fireEvent.click(cancelButton);
@@ -42,7 +53,9 @@ describe("EmbeddedBrowserWarningModal", () => {
       "openInExternalBrowser"
     );
 
-    renderWithProviders(<EmbeddedBrowserWarningModal open={true} onClose={() => {}} />);
+    renderWithProviders(
+      <EmbeddedBrowserWarningModal open={true} onClose={() => {}} />
+    );
 
     const openButton = screen.getByText("브라우저에서 열기");
     fireEvent.click(openButton);
@@ -65,7 +78,9 @@ describe("EmbeddedBrowserWarningModal", () => {
   });
 
   it("displays manual instructions", () => {
-    renderWithProviders(<EmbeddedBrowserWarningModal open={true} onClose={() => {}} />);
+    renderWithProviders(
+      <EmbeddedBrowserWarningModal open={true} onClose={() => {}} />
+    );
 
     expect(screen.getByText(/수동으로 여는 방법/)).toBeInTheDocument();
     expect(screen.getByText(/메뉴\(⋮\) 버튼을 누르세요/)).toBeInTheDocument();

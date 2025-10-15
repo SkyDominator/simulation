@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderWithProviders, screen, fireEvent, waitFor } from "../utils/renderWithProviders";
+import {
+  renderWithProviders,
+  screen,
+  fireEvent,
+  waitFor,
+} from "../utils/renderWithProviders";
 import "@testing-library/jest-dom";
 import LoginPage from "../../pages/LoginPage";
 import * as browserDetection from "../../utils/browserDetection";
@@ -12,7 +17,7 @@ vi.mock("../../supabaseClient");
 describe("LoginPage - Embedded Browser Detection", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    
+
     // Re-mock window.matchMedia after resetAllMocks
     Object.defineProperty(window, "matchMedia", {
       writable: true,
