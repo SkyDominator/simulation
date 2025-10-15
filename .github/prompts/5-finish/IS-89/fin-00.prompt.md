@@ -32,3 +32,7 @@ $PLAN$: `docs/plan/IS-89/plan-00.md`
     * All docs linked in `.github/copilot-instructions.md`
 4. (Optional) Create user-facing help document.
     * Create user guide under `docs/user/` if necessary.
+
+## Notes
+
+Do not create summary report files.

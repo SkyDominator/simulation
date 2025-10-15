@@ -42,6 +42,8 @@ This document outlines the technical details of the Investment Simulation PWA pr
 - **UI**: MUI + Tailwind CSS
 - **Controller**: `AppController.tsx` → navigation + state
 - **Auth**: Supabase client (`supabaseClient.ts`)
+- **Browser Detection**: `utils/browserDetection.ts` → embedded browser detection
+- **OAuth Protection**: `EmbeddedBrowserWarningModal.tsx` → warn users in embedded browsers
 - **State**: Context + hooks, minimal localStorage
 - **API**: Services layer with error handling
 - **Cache**: NetworkFirst (notices), StaleWhileRevalidate (assets)
@@ -215,6 +217,12 @@ Logic → `services/`
 - Context: `useAuth()` hook
 - Storage: Minimize localStorage use
 
+**Browser Detection**:
+- Utility: `utils/browserDetection.ts` → detects embedded browsers
+- Modal: `components/EmbeddedBrowserWarningModal.tsx` → guides users to external browser
+- Flow: Detect embedded → Warn before OAuth → Redirect to standard browser
+- Supported: KakaoTalk, Facebook, Instagram, Twitter, Line, Naver webviews
+
 **Structure**:
 ```
 src/
@@ -259,6 +267,12 @@ src/
 - No sensitive data in localStorage
 - JWTs managed by Supabase client
 - Implement error boundaries
+
+**Embedded Browser Handling**:
+- Detect before OAuth → Google blocks in embedded browsers (403 error)
+- Show warning modal → guide users to open in external browser
+- Test with KakaoTalk, Facebook, Instagram webviews
+- Pattern: `isEmbeddedBrowser()` → `EmbeddedBrowserWarningModal` → `openInExternalBrowser()`
 
 **Docker Compose Deploy**:
 - Backend starts before frontend (healthcheck dependency)
