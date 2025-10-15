@@ -32,20 +32,25 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
 }));
 
-// Mock window.matchMedia
+// Mock window.matchMedia for MUI useMediaQuery compatibility
+// MUI's useMediaQuery expects window.matchMedia to return a MediaQueryList object
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   configurable: true,
-  value: vi.fn().mockImplementation((query) => ({
+  value: (query: string): MediaQueryList => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
+    addListener: vi.fn() as unknown as (
+      callback: (this: MediaQueryList, ev: MediaQueryListEvent) => unknown
+    ) => void, // Deprecated
+    removeListener: vi.fn() as unknown as (
+      callback: (this: MediaQueryList, ev: MediaQueryListEvent) => unknown
+    ) => void, // Deprecated
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
+    dispatchEvent: vi.fn() as unknown as (event: Event) => boolean,
+  }),
 });
 
 // Mock localStorage that behaves like the real one
