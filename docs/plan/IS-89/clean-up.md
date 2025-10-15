@@ -1,5 +1,8 @@
 ## Phase 1: Update Documentations
 
+* `.vscode/launch.json`
+* All docs linked in `.github/copilot-instructions.md`
+
 **File**: `docs/spec/tech-details.md`
 **Lines**: Add new section after "Frontend Integration"
 **Changes**: Document embedded browser handling
