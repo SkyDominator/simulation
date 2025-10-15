@@ -29,6 +29,7 @@ $APPROACH$: `Approach 1: Detect and Redirect to External Browser (Recommended)`
 3. Create $PLAN$ which is driven by $APPROACH$.
     - Take a holistic view of the codebase. Do not stray from the coding guideine.
     - Consider side effects and edge cases.
+    - Consider not introducing new issues or regressions by code changes.
     - Refer to the following examples for the structure, format, style of the plan:
         - `/docs/examples/example1-plan.md`
         - `docs/plans/test-code/test-plan-01-backend-unit.md`
