@@ -1,6 +1,6 @@
 ---
 mode: agent
-tools: ['edit', 'search', 'new', 'GitKraken/*', 'pylance mcp server/*', 'runCommands', 'runTasks', 'context7/get-library-docs', 'context7/resolve-library-id', 'playwright/browser_click', 'playwright/browser_close', 'playwright/browser_console_messages', 'playwright/browser_drag', 'playwright/browser_evaluate', 'playwright/browser_file_upload', 'playwright/browser_fill_form', 'playwright/browser_handle_dialog', 'playwright/browser_hover', 'playwright/browser_install', 'playwright/browser_navigate', 'playwright/browser_navigate_back', 'playwright/browser_network_requests', 'playwright/browser_press_key', 'playwright/browser_resize', 'playwright/browser_select_option', 'playwright/browser_snapshot', 'playwright/browser_tabs', 'playwright/browser_take_screenshot', 'playwright/browser_type', 'playwright/browser_wait_for', 'usages', 'think', 'problems', 'changes', 'testFailure', 'openSimpleBrowser', 'fetch', 'githubRepo', 'github.vscode-pull-request-github/copilotCodingAgent', 'github.vscode-pull-request-github/activePullRequest', 'github.vscode-pull-request-github/openPullRequest', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'extensions', 'todos']
+tools: ['edit', 'search', 'new', 'GitKraken/*', 'pylance mcp server/*', 'runCommands', 'runTasks', 'context7/*', 'playwright/*', 'usages', 'think', 'problems', 'changes', 'testFailure', 'openSimpleBrowser', 'fetch', 'githubRepo', 'github.vscode-pull-request-github/copilotCodingAgent', 'github.vscode-pull-request-github/activePullRequest', 'github.vscode-pull-request-github/openPullRequest', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'extensions', 'todos']
 model: Claude Sonnet 4.5
 ---
 
@@ -18,9 +18,26 @@ $RESEARCH_RESULT$: `docs/research/IS-89/research-00.md`:$INIT_RESEARCH_RESULT$
 
 (If the file already exists, overwrite it. If the directory and the file do not exist, create them.)
 
+## pre-requisites
+
+Check status.
+
+```shell
+gh auth status
+```
+
+Log in to GitHub CLI if not logged in.:
+
+```shell
+# Use SIMULATION_READ_ISSUE (fine grained token) in the environment variables to log in.
+gh auth login
+```
+
 ## The issue statements
 
-`gh issue view 89 --repo SkyDominator/simulation`
+```shell
+gh issue view 89 --repo SkyDominator/simulation
+```
 
 ## The goal of research
 
