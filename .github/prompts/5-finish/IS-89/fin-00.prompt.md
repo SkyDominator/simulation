@@ -31,7 +31,9 @@ $PLAN$: `docs/plan/IS-89/plan-00.md`
     * Test code debugging configurations: `.vscode/launch.json`
     * All docs linked in `.github/copilot-instructions.md`
 4. (Optional) Create user-facing help document.
-    * Create user guide under `docs/user/` if necessary. The user doc must written in Korean.
+    * Create user guide under `docs/user/` if necessary.
+    * The user here means the end users, not the developers.
+    * The user doc must be written in Korean.
 
 ## Notes
 
