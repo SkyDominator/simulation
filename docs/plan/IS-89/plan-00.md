@@ -643,10 +643,121 @@ Improve error handling to detect Google's 403 OAuth errors and provide specific 
 
 ---
 
-## Phase 5: Documentation and Testing
+## Phase 5: Set up Test Cases
 
 ### Overview
-Document the changes, add tests, and create user-facing documentation about browser requirements.
+
+Plan the test cases and test code implementation for the code changes in the ALL previous phases.
+
+### Testing Strategy
+
+#### Unit Testing
+- Browser detection utility functions
+- Modal component rendering and interactions
+- Error handling logic
+
+#### Integration Testing
+- LoginPage with embedded browser detection
+- Modal opening and closing flows
+- External browser redirect flow
+
+#### E2E Testing
+
+- Full login flow in embedded vs standard browsers
+
+##### Test Case 1: KakaoTalk Android
+**Environment**: Samsung Galaxy A32, Android 13, KakaoTalk app
+**Steps**:
+1. Send app URL in KakaoTalk chat
+2. Click link (opens in KakaoTalk webview)
+3. Navigate to login page
+4. Observe warning banner (if optional enhancement added)
+5. Click "Google로 로그인"
+6. Verify warning modal appears
+7. Click "브라우저에서 열기"
+8. Verify Chrome opens with app URL
+9. Complete Google OAuth in Chrome
+10. Verify login succeeds
+
+**Expected**:
+- Modal appears before OAuth attempt
+- Chrome opens successfully
+- OAuth works in Chrome
+- No 403 error
+
+##### Test Case 2: Direct Chrome Access
+**Environment**: Samsung Galaxy A32, Android 13, Chrome browser
+**Steps**:
+1. Open Chrome
+2. Navigate to app URL
+3. Navigate to login page
+4. Observe no warning banner
+5. Click "Google로 로그인"
+6. Verify no warning modal
+7. Complete Google OAuth
+8. Verify login succeeds
+
+**Expected**:
+- No modal appears
+- OAuth proceeds normally
+- Login succeeds
+
+##### Test Case 3: Facebook In-App Browser
+**Environment**: Any device, Facebook app
+**Steps**:
+1. Share app URL in Facebook
+2. Click link (opens in Facebook webview)
+3. Navigate to login page
+4. Click "Google로 로그인"
+5. Verify warning modal appears
+6. Test external browser redirect
+
+**Expected**:
+- Facebook webview detected
+- Modal appears
+- External browser opens
+
+##### Test Case 4: iOS Safari
+**Environment**: iPhone, Safari browser
+**Steps**:
+1. Open Safari
+2. Navigate to app URL
+3. Navigate to login page
+4. Click "Google로 로그인"
+5. Complete OAuth
+6. Verify login succeeds
+
+**Expected**:
+- No detection (Safari is standard browser)
+- OAuth works normally
+
+### Edge Cases
+
+#### Edge Case 1: Unknown Embedded Browser
+**Scenario**: New in-app browser not in detection list
+**Expected**: 
+- Detection misses
+- OAuth attempt proceeds
+- 403 error caught
+- Modal shown via error handler
+
+#### Edge Case 2: External Browser Redirect Fails
+**Scenario**: Android intent URL doesn't work
+**Expected**:
+- Modal shows manual instructions
+- User can follow 3-step guide
+- Fallback path available
+
+#### Edge Case 3: User Dismisses Modal
+**Scenario**: User clicks "취소" without following guidance
+**Expected**:
+- Modal closes
+- User can retry
+- Warning banner remains (if optional enhancement added)
+
+---
+
+## Phase 6: Set up Test Codes
 
 ### Changes Required
 
@@ -809,7 +920,7 @@ describe('browserDetection', () => {
 **File**: `src/frontend/src/components/__tests__/EmbeddedBrowserWarningModal.test.tsx` (NEW)
 **Changes**: Create component test
 
-```typescript
+```ts
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -915,7 +1026,24 @@ describe('EmbeddedBrowserWarningModal', () => {
 - Checks props handling
 - Ensures accessibility
 
-#### 3. Update Technical Documentation
+### Success Criteria
+
+#### Automated Verification:
+- [ ] All unit tests pass: `npm run test`
+- [ ] Test coverage ≥80% for new files
+- [ ] TypeScript compilation passes
+- [ ] ESLint passes
+
+#### Manual Verification:
+- [ ] Documentation is clear and accurate
+- [ ] Test suite covers edge cases
+- [ ] User guide is easy to follow
+- [ ] Technical docs help developers
+
+---
+
+## Phase 7: Update Documentations
+
 **File**: `docs/spec/tech-details.md`
 **Lines**: Add new section after "Frontend Integration"
 **Changes**: Document embedded browser handling
@@ -967,7 +1095,8 @@ describe('EmbeddedBrowserWarningModal', () => {
 - Explains design decisions
 - Documents supported scenarios
 
-#### 4. Create User-Facing Help Document
+## Phase 8: Create User-Facing Help Document
+
 **File**: `docs/user/browser-requirements.md` (NEW)
 **Changes**: Create user guide
 
@@ -1040,21 +1169,11 @@ Google은 사용자 보안을 위해 표준 브라우저에서만 로그인을 �
 
 ### Success Criteria
 
-#### Automated Verification:
-- [ ] All unit tests pass: `npm run test`
-- [ ] Test coverage ≥80% for new files
-- [ ] TypeScript compilation passes
-- [ ] ESLint passes
-
 #### Manual Verification:
-- [ ] Documentation is clear and accurate
-- [ ] Test suite covers edge cases
-- [ ] User guide is easy to follow
-- [ ] Technical docs help developers
 
----
+- [ ] User guide is easy to follow (should be able to solve all issues following the steps in order)
 
-## Phase 6: Analytics and Monitoring
+## Phase 9: Analytics and Monitoring
 
 ### Overview
 Add logging and analytics to track embedded browser detection and OAuth flow issues.
@@ -1202,286 +1321,6 @@ const handleOpenInBrowser = async () => {
 - [ ] Error logs include full context
 - [ ] Modal interactions logged
 - [ ] Logs help with debugging
-
----
-
-## Testing Strategy
-
-### Unit Testing
-- Browser detection utility functions
-- Modal component rendering and interactions
-- Error handling logic
-
-### Integration Testing
-- LoginPage with embedded browser detection
-- Modal opening and closing flows
-- External browser redirect flow
-
-### Manual Testing
-
-#### Test Case 1: KakaoTalk Android
-**Environment**: Samsung Galaxy A32, Android 13, KakaoTalk app
-**Steps**:
-1. Send app URL in KakaoTalk chat
-2. Click link (opens in KakaoTalk webview)
-3. Navigate to login page
-4. Observe warning banner (if optional enhancement added)
-5. Click "Google로 로그인"
-6. Verify warning modal appears
-7. Click "브라우저에서 열기"
-8. Verify Chrome opens with app URL
-9. Complete Google OAuth in Chrome
-10. Verify login succeeds
-
-**Expected**:
-- Modal appears before OAuth attempt
-- Chrome opens successfully
-- OAuth works in Chrome
-- No 403 error
-
-#### Test Case 2: Direct Chrome Access
-**Environment**: Samsung Galaxy A32, Android 13, Chrome browser
-**Steps**:
-1. Open Chrome
-2. Navigate to app URL
-3. Navigate to login page
-4. Observe no warning banner
-5. Click "Google로 로그인"
-6. Verify no warning modal
-7. Complete Google OAuth
-8. Verify login succeeds
-
-**Expected**:
-- No modal appears
-- OAuth proceeds normally
-- Login succeeds
-
-#### Test Case 3: Facebook In-App Browser
-**Environment**: Any device, Facebook app
-**Steps**:
-1. Share app URL in Facebook
-2. Click link (opens in Facebook webview)
-3. Navigate to login page
-4. Click "Google로 로그인"
-5. Verify warning modal appears
-6. Test external browser redirect
-
-**Expected**:
-- Facebook webview detected
-- Modal appears
-- External browser opens
-
-#### Test Case 4: iOS Safari
-**Environment**: iPhone, Safari browser
-**Steps**:
-1. Open Safari
-2. Navigate to app URL
-3. Navigate to login page
-4. Click "Google로 로그인"
-5. Complete OAuth
-6. Verify login succeeds
-
-**Expected**:
-- No detection (Safari is standard browser)
-- OAuth works normally
-
-### Edge Cases
-
-#### Edge Case 1: Unknown Embedded Browser
-**Scenario**: New in-app browser not in detection list
-**Expected**: 
-- Detection misses
-- OAuth attempt proceeds
-- 403 error caught
-- Modal shown via error handler
-
-#### Edge Case 2: External Browser Redirect Fails
-**Scenario**: Android intent URL doesn't work
-**Expected**:
-- Modal shows manual instructions
-- User can follow 3-step guide
-- Fallback path available
-
-#### Edge Case 3: User Dismisses Modal
-**Scenario**: User clicks "취소" without following guidance
-**Expected**:
-- Modal closes
-- User can retry
-- Warning banner remains (if optional enhancement added)
-
----
-
-## Rollback Plan
-
-If issues arise after deployment, rollback in this order:
-
-### Level 1: Disable Modal Only
-**Action**: Comment out modal rendering in LoginPage
-**File**: `src/frontend/src/pages/LoginPage.tsx`
-**Code**:
-```typescript
-{/* Temporarily disabled for rollback
-<EmbeddedBrowserWarningModal
-  open={showEmbeddedBrowserWarning}
-  onClose={() => setShowEmbeddedBrowserWarning(false)}
-/>
-*/}
-```
-**Impact**: Users won't see guidance, but OAuth still blocked
-
-### Level 2: Disable Detection
-**Action**: Comment out detection check in handleSocialLogin
-**File**: `src/frontend/src/pages/LoginPage.tsx`
-**Code**:
-```typescript
-// Temporarily disabled for rollback
-// if (isEmbeddedBrowser()) {
-//   setShowEmbeddedBrowserWarning(true);
-//   return;
-// }
-```
-**Impact**: OAuth attempts proceed, users see 403 error
-
-### Level 3: Full Rollback
-**Action**: Revert all commits from this implementation
-**Command**: `git revert <commit-hash-range>`
-**Impact**: Complete return to previous state
-
-### Monitoring Post-Rollback
-- Check error logs for OAuth failures
-- Monitor user complaints
-- Verify standard browser flow works
-- Plan fix for rolled-back issue
-
----
-
-## Deployment Plan
-
-### Pre-Deployment Checklist
-- [ ] All unit tests pass
-- [ ] All integration tests pass
-- [ ] Manual testing completed on target devices
-- [ ] Code review approved
-- [ ] Documentation updated
-- [ ] Staging deployment successful
-
-### Staging Deployment
-1. Deploy to staging: `https://staging-simulation.lightoflifeclub.com`
-2. Test all scenarios on staging
-3. Verify analytics/logging
-4. Check mobile devices
-5. Monitor for 24 hours
-
-### Production Deployment
-1. Create deployment PR with full test results
-2. Get approval from stakeholders
-3. Deploy during low-traffic window
-4. Monitor logs for first hour
-5. Check error rates
-6. Verify user reports
-
-### Post-Deployment Monitoring (First Week)
-- OAuth success/failure rates
-- Embedded browser detection rate
-- Modal interaction rates
-- External browser redirect success rate
-- User feedback/complaints
-
-### Success Metrics
-- OAuth 403 errors from embedded browsers: 0%
-- Modal appearance rate in embedded browsers: 100%
-- External browser redirect success: >90%
-- User complaints about login: <5% of previous
-
----
-
-## Future Enhancements
-
-### Phase 7: Native Google Sign-In (Long-term)
-**Timeline**: 1-2 months
-**Effort**: 1-2 weeks development
-**Benefit**: Seamless OAuth in embedded browsers
-
-**Implementation**:
-1. Add Google Sign-In SDK for Android
-2. Implement native auth flow
-3. Use `signInWithIdToken()` Supabase method
-4. Maintain fallback to browser flow
-
-### Phase 8: Deep Linking
-**Timeline**: 2-3 months
-**Effort**: 1 week development
-**Benefit**: Better browser transition
-
-**Implementation**:
-1. Configure Android App Links
-2. Configure iOS Universal Links
-3. Handle deep link routing
-4. Preserve auth state across transitions
-
-### Phase 9: PWA Installation Promotion
-**Timeline**: 1-2 months
-**Effort**: 3-5 days development
-**Benefit**: Avoid embedded browsers entirely
-
-**Implementation**:
-1. Add "Install App" banner for embedded browser users
-2. Custom PWA install prompt
-3. Track installation rate
-4. Educate users about installed PWA benefits
-
----
-
-## Appendix
-
-### Code References
-
-**Detection Logic**:
-- `src/frontend/src/utils/browserDetection.ts` - Detection utilities
-- `src/frontend/src/pages/LoginPage.tsx:28-50` - OAuth handler
-- `src/frontend/src/context/AuthContext.tsx:56-92` - Auth context
-
-**UI Components**:
-- `src/frontend/src/components/EmbeddedBrowserWarningModal.tsx` - Warning modal
-- `src/frontend/src/pages/LoginPage.tsx:105-112` - Google login button
-
-**Configuration**:
-- `src/frontend/src/supabaseClient.ts:16-22` - Supabase auth config
-- `src/frontend/vite.config.ts:60-85` - PWA manifest
-
-### Related Documentation
-
-- **Research**: `docs/research/IS-89/research-00.md`
-- **SSD**: `docs/spec/ssd.md` (Section 7: Auth, Section 10: Simulation)
-- **Technical Details**: `docs/spec/tech-details.md`
-- **Frontend Guidelines**: `docs/coding/frontend.md`
-- **Issue**: GitHub Issue #89
-
-### Known Limitations
-
-1. **Detection Coverage**: May miss new/unknown embedded browsers
-2. **Android Intent URLs**: Some devices may not support intent:// scheme
-3. **User Education**: Requires user to understand browser difference
-4. **Kakao OAuth**: Not verified if Kakao login works in KakaoTalk webview
-
-### FAQ
-
-**Q: Why not just support OAuth in embedded browsers?**
-A: Google's security policy blocks it. We cannot bypass this restriction.
-
-**Q: Will Kakao OAuth also be affected?**
-A: Unknown. Kakao may have special handling for their own app. Needs testing.
-
-**Q: Can we whitelist KakaoTalk with Google?**
-A: No. Google enforces this policy broadly for security reasons.
-
-**Q: What about iOS?**
-A: iOS currently works, but detection provides consistent UX and prepares for potential future iOS policy changes.
-
-**Q: How do we know the detection is accurate?**
-A: Comprehensive testing + logging + error handling catches missed detections.
-
----
 
 ## Implementation Checklist
 
