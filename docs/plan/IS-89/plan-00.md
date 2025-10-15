@@ -643,31 +643,108 @@ Improve error handling to detect Google's 403 OAuth errors and provide specific 
 
 ---
 
-## Phase 5: Set up Test Cases
+## Phase 5: Testing Strategy
 
 ### Overview
 
-Plan the test cases and test code implementation for the code changes in the ALL previous phases.
+Define comprehensive testing approach covering all test types from the project's test infrastructure: unit tests, component tests, integration tests, and E2E tests using Playwright.
 
-### Testing Strategy
+### Test Infrastructure
 
-#### Unit Testing
-- Browser detection utility functions
-- Modal component rendering and interactions
-- Error handling logic
+Based on project configuration:
+- **Test Runner**: Vitest for unit/component/integration tests
+- **E2E Framework**: Playwright with Mobile Chrome project
+- **Test Locations**:
+  - `src/frontend/src/test/utils/` - Utility function tests
+  - `src/frontend/src/test/components/` - Component tests
+  - `src/frontend/src/test/pages/` - Page-level unit tests
+  - `src/frontend/src/test/integration/` - Integration tests
+  - `src/frontend/e2e/` - Playwright E2E tests
 
-#### Integration Testing
-- LoginPage with embedded browser detection
-- Modal opening and closing flows
-- External browser redirect flow
+### Test Types Overview
 
-#### E2E Testing
+#### 1. Unit Tests (Utility Functions)
+**Location**: `src/frontend/src/test/utils/browserDetection.test.ts`
+**Purpose**: Test browser detection utility functions in isolation
+**Coverage**:
+- `isEmbeddedBrowser()` - All embedded browser markers
+- `getBrowserType()` - Type classification logic
+- `getBrowserName()` - Browser name identification
+- `getExternalBrowserUrl()` - Platform-specific URL generation
+- `openInExternalBrowser()` - External browser launch
 
-- Full login flow in embedded vs standard browsers
+**Run Command**: `npx vitest run src/test/utils --reporter=verbose`
 
-##### Test Case 1: KakaoTalk Android
+#### 2. Component Tests
+**Location**: `src/frontend/src/test/components/EmbeddedBrowserWarningModal.test.tsx`
+**Purpose**: Test modal component rendering and interactions
+**Coverage**:
+- Modal visibility based on props
+- Button click handlers
+- Custom browser name display
+- Accessibility attributes
+- Responsive behavior
+
+**Run Command**: `npx vitest run src/test/components --reporter=verbose`
+
+#### 3. Page Unit Tests
+**Location**: `src/frontend/src/test/pages/LoginPage.test.tsx` (update existing)
+**Purpose**: Test LoginPage with embedded browser detection logic
+**Coverage**:
+- Detection check before OAuth attempt
+- Modal state management
+- Error handling with detection
+- Integration with browser detection utils
+
+**Run Command**: `npx vitest run src/test/pages --reporter=verbose`
+
+#### 4. Integration Tests
+**Location**: `src/frontend/src/test/integration/auth/embeddedBrowser.test.ts`
+**Purpose**: Test full flow from detection to modal display to redirect
+**Coverage**:
+- LoginPage + Modal integration
+- Detection → Modal → External browser flow
+- Error recovery paths
+- State management across components
+
+**Run Command**: `npx vitest run src/test/integration --reporter=verbose`
+
+#### 5. E2E Tests (Playwright)
+**Location**: `src/frontend/e2e/auth/embedded-browser.spec.ts`
+**Purpose**: Test real browser behavior with user agents
+**Coverage**:
+- Simulated embedded browser detection
+- Full OAuth flow in standard browser
+- Mobile Chrome viewport
+- Real DOM interactions
+
+**Run Command**: `npx playwright test --project="Mobile Chrome" e2e/auth/embedded-browser.spec.ts`
+
+### CI/CD Integration
+
+Tests run in this order (matching `ci-cd.yml`):
+
+1. **test-unit** job:
+   - Frontend: `src/test/pages`, `src/test/components`, `src/test/smoke.test.tsx`
+   - Includes new utility and component tests
+
+2. **test-integration** job:
+   - Frontend: `src/test/integration`
+   - Includes new embedded browser integration tests
+
+3. **test-e2e** job (optional):
+   - Playwright: `e2e/` directory
+   - Runs against staging deployment
+   - Mobile Chrome project
+
+### Detailed Test Scenarios
+
+#### E2E Test Case 1: KakaoTalk Android Embedded Browser
+
 **Environment**: Samsung Galaxy A32, Android 13, KakaoTalk app
+
 **Steps**:
+
 1. Send app URL in KakaoTalk chat
 2. Click link (opens in KakaoTalk webview)
 3. Navigate to login page
@@ -680,14 +757,18 @@ Plan the test cases and test code implementation for the code changes in the ALL
 10. Verify login succeeds
 
 **Expected**:
+
 - Modal appears before OAuth attempt
 - Chrome opens successfully
 - OAuth works in Chrome
 - No 403 error
 
-##### Test Case 2: Direct Chrome Access
+#### E2E Test Case 2: Direct Chrome Access (Control)
+
 **Environment**: Samsung Galaxy A32, Android 13, Chrome browser
+
 **Steps**:
+
 1. Open Chrome
 2. Navigate to app URL
 3. Navigate to login page
@@ -698,13 +779,17 @@ Plan the test cases and test code implementation for the code changes in the ALL
 8. Verify login succeeds
 
 **Expected**:
+
 - No modal appears
 - OAuth proceeds normally
 - Login succeeds
 
-##### Test Case 3: Facebook In-App Browser
+#### E2E Test Case 3: Facebook In-App Browser
+
 **Environment**: Any device, Facebook app
+
 **Steps**:
+
 1. Share app URL in Facebook
 2. Click link (opens in Facebook webview)
 3. Navigate to login page
@@ -713,13 +798,17 @@ Plan the test cases and test code implementation for the code changes in the ALL
 6. Test external browser redirect
 
 **Expected**:
+
 - Facebook webview detected
 - Modal appears
 - External browser opens
 
-##### Test Case 4: iOS Safari
+#### E2E Test Case 4: iOS Safari (Control)
+
 **Environment**: iPhone, Safari browser
+
 **Steps**:
+
 1. Open Safari
 2. Navigate to app URL
 3. Navigate to login page
@@ -728,41 +817,56 @@ Plan the test cases and test code implementation for the code changes in the ALL
 6. Verify login succeeds
 
 **Expected**:
+
 - No detection (Safari is standard browser)
 - OAuth works normally
 
 ### Edge Cases
 
 #### Edge Case 1: Unknown Embedded Browser
+
 **Scenario**: New in-app browser not in detection list
-**Expected**: 
+
+**Expected**:
+
 - Detection misses
 - OAuth attempt proceeds
 - 403 error caught
 - Modal shown via error handler
 
 #### Edge Case 2: External Browser Redirect Fails
+
 **Scenario**: Android intent URL doesn't work
+
 **Expected**:
+
 - Modal shows manual instructions
 - User can follow 3-step guide
 - Fallback path available
 
 #### Edge Case 3: User Dismisses Modal
+
 **Scenario**: User clicks "취소" without following guidance
+
 **Expected**:
+
 - Modal closes
 - User can retry
 - Warning banner remains (if optional enhancement added)
 
 ---
 
-## Phase 6: Set up Test Codes
+## Phase 6: Test Implementation
+
+### Overview
+
+Implement all test code following the project's test structure: utility tests, component tests, page tests, integration tests, and E2E tests.
 
 ### Changes Required
 
-#### 1. Add Unit Tests for Browser Detection
-**File**: `src/frontend/src/utils/__tests__/browserDetection.test.ts` (NEW)
+#### 1. Unit Tests: Browser Detection Utilities
+
+**File**: `src/frontend/src/test/utils/browserDetection.test.ts` (NEW)
 **Changes**: Create test suite
 
 ```typescript
@@ -911,13 +1015,18 @@ describe('browserDetection', () => {
 ```
 
 **Rationale**:
+
 - Comprehensive test coverage
 - Tests all detection markers
 - Platform-specific URL generation
 - Verifies edge cases
 
-#### 2. Add Component Tests for Modal
-**File**: `src/frontend/src/components/__tests__/EmbeddedBrowserWarningModal.test.tsx` (NEW)
+**Run Command**: `npx vitest run src/test/utils/browserDetection.test.ts --reporter=verbose`
+
+#### 2. Component Tests: Warning Modal
+
+**File**: `src/frontend/src/test/components/EmbeddedBrowserWarningModal.test.tsx` (NEW)
+
 **Changes**: Create component test
 
 ```ts
@@ -1021,24 +1130,382 @@ describe('EmbeddedBrowserWarningModal', () => {
 ```
 
 **Rationale**:
+
 - Tests component rendering
 - Verifies button interactions
 - Checks props handling
 - Ensures accessibility
 
+**Run Command**: `npx vitest run src/test/components/EmbeddedBrowserWarningModal.test.tsx --reporter=verbose`
+
+#### 3. Page Unit Tests: LoginPage Updates
+
+**File**: `src/frontend/src/test/pages/LoginPage.test.tsx` (UPDATE EXISTING)
+
+**Changes**: Add tests for embedded browser detection in LoginPage
+
+```typescript
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import LoginPage from '../../pages/LoginPage';
+import * as browserDetection from '../../utils/browserDetection';
+import { supabase } from '../../supabaseClient';
+
+// Mock dependencies
+vi.mock('../../utils/browserDetection');
+vi.mock('../../supabaseClient');
+
+describe('LoginPage - Embedded Browser Detection', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('shows warning modal when Google login clicked in embedded browser', async () => {
+    vi.mocked(browserDetection.isEmbeddedBrowser).mockReturnValue(true);
+    vi.mocked(browserDetection.getBrowserName).mockReturnValue('KakaoTalk');
+
+    render(<LoginPage />);
+
+    const googleButton = screen.getByText(/Google로 로그인/);
+    fireEvent.click(googleButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('브라우저에서 열어주세요')).toBeInTheDocument();
+    });
+
+    // OAuth should NOT be called
+    expect(supabase.auth.signInWithOAuth).not.toHaveBeenCalled();
+  });
+
+  it('proceeds with OAuth when Google login clicked in standard browser', async () => {
+    vi.mocked(browserDetection.isEmbeddedBrowser).mockReturnValue(false);
+    vi.mocked(supabase.auth.signInWithOAuth).mockResolvedValue({ data: null, error: null });
+
+    render(<LoginPage />);
+
+    const googleButton = screen.getByText(/Google로 로그인/);
+    fireEvent.click(googleButton);
+
+    await waitFor(() => {
+      expect(supabase.auth.signInWithOAuth).toHaveBeenCalledWith({
+        provider: 'google',
+        options: { redirectTo: expect.any(String) },
+      });
+    });
+
+    // Modal should NOT appear
+    expect(screen.queryByText('브라우저에서 열어주세요')).not.toBeInTheDocument();
+  });
+
+  it('shows warning modal on OAuth 403 error in embedded browser', async () => {
+    vi.mocked(browserDetection.isEmbeddedBrowser).mockReturnValue(true);
+    vi.mocked(supabase.auth.signInWithOAuth).mockRejectedValue(
+      new Error('403: disallowed_useragent')
+    );
+
+    render(<LoginPage />);
+
+    const googleButton = screen.getByText(/Google로 로그인/);
+    fireEvent.click(googleButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('브라우저에서 열어주세요')).toBeInTheDocument();
+    });
+  });
+
+  it('displays warning banner on mount in embedded browser', () => {
+    vi.mocked(browserDetection.isEmbeddedBrowser).mockReturnValue(true);
+
+    render(<LoginPage />);
+
+    // If optional banner enhancement is implemented
+    expect(screen.queryByText(/앱 내부 브라우저에서는 Google 로그인이 제한됩니다/)).toBeInTheDocument();
+  });
+});
+```
+
+**Rationale**:
+
+- Tests LoginPage integration with detection
+- Verifies modal trigger logic
+- Tests OAuth flow protection
+- Validates error handling
+
+**Run Command**: `npx vitest run src/test/pages/LoginPage.test.tsx --reporter=verbose`
+
+#### 4. Integration Tests: Full Auth Flow
+
+**File**: `src/frontend/src/test/integration/auth/embeddedBrowser.test.ts` (NEW)
+
+**Changes**: Create integration test for complete flow
+
+```typescript
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import { BrowserRouter } from 'react-router-dom';
+import LoginPage from '../../../pages/LoginPage';
+import * as browserDetection from '../../../utils/browserDetection';
+
+// Integration test with real component interactions
+describe('Embedded Browser Detection - Integration', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    // Set up embedded browser environment
+    Object.defineProperty(window.navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Linux; Android 13) KAKAOTALK 10.0.0',
+      writable: true,
+    });
+  });
+
+  it('completes full detection → modal → redirect flow', async () => {
+    const openInExternalBrowserSpy = vi.spyOn(browserDetection, 'openInExternalBrowser')
+      .mockResolvedValue(true);
+
+    render(
+      <BrowserRouter>
+        <LoginPage />
+      </BrowserRouter>
+    );
+
+    // Step 1: Verify detection
+    expect(browserDetection.isEmbeddedBrowser()).toBe(true);
+
+    // Step 2: Click Google login
+    const googleButton = screen.getByText(/Google로 로그인/);
+    fireEvent.click(googleButton);
+
+    // Step 3: Modal appears
+    await waitFor(() => {
+      expect(screen.getByText('브라우저에서 열어주세요')).toBeInTheDocument();
+      expect(screen.getByText(/KakaoTalk 앱 내부 브라우저/)).toBeInTheDocument();
+    });
+
+    // Step 4: Click open in browser
+    const openBrowserButton = screen.getByText('브라우저에서 열기');
+    fireEvent.click(openBrowserButton);
+
+    // Step 5: Verify redirect attempt
+    await waitFor(() => {
+      expect(openInExternalBrowserSpy).toHaveBeenCalled();
+    });
+  });
+
+  it('handles user dismissal and retry', async () => {
+    render(
+      <BrowserRouter>
+        <LoginPage />
+      </BrowserRouter>
+    );
+
+    // Click Google login - modal appears
+    fireEvent.click(screen.getByText(/Google로 로그인/));
+
+    await waitFor(() => {
+      expect(screen.getByText('브라우저에서 열어주세요')).toBeInTheDocument();
+    });
+
+    // User dismisses modal
+    fireEvent.click(screen.getByText('취소'));
+
+    await waitFor(() => {
+      expect(screen.queryByText('브라우저에서 열어주세요')).not.toBeInTheDocument();
+    });
+
+    // User can retry
+    fireEvent.click(screen.getByText(/Google로 로그인/));
+
+    await waitFor(() => {
+      expect(screen.getByText('브라우저에서 열어주세요')).toBeInTheDocument();
+    });
+  });
+
+  it('shows manual instructions when auto-redirect fails', async () => {
+    vi.spyOn(browserDetection, 'openInExternalBrowser').mockResolvedValue(false);
+
+    render(
+      <BrowserRouter>
+        <LoginPage />
+      </BrowserRouter>
+    );
+
+    fireEvent.click(screen.getByText(/Google로 로그인/));
+
+    await waitFor(() => {
+      expect(screen.getByText(/수동으로 여는 방법/)).toBeInTheDocument();
+      expect(screen.getByText(/메뉴\(⋮\) 버튼을 누르세요/)).toBeInTheDocument();
+    });
+  });
+});
+```
+
+**Rationale**:
+
+- Tests complete user journey
+- Verifies component integration
+- Tests error recovery paths
+- Simulates real user interactions
+
+**Run Command**: `npx vitest run src/test/integration/auth --reporter=verbose`
+
+#### 5. E2E Tests: Playwright Mobile Chrome
+
+**File**: `src/frontend/e2e/auth/embedded-browser.spec.ts` (NEW)
+
+**Changes**: Create Playwright E2E test
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Embedded Browser Detection - E2E', () => {
+  test.use({
+    // Simulate KakaoTalk in-app browser
+    userAgent: 'Mozilla/5.0 (Linux; Android 13) KAKAOTALK 10.0.0 Mobile Safari/537.36',
+    viewport: { width: 375, height: 667 },
+  });
+
+  test('detects KakaoTalk browser and shows warning modal', async ({ page }) => {
+    // Navigate to login page
+    await page.goto('/login');
+
+    // Wait for page load
+    await page.waitForLoadState('networkidle');
+
+    // Optional: Check if warning banner appears
+    const banner = page.locator('text=/앱 내부 브라우저에서는 Google 로그인이 제한됩니다/');
+    if (await banner.isVisible()) {
+      await expect(banner).toBeVisible();
+    }
+
+    // Click Google login button
+    await page.click('button:has-text("Google로 로그인")');
+
+    // Modal should appear
+    await expect(page.locator('text=브라우저에서 열어주세요')).toBeVisible();
+    await expect(page.locator('text=/KakaoTalk 앱 내부 브라우저/')).toBeVisible();
+
+    // Verify modal content
+    await expect(page.locator('text=브라우저에서 열기')).toBeVisible();
+    await expect(page.locator('text=취소')).toBeVisible();
+    await expect(page.locator('text=/수동으로 여는 방법/')).toBeVisible();
+  });
+
+  test('allows user to dismiss modal', async ({ page }) => {
+    await page.goto('/login');
+    await page.waitForLoadState('networkidle');
+
+    // Trigger modal
+    await page.click('button:has-text("Google로 로그인")');
+    await expect(page.locator('text=브라우저에서 열어주세요')).toBeVisible();
+
+    // Dismiss modal
+    await page.click('button:has-text("취소")');
+
+    // Modal should disappear
+    await expect(page.locator('text=브라우저에서 열어주세요')).not.toBeVisible();
+  });
+
+  test('shows manual instructions for external browser opening', async ({ page }) => {
+    await page.goto('/login');
+    await page.waitForLoadState('networkidle');
+
+    // Trigger modal
+    await page.click('button:has-text("Google로 로그인")');
+
+    // Check manual instructions
+    await expect(page.locator('text=/메뉴\\(⋮\\) 버튼을 누르세요/')).toBeVisible();
+    await expect(page.locator('text=/다른 브라우저로 열기/')).toBeVisible();
+  });
+});
+
+test.describe('Standard Browser - E2E Control', () => {
+  test.use({
+    // Simulate standard Chrome browser
+    userAgent: 'Mozilla/5.0 (Linux; Android 13) Chrome/120.0.0.0 Mobile Safari/537.36',
+    viewport: { width: 375, height: 667 },
+  });
+
+  test('allows OAuth in standard browser without warning', async ({ page }) => {
+    await page.goto('/login');
+    await page.waitForLoadState('networkidle');
+
+    // No warning banner should appear
+    await expect(page.locator('text=/앱 내부 브라우저에서는 Google 로그인이 제한됩니다/')).not.toBeVisible();
+
+    // Click Google login button
+    await page.click('button:has-text("Google로 로그인")');
+
+    // Modal should NOT appear
+    await expect(page.locator('text=브라우저에서 열어주세요')).not.toBeVisible({ timeout: 2000 });
+
+    // Should redirect to OAuth (or show OAuth-related page)
+    // Note: Actual OAuth redirect will happen, just verify no modal interference
+  });
+});
+```
+
+**Rationale**:
+
+- Tests real browser behavior
+- Simulates different user agents
+- Validates mobile viewport
+- Tests both embedded and standard browsers
+
+**Run Command**: `npx playwright test --project="Mobile Chrome" e2e/auth/embedded-browser.spec.ts`
+
+### Test Execution Plan
+
+#### Local Development
+
+```bash
+# Run all unit tests
+npm run test
+
+# Run specific test suites
+npx vitest run src/test/utils --reporter=verbose
+npx vitest run src/test/components --reporter=verbose
+npx vitest run src/test/pages --reporter=verbose
+npx vitest run src/test/integration --reporter=verbose
+
+# Run E2E tests
+npm run test:e2e
+# Or specific file
+npx playwright test e2e/auth/embedded-browser.spec.ts
+```
+
+#### CI/CD Pipeline
+
+Tests will run automatically in this order:
+
+1. **test-unit** job (Frontend Unit Suites):
+   - `npx vitest run src/test/pages --reporter=verbose`
+   - `npx vitest run src/test/components --reporter=verbose`
+   - `npx vitest run src/test/smoke.test.tsx --reporter=verbose`
+
+2. **test-integration** job:
+   - `npx vitest run src/test/integration --reporter=verbose`
+
+3. **test-e2e** job (optional, against staging):
+   - `npm run test:e2e`
+
 ### Success Criteria
 
-#### Automated Verification:
-- [ ] All unit tests pass: `npm run test`
+#### Automated Tests
+
+- [ ] All unit tests pass (utils, components, pages)
+- [ ] All integration tests pass
+- [ ] All E2E tests pass in CI/CD
 - [ ] Test coverage ≥80% for new files
 - [ ] TypeScript compilation passes
-- [ ] ESLint passes
+- [ ] No ESLint errors
 
-#### Manual Verification:
-- [ ] Documentation is clear and accurate
-- [ ] Test suite covers edge cases
-- [ ] User guide is easy to follow
-- [ ] Technical docs help developers
+#### Manual Verification
+
+- [ ] Tests run successfully in local environment
+- [ ] Tests run successfully in CI/CD pipeline
+- [ ] Test reports are clear and actionable
+- [ ] Edge cases are covered
 
 ---
 
@@ -1325,69 +1792,205 @@ const handleOpenInBrowser = async () => {
 ## Implementation Checklist
 
 ### Phase 1: Browser Detection Utility
-- [ ] Create `src/frontend/src/utils/browserDetection.ts`
-- [ ] Implement `isEmbeddedBrowser()`
-- [ ] Implement `getBrowserType()`
-- [ ] Implement `getBrowserName()`
-- [ ] Implement `getExternalBrowserUrl()`
-- [ ] Implement `openInExternalBrowser()`
-- [ ] TypeScript compilation passes
-- [ ] Manual testing on KakaoTalk
-- [ ] Manual testing on Chrome
 
-### Phase 2: Warning Modal
+- [ ] Create `src/frontend/src/utils/browserDetection.ts`
+- [ ] Implement `isEmbeddedBrowser()` function
+- [ ] Implement `getBrowserType()` function
+- [ ] Implement `getBrowserName()` function
+- [ ] Implement `getExternalBrowserUrl()` function
+- [ ] Implement `openInExternalBrowser()` function
+- [ ] TypeScript compilation passes
+- [ ] ESLint passes for new file
+- [ ] Manual testing on KakaoTalk webview
+- [ ] Manual testing on Chrome browser
+
+### Phase 2: Warning Modal Component
+
 - [ ] Create `src/frontend/src/components/EmbeddedBrowserWarningModal.tsx`
-- [ ] Implement modal UI with MUI
-- [ ] Add Korean instructions
+- [ ] Implement modal UI with Material-UI Dialog
+- [ ] Add Korean language instructions
 - [ ] Add manual fallback instructions
-- [ ] Add "Open in Browser" button
+- [ ] Implement "브라우저에서 열기" button with handler
+- [ ] Implement "취소" button with handler
+- [ ] Add icons (OpenInBrowserIcon, InfoOutlinedIcon)
 - [ ] Test modal rendering
 - [ ] Test button interactions
-- [ ] Test responsive design
+- [ ] Test responsive design (mobile vs desktop)
 
 ### Phase 3: Login Flow Integration
+
 - [ ] Update `src/frontend/src/pages/LoginPage.tsx` imports
-- [ ] Add `showEmbeddedBrowserWarning` state
-- [ ] Add detection check in `handleSocialLogin`
-- [ ] Add modal component to render
-- [ ] Optional: Add warning banner
-- [ ] Test in KakaoTalk webview
-- [ ] Test in standard browser
-- [ ] Verify no regression
+- [ ] Add `showEmbeddedBrowserWarning` state variable
+- [ ] Add detection check at start of `handleSocialLogin`
+- [ ] Add modal component to JSX render
+- [ ] Optional: Add `showEmbeddedBanner` state
+- [ ] Optional: Add `useEffect` for banner detection
+- [ ] Optional: Add Alert banner in render
+- [ ] Test in KakaoTalk webview (Android)
+- [ ] Test in Chrome browser (Android)
+- [ ] Test in Safari browser (iOS)
+- [ ] Verify no regression in standard OAuth flow
 
-### Phase 4: Error Handling
-- [ ] Enhance error detection in catch block
-- [ ] Add OAuth error identification
+### Phase 4: Error Handling Enhancement
+
+- [ ] Enhance catch block in `handleSocialLogin`
+- [ ] Add OAuth 403 error detection
 - [ ] Add network error detection
-- [ ] Test error scenarios
-- [ ] Verify error messages
+- [ ] Show modal on OAuth policy errors
+- [ ] Show network message on network errors
+- [ ] Test simulated 403 error
+- [ ] Test simulated network error
+- [ ] Verify error state resets properly
 
-### Phase 5: Documentation and Testing
-- [ ] Create unit tests for browser detection
-- [ ] Create component tests for modal
-- [ ] Update technical documentation
-- [ ] Create user guide
-- [ ] All tests pass
-- [ ] Documentation complete
+### Phase 5: Testing Strategy
 
-### Phase 6: Analytics and Monitoring
-- [ ] Add logging to detection functions
-- [ ] Add OAuth error logging
-- [ ] Add modal interaction logging
-- [ ] Test logging output
-- [ ] Verify no sensitive data logged
+- [ ] Define test infrastructure and locations
+- [ ] Plan unit test coverage (utils)
+- [ ] Plan component test coverage (modal)
+- [ ] Plan page test coverage (LoginPage)
+- [ ] Plan integration test coverage (auth flow)
+- [ ] Plan E2E test coverage (Playwright)
+- [ ] Document test execution commands
+- [ ] Document CI/CD test integration
+
+### Phase 6: Test Implementation
+
+**Unit Tests:**
+
+- [ ] Create `src/frontend/src/test/utils/browserDetection.test.ts`
+- [ ] Test `isEmbeddedBrowser()` - all markers
+- [ ] Test `getBrowserType()` - all types
+- [ ] Test `getBrowserName()` - all browsers
+- [ ] Test `getExternalBrowserUrl()` - Android/iOS
+- [ ] Run: `npx vitest run src/test/utils --reporter=verbose`
+
+**Component Tests:**
+
+- [ ] Create `src/frontend/src/test/components/EmbeddedBrowserWarningModal.test.tsx`
+- [ ] Test modal visibility based on props
+- [ ] Test button click handlers
+- [ ] Test custom browser name prop
+- [ ] Test manual instructions display
+- [ ] Run: `npx vitest run src/test/components --reporter=verbose`
+
+**Page Tests:**
+
+- [ ] Update `src/frontend/src/test/pages/LoginPage.test.tsx`
+- [ ] Test modal trigger in embedded browser
+- [ ] Test OAuth proceeds in standard browser
+- [ ] Test error handling with detection
+- [ ] Test banner display (if implemented)
+- [ ] Run: `npx vitest run src/test/pages --reporter=verbose`
+
+**Integration Tests:**
+
+- [ ] Create `src/frontend/src/test/integration/auth/embeddedBrowser.test.ts`
+- [ ] Test detection → modal → redirect flow
+- [ ] Test user dismissal and retry
+- [ ] Test manual instructions fallback
+- [ ] Run: `npx vitest run src/test/integration --reporter=verbose`
+
+**E2E Tests:**
+
+- [ ] Create `src/frontend/e2e/auth/embedded-browser.spec.ts`
+- [ ] Test KakaoTalk user agent detection
+- [ ] Test modal appearance and content
+- [ ] Test modal dismissal
+- [ ] Test standard browser control (no modal)
+- [ ] Run: `npx playwright test --project="Mobile Chrome" e2e/auth/embedded-browser.spec.ts`
+
+**Test Verification:**
+
+- [ ] All unit tests pass locally
+- [ ] All component tests pass locally
+- [ ] All page tests pass locally
+- [ ] All integration tests pass locally
+- [ ] All E2E tests pass locally
+- [ ] Test coverage ≥80% for new files
+- [ ] All tests pass in CI/CD pipeline
+
+### Phase 7: Update Documentation
+
+- [ ] Update `docs/spec/tech-details.md`
+- [ ] Add "Embedded Browser Handling" section
+- [ ] Document detection logic
+- [ ] Document prevention logic
+- [ ] Document recovery flow
+- [ ] Document supported platforms
+- [ ] Document detected browsers
+- [ ] Document error handling
+
+### Phase 8: Create User Guide
+
+- [ ] Create `docs/user/browser-requirements.md`
+- [ ] Add supported browsers list
+- [ ] Add unsupported browsers list
+- [ ] Add "KakaoTalk link" troubleshooting
+- [ ] Add Method 1: Auto browser open
+- [ ] Add Method 2: Manual browser open
+- [ ] Add Method 3: Direct URL entry
+- [ ] Add explanation section
+- [ ] Add contact information
+
+### Phase 9: Analytics and Monitoring
+
+**Logging Implementation:**
+
+- [ ] Add logging to `isEmbeddedBrowser()` function
+- [ ] Add logging to `openInExternalBrowser()` function
+- [ ] Add logging to `handleSocialLogin()` catch block
+- [ ] Add logging to modal `handleClose()` handler
+- [ ] Add logging to modal `handleOpenInBrowser()` handler
+- [ ] Test logging output in console
+- [ ] Verify no sensitive data in logs
+- [ ] Verify structured log format
 
 ### Deployment
-- [ ] Code review completed
-- [ ] Staging deployment
-- [ ] Manual testing on staging
-- [ ] Production deployment
-- [ ] Post-deployment monitoring
-- [ ] Success metrics verified
 
----
+**Pre-Deployment:**
 
-**Implementation Start Date**: [To be determined]
-**Target Completion Date**: [To be determined]
-**Implementation Effort**: 2-3 days development + 1 day testing
-**Priority**: High (blocks Android users from Google OAuth)
+- [ ] Code review completed and approved
+- [ ] All automated tests passing
+- [ ] Manual testing completed
+- [ ] Documentation reviewed
+- [ ] User guide reviewed
+
+**Staging Deployment:**
+
+- [ ] Deploy to staging environment
+- [ ] Verify staging deployment health
+- [ ] Run smoke tests on staging
+- [ ] Test on actual Samsung Galaxy device with KakaoTalk
+- [ ] Test on iPhone with Safari
+- [ ] Monitor logs for 24 hours
+- [ ] Collect user feedback (if applicable)
+
+**Production Deployment:**
+
+- [ ] Create production deployment PR
+- [ ] Get stakeholder approval
+- [ ] Deploy to production environment
+- [ ] Verify production deployment health
+- [ ] Monitor error rates for first hour
+- [ ] Monitor OAuth success/failure rates
+- [ ] Check embedded browser detection rate
+- [ ] Monitor external browser redirect success rate
+
+**Post-Deployment Monitoring (First Week):**
+
+- [ ] Track OAuth 403 errors from embedded browsers
+- [ ] Track modal appearance rate
+- [ ] Track external browser redirect success rate
+- [ ] Track user complaints/support tickets
+- [ ] Verify success metrics achieved
+- [ ] Document any issues found
+- [ ] Plan fixes for any issues
+
+### Success Metrics
+
+- [ ] OAuth 403 errors from embedded browsers: 0%
+- [ ] Modal appearance rate in embedded browsers: 100%
+- [ ] External browser redirect success: >90%
+- [ ] User complaints about login: <5% of previous baseline
+- [ ] Test coverage: ≥80% for new code
+- [ ] No regressions in standard browser OAuth flow
