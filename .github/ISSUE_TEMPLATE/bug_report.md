@@ -17,6 +17,9 @@ Steps to reliably reproduce the behavior:
 3. Scroll down to '....'
 4. See error
 
+**Error Details**
+A clear and concise description of the error that occurred.
+
 **Expected Behavior**
 A clear and concise description of what you expected to happen.
 
