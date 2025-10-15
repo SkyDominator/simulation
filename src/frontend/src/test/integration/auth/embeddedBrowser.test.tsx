@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { renderWithProviders, screen, fireEvent, waitFor } from "../../utils/renderWithProviders";
 import "@testing-library/jest-dom";
 import LoginPage from "../../../pages/LoginPage";
 import * as browserDetection from "../../../utils/browserDetection";
@@ -8,6 +8,23 @@ import * as browserDetection from "../../../utils/browserDetection";
 describe("Embedded Browser Detection - Integration", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    
+    // Re-mock window.matchMedia after resetAllMocks
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockImplementation((query) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+    
     // Set up embedded browser environment
     Object.defineProperty(window.navigator, "userAgent", {
       value: "Mozilla/5.0 (Linux; Android 13) KAKAOTALK 10.0.0",
@@ -21,7 +38,7 @@ describe("Embedded Browser Detection - Integration", () => {
       .spyOn(browserDetection, "openInExternalBrowser")
       .mockResolvedValue(true);
 
-    render(<LoginPage />);
+    renderWithProviders(<LoginPage />, { withAuth: false });
 
     // Step 1: Verify detection
     expect(browserDetection.isEmbeddedBrowser()).toBe(true);
@@ -49,7 +66,7 @@ describe("Embedded Browser Detection - Integration", () => {
   });
 
   it("handles user dismissal and retry", async () => {
-    render(<LoginPage />);
+    renderWithProviders(<LoginPage />, { withAuth: false });
 
     // Click Google login - modal appears
     fireEvent.click(screen.getByText(/Google로 로그인/));
@@ -80,7 +97,7 @@ describe("Embedded Browser Detection - Integration", () => {
       false
     );
 
-    render(<LoginPage />);
+    renderWithProviders(<LoginPage />, { withAuth: false });
 
     fireEvent.click(screen.getByText(/Google로 로그인/));
 

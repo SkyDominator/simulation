@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { renderWithProviders, screen, fireEvent, waitFor } from "../utils/renderWithProviders";
 import "@testing-library/jest-dom";
 import LoginPage from "../../pages/LoginPage";
 import * as browserDetection from "../../utils/browserDetection";
@@ -12,13 +12,29 @@ vi.mock("../../supabaseClient");
 describe("LoginPage - Embedded Browser Detection", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    
+    // Re-mock window.matchMedia after resetAllMocks
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockImplementation((query) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
   });
 
   it("shows warning modal when Google login clicked in embedded browser", async () => {
     vi.mocked(browserDetection.isEmbeddedBrowser).mockReturnValue(true);
     vi.mocked(browserDetection.getBrowserName).mockReturnValue("KakaoTalk");
 
-    render(<LoginPage />);
+    renderWithProviders(<LoginPage />, { withAuth: false });
 
     const googleButton = screen.getByText(/Google로 로그인/);
     fireEvent.click(googleButton);
@@ -38,7 +54,7 @@ describe("LoginPage - Embedded Browser Detection", () => {
       error: null,
     });
 
-    render(<LoginPage />);
+    renderWithProviders(<LoginPage />, { withAuth: false });
 
     const googleButton = screen.getByText(/Google로 로그인/);
     fireEvent.click(googleButton);
@@ -62,7 +78,7 @@ describe("LoginPage - Embedded Browser Detection", () => {
       new Error("403: disallowed_useragent")
     );
 
-    render(<LoginPage />);
+    renderWithProviders(<LoginPage />, { withAuth: false });
 
     const googleButton = screen.getByText(/Google로 로그인/);
     fireEvent.click(googleButton);
@@ -75,7 +91,7 @@ describe("LoginPage - Embedded Browser Detection", () => {
   it("displays warning banner on mount in embedded browser", () => {
     vi.mocked(browserDetection.isEmbeddedBrowser).mockReturnValue(true);
 
-    render(<LoginPage />);
+    renderWithProviders(<LoginPage />, { withAuth: false });
 
     // If optional banner enhancement is implemented
     expect(
