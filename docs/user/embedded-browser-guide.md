@@ -1,144 +1,116 @@
-# Embedded Browser Login Guide
+# 로그인 문제 해결 가이드
 
-## Overview
+## 개요
 
-This guide helps users understand and resolve login issues when accessing the Light of Life Club Simulation application through embedded/in-app browsers like KakaoTalk, Facebook, or Instagram.
+생명빛 클럽 시뮬레이션 앱에 로그인할 때 문제가 발생하셨나요? 이 가이드는 카카오톡, 페이스북, 인스타그램 등의 앱 내에서 링크를 클릭했을 때 발생하는 로그인 문제를 해결하는 방법을 안내합니다.
 
-## What is an Embedded Browser?
+## 왜 로그인이 안 되나요?
 
-An **embedded browser** (or in-app browser) is a web browser that opens within another application. Examples include:
+카카오톡, 페이스북, 인스타그램 등의 앱에서 링크를 클릭하면, 해당 앱 안에서 웹페이지가 열립니다. 이런 방식으로 열린 브라우저에서는 보안상의 이유로 **구글 로그인이 작동하지 않습니다**.
 
-- **KakaoTalk in-app browser**: When you click a link in KakaoTalk messages
-- **Facebook in-app browser**: When you open links from Facebook posts
-- **Instagram in-app browser**: When you click links in Instagram bio or posts
-- **Twitter/X in-app browser**: When you open links from tweets
-- **Line in-app browser**: When you click links in Line chats
+### 이런 상황에서 문제가 발생합니다
 
-## The Problem
+- 카카오톡 메시지에서 링크를 클릭했을 때
+- 페이스북 게시물의 링크를 눌렀을 때
+- 인스타그램 프로필 링크를 클릭했을 때
+- 트위터(X)에서 링크를 열었을 때
+- 라인 채팅에서 링크를 눌렀을 때
 
-Google OAuth (Google login) **does not work** in embedded browsers due to security restrictions. When you try to log in with Google through an embedded browser, you'll see:
+## 해결 방법
 
-1. A warning modal explaining the limitation
-2. Instructions to open the application in a standard browser
-3. An "Open in Browser" button
+앱에서 경고창이 나타나면 다음과 같이 해결할 수 있습니다
 
-## Solution: Open in Standard Browser
+### 방법 1: "브라우저에서 열기" 버튼 사용 (가장 쉬운 방법)
 
-### For Android Users (Samsung Galaxy, etc.)
+1. 경고창이 나타나면 **"브라우저에서 열기"** 버튼을 누르세요
+2. 크롬이나 삼성 인터넷 등 기본 브라우저에서 자동으로 열립니다
+3. 이제 구글 로그인을 하실 수 있습니다
 
-**Option 1: Use the "Open in Browser" Button**
-1. When you see the warning modal, tap **"Open in Browser"**
-2. The application will automatically open in your default browser (Chrome, Samsung Internet, etc.)
-3. Log in with Google OAuth from the standard browser
+### 방법 2: 직접 브라우저에서 열기
 
-**Option 2: Manually Open in Browser**
+#### 안드로이드 사용자 (갤럭시 등)
 
-**From KakaoTalk:**
-1. Tap the **three dots (⋮)** in the top-right corner
-2. Select **"Open in Chrome"** or **"Open in browser"**
-3. Log in with Google OAuth from Chrome
+**카카오톡에서:**
 
-**From Facebook/Instagram:**
-1. Tap the **three dots (⋮)** or menu icon
-2. Select **"Open in external browser"**
-3. Log in with Google OAuth from your default browser
+1. 화면 오른쪽 위의 **점 세개(⋮)** 버튼을 누르세요
+2. **"크롬에서 열기"** 또는 **"브라우저에서 열기"**를 선택하세요
+3. 크롬에서 구글 로그인을 진행하세요
 
-### For iOS Users (iPhone, iPad)
+**페이스북/인스타그램에서:**
 
-**From Safari or any app:**
-1. Look for the **Share button** (square with arrow pointing up)
-2. Select **"Open in Safari"** or **"Open in Chrome"**
-3. Log in with Google OAuth from the standard browser
+1. **점 세개(⋮)** 또는 메뉴 아이콘을 누르세요
+2. **"외부 브라우저에서 열기"**를 선택하세요
+3. 기본 브라우저에서 구글 로그인을 진행하세요
 
-## Why This Happens
+#### iOS 사용자 (아이폰, 아이패드)
 
-Google restricts OAuth authentication in embedded browsers for security reasons:
+**아무 앱에서든:**
 
-- **User-Agent Blocking**: Google detects embedded browser user-agents and blocks authentication
-- **Security Policy**: Embedded browsers may not meet Google's security requirements for OAuth flows
-- **Fraud Prevention**: Prevents potential phishing attacks through in-app browsers
+1. **공유 버튼**(위쪽 화살표가 있는 사각형)을 찾으세요
+2. **"Safari에서 열기"** 또는 **"Chrome에서 열기"**를 선택하세요
+3. 표준 브라우저에서 구글 로그인을 진행하세요
 
-## Alternative: Use Kakao Login
+## 다른 방법: 카카오 로그인 사용
 
-If you prefer to stay in the embedded browser, you can:
+만약 앱 안에서 계속 사용하고 싶으시다면:
 
-1. Use **Kakao OAuth** instead of Google OAuth
-2. Kakao login may work in some embedded browsers (depending on the platform)
+1. 구글 로그인 대신 **카카오 로그인**을 사용하세요
+2. 카카오 로그인은 일부 앱 내 브라우저에서 작동할 수 있습니다
 
-**Note**: This is not guaranteed to work in all embedded browsers.
+**참고**: 모든 상황에서 작동이 보장되지는 않습니다. 가장 확실한 방법은 크롬이나 Safari 같은 일반 브라우저를 사용하는 것입니다.
 
-## Technical Details
+## 문제 해결
 
-The application automatically detects the following embedded browsers:
+### "브라우저에서 열기" 버튼이 작동하지 않아요
 
-- KakaoTalk (`KAKAOTALK` in user-agent)
-- Android WebView (`wv` or `WebView`)
-- Facebook (`FBAN`, `FBAV`)
-- Instagram (`Instagram`)
-- Twitter/X (`Twitter`)
-- Line (`Line`)
-- Naver (`Naver`)
+**주소를 직접 복사해서 열어보세요:**
 
-When detected, the application will:
+1. 주소창을 길게 눌러주세요
+2. 주소를 복사하세요
+3. 크롬이나 Safari를 열고 주소를 붙여넣으세요
+4. 일반 브라우저에서 로그인하세요
 
-1. Display a warning modal before attempting OAuth
-2. Provide instructions and an "Open in Browser" button
-3. Log the detection for debugging purposes
+### 경고창이 나타나지 않는데 로그인이 안 돼요
 
-## Troubleshooting
+경고창이 보이지 않지만 로그인이 안 된다면:
 
-### The "Open in Browser" button doesn't work
+1. 일반 브라우저(크롬, Safari, 삼성 인터넷)에서 직접 열어보세요
+2. 브라우저의 캐시와 쿠키를 지워보세요
+3. 그래도 안 되면 고객 지원팀에 문의해주세요
 
-**Try manually copying the URL:**
-1. Long-press on the address bar
-2. Copy the URL
-3. Open Chrome/Safari and paste the URL
-4. Log in from the standard browser
+### 카카오 로그인도 안 돼요
 
-### I don't see the warning modal
+일부 앱에서는 모든 로그인 방식이 차단될 수 있습니다:
 
-If you don't see the warning modal but still can't log in:
+1. **항상 일반 브라우저를 사용하세요** (크롬, Safari, 삼성 인터넷)
+2. 자주 사용하신다면 즐겨찾기에 추가하세요
+3. 메신저 앱에서 링크를 클릭하지 말고, 직접 브라우저에서 접속하세요
 
-1. Check if you're in an embedded browser (look for in-app browser indicators)
-2. Try manually opening in a standard browser
-3. Clear your browser cache and cookies
-4. Contact support if the issue persists
+## 더 편하게 사용하는 방법
 
-### Kakao login also doesn't work
+### 즐겨찾기에 추가하기
 
-Some embedded browsers may block all OAuth flows:
+브라우저에서 즐겨찾기(북마크)에 추가해두시면 편리합니다:
 
-1. **Always use a standard browser** (Chrome, Safari, Samsung Internet)
-2. Bookmark the application for easy access
-3. Avoid clicking links from messaging apps
+- **메인 서비스**: `https://simulation.lightoflifeclub.com`
+- **테스트 서비스**: `https://staging-simulation.lightoflifeclub.com`
 
-## Best Practices
+### 홈 화면에 바로가기 추가하기 (앱처럼 사용)
 
-**For the best experience:**
+1. 크롬이나 Safari에서 사이트를 여세요
+2. **"홈 화면에 추가"**를 선택하세요
+3. 이제 앱처럼 바로 실행할 수 있습니다
 
-1. **Bookmark the application** in your standard browser:
-   - **Production**: `https://simulation.lightoflifeclub.com`
-   - **Staging**: `https://staging-simulation.lightoflifeclub.com`
+### 추천 브라우저
 
-2. **Use Chrome, Safari, or Samsung Internet** for accessing the application
+다음 브라우저를 사용하시면 문제없이 로그인하실 수 있습니다:
 
-3. **Avoid in-app browsers** for applications requiring authentication
+- **안드로이드**: 크롬, 삼성 인터넷
+- **iOS**: Safari, 크롬
 
-4. **Add to Home Screen** (PWA):
-   - Open the application in Chrome/Safari
-   - Tap **"Add to Home Screen"**
-   - Access the application as a standalone PWA
+## 도움이 필요하신가요?
 
-## Contact Support
+계속 문제가 발생한다면:
 
-If you continue to experience issues:
-
-- **Email**: [Support email address]
-- **Issue Tracker**: [GitHub Issues link]
-- **Help**: Open the application and tap **Help** → **Report Issue**
-
-## Related Resources
-
-- [Google OAuth Security Best Practices](https://developers.google.com/identity/protocols/oauth2/policies)
-- [Progressive Web App (PWA) Guide](../future/enterprise.md)
-- [Technical Specification](../spec/tech-details.md)
+- 앱에서 **도움말** → **문제 신고** 메뉴를 이용하세요
+- 또는 고객 지원팀에 문의해주세요
