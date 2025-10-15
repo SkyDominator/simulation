@@ -29,7 +29,7 @@ gh auth status
 Log in to GitHub CLI if not logged in.:
 
 ```shell
-# Use SIMULATION_READ_ISSUE (fine grained token) in the environment variables to log in.
+# Use `SIMULATION_READ_ISSUE` (fine grained token for Github issue read-only) in the environment variables to log in.
 gh auth login
 ```
 
