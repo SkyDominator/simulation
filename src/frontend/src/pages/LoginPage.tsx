@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import {
   Box,
@@ -11,6 +11,8 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { isE2EMode } from "../utils/testMode";
+import { isEmbeddedBrowser } from "../utils/browserDetection";
+import EmbeddedBrowserWarningModal from "../components/EmbeddedBrowserWarningModal";
 
 type OAuthProvider = "google" | "kakao";
 
@@ -23,10 +25,30 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
     null
   );
   const [error, setError] = useState<string | null>(null);
+  const [showEmbeddedBrowserWarning, setShowEmbeddedBrowserWarning] =
+    useState(false);
+  const [showEmbeddedBanner, setShowEmbeddedBanner] = useState(false);
   const e2eMode = isE2EMode();
+
+  // Detect embedded browser on mount and show persistent warning banner
+  useEffect(() => {
+    if (isEmbeddedBrowser()) {
+      setShowEmbeddedBanner(true);
+    }
+  }, []);
 
   const handleSocialLogin = async (provider: OAuthProvider) => {
     if (loadingProvider) return; // prevent double clicks
+
+    // Check if running in embedded browser before attempting OAuth
+    if (isEmbeddedBrowser()) {
+      console.warn(
+        `OAuth blocked: Running in embedded browser. Provider: ${provider}`
+      );
+      setShowEmbeddedBrowserWarning(true);
+      return;
+    }
+
     setError(null);
     setLoadingProvider(provider);
     try {
@@ -44,9 +66,40 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
         provider,
         options: { redirectTo: window.location.origin },
       });
-    } catch (err) {
-      console.error(`${provider} login error:`, err);
-      setError("로그인 중 오류가 발생했습니다. 다시 시도해주세요.");
+    } catch (err: unknown) {
+      console.error("[OAuth] Login error:", {
+        provider,
+        error: err,
+        message: err instanceof Error ? err.message : "",
+        isEmbeddedBrowser: isEmbeddedBrowser(),
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Check for network errors
+      const errorMessage = err instanceof Error ? err.message : "";
+      const isNetworkError =
+        errorMessage.includes("fetch") ||
+        errorMessage.includes("network") ||
+        errorMessage.includes("timeout");
+
+      // Check for OAuth policy errors
+      const isOAuthPolicyError =
+        errorMessage.includes("403") ||
+        errorMessage.includes("disallowed_useragent") ||
+        errorMessage.includes("secure browser");
+
+      if (isOAuthPolicyError && isEmbeddedBrowser()) {
+        // OAuth blocked by Google in embedded browser
+        setShowEmbeddedBrowserWarning(true);
+        setError(null);
+      } else if (isNetworkError) {
+        setError("네트워크 연결을 확인해주세요.");
+      } else {
+        // Generic error
+        setError("로그인 중 오류가 발생했습니다. 다시 시도해주세요.");
+      }
+
       setLoadingProvider(null);
     }
   };
@@ -92,6 +145,18 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
           </Typography>
         </Box>
         <Stack spacing={2.5}>
+          {showEmbeddedBanner && (
+            <Alert
+              severity="warning"
+              onClose={() => setShowEmbeddedBanner(false)}
+              sx={{ mb: 2 }}
+            >
+              <Typography variant="body2">
+                앱 내부 브라우저에서는 Google 로그인이 제한됩니다. 일반
+                브라우저(Chrome, Safari)에서 열어주세요.
+              </Typography>
+            </Alert>
+          )}
           {error && (
             <Alert severity="error" onClose={() => setError(null)}>
               {error}
@@ -129,6 +194,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
           </Button>
         </Stack>
       </Paper>
+
+      {/* Embedded Browser Warning Modal */}
+      <EmbeddedBrowserWarningModal
+        open={showEmbeddedBrowserWarning}
+        onClose={() => setShowEmbeddedBrowserWarning(false)}
+      />
     </Box>
   );
 };
