@@ -40,4 +40,4 @@ $PLAN$: `docs/plan/IS-89/plan-00.md`
 
 ## Tasks
 
-Iterate self-correction-and-review loop until the tests pass. If you think the issues lie the codebase itself, not the test codes, consult the $PLAN$ and $RESEARCH_RESULT$ files and continue the loop.
+Iterate self-correction-and-review loop until the tests pass. Consult the $PLAN$ and $RESEARCH_RESULT$ files to continue the loop. If you think the issues lie the codebase itself, not the test codes, stop and report me.
