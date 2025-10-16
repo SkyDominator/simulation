@@ -112,9 +112,9 @@ This Software Specification Document (SSD) provides the technical specifications
 
 ### 5.2 Privacy & Consent
 
-- **GET /api/privacy-policy**: ?version&locale → DB/fallback
-- **POST /api/consents**: user_hash, type, version (pre-auth)
-- **GET /api/consents/{user_hash}**: retrieve records
+- **GET /api/privacy-policy**: ?version&locale → DB/fallback (public)
+- **POST /api/consents**: user_hash, type, version (pre-auth, public)
+- **GET /api/consents/{user_hash}**: retrieve records (pre-auth, public)
 
 ### 5.3 Auth
 
@@ -129,6 +129,7 @@ This Software Specification Document (SSD) provides the technical specifications
 - **PATCH /api/simulations/{id}**: update inputs
 - **PATCH /api/simulations/{id}/memo**: update memo
 - **DELETE /api/simulations/{id}**: delete
+- **POST /api/simulation/delete**: delete (alternative POST method)
 
 ### 5.5 Notices (public read, admin write)
 

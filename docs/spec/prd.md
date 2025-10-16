@@ -10,12 +10,11 @@ Light of Life Club Simulation (Simulation) is a Progressive Web Application (PWA
 
 Users complete a secure onboarding flow (whitelist verification → OTP → privacy consent → OAuth login) before accessing personalized simulation tools. The application enables users to model various simulation plans (10 plan types), adjust parameters, run calculations, and visualize results across multiple rounds. Users can view results in different format and see a comprehensive result combining multiple plans they choose.
 
-The users with administrator role can manage public notices and privacy policies through a dedicated interface. 
+The users with administrator role can manage public notices and privacy policies through a dedicated interface.
 
 ### Summary: the core value
 
 This PWA provides mobile-optimized experiences with offline capabilities, saving users time while enabling informed financial planning.
-
 
 ## 2. Users
 
@@ -63,10 +62,10 @@ So, the requirements are:
 
 ### Pre-Authentication Flow
 
-- Whitelist verification by name and phone number (SHA256 hashing)
-- SMS-based OTP verification with rate limiting (3 sends per 15 minutes, 10 per day, 6 verification attempts)
+- Whitelist verification by name and phone number
+- SMS-based OTP verification with rate limiting
 - Privacy policy display and consent recording (one-time)
-- Supabase OAuth login (Google, Kakao providers)
+- OAuth login (Google, Kakao providers)
 
 ### Create & Save Simulation
 
@@ -88,10 +87,10 @@ Update the saved simulation parameters above, and save the simulation.
 
 Run financial calculations with the saved simulation. The calculations include:
 
-  - Revenue projections
-  - Commission calculations (32%)
-  - Bonus structures (round-specific multipliers)
-  - Tax computations (3.3%)
+- Revenue projections
+- Commission calculations (32%)
+- Bonus structures (round-specific multipliers)
+- Tax computations (3.3%)
 
 For details of calculation logic, see [code](../../src/backend/simulation_service.py).
 
@@ -158,10 +157,10 @@ View public notices and announcements on dashboard
         1. external browser (Chrome, Edge)
         2. installed PWA
 2. Enters name and phone number on whitelist check page
-3. System validates against whitelist via SHA256 hash
+3. System validates against whitelist
 4. System sends 6-digit OTP via SMS
 5. User enters OTP code within 5 minutes
-6. System displays privacy policy (fetched from database or static file)
+6. System displays privacy policy
 7. User reads policy and clicks "Accept"
     1. One time consent required
     2. Can click "Decline" to return to whitelist page
@@ -182,11 +181,11 @@ View public notices and announcements on dashboard
 1. User clicks "View Results" on simulation row
 2. Users [Get Simulation Results](#get-simulation-results)
 3. Users reviews results and optionally adds/modifies memo
-4. Users [Get Comprehensive Simulation Results](#get-comprehensive-simulation-results)
+4. Users [Get Comprehensive Simulation Results](#get-comprehensive-simulation-results) from multiple selected simulations
 
-### Delete Simulation
+### Delete Simulations
 
-1. Users [Delete Simulation](#delete-simulation).
+1. Users [Delete Simulation](#delete-simulation) through dashboard interface.
 
 
 ### Public Notices and Privacy Policies
