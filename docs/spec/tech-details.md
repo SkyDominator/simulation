@@ -98,7 +98,20 @@ src/frontend/src/
 
 **Nginx Reverse Proxy**: Routes by hostname on port 8080, forwards to appropriate frontend/backend containers.
 
+**Docker Compose Details**:
+
+- **Startup Order**: Backend starts before frontend (healthcheck dependency)
+- **Port Mapping**: Production (3000 frontend, 8000 backend), Staging (4173 frontend, 8001 backend)
+- **CI/CD**: GitHub Actions with self-hosted runner on Droplet
+
 ### 2.2 Local Development
+
+**Development Environment**:
+
+- **OS**: Windows 11 with VS Code
+- **Port Configuration**: Frontend dev (5173), Backend dev (8001)
+- **Environment Files**: Backend `.env`, Frontend `.env.local` required
+- **Docker Usage**: Only for production builds/testing, not for local development
 
 **Setup**:
 
@@ -168,6 +181,15 @@ Origins defined in `config/settings.py`:
 - `VITE_SUPABASE_URL`: Same as backend Supabase URL
 - `VITE_SUPABASE_PUBLISHABLE_KEY`: Supabase client (publishable) key
 - `VITE_API_BASE_URL`: API endpoint (defaults in `vite.config.ts` to production domain)
+
+### 3.3 Database Configuration
+
+**Supabase Cloud Setup**:
+
+- **RLS Policies**: Row-Level Security enabled on all tables
+- **Schema Reference**: See `docs/spec/schema.md` for complete schema definition
+- **Connection Pooling**: Managed automatically by Supabase cloud
+- **Migrations**: Consider existing data and RLS policies when modifying schema
 
 ## 4. Backend Implementation Patterns
 
@@ -262,6 +284,16 @@ async def my_feature(
     return service.execute(req, user_id)
 ```
 
+### 4.7 API Development Guidelines
+
+**Source of Truth**: `api/routes.py` implementation is authoritative over specification documents.
+
+**Best Practices**:
+
+- **Endpoint Design**: Keep `api/routes.py` thin (~476 lines currently) - delegate logic to services
+- **Backwards Compatibility**: Maintain compatibility when updating existing endpoints
+- **Incomplete Specs**: Some SSD endpoints may not be implemented yet - verify against actual code
+
 ## 5. Frontend Implementation Patterns
 
 ### 5.1 Embedded Browser Detection
@@ -331,81 +363,55 @@ export const useSimulationActions = () => {
 };
 ```
 
-## 6. Common Gotchas & Troubleshooting
+### 5.5 Frontend Security Guidelines
 
-### 6.1 Testing
+**Critical Rules**:
 
-- **Mock JWKS**: Mock `JWKSClient.get_keys()` to avoid real HTTP calls in tests
-- **Environment Variables**: Backend tests need env vars → use pytest fixtures
-- **Integration Tests**: Located in `src/backend/tests/integration/`
-- **Frontend Tests**: Use Vitest + React Testing Library
+- **No Sensitive Storage**: Never store sensitive data (tokens, passwords, PII) in localStorage or sessionStorage
+- **JWT Management**: Let Supabase client handle all JWT operations (no manual token storage)
+- **Error Boundaries**: Implement React error boundaries for graceful failure handling
+- **Input Validation**: Validate and sanitize all user inputs before API calls
+- **XSS Prevention**: React escapes by default, but be careful with `dangerouslySetInnerHTML`
 
-### 6.2 OTP/SMS
+## 6. Common Pitfalls
 
-- **Korean Messages**: Maintain Korean message format contracts with SMS provider
-- **Rate Limits**: Tracked at service layer via database queries
-- **Variable Name**: `otp_max_verification_attempts` is lowercase (not camelCase)
-- **Hash Storage**: OTP codes stored as HMAC hashes, never plaintext
+### 6.1 OTP/SMS Issues
 
-### 6.3 Simulations
+- **Variable Name**: `otp_max_verification_attempts` is **lowercase** (not camelCase) - common configuration error
+- **Korean Messages**: Must maintain exact Korean message format contracts with SMS provider (Solapi)
+- **Rate Limits**: Tracked via database queries, not in-memory - restart won't reset limits
+- **Hash Storage**: OTP codes stored as HMAC hashes with `OTP_SECRET_KEY` - never store plaintext
 
-- **Empty State**: `get_simulations` returns 404 if no simulations exist for user
-- **Cache Invalidation**: Update/delete operations clear `simulation_results` field
-- **Re-run Required**: Must call `/api/simulation/run` to regenerate results after updates
-- **Financial Logic**: Complex algorithm in `simulation_service.py` with 10 plan types
+### 6.2 Simulation State Management
 
-### 6.4 Admin/Privacy Policies
+- **Empty State**: `GET /api/simulations` returns 404 (not empty array) when user has no simulations
+- **Cache Invalidation**: Update/delete operations set `simulation_results` → `null` automatically
+- **Re-run Required**: After parameter updates, must explicitly call `/api/simulation/run` to regenerate results
+- **Plan Parameters**: Verify plan_id exists in `constants.py` PLAN_PARAMETERS before processing
 
-- **Create Constraint**: Cannot set `published=true` when creating policies
-- **Publish Endpoint**: Use dedicated `/api/admin/privacy-policies/{id}/publish` endpoint
-- **Admin Check**: All admin endpoints require `_assert_admin()` call
-- **Version Uniqueness**: `(version, locale)` must be unique in database
+### 6.3 Admin/Privacy Policy Constraints
 
-### 6.5 Frontend Security
+- **Create vs Publish**: Cannot set `published=true` directly when creating - must use separate publish endpoint
+- **Publish Endpoint**: Use `POST /api/admin/privacy-policies/{id}/publish` after creation
+- **Version Uniqueness**: Database enforces unique constraint on `(version, locale)` pair
+- **Admin Verification**: All admin endpoints call `_assert_admin()` which queries `admins` table
 
-- **No Sensitive Storage**: Never store sensitive data in localStorage
-- **JWT Management**: Let Supabase client handle all JWT operations
-- **Error Boundaries**: Implement React error boundaries for graceful failures
-- **Input Validation**: Validate all user inputs before API calls
+### 6.4 Embedded Browser OAuth
 
-### 6.6 Embedded Browser Handling
+**Problem**: Google OAuth fails with 403 in embedded browsers (KakaoTalk, Facebook, Instagram in-app browsers)
 
-**Problem**: Google blocks OAuth in embedded browsers (KakaoTalk, Facebook, Instagram webviews)
+**Detection & Solution**:
 
-**Solution**:
+1. Use `isEmbeddedBrowser()` from `utils/browserDetection.ts` before OAuth flow
+2. Show `EmbeddedBrowserWarningModal` to inform user
+3. Call `openInExternalBrowser()` to guide user to system browser
 
-1. Detect embedded browser using `isEmbeddedBrowser()`
-2. Show `EmbeddedBrowserWarningModal` before OAuth attempt
-3. Guide user to open external browser via `openInExternalBrowser()`
+**Testing**: Verify with actual KakaoTalk, Facebook, Instagram apps on mobile devices
 
-**Testing**: Verify with KakaoTalk, Facebook, Instagram in-app browsers
+### 6.5 Testing Configuration
 
-### 6.7 Docker Compose Deployment
-
-- **Startup Order**: Backend starts before frontend (healthcheck dependency)
-- **Port Mapping**: Production (3000 frontend, 8000 backend), Staging (4173 frontend, 8001 backend)
-- **Nginx Routing**: Port 8080 with host-based routing to containers
-- **Ingress**: Cloudflare Tunnel provides secure HTTPS access
-- **CI/CD**: GitHub Actions with self-hosted runner on Droplet
-
-### 6.8 Database
-
-- **RLS Policies**: Row-Level Security enabled on all tables
-- **Schema Reference**: See `docs/spec/schema.md` for complete schema
-- **Migrations**: Consider existing data and RLS policies when modifying schema
-- **Connection Pooling**: Managed by Supabase cloud
-
-### 6.9 Development Environment
-
-- **Local OS**: Windows 11 with VS Code
-- **Port Conflicts**: Frontend dev (5173), Backend dev (8001) - ensure ports free
-- **Environment Files**: Backend `.env`, Frontend `.env.local` required
-- **Docker for Local**: Not used for development, only for production builds/testing
-
-### 6.10 API Contracts
-
-- **Source of Truth**: `api/routes.py` implementation > specification documents
-- **Incomplete Specs**: Some SSD endpoints not yet implemented
-- **Backwards Compatibility**: Maintain compatibility when updating endpoints
-- **Keep Thin**: `api/routes.py` is ~476 lines - keep endpoints thin, delegate to services
+- **Mock JWKS**: Always mock `JWKSClient.get_keys()` in tests to avoid external HTTP calls
+- **Test Mode**: Set `TEST_MODE=true` environment variable to use test implementations from `test_implementations.py`
+- **Environment Variables**: Backend tests require `.env` file or pytest fixtures for Supabase credentials
+- **Integration Tests**: Located in `src/backend/tests/integration/` with separate test database
 
