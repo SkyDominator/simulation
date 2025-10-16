@@ -66,7 +66,7 @@ So, the requirements are:
 - Privacy policy display and consent recording
 - Supabase OAuth login (Google, Kakao providers)
 
-### Create Simulation
+### Create & Save Simulation
 
 Create simulations with:
 
@@ -78,7 +78,11 @@ Create simulations with:
 
 Save created simulations.
 
-### Run Simulation
+### Update Simulation
+
+Update the saved simulation parameters above, and save the simulation.
+
+### Run Simulation to Get Results
 
 Run financial calculations with the saved simulation. The calculations include:
 
@@ -87,38 +91,48 @@ Run financial calculations with the saved simulation. The calculations include:
   - Bonus structures (round-specific multipliers)
   - Tax computations (3.3%)
 
-<!-- For details of calculation logic, see [code](/src/backend/simulation_service.py). -->
-ALWAYS MUST READ [code](/src/backend/simulation_service.py).
+For details of calculation logic, see [code](../../src/backend/simulation_service.py).
 
 ### Get Simulation Results
 
 View simulation results for each plan:
 
 - View detailed results with tables
-- Update simulation inputs and memo notes
-- Delete simulations
-- Export results for offline review
 
-**User Dashboard**:
+### Delete Simulation
 
-- View all personal simulations in sortable table
-- Multi-select and batch operations
+Delete saved simulations.
+
+### Manage Memo for Simulation
+
+Add or update memo notes for each simulation.
+
+### Dashboard
+
+- View all personal simulation results in sortable table
+- Multi-select and batch operations for viewing comprehensive results
 - Filter and search simulations
-- Quick access to results and editing
+- Quick access to results, editing, deletion, comprehensive results, and memo
 
-**Public Content**:
+### Get Comprehensive Simulation Results
+
+View combined results from multiple selected simulations.
+
+### Public Content
+
+View public notices and announcements on dashboard
 
 - Read published notices from administrators
 - Access latest privacy policy versions
 
-**Administrative Functions**:
+### Administrative Functions
 
 - Create, edit, publish, delete notices
 - Manage privacy policy versions (create, edit, publish, delete)
 - Enforce single published policy per version/locale
 - Verify admin privileges
 
-**Progressive Web App Capabilities**:
+## Progressive Web App Capabilities
 
 - Install to device home screen
 - Offline access to cached data
