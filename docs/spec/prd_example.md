@@ -1,20 +1,8 @@
 # Product Requirements Document (PRD)
 
-## 1. Goals & Success Metrics
+## Product Name: TaskMaster
 
-**Primary Goal:**  
-Increase user productivity by providing an intuitive task management experience.
-
-**Success Metrics:**
-
-| Metric | Target |
-|--------|--------|
-| Active Users | 50-100 users |
-| Task Completion Rate | ≥70% |
-| User Retention (30-day) | ≥40% |
-| App Rating | ≥4.0 stars |
-
----
+TaskMaster is a web application designed for busy entrepreneurs to effortlessly capture, format, and share their content ideas across multiple social media platforms. By simply entering raw text (and optionally uploading an image), users can leverage pre-defined templates powered by an LLM to generate polished, platform-specific content (starting with LinkedIn and Twitter). The application provides styled previews that mimic the final look on each platform and enables one-click publishing through OAuth integrations, saving time while amplifying marketing efforts.
 
 ## 2. Problem & Users
 
@@ -26,9 +14,7 @@ Small teams (5-10 people) and individual professionals managing daily tasks.
 
 ---
 
-## 3. Features (v1.0)
-
-### Must-Have (P0)
+## 3. Features
 
 **Task Management:**
 
@@ -42,8 +28,6 @@ Small teams (5-10 people) and individual professionals managing daily tasks.
 - Basic login/signup
 - OAuth (Google/GitHub)
 
-### Should-Have (P1)
-
 **Task Sharing:**
 
 - Share tasks with team members
@@ -54,17 +38,7 @@ Small teams (5-10 people) and individual professionals managing daily tasks.
 - Due date reminders
 - Email notifications
 
-### Out-of-Scope
-
-- AI/ML features
-- Advanced analytics
-- Calendar integration
-- File attachments
-- Mobile apps (web-only for v1)
-
----
-
-## 4. Core User Flow
+## 4. Core User Flow (User Stories)
 
 **Create Task:**
 
@@ -80,104 +54,21 @@ Small teams (5-10 people) and individual professionals managing daily tasks.
 3. Team member receives email notification
 4. Task appears in their list
 
----
+## User Interface
+- **Dashboard:**
+  - A clean, intuitive central dashboard for accessing all features (content input, preview, editing, and publishing).
+  
+- **Content Creation Screen:**
+  - A prominent text input area with an option to upload images.
+  - A side-by-side preview panel displaying the generated content styled as LinkedIn and Twitter posts.
+  
+- **Editing Interface:**
+  - In-line editing tools that allow users to make quick adjustments to the generated content.
+  
+- **Publishing Controls:**
+  - Clear buttons for connecting social media accounts via OAuth.
+  - A unified "Publish" button to send content to all connected platforms simultaneously.
+  
+- **Responsive Design:**
+  - Initially optimized for desktop use, with plans for future responsiveness to accommodate mobile and tablet views.
 
-## 5. Design
-
-**Design Principles:**
-
-- Simple and clean UI
-- Mobile-responsive (works on desktop and mobile browsers)
-- Fast loading (<3 seconds)
-
-**Key Screens:**
-
-- Task list view
-- Task detail/edit modal
-- Login/signup pages
-
----
-
-## 6. Technical Requirements
-
-**Tech Stack:**
-
-- Frontend: React or Vue.js
-- Backend: Node.js/Express or Python/FastAPI
-- Database: PostgreSQL
-- Hosting: Cloud provider (AWS/DigitalOcean)
-
-**Performance:**
-
-| Metric | Target |
-|--------|--------|
-| Page Load | <3 seconds |
-| API Response | <500ms |
-| Uptime | >99% |
-
-**Security:**
-
-- HTTPS only
-- OAuth 2.0 authentication
-- Password hashing (bcrypt)
-- Input validation and sanitization
-
----
-
-## 7. Constraints & Assumptions
-
-**Team:**
-
-- 1-2 full-stack developers
-- No dedicated designer (use templates/component libraries)
-- No QA team (developer-led testing)
-
-**Timeline:**
-
-- Development: 4-8 weeks
-- Feature freeze: 1 week before launch
-- Launch: Soft launch to initial users
-
-**Budget:**
-
-- Minimal infrastructure costs (~$20-50/month)
-- Free tier for most services
-- No marketing budget (organic growth)
-
-**Assumptions:**
-
-- Users have modern web browsers
-- Users have internet connectivity
-- Users familiar with basic task management concepts
-
----
-
-## 8. Launch Plan
-
-**Release Strategy:**
-
-- Internal testing (1 week)
-- Beta with 5-10 users (1 week)
-- Launch to full user base
-
-**Launch Checklist:**
-
-- [ ] All P0 features complete
-- [ ] Basic testing done
-- [ ] Security review complete
-- [ ] Hosting/deployment configured
-- [ ] Basic documentation ready
-
-**Post-Launch:**
-
-- Monitor errors and user feedback
-- Fix critical bugs within 24-48 hours
-- Collect user feedback for v1.1
-
----
-
-## 9. Open Questions
-
-- Which OAuth providers to support initially? (Recommendation: Google + GitHub)
-- Email service for notifications? (Recommendation: SendGrid free tier)
-- How to handle data backup? (Recommendation: Database automated backups)
