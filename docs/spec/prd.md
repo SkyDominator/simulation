@@ -140,7 +140,7 @@ View public notices and announcements on dashboard
 - Landscape-oriented mobile experience
 - Responsive design for mobile and desktop
 
-## 4. Core User Flows (User Stories)
+## 5. Core User Flows (User Stories)
 
 ### New User Onboarding
 
@@ -212,7 +212,7 @@ View public notices and announcements on dashboard
 6. Clicks "게시" to publish
 7. New policy becomes active for policy consent flow
 
-## 5. User Interface
+## 6. User Interface
 
 **Pre-Authentication Pages**:
 
