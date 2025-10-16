@@ -14,15 +14,19 @@ Write or edit markdown files according to the following process:
 
 ## Editing Checklist
 
-### 1. Direct Changes Only
+### 1. Web Search for Best Practices Reference
+
+When writing or editing documents, ALWAYS FIRST RUN web searches to refer to the best practices (as of today) of "big techs" (Google, Microsoft, Amazon, Apple, Meta, Palantir, etc.) for the topics under considerations.
+
+### 2. Direct Changes Only
 
 If you are modifying the existing documents, make direct changes without indicating modifications. For example, do not use wordings like these: "(Added part)", "New sections", "변경사항", etc.. JUST CHANGE the document if there needs to be change.
 
-### 2. Consistent to Existing Style
+### 3. Consistent to Existing Style
 
 If you are modifying the existing documents, fits the new or modified contents to the existing style, format, tone, and structure of the document, unless you are instructed otherwise.
 
-### 3. Short, Simple, Machine-Friendly
+### 4. Short, Simple, Machine-Friendly
 
 If you are writing new documents, write in a short, simple, and machine-friendly style. Do not verbose. Leave critical details only.
 
