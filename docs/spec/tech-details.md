@@ -3,7 +3,7 @@
 
 Implementation guide for the Investment Simulation PWA. This document covers practical architecture patterns, configuration, deployment workflows, and troubleshooting for a solo full-stack developer managing a 50-100 user application.
 
-**Purpose**: This document focuses on **how** to implement and operate the system. For product requirements, see PRD. For system contracts and API specifications, see SSD.
+**Purpose**: This document focuses on **how** to implement and operate the system.
 
 ## 1. Architecture Overview
 
