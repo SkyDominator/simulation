@@ -300,8 +300,8 @@ Frontend:
 **CI Gates**:
 
 - Lint + Type Check
-- Unit tests and integration tests with coverage
-- See `.vscode/launch.json` and `.github/workflows/ci-cd.yml` for details
+- Unit tests and integration tests
+- E2E tests are optional
 
 ## 13. Acceptance Criteria
 

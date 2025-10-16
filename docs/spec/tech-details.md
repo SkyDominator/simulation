@@ -395,8 +395,72 @@ export const useSimulationActions = () => {
 
 ### 6.5 Testing Configuration
 
+**Test Layers**:
+
+| Layer | Backend | Frontend | Purpose |
+|-------|---------|----------|---------|
+| **Unit** | `tests/unit/` (excludes security) | `src/test/pages/`, `src/test/components/`, `src/test/smoke.test.tsx` | Isolated component/function testing |
+| **Integration** | `tests/integration/` | `src/test/integration/` | Service/API integration testing |
+| **Security** | `tests/integration/api/test_security_e2e.py`, `tests/unit/security/test_cryptography.py` | `src/test/security/` | Security-specific tests (crypto, auth, XSS) |
+| **E2E** | N/A | Playwright (`e2e/`, Mobile Chrome project) | End-to-end user flows |
+
+**CI/CD Test Gates** (`.github/workflows/ci-cd.yml`):
+
+Tests run on GitHub-hosted runners (Ubuntu) with configurable skip patterns via deployment profiles:
+
+1. **Unit Tests** (job: `test-unit`):
+   - Frontend: `npx vitest run src/test/pages --reporter=verbose`, `src/test/components`, `src/test/smoke.test.tsx`
+   - Backend: `pytest tests/unit -v --ignore=tests/unit/security/test_cryptography.py`
+   - Node 20 + Python 3.11
+   - Skipped if profile contains `unit`
+
+2. **Integration Tests** (job: `test-integration`):
+   - Backend: `pytest tests/integration -v`
+   - Requires `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (falls back to test values)
+   - Runs if unit tests pass or skipped
+   - Skipped if profile contains `integration`
+
+3. **Security Tests** (job: `test-security`):
+   - Frontend: `npx vitest run src/test/security --reporter=verbose`
+   - Backend: `pytest tests/integration/api/test_security_e2e.py tests/unit/security/test_cryptography.py -v`
+   - Runs if unit + integration pass or skipped
+   - Skipped if profile contains `security`
+
+4. **Lint & Type Check** (job: `lint`):
+   - Frontend: `npm run lint`
+   - Always runs (not skippable)
+
+5. **E2E Tests** (job: `test-e2e`, optional):
+   - Playwright with `BASE_URL=https://staging-simulation.lightoflifeclub.com`
+   - Runs after staging deployment
+   - Skipped if profile contains `e2e`
+   - Uploads `playwright-report/` artifact on failure
+
+**Test Environment Setup**:
+
 - **Mock JWKS**: Always mock `JWKSClient.get_keys()` in tests to avoid external HTTP calls
 - **Test Mode**: Set `TEST_MODE=true` environment variable to use test implementations from `test_implementations.py`
-- **Environment Variables**: Backend tests require `.env` file or pytest fixtures for Supabase credentials
-- **Integration Tests**: Located in `src/backend/tests/integration/` with separate test database
+- **Backend Credentials**: Requires `.env` file or pytest fixtures for Supabase credentials
+- **Frontend NODE_ENV**: Set to `test` for all Vitest runs
+- **PYTHONPATH**: Set to `.` (current directory) for backend tests
+
+**Common Commands**:
+
+```powershell
+# Backend
+cd src/backend
+pytest tests/unit -v --ignore=tests/unit/security/test_cryptography.py
+pytest tests/integration -v
+pytest tests/integration/api/test_security_e2e.py tests/unit/security/test_cryptography.py -v
+
+# Frontend
+cd src/frontend
+npx vitest run src/test/pages --reporter=verbose
+npx vitest run src/test/components --reporter=verbose
+npx vitest run src/test/integration --reporter=verbose
+npx vitest run src/test/security --reporter=verbose
+npm run test:e2e
+```
+
+**Deployment Profiles**: Tests can be skipped using `.github/deployment-profiles.yml` with comma-separated values (e.g., `unit,integration,e2e`).
 
