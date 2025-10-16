@@ -16,7 +16,7 @@ Write or edit markdown files according to the following process:
 
 ### 1. Web Search for Best Practices Reference
 
-When writing or editing documents, ALWAYS FIRST RUN web searches to refer to the best practices (as of today) of "big techs" (Google, Microsoft, Amazon, Apple, Meta, Palantir, etc.) for the topics under considerations.
+When writing or editing documents, ALWAYS FIRST RUN web searches to refer to the best practices (as of today) of "big techs" (Google, Microsoft, Amazon, Apple, Meta, etc.) for the topics under considerations.
 
 ### 2. Direct Changes Only
 
