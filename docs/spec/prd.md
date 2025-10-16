@@ -16,62 +16,85 @@ The users with administrator role can manage public notices and privacy policies
 
 This PWA provides mobile-optimized experiences with offline capabilities, saving users time while enabling informed financial planning.
 
-## 2. Problem & Users
 
-**Problem**:
+## 2. Users
 
-Whitelisted club members need a secure, user-friendly platform to:
+### Normal Users
+
+- 60–100 whitelisted club members (30–60 concurrent peak)
+- Mostly older then 40s
+- Mobile-first, some desktop
+- Non-technical, Not machine-friendly
+- Korean-speaking users (ko-KR locale)
+
+### Administrators
+
+- 1–3 internal staff
+- Manage notices and privacy policies
+- Manage privacy policies and legal documents
+- Post public notices and announcements
+- Oversee system health and user access
+- Tech-fluent, mobile + desktop
+- Korean-speaking users (ko-KR locale)
+
+### System Owner
+
+just me.
+
+## 3. User Requirements
+
+They need a secure, user-friendly platform to:
 
 - Run complex financial simulations with multiple plan types
 - Model financial outcomes across various scenarios
 - Access their simulation history from any device
 - Ensure data privacy and controlled access
 
-Current alternatives lack:
+So, the requirements are:
 
 - Secure whitelist-based access control
 - Mobile-optimized simulation interfaces
 - Persistent simulation storage with user-specific data
 - Progressive Web App capabilities for offline access
 
-**Target Users**:
+## 4. Features
 
-- **End Users**: 60–100 whitelisted club members (30–60 concurrent peak)
-  - Small to mid-sized investors
-  - Members requiring financial planning tools
-  - Users preferring mobile and desktop access
-  - Korean-speaking users (ko-KR locale)
-
-- **Administrators**: 1–3 internal staff
-  - Manage privacy policies and legal documents
-  - Post public notices and announcements
-  - Oversee system health and user access
-
-- **System Owner**: Technical maintainer with full admin privileges
-
-## 3. Features
-
-**Pre-Authentication Flow**:
+### Pre-Authentication Flow
 
 - Whitelist verification by name and phone number (SHA256 hashing)
 - SMS-based OTP verification with rate limiting (3 sends per 15 minutes)
 - Privacy policy display and consent recording
 - Supabase OAuth login (Google, Kakao providers)
 
-**Simulation Management**:
+### Create Simulation
 
-- Create simulations with 10 investment plan types (A, B, C, D, E, F, G, K, P, R)
-- Configure plan parameters:
-  - Starting company round
-  - Number of simulation rounds
-  - Investment schedules
-  - Sales achievement rates
-- Run financial calculations with:
+Create simulations with:
+
+- 10 investment plan types (A, B, C, D, E, F, G, K, P, R)
+- Starting company round
+- Current company round
+- Number of simulation rounds
+- Sales amount and Sales achievement rate per simulation round
+
+Save created simulations.
+
+### Run Simulation
+
+Run financial calculations with the saved simulation. The calculations include:
+
   - Revenue projections
   - Commission calculations (32%)
   - Bonus structures (round-specific multipliers)
   - Tax computations (3.3%)
-- View detailed results with tables and charts
+
+<!-- For details of calculation logic, see [code](/src/backend/simulation_service.py). -->
+ALWAYS MUST READ [code](/src/backend/simulation_service.py).
+
+### Get Simulation Results
+
+View simulation results for each plan:
+
+- View detailed results with tables
 - Update simulation inputs and memo notes
 - Delete simulations
 - Export results for offline review
