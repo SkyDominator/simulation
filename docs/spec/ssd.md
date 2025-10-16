@@ -1,6 +1,6 @@
 # Software Specification Document (SSD)
 
-This Software Specification Document (SSD) provides the technical specifications for the Investment Simulation PWA, including system architecture, data models, API contracts, security mechanisms, and non-functional requirements.
+This Software Specification Document (SSD) provides the technical specifications for the financial simulation PWA, including system architecture, data models, API contracts, security mechanisms, and non-functional requirements.
 
 ## 1. Environment Profiles
 
@@ -26,14 +26,14 @@ This Software Specification Document (SSD) provides the technical specifications
 - **Mobile iOS**: iPhone 11+ (iOS 18.1.1+) Chrome
 - **Mobile Android**: Galaxy S21+ (Android 12+) Chrome
 - **Hosting**: DigitalOcean Droplet (Ubuntu 22.04, 1 CPU, 1GB RAM) + Supabase (DB/Auth)
-- **Deployment**: Docker Compose + GitHub Actions CI/CD
+- **Deployment**: Docker Compose + GitHub Actions CI/CD + Nginx reverse proxy + Cloudflare Tunnel
 - **Production**: `simulation.lightoflifeclub.com` (port 3000 frontend, 8000 backend)
 - **Staging**: `staging-simulation.lightoflifeclub.com` (port 4173 frontend, 8001 backend)
 
 ### 1.4 Load
 
-- Total users: 60–100
-- Peak concurrent: 30–60
+- Total users: 60–100 (approx.)
+- Peak concurrent: 30–60 (approx.)
 
 ## 2. System Architecture
 
@@ -300,16 +300,15 @@ Frontend:
 **CI Gates**:
 
 - Lint + Type Check
-- Unit tests with coverage
-- OpenAPI snapshot validation
-- Dependency security scan
+- Unit tests and integration tests with coverage
+- See `.vscode/launch.json` and `.github/workflows/ci-cd.yml` for details
 
 ## 13. Acceptance Criteria
 
 - **OTP**: Whitelist check → send → verify with rate limits
 - **Consent**: Policy retrieval (DB/fallback) → record (idempotent)
 - **Simulations**: Create → update → run → persist results
-- **Admin**: Verify privileges → manage policies (publish exclusivity)
+- **Admin**: Verify privileges → manage policies and notices (publish exclusivity)
 
 ## 14. Performance Baselines
 
