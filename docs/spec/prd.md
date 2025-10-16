@@ -1,8 +1,20 @@
 # Product Requirements Document (PRD)
 
-## 1. Product Name: Light of Life Club Investment Simulation PWA
+## 1. Overview
 
-Light of Life Club Investment Simulation is a Progressive Web Application designed for whitelisted members to run sophisticated financial investment simulations. Users complete a secure onboarding flow (whitelist verification → OTP → privacy consent → OAuth login) before accessing personalized simulation tools. The application enables users to model various investment plans (10 plan types), adjust parameters, run calculations, and visualize results across multiple rounds. Administrators can manage public notices and privacy policies through a dedicated interface. The PWA provides mobile-optimized experiences with offline capabilities, saving users time while enabling informed financial planning.
+### What it is
+
+Light of Life Club Simulation (Simulation) is a Progressive Web Application (PWA) designed for whitelisted members to run financial simulations. This simulation does not follow any existing financial simulation concepts and studies.
+
+### What users can do
+
+Users complete a secure onboarding flow (whitelist verification → OTP → privacy consent → OAuth login) before accessing personalized simulation tools. The application enables users to model various simulation plans (10 plan types), adjust parameters, run calculations, and visualize results across multiple rounds. Users can view results in different format and see a comprehensive result combining multiple plans they choose.
+
+The users with administrator role can manage public notices and privacy policies through a dedicated interface. 
+
+### Summary: the core value
+
+This PWA provides mobile-optimized experiences with offline capabilities, saving users time while enabling informed financial planning.
 
 ## 2. Problem & Users
 
@@ -10,7 +22,7 @@ Light of Life Club Investment Simulation is a Progressive Web Application design
 
 Whitelisted club members need a secure, user-friendly platform to:
 
-- Run complex investment simulations with multiple plan types
+- Run complex financial simulations with multiple plan types
 - Model financial outcomes across various scenarios
 - Access their simulation history from any device
 - Ensure data privacy and controlled access
