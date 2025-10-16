@@ -64,8 +64,8 @@ So, the requirements are:
 ### Pre-Authentication Flow
 
 - Whitelist verification by name and phone number (SHA256 hashing)
-- SMS-based OTP verification with rate limiting (3 sends per 15 minutes)
-- Privacy policy display and consent recording
+- SMS-based OTP verification with rate limiting (3 sends per 15 minutes, 10 per day, 6 verification attempts)
+- Privacy policy display and consent recording (one-time)
 - Supabase OAuth login (Google, Kakao providers)
 
 ### Create & Save Simulation
@@ -111,10 +111,10 @@ Add or update memo notes for each simulation.
 
 ### Dashboard
 
-- View all personal simulation results in sortable table
-- Multi-select and batch operations for viewing comprehensive results
-- Filter and search simulations
+- View all personal simulation results in sortable table (multi-column sorting)
+- Multi-select and batch operations for viewing comprehensive results (limit: one per plan type)
 - Quick access to results, editing, deletion, comprehensive results, and memo
+- View public notices through modal
 
 ### Get Comprehensive Simulation Results
 
@@ -129,9 +129,8 @@ View public notices and announcements on dashboard
 
 ### Administrative Functions
 
-- Create, edit, publish, delete notices
+- Create, edit, publish, delete notices (with pinning capability)
 - Manage privacy policy versions (create, edit, publish, delete)
-- Enforce single published policy per version/locale
 - Verify admin privileges
 
 ## Progressive Web App Capabilities
@@ -166,8 +165,8 @@ View public notices and announcements on dashboard
 7. User reads policy and clicks "Accept"
     1. One time consent required
     2. Can click "Decline" to return to whitelist page
-8.  User directed to login page. Selects OAuth provider (Google or Kakao)
-9.  Proceed login.
+8. User directed to login page. Selects OAuth provider (Google or Kakao)
+9. Proceed login.
 10. User completes authentication
 11. System directs users to main dashboard
 
@@ -247,11 +246,11 @@ View public notices and announcements on dashboard
 
 - **Dashboard (MainPage)**:
   - Header with app title "생명빛 클럽 시뮬레이션"
-  - Action buttons: Add "공지사항", "문의하기", "로그아웃", "개인 정보 보호 정책", "새 시뮬레이션", "종합 결과"
+  - Action buttons: "공지사항", "문의하기", "로그아웃", "개인 정보 보호 정책", "새 시뮬레이션", "종합 결과"
   - Simulation table with:
-    - Sortable columns (name, plan, rounds, date)
-    - Multi-select checkboxes
-    - Row actions (view, edit, delete)
+    - Multi-column sortable headers (number, plan type, starting round, simulation rounds, creation date)
+    - Multi-select checkboxes with validation (one per plan type)
+    - Row actions (view results, edit, delete, memo edit/view)
 
 - **Plan Editor**:
   - 5-step Stepper component showing progress
@@ -259,9 +258,8 @@ View public notices and announcements on dashboard
   - Step 2: Starting company round selection
   - Step 3: Current company round selection
   - Step 4: Simulation round selection
-  - Step 5: Sales amount and Sales achievement ratio table
-  - Step 6: Review, and save
-  - Navigation buttons (Back, Next, Create)
+  - Step 5: Sales amount and Sales achievement ratio table per round
+  - Navigation buttons (Back, Next, Save)
   - Validation messages inline
   - Draft auto-save to localStorage
 
@@ -277,18 +275,19 @@ View public notices and announcements on dashboard
     - Cumulative Net income (post-tax)
     - Sales achievement rate
   - Back to dashboard button
-  - Offline Results button
+  - Navigation to offline results view
 
 - **Offline Results Page**:
-  - Table view of results for special offline scenarios
-  - etc.
+  - Alternative view for offline scenarios
+  - Full simulation data display
 
 - **Comprehensive Results Page**:
-  - Joint results of selected simulation plan results
+  - Combined results from multiple selected simulations
+  - Aggregated financial metrics across plans
 
 **Mobile Design**:
 
-- Bottom navigation for primary actions
+- Material-UI responsive components
 - Full-screen modals for forms
 - Horizontal scroll for wide tables
 - 44px minimum touch targets
