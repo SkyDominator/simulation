@@ -247,47 +247,44 @@ View public notices and announcements on dashboard
 
 - **Dashboard (MainPage)**:
   - Header with app title "생명빛 클럽 시뮬레이션"
-  - Action buttons: Add simulation, Notices, Help, Logout
+  - Action buttons: Add "공지사항", "문의하기", "로그아웃", "개인 정보 보호 정책", "새 시뮬레이션", "종합 결과"
   - Simulation table with:
     - Sortable columns (name, plan, rounds, date)
     - Multi-select checkboxes
-    - Batch delete button
     - Row actions (view, edit, delete)
-  - Empty state with welcome message and CTA
-  - Loading skeleton while fetching data
 
 - **Plan Editor**:
   - 5-step Stepper component showing progress
   - Step 1: Plan type selection with descriptions
-  - Step 2: Round configuration
-  - Step 3: Investment schedule table
-  - Step 4: Sales achievement rates (optional)
-  - Step 5: Review and create
+  - Step 2: Starting company round selection
+  - Step 3: Current company round selection
+  - Step 4: Simulation round selection
+  - Step 5: Sales amount and Sales achievement ratio table
+  - Step 6: Review, and save
   - Navigation buttons (Back, Next, Create)
   - Validation messages inline
   - Draft auto-save to localStorage
 
 - **Results Page**:
-  - Summary cards (total revenue, total commission, total bonus)
   - Per-round breakdown table with:
     - Round number
-    - Investment amount
-    - Revenue
-    - Commission
-    - Bonus
-    - Tax
-    - Net income
-  - Interactive charts (line charts for trends)
-  - Export buttons (JSON, CSV)
-  - Memo editor for notes
+    - Number of investors (=number of avatars)
+    - Round sales amount
+    - Cumulative sales amount
+    - Cumulative revenue (pre-tax)
+    - Cumulative revenue (post-tax)
+    - Net income (post-tax)
+    - Cumulative Net income (post-tax)
+    - Sales achievement rate
   - Back to dashboard button
+  - Offline Results button
 
-- **Admin Panel**:
-  - Tabbed interface: Notices | Privacy Policies
-  - Create/Edit forms with rich text support
-  - Publish buttons with confirmation dialogs
-  - List views with edit/delete actions
-  - Status indicators (published, draft, pinned)
+- **Offline Results Page**:
+  - Table view of results for special offline scenarios
+  - etc.
+
+- **Comprehensive Results Page**:
+  - Joint results of selected simulation plan results
 
 **Mobile Design**:
 
@@ -297,104 +294,3 @@ View public notices and announcements on dashboard
 - 44px minimum touch targets
 - Landscape enforcer component (overlay warning for portrait mode)
 - Optimized for iPhone 11+ and Galaxy S21+
-
-**Accessibility**:
-
-- Keyboard navigation support
-- ARIA labels on interactive elements
-- High contrast ratios (WCAG AA)
-- Screen reader compatible
-- Focus indicators on all controls
-
-## 6. Acceptance Criteria
-
-**Onboarding Flow**:
-
-- [ ] User can submit name/phone and see whitelist validation result
-- [ ] OTP is sent within 5 seconds of request
-- [ ] OTP rate limiting prevents >3 sends per 15 minutes
-- [ ] User can enter 6-digit code and receive validation result
-- [ ] Privacy policy displays from database or falls back to static file
-- [ ] Consent is recorded with user_hash before authentication
-- [ ] OAuth redirects work for Google and Kakao
-- [ ] User lands on dashboard after successful authentication
-
-**Simulation Management**:
-
-- [ ] User can create simulation with all 10 plan types
-- [ ] Plan editor validates inputs and shows error messages
-- [ ] Simulation runs successfully and displays results
-- [ ] Results include per-round breakdowns and totals
-- [ ] User can update simulation parameters
-- [ ] Updated simulation clears previous results
-- [ ] User can add/edit memo notes
-- [ ] User can delete own simulations only
-- [ ] Dashboard shows loading states during data fetch
-- [ ] Empty dashboard shows welcome message with CTA
-
-**Administrative Functions**:
-
-- [ ] Admin can create, edit, publish, delete notices
-- [ ] Pinned notices appear at top of list
-- [ ] Admin can create privacy policy drafts
-- [ ] Admin can publish policy only if no other published for same version/locale
-- [ ] Published policy appears in consent flow immediately
-- [ ] Non-admin users cannot access admin endpoints (403 error)
-
-**PWA Capabilities**:
-
-- [ ] App installs to device home screen
-- [ ] Service worker caches API responses (notices)
-- [ ] App displays offline indicator when network unavailable
-- [ ] Manifest includes 192x192, 384x384, 512x512 icons
-- [ ] Landscape enforcer shows on portrait orientation (mobile)
-
-**Security & Performance**:
-
-- [ ] JWT validation occurs on all authenticated endpoints
-- [ ] Invalid/expired tokens return 401 errors
-- [ ] Admin endpoints check admins table (403 if not admin)
-- [ ] OTP hashing uses HMAC with secret key
-- [ ] API responses average <500ms (p95)
-- [ ] Simulation runs complete in <2 seconds
-- [ ] Frontend loads with LCP <2.5s
-
-## 7. Out of Scope
-
-- Payment processing or financial transactions
-- Multi-language support beyond Korean (ko-KR)
-- Advanced analytics dashboards
-- Real-time collaboration features
-- Email notification system
-- Mobile native apps (iOS/Android)
-- Full offline simulation execution
-- Historical data migration tools
-- Third-party integrations (CRM, accounting software)
-
-## 8. Success Metrics
-
-**User Engagement**:
-
-- 80%+ of whitelisted users complete onboarding within first month
-- Average 3+ simulations created per active user
-- 60%+ of simulations are re-run with modified parameters
-- 50%+ weekly active user rate among onboarded users
-
-**Performance**:
-
-- 95% of API requests complete in <500ms
-- 95% of simulation runs complete in <2 seconds
-- <1% error rate on OTP delivery
-- <5% failed authentication attempts (excluding wrong credentials)
-
-**System Health**:
-
-- 99% uptime during business hours (9 AM – 9 PM KST)
-- Zero data loss incidents
-- <1 hour mean time to recovery for critical issues
-
-**User Satisfaction**:
-
-- Positive feedback on mobile experience
-- Low support ticket volume (<5 per month)
-- Admin tasks completed without technical assistance
