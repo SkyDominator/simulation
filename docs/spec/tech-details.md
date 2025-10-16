@@ -1,20 +1,20 @@
 
 # Technical Specification
 
-This document provides implementation-level details for the Investment Simulation PWA. It covers architecture patterns, configuration, deployment, and development workflows for a solo full-stack developer managing a 50-100 user application.
+Implementation guide for the Investment Simulation PWA. This document covers practical architecture patterns, configuration, deployment workflows, and troubleshooting for a solo full-stack developer managing a 50-100 user application.
 
-**Scope**: Unlike the PRD (product vision) and SSD (system contracts), this document focuses on **how** to implement features using specific technologies, tools, and patterns.
+**Purpose**: This document focuses on **how** to implement and operate the system. For product requirements, see PRD. For system contracts and API specifications, see SSD.
 
-## 1. System Architecture
+## 1. Architecture Overview
 
-### 1.1 Backend Architecture
+### 1.1 Backend Structure
 
-FastAPI application with layered architecture pattern:
+FastAPI application with layered architecture:
 
 ```text
 src/backend/
 ├── main.py                 # App factory: CORS, middleware, exception handlers
-├── api/routes.py           # API endpoints (~476 lines) - thin routing layer
+├── api/routes.py           # API endpoints (~516 lines) - thin routing layer
 ├── services/               # Business logic layer
 │   ├── simulations.py      # Simulation CRUD operations
 │   ├── otp/otp_service.py  # OTP send/verify + rate limiting
@@ -32,19 +32,13 @@ src/backend/
 
 **Key Components**:
 
-- **API Layer** (`api/routes.py`): Route definitions, request validation, response formatting
-- **Service Layer** (`services/`): Business logic, orchestration, database operations
-- **Financial Engine** (`simulation_service.py`): Complex calculation logic for 10 investment plans
-- **Auth** (`auth/jwt.py`): JWT validation using Supabase JWKS with 5s timeout and global cache
-- **DI Container** (`container.py`): Manages dependencies with TEST_MODE environment variable support
+- **API Layer**: Route definitions, request validation, response formatting
+- **Service Layer**: Business logic, orchestration, database operations
+- **Financial Engine**: Calculation logic for 10 investment plans
+- **Auth**: JWT validation using Supabase JWKS (5s timeout, global cache)
+- **DI Container**: Dependency management with TEST_MODE support
 
-**Critical Flows**:
-
-- **OTP Flow**: whitelist check → generate 6-digit code → SMS via Solapi → store HMAC-hashed code in DB → verify with max 6 attempts
-- **Simulation Cache**: Update/delete operations set `simulation_results` to `null` → requires re-run to regenerate
-- **Admin Check**: Query `admins.user_id` table → raise 403 if not found
-
-### 1.2 Frontend Architecture
+### 1.2 Frontend Structure
 
 React 19 PWA with TypeScript 5.8+:
 
@@ -52,7 +46,7 @@ React 19 PWA with TypeScript 5.8+:
 src/frontend/src/
 ├── pages/                  # Route-level components
 ├── components/             # Reusable UI (domain-organized)
-├── context/                # React Context (Auth, etc.)
+├── context/                # React Context (Auth)
 ├── hooks/                  # Custom hooks (API actions, consent flow)
 ├── services/               # API client layer
 ├── types/                  # TypeScript type definitions
@@ -61,20 +55,54 @@ src/frontend/src/
 │   ├── persist.ts          # localStorage helpers
 │   └── ...
 ├── AppController.tsx       # Main navigation orchestrator
-├── supabaseClient.ts       # Supabase client setup
+├── supabaseClient.ts       # Supabase client configuration
 └── vite.config.ts          # Build + PWA configuration
 ```
 
 **Key Patterns**:
 
 - **State Management**: React Context for auth, localStorage for UI state only
-- **API Layer**: Centralized `services/api.ts` with Bearer token injection
-- **Embedded Browser**: Detect KakaoTalk/Facebook/Instagram webviews before OAuth → guide to external browser
-- **PWA**: NetworkFirst for `/api/notices`, StaleWhileRevalidate for images
+- **API Communication**: Centralized `services/api.ts` with Bearer token injection
+- **Embedded Browser Handling**: Detect KakaoTalk/Facebook/Instagram webviews before OAuth
+- **PWA Strategy**: NetworkFirst for `/api/notices`, StaleWhileRevalidate for images
 
-## 2. Deployment & Runtime
+## 2. Environment Setup
 
-### 2.1 Production & Staging Environments
+### 2.1 Local Development
+
+**Development Environment**:
+
+- **OS**: Windows 11 with VS Code
+- **Frontend**: Vite dev server with HMR (port 5173)
+- **Backend**: Uvicorn with hot reload (port 8001)
+- **Docker**: Not used for local dev (only for production builds/testing)
+
+**Required Files**:
+
+- Backend: `.env` (see Section 3.1)
+- Frontend: `.env.local` (see Section 3.2)
+
+**Common Commands**:
+
+```powershell
+# Start frontend dev server
+cd src/frontend
+npm run dev
+
+# Start backend dev server
+cd src/backend
+uvicorn main:app --reload --host 0.0.0.0 --port 8001
+
+# Run tests
+cd src/backend && python -m pytest -q
+cd src/frontend && npm run test
+
+# Production build (testing only)
+docker compose -f docker-compose.production.yml build
+docker compose -f docker-compose.production.yml up -d
+```
+
+### 2.2 Production & Staging
 
 **Infrastructure**:
 
@@ -96,53 +124,12 @@ src/frontend/src/
 - Production: `simulation.lightoflifeclub.com`
 - Staging: `staging-simulation.lightoflifeclub.com`
 
-**Nginx Reverse Proxy**: Routes by hostname on port 8080, forwards to appropriate frontend/backend containers.
+**Docker Compose**:
 
-**Docker Compose Details**:
-
-- **Startup Order**: Backend starts before frontend (healthcheck dependency)
-- **Port Mapping**: Production (3000 frontend, 8000 backend), Staging (4173 frontend, 8001 backend)
-- **CI/CD**: GitHub Actions with self-hosted runner on Droplet
-
-### 2.2 Local Development
-
-**Development Environment**:
-
-- **OS**: Windows 11 with VS Code
-- **Port Configuration**: Frontend dev (5173), Backend dev (8001)
-- **Environment Files**: Backend `.env`, Frontend `.env.local` required
-- **Docker Usage**: Only for production builds/testing, not for local development
-
-**Setup**:
-
-- Frontend: Vite dev server with HMR (port 5173)
-- Backend: Uvicorn with hot reload (port 8001)
-- Environment variables: Backend `.env`, Frontend `.env.local`
-- Docker: Not used for local dev (only for production builds/testing)
-
-**Common Commands**:
-
-```powershell
-# Start frontend dev server
-cd src/frontend
-npm run dev
-
-# Start backend dev server
-cd src/backend
-uvicorn main:app --reload --host 0.0.0.0 --port 8001
-
-# Run tests
-cd src/backend && python -m pytest -q
-cd src/frontend && npm run test
-
-# Production build
-docker compose -f docker-compose.production.yml build
-docker compose -f docker-compose.production.yml up -d
-
-# Staging build
-docker compose -f docker-compose.staging.yml build
-docker compose -f docker-compose.staging.yml up -d
-```
+- **Startup Order**: Backend healthcheck before frontend starts
+- **Resource Limits**: Backend 512MB memory, 768MB swap
+- **Logging**: JSON format, 10MB max size, 3 file rotation
+- **CI/CD**: Self-hosted GitHub runner on Droplet
 
 ## 3. Configuration
 
@@ -153,22 +140,20 @@ docker compose -f docker-compose.staging.yml up -d
 - `SUPABASE_URL`: Supabase project URL
 - `SUPABASE_SECRET_KEY` OR `SUPABASE_PUBLISHABLE_KEY`: API key (secret preferred for server)
 
-**OTP/SMS Configuration**:
+**OTP/SMS**:
 
-- `OTP_SECRET_KEY`: HMAC encryption key for OTP hashing
-- `OTP_VALIDITY_MINUTES`: OTP expiration (default: 5)
-- `OTP_RESEND_LIMIT_PER_15MIN`: Send rate limit (default: 3)
-- `OTP_RESEND_LIMIT_PER_DAY`: Daily send limit (default: 10)
-- `otp_max_verification_attempts`: Max verification attempts (default: 6, **lowercase variable name**)
+- `OTP_SECRET_KEY`: HMAC key for OTP hashing
+- `OTP_VALIDITY_MINUTES`: Expiration time (default: 5)
+- `OTP_RESEND_LIMIT_PER_15MIN`: Rate limit (default: 3)
+- `OTP_RESEND_LIMIT_PER_DAY`: Daily limit (default: 10)
+- `otp_max_verification_attempts`: Max attempts (default: 6, **lowercase variable name**)
 
 **SMS Providers**:
 
 - **Solapi** (current): `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_SENDER_NUMBER`
 - **NHN Cloud** (legacy): `NHN_CLOUD_APPKEY`, `NHN_CLOUD_SECRET_KEY`, `NHN_CLOUD_SENDER_NUMBER`
 
-**CORS Configuration**:
-
-Origins defined in `config/settings.py`:
+**CORS** (defined in `config/settings.py`):
 
 - `https://simulation.lightoflifeclub.com` (production)
 - `https://staging-simulation.lightoflifeclub.com` (staging)
@@ -178,17 +163,17 @@ Origins defined in `config/settings.py`:
 
 **Required** (`.env.local`):
 
-- `VITE_SUPABASE_URL`: Same as backend Supabase URL
-- `VITE_SUPABASE_PUBLISHABLE_KEY`: Supabase client (publishable) key
-- `VITE_API_BASE_URL`: API endpoint (defaults in `vite.config.ts` to production domain)
+- `VITE_SUPABASE_URL`: Supabase project URL
+- `VITE_SUPABASE_PUBLISHABLE_KEY`: Supabase publishable key
+- `VITE_API_BASE_URL`: API endpoint (defaults to production domain in `vite.config.ts`)
 
-### 3.3 Database Configuration
+### 3.3 Database
 
-**Supabase Cloud Setup**:
+**Supabase Cloud**:
 
-- **RLS Policies**: Row-Level Security enabled on all tables
-- **Schema Reference**: See `docs/spec/schema.md` for complete schema definition
-- **Connection Pooling**: Managed automatically by Supabase cloud
+- **RLS**: Row-Level Security enabled on all tables
+- **Schema**: See `docs/spec/schema.md` for definitions
+- **Connection Pooling**: Managed by Supabase
 - **Migrations**: Consider existing data and RLS policies when modifying schema
 
 ## 4. Backend Implementation Patterns
@@ -290,7 +275,7 @@ async def my_feature(
 
 **Best Practices**:
 
-- **Endpoint Design**: Keep `api/routes.py` thin (~476 lines currently) - delegate logic to services
+- **Endpoint Design**: Keep `api/routes.py` thin (~516 lines currently) - delegate logic to services
 - **Backwards Compatibility**: Maintain compatibility when updating existing endpoints
 - **Incomplete Specs**: Some SSD endpoints may not be implemented yet - verify against actual code
 
