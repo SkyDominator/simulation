@@ -1,10 +1,6 @@
 # Copilot Instructions
 
-This document helps you understand my project for improving the quality of tasks including planning, code suggestions, and implementations.
-
-## Code Reference
-
-MUST ALWAYS read [code](../src/backend/simulation_service.py) first.
+This document helps you understand my project for all tasks including planning, code suggestions, and implementations.
 
 ## Product Requirements Document (PRD)
 
@@ -20,7 +16,7 @@ MUST ALWAYS read the [Technical Specification](../docs/spec/tech-details.md) bef
 
 ## Agent Behavior
 
-MUST ALWAYS read [Agent Behavior Guidelines](../docs/agent/behavior.md) before initiating any tasks and follow it when doing all tasks.
+MUST ALWAYS read [Agent Behavior Guidelines](../docs/agent/behavior.md) before initiating any tasks and FOLLOW it when doing all tasks.
 
 ## Schema and RLS
 
