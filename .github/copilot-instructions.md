@@ -2,6 +2,10 @@
 
 This document helps you understand my project for improving the quality of tasks including planning, code suggestions, and implementations.
 
+## Code Reference
+
+MUST ALWAYS read [code](../src/backend/simulation_service.py) first.
+
 ## Product Requirements Document (PRD)
 
 MUST ALWAYS read [Product Requirements Document (PRD)](../docs/spec/prd.md) before initiating any tasks and adhere to it when doing all tasks.
