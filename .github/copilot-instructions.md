@@ -2,9 +2,17 @@
 
 This document helps you understand my project for improving the quality of tasks including planning, code suggestions, and implementations.
 
+## Product Requirements Document (PRD)
+
+MUST ALWAYS read [Product Requirements Document (PRD)](../docs/spec/prd.md) before initiating any tasks and adhere to it when doing all tasks.
+
 ## Software Specification Document (SSD)
 
 MUST ALWAYS read [SSD](../docs/spec/ssd.md) before initiating any tasks and adhere to it when doing all tasks.
+
+## Technical Specification
+
+MUST ALWAYS read the [Technical Specification](../docs/spec/tech-details.md) before initiating any tasks and adhere to it when doing all tasks.
 
 ## Agent Behavior
 
@@ -13,10 +21,6 @@ MUST ALWAYS read [Agent Behavior Guidelines](../docs/agent/behavior.md) before i
 ## Schema and RLS
 
 MUST ALWAYS read [Database Schema and RLS Policies](../docs/spec/schema.md) before initiating any tasks and adhere to it when doing all tasks.
-
-## Technical Specification
-
-If you need the technical details of the project development, read the [Technical Specification](../docs/spec/tech-details.md).
 
 ## Back-end Coding Guidelines
 

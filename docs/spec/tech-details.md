@@ -1,65 +1,77 @@
 
 # Technical Specification
 
-This document outlines the technical details of the Investment Simulation PWA project, including architecture, technologies, patterns, and deployment.
+This document outlines implementation patterns, configuration, deployment procedures, and developer guidelines for the Investment Simulation PWA.
 
 ## Architecture
 
 **Backend (FastAPI + Python 3.11+)**:
-- **Entry**: `main.py` → FastAPI app factory with CORS + exception handlers
-- **Routes**: `api/routes.py` (507+ lines) → thin delegation to services
-- **Services**: `services/` → domain logic (simulations, OTP)
-- **Engine**: `simulation_service.py` → 10 investment plans
-- **Models**: `models/schemas.py` → Pydantic v2 validation
-- **Config**: `config/settings.py` → frozen dataclass pattern
-- **Auth**: `auth/jwt.py` → Supabase JWKS validation
-- **DB**: Supabase PostgreSQL + RLS
-- **Errors**: `exceptions.py` → structured hierarchy
 
-**Auth Flow**:
-- JWT: Bearer token → Supabase JWKS
-- Inject: `user_id: str = Depends(authenticate_jwt_token)`
-- Admin: `_assert_admin(user_id, client)` → checks `admins.user_id`
+```
+src/backend/
+├── main.py                 # FastAPI app factory with CORS + exception handlers
+├── api/routes.py           # All API endpoints (507+ lines) - thin delegation layer
+├── services/               # Domain logic layer
+│   ├── simulations.py      # Simulation CRUD operations
+│   ├── otp/otp_service.py  # OTP send/verify + rate limiting
+│   └── ...
+├── simulation_service.py   # Financial engine for 10 investment plans
+├── models/schemas.py       # Pydantic v2 request/response models
+├── config/settings.py      # Environment configuration (frozen dataclass)
+├── auth/jwt.py             # Supabase JWKS validation
+├── exceptions.py           # Custom exception hierarchy
+└── constants.py            # Plan configurations (A,B,C,D,E,F,G,K,P,R)
+```
 
-**OTP**:
-- Service: `services/otp/otp_service.py` → `phone_otps` table
-- Limits: 3/15min, 10/day (configurable)
-- SMS: Solapi API (Korean)
-- Flow: `/api/otp/send` → whitelist check → `user_hash` → `/api/otp/verify`
+**Backend Core**:
+- `api/routes.py` → All endpoints (507+ lines)
+- `services/simulations.py` → CRUD ops
+- `simulation_service.py` → Financial engine
+- `constants.py` → 10 plan configs
+- `auth/jwt.py` → JWT + JWKS
+- `models/schemas.py` → Pydantic models
+- `config/settings.py` → Environment
+- `exceptions.py` → Error hierarchy
 
-**Simulations**:
-- Orchestrator: `services/simulations.py` → DB I/O
-- Plans: 10 types in `constants.py` (max investors: 12-18)
-- Math: Revenue + commission (32%) + bonuses + tax (3.3%)
-- Cache: Invalidate on update (`simulation_results` → `None`)
 
-**Admin**:
-- Notices: CRUD in `notices` table
-- Policies: Versioned in `privacy_policies` + publish workflow
+**OTP Service Flow**:
+
+1. `/api/otp/send` → whitelist check → generate code → SMS via Solapi → store hashed code
+2. Rate limits: 3 sends per 15min, 10 per day (configurable via env vars)
+3. `/api/otp/verify` → compare hashed code → max 6 attempts → mark used
+
+**Simulation Cache Invalidation**:
+
+- Update operations set `simulation_results` → `None`
+- Re-run required to regenerate results
+
+$PLACEHOLDER$
 
 **Frontend (React 19 + TypeScript 5.8+ + Vite)**:
-- **PWA**: `vite.config.ts` + `vite-plugin-pwa`
-- **UI**: MUI + Tailwind CSS
-- **Controller**: `AppController.tsx` → navigation + state
-- **Auth**: Supabase client (`supabaseClient.ts`)
-- **Browser Detection**: `utils/browserDetection.ts` → embedded browser detection
-- **OAuth Protection**: `EmbeddedBrowserWarningModal.tsx` → warn users in embedded browsers
-- **State**: Context + hooks, minimal localStorage
-- **API**: Services layer with error handling
-- **Cache**: NetworkFirst (notices), StaleWhileRevalidate (assets)
-- **Design**: Mobile-first, landscape preferred
 
-**Database (Supabase)**:
 ```
-simulations        → user simulation data + JSON results
-whitelist         → hash-based verification
-phone_otps        → OTP records + rate limiting
-consent_records   → privacy consent tracking
-notices          → admin announcements
-privacy_policies → versioned policies
-admins          → admin roles
-user_onboarding → onboarding flags
+src/frontend/src/
+├── pages/                    # Route-level components
+├── components/               # Reusable UI with domain folders
+├── context/                  # React Context providers
+├── hooks/                    # Custom business logic hooks
+├── services/                 # API communication layer
+├── types/                    # TypeScript definitions
+├── utils/                    # Pure utility functions
+├── AppController.tsx         # Main navigation + state orchestrator
+├── supabaseClient.ts         # Supabase client with autoRefresh
+└── vite.config.ts            # PWA config + build settings
 ```
+
+**Frontend Core**:
+- `AppController.tsx` → Main orchestrator
+- `vite.config.ts` → PWA + build config
+- `supabaseClient.ts` → Auth + API
+- `pages/` → WhitelistCheckPage, MainPage, etc.
+- `context/` → React providers
+- `services/` → API communication
+
+$PLACEHOLDER$
 
 ## Deployment & Runtime
 
@@ -129,11 +141,10 @@ http://localhost:5173, http://127.0.0.1:5173 (local dev)
 - `VITE_SUPABASE_PUBLISHABLE_KEY`: Client key
 - `VITE_API_BASE_URL`: Defaults in `vite.config.ts`
 
-## Backend Patterns
+## Backend Implementation Patterns
 
-**Architecture**: Router → Service → Model
+**Supabase Client Factory**:
 
-**Supabase Client**:
 ```python
 from supabase import create_client
 from config.settings import settings
@@ -143,45 +154,47 @@ def _supabase_client():
     return create_client(settings.supabase_url, key)
 ```
 
-**Auth Pattern**:
+**Response Patterns**:
+
 ```python
-from auth.jwt import authenticate_jwt_token
-
-async def my_endpoint(user_id: str = Depends(authenticate_jwt_token)):
-    # user_id = validated JWT 'sub'
-    pass
-```
-
-**Admin Guard**:
-```python
-_assert_admin(user_id, client)  # Checks admins.user_id table
-```
-
-**Error Codes**:
-- 401: Invalid auth
-- 403: Insufficient privileges
-
-**Simulation Rules**:
-- Update invalidates results: `simulation_results` → `None`
-- Plans: See `constants.py` (A,B,C,D,E,F,G,K,P,R)
-
-**DB Access**:
-- Service-level clients or DI
-- Wrap in try/catch → `handle_database_exception`
-- Respect RLS policies
-
-**Response Pattern**:
-```python
-# Success
+# Success response
 return ResponseModel(data=result, status="success")
 
-# Error
+# Error handling
 from exceptions import SimulationNotFoundError
 if not simulation:
     raise SimulationNotFoundError(f"Simulation {id} not found")
 ```
 
-## Adding Endpoints
+**Auth Flow Implementation**:
+
+```python
+# JWT validation with dependency injection
+from auth.jwt import authenticate_jwt_token
+
+async def my_endpoint(user_id: str = Depends(authenticate_jwt_token)):
+    # user_id extracted from validated JWT 'sub' claim
+    pass
+```
+
+**Admin Guard Pattern**:
+
+```python
+# Check admin privileges
+_assert_admin(user_id, client)  # Checks admins.user_id table, raises 403 if not admin
+```
+
+**Database Access Guidelines**:
+
+- Use service-level clients with dependency injection
+- Wrap operations in try/catch → `handle_database_exception`
+- Respect RLS policies configured in Supabase
+- Simulation updates invalidate results: `simulation_results` → `None`
+
+**Adding Endpoints**:
+
+Models → `models/schemas.py`  
+Logic → `services/`
 
 ```python
 from fastapi import APIRouter, Depends, HTTPException
@@ -197,48 +210,27 @@ async def my_feature(req: MyReq, user_id: str = Depends(authenticate_jwt_token))
     return MyResp(...)
 ```
 
-Models → `models/schemas.py`  
-Logic → `services/`
 
-## Frontend Integration
+## Frontend Implementation Patterns
 
-**API**:
-- Base: `VITE_API_BASE_URL` → defaults in `vite.config.ts`
-- Dev: Set to `http://localhost:8000/api`
-- Auth: JWT via Authorization header
+**Browser Detection Pattern**:
 
-**Supabase**:
-- Client: `src/frontend/src/supabaseClient.ts`
-- Auto-refresh enabled
-- Config: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
+```typescript
+// utils/browserDetection.ts
+export const isEmbeddedBrowser = () => {
+  // Detects KakaoTalk, Facebook, Instagram, etc.
+};
 
-**State**:
-- Controller: `AppController.tsx`
-- Context: `useAuth()` hook
-- Storage: Minimize localStorage use
-
-**Browser Detection**:
-- Utility: `utils/browserDetection.ts` → detects embedded browsers
-- Modal: `components/EmbeddedBrowserWarningModal.tsx` → guides users to external browser
-- Flow: Detect embedded → Warn before OAuth → Redirect to standard browser
-- Supported: KakaoTalk, Facebook, Instagram, Twitter, Line, Naver webviews
-
-**Structure**:
-```
-src/
-├── pages/        # Routes
-├── components/   # UI
-├── context/      # Providers
-├── hooks/        # Custom hooks
-├── services/     # API layer
-├── types/        # TypeScript
-└── utils/        # Helpers
+// components/EmbeddedBrowserWarningModal.tsx
+// Shows warning before OAuth → guides to external browser
 ```
 
-**PWA**:
-- Worker: `vite-plugin-pwa`
-- Cache: NetworkFirst `/api/notices`, StaleWhileRevalidate assets
-- Manifest: "Light of Life Club Simulation"
+## Backend-Frontend Integration
+
+$PLACEHOLDER$
+
+
+
 
 ## Gotchas
 
@@ -298,27 +290,3 @@ src/
 - Some SSD endpoints not implemented
 - Maintain backwards compatibility
 
-## Key Files
-
-**Docs**:
-- SSD: `.github/copilot-instructions.md`
-- Schema: `.memo/CE/specs/schema/schema.md`
-- Tests: `docs/plans/test-code-v1/`
-
-**Backend Core**:
-- `api/routes.py` → All endpoints (507+ lines)
-- `services/simulations.py` → CRUD ops
-- `simulation_service.py` → Financial engine
-- `constants.py` → 10 plan configs
-- `auth/jwt.py` → JWT + JWKS
-- `models/schemas.py` → Pydantic models
-- `config/settings.py` → Environment
-- `exceptions.py` → Error hierarchy
-
-**Frontend Core**:
-- `AppController.tsx` → Main orchestrator
-- `vite.config.ts` → PWA + build config
-- `supabaseClient.ts` → Auth + API
-- `pages/` → WhitelistCheckPage, MainPage, etc.
-- `context/` → React providers
-- `services/` → API communication
