@@ -26,6 +26,8 @@ This PWA provides mobile-optimized experiences with offline capabilities, saving
 - Mobile-first, some desktop
 - Non-technical, Not machine-friendly
 - Korean-speaking users (ko-KR locale)
+- Mostly Windows OS when desktop
+- Mostly Android OS when mobile (some iOS)
 
 ### Administrators
 
@@ -144,14 +146,28 @@ View public notices and announcements on dashboard
 **New User Onboarding**:
 
 1. User accesses application URL
+    1. mobile
+        1. Android
+            1. external browser (Chrome)
+            2. installed PWA
+            3. in-app browser (KakaoTalk, Naver)
+        2. iOS
+            1. external browser (Chrome, Safari)
+            2. installed PWA
+            3. in-app browser (KakaoTalk, Naver)
+    2. desktop
+        1. external browser (Chrome, Edge)
+        2. installed PWA
 2. Enters name and phone number on whitelist check page
 3. System validates against whitelist via SHA256 hash
 4. System sends 6-digit OTP via SMS
 5. User enters OTP code within 5 minutes
 6. System displays privacy policy (fetched from database or static file)
 7. User reads policy and clicks "Accept"
+    1. One time consent required
+    2. Can click "Decline" to return to whitelist page
 8. System records consent with timestamp and user_hash
-9. User selects OAuth provider (Google or Kakao)
+9.  User selects OAuth provider (Google or Kakao)
 10. System redirects to Supabase OAuth flow
 11. User completes authentication
 12. System redirects to main dashboard
