@@ -143,7 +143,7 @@ View public notices and announcements on dashboard
 
 ## 4. Core User Flows (User Stories)
 
-**New User Onboarding**:
+### New User Onboarding
 
 1. User accesses application URL
     1. mobile
@@ -166,63 +166,52 @@ View public notices and announcements on dashboard
 7. User reads policy and clicks "Accept"
     1. One time consent required
     2. Can click "Decline" to return to whitelist page
-8. System records consent with timestamp and user_hash
-9.  User selects OAuth provider (Google or Kakao)
-10. System redirects to Supabase OAuth flow
-11. User completes authentication
-12. System redirects to main dashboard
+8.  User directed to login page. Selects OAuth provider (Google or Kakao)
+9.  Proceed login.
+10. User completes authentication
+11. System directs users to main dashboard
 
-**Create and Run Simulation**:
+### Create, Modify, and Run Simulation
 
 1. User clicks "Add New Simulation" on dashboard
-2. System displays 5-step plan editor wizard
-3. User selects plan type (A–R)
-4. User configures:
-   - Starting company round
-   - Number of rounds to simulate
-   - Investment schedule (auto-generated or custom)
-   - Sales achievement rates (optional overrides)
-5. User reviews configuration and clicks "Create"
-6. System saves simulation to database
-7. User clicks "Run Simulation"
-8. System executes financial calculations
-9. System displays results with:
-   - Per-round breakdown tables
-   - Revenue, commission, bonus, tax details
-   - Cumulative totals
-   - Visual charts
-10. User reviews results and optionally adds memo
-11. Simulation appears in dashboard list
+2. Users [Create & Save Simulation](#create--save-simulation)
+3. Users [Update Simulation](#update-simulation) if needed.
+4. Users [Run Simulation](#run-simulation-to-get-results)
 
-**Update Simulation**:
+### Get Simulation Results
 
-1. User opens simulation from dashboard
-2. Clicks "Edit Parameters"
-3. Modifies investment schedule or sales rates
-4. Saves changes
-5. System clears previous results
-6. User re-runs simulation to see updated outcomes
+1. User clicks "View Results" on simulation row
+2. Users [Get Simulation Results](#get-simulation-results)
+3. Users reviews results and optionally adds/modifies memo
+4. Users [Get Comprehensive Simulation Results](#get-comprehensive-simulation-results)
+
+### Delete Simulation
+
+1. Users [Delete Simulation](#delete-simulation).
+
+
+### Public Notices and Privacy Policies
 
 **Admin Publishes Notice**:
 
-1. Admin logs in and navigates to admin panel
-2. Clicks "Create Notice"
+1. Admin logs in and navigates to "공지사항" page
+2. Clicks "새 공지"
 3. Enters title and content
 4. Optionally pins notice
 5. Sets published status to true
 6. Saves notice
 7. Notice appears on all users' dashboards
+8. Admin can edit or delete notices
 
 **Admin Publishes Privacy Policy**:
 
-1. Admin creates new policy version
-2. Enters version, locale, content, effective date
-3. Saves as draft (published = false)
-4. Reviews content
-5. Clicks "Publish"
-6. System verifies no other published policy for same version/locale
-7. System sets published = true
-8. New policy becomes active for consent flow
+1. Admin clicks "개인 정보 보호 정책"
+2. Admin can load existing policy or creates new policy with "새로 만들기"
+3. Enters version, locale, content, effective date
+4. Saves as draft (published = false)
+5. Reviews content. Can see preview.
+6. Clicks "게시" to publish
+7. New policy becomes active for policy consent flow
 
 ## 5. User Interface
 
