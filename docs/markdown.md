@@ -18,10 +18,13 @@ Write or edit markdown files according to the following process:
 
 If you are modifying the existing documents, make direct changes without indicating modifications. For example, do not use wordings like these: "(Added part)", "New sections", "변경사항", etc.. JUST CHANGE the document if there needs to be change.
 
-
 ### 2. Consistent to Existing Style
 
 If you are modifying the existing documents, fits the new or modified contents to the existing style, format, tone, and structure of the document, unless you are instructed otherwise.
+
+### 3. Short, Simple, Machine-Friendly
+
+If you are writing new documents, write in a short, simple, and machine-friendly style. Do not verbose. Leave critical details only. Use `DO:` and `DO NOT:` list as much as possible.
 
 ## Quality Assurance Checklist
 
