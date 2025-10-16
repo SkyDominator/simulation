@@ -1,6 +1,6 @@
 # Software Specification Document (SSD)
 
-This Software Specification Document (SSD) provides the technical specifications for the Investment Simulation PWA, including system architecture, data models, API contracts, security mechanisms, and non-functional requirements. For product features and user flows, see PRD. For implementation patterns and developer guidelines, see Technical Specification.
+This Software Specification Document (SSD) provides the technical specifications for the Investment Simulation PWA, including system architecture, data models, API contracts, security mechanisms, and non-functional requirements.
 
 ## 1. Environment Profiles
 
