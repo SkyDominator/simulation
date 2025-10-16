@@ -5,6 +5,7 @@ This Software Specification Document (SSD) provides the technical specifications
 ## 1. Environment Profiles
 
 ### 1.1 Development
+
 - **OS**: Windows 11
 - **IDE**: VS Code
 - **Browser**: Chrome 1920x1080
@@ -14,11 +15,13 @@ This Software Specification Document (SSD) provides the technical specifications
 - **Ports**: Frontend 5173, Backend 8001
 
 ### 1.2 Test
+
 - **Desktop**: Windows 11 + Chrome latest
 - **Mobile**: iPhone 11 Pro (iOS 18.1.1) + Chrome
 - **Testing**: Pytest (backend), Vitest + Playwright (frontend)
 
 ### 1.3 Production & Staging
+
 - **Desktop**: Windows 11+ (Chrome latest-2)
 - **Mobile iOS**: iPhone 11+ (iOS 18.1.1+) Chrome
 - **Mobile Android**: Galaxy S21+ (Android 12+) Chrome
@@ -28,23 +31,27 @@ This Software Specification Document (SSD) provides the technical specifications
 - **Staging**: `staging-simulation.lightoflifeclub.com` (port 4173 frontend, 8001 backend)
 
 ### 1.4 Load
+
 - Total users: 60–100
 - Peak concurrent: 30–60
 
 ## 2. System Architecture
 
 **Frontend**:
+
 - React 19.1.0 + TypeScript 5.8.4+ + Vite 5.4.10+
 - vite-plugin-pwa 0.20.0, MUI 5.14.0+, Tailwind 3.4.4+
 - @supabase/supabase-js 2.51.0+
 - localStorage/sessionStorage persistence
 
 **Backend**:
+
 - FastAPI 0.116.1+ (Python 3.11.6+)
 - Pydantic v2, Supabase client 2.16.0+
 - JWT via Supabase JWKS
 
 **Infrastructure**:
+
 - DigitalOcean Droplet with Docker Compose
 - Nginx reverse proxy (host-based routing on port 8080)
 - Cloudflare Tunnel: `simulation.lightoflifeclub.com` (production), `staging-simulation.lightoflifeclub.com` (staging)
