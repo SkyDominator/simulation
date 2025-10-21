@@ -5,7 +5,18 @@ PWA React/TypeScript application guidelines.
 ### React Principles
 
 **DO:**
+- Use Test Driven Development (TDD). Always write tests before implementation.
+  - Write unit tests (`src/test/pages/`) for page-level components
+  - Write smoke tests (`src/test/smoke.test.tsx`) for basic setup validation
+  - Write component tests (`src/test/components/`) for reusable UI components
+  - Write integration tests (`src/test/integration/`) for module interactions
+  - Write security tests (`src/test/security/`) for authentication, authorization, and XSS prevention
+  - Write E2E tests (`e2e/`) for end-to-end user flows
+  - Aim for high code coverage (>90%)
+- Use dependency injection for TDD. Write testable code (easy to test in isolation).
 - Use functional components with hooks (`useState`, `useEffect`, custom hooks)
+- Extract common functionality into reusable components
+    - Try to re-use existing components before creating new ones
 - Call hooks at top level only (no loops/conditionals)
 - Apply SOLID principles (SRP, OCP, LSP, ISP, DIP)
 - Break UI into small, focused components (container vs presentational)
