@@ -8,7 +8,7 @@ test.describe("Embedded Browser Detection - E2E", () => {
     viewport: { width: 375, height: 667 },
   });
 
-  test("detects KakaoTalk browser and shows warning modal", async ({
+  test("detects KakaoTalk browser, shows warning banner and disables buttons", async ({
     page,
   }) => {
     // Navigate to login page
@@ -17,60 +17,58 @@ test.describe("Embedded Browser Detection - E2E", () => {
     // Wait for page load
     await page.waitForLoadState("networkidle");
 
-    // Optional: Check if warning banner appears
+    // Check warning banner appears
     const banner = page.locator(
       "text=/앱 내부 브라우저에서는 Google 로그인이 제한됩니다/"
     );
-    if (await banner.isVisible()) {
-      await expect(banner).toBeVisible();
-    }
+    await expect(banner).toBeVisible();
 
-    // Click Google login button
-    await page.click('button:has-text("Google로 로그인")');
+    // Check both login buttons are disabled
+    const googleButton = page.getByTestId("google-login");
+    const kakaoButton = page.getByTestId("kakao-login");
 
-    // Modal should appear
-    await expect(page.locator("text=브라우저에서 열어주세요")).toBeVisible();
-    await expect(
-      page.locator("text=/KakaoTalk 앱 내부 브라우저/")
-    ).toBeVisible();
-
-    // Verify modal content
-    await expect(page.locator("text=브라우저에서 열기")).toBeVisible();
-    await expect(page.locator("text=취소")).toBeVisible();
-    await expect(page.locator("text=/수동으로 여는 방법/")).toBeVisible();
+    await expect(googleButton).toBeDisabled();
+    await expect(kakaoButton).toBeDisabled();
   });
 
-  test("allows user to dismiss modal", async ({ page }) => {
-    await page.goto("/login");
-    await page.waitForLoadState("networkidle");
-
-    // Trigger modal
-    await page.click('button:has-text("Google로 로그인")');
-    await expect(page.locator("text=브라우저에서 열어주세요")).toBeVisible();
-
-    // Dismiss modal
-    await page.click('button:has-text("취소")');
-
-    // Modal should disappear
-    await expect(
-      page.locator("text=브라우저에서 열어주세요")
-    ).not.toBeVisible();
-  });
-
-  test("shows manual instructions for external browser opening", async ({
+  test("disabled buttons prevent click and modal does not appear", async ({
     page,
   }) => {
     await page.goto("/login");
     await page.waitForLoadState("networkidle");
 
-    // Trigger modal
-    await page.click('button:has-text("Google로 로그인")');
+    const googleButton = page.getByTestId("google-login");
 
-    // Check manual instructions
-    await expect(
-      page.locator("text=/메뉴\\(⋮\\) 버튼을 누르세요/")
-    ).toBeVisible();
-    await expect(page.locator("text=/다른 브라우저로 열기/")).toBeVisible();
+    // Verify button is disabled
+    await expect(googleButton).toBeDisabled();
+
+    // Try to click (should not work since button is disabled)
+    await googleButton.click({ force: true });
+
+    // Modal should NOT appear
+    await expect(page.locator("text=브라우저에서 열어주세요")).not.toBeVisible({
+      timeout: 2000,
+    });
+  });
+
+  test("warning banner can be dismissed", async ({ page }) => {
+    await page.goto("/login");
+    await page.waitForLoadState("networkidle");
+
+    // Check warning banner appears
+    const banner = page.getByRole("alert");
+    await expect(banner).toBeVisible();
+
+    // Dismiss banner (find close button in alert)
+    const closeButton = banner.locator('button[aria-label="Close"]');
+    await closeButton.click();
+
+    // Banner should disappear
+    await expect(banner).not.toBeVisible();
+
+    // Buttons should still be disabled
+    const googleButton = page.getByTestId("google-login");
+    await expect(googleButton).toBeDisabled();
   });
 });
 
@@ -82,7 +80,9 @@ test.describe("Standard Browser - E2E Control", () => {
     viewport: { width: 375, height: 667 },
   });
 
-  test("allows OAuth in standard browser without warning", async ({ page }) => {
+  test("enables OAuth buttons in standard browser without warning", async ({
+    page,
+  }) => {
     await page.goto("/login");
     await page.waitForLoadState("networkidle");
 
@@ -91,16 +91,12 @@ test.describe("Standard Browser - E2E Control", () => {
       page.locator("text=/앱 내부 브라우저에서는 Google 로그인이 제한됩니다/")
     ).not.toBeVisible();
 
-    // Click Google login button
-    await page.click('button:has-text("Google로 로그인")');
+    // Both buttons should be enabled
+    const googleButton = page.getByTestId("google-login");
+    const kakaoButton = page.getByTestId("kakao-login");
 
-    // Modal should NOT appear
-    await expect(page.locator("text=브라우저에서 열어주세요")).not.toBeVisible({
-      timeout: 2000,
-    });
-
-    // Should redirect to OAuth (or show OAuth-related page)
-    // Note: Actual OAuth redirect will happen, just verify no modal interference
+    await expect(googleButton).not.toBeDisabled();
+    await expect(kakaoButton).not.toBeDisabled();
   });
 });
 

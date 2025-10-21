@@ -38,78 +38,71 @@ describe("Embedded Browser Detection - Integration", () => {
     });
   });
 
-  it("completes full detection → modal → redirect flow", async () => {
-    const openInExternalBrowserSpy = vi
-      .spyOn(browserDetection, "openInExternalBrowser")
-      .mockResolvedValue(true);
-
+  it("disables buttons and shows warning banner in embedded browser", async () => {
     renderWithProviders(<LoginPage />, { withAuth: false });
 
     // Step 1: Verify detection
     expect(browserDetection.isEmbeddedBrowser()).toBe(true);
 
-    // Step 2: Click Google login
-    const googleButton = screen.getByText(/Google로 로그인/);
-    fireEvent.click(googleButton);
-
-    // Step 3: Modal appears
+    // Step 2: Verify warning banner is displayed
     await waitFor(() => {
-      expect(screen.getByText("브라우저에서 열어주세요")).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toBeInTheDocument();
       expect(
-        screen.getByText(/KakaoTalk 앱 내부 브라우저/)
+        screen.getByText(/앱 내부 브라우저에서는 Google 로그인이 제한됩니다/)
       ).toBeInTheDocument();
     });
 
-    // Step 4: Click open in browser
-    const openBrowserButton = screen.getByText("브라우저에서 열기");
-    fireEvent.click(openBrowserButton);
+    // Step 3: Verify both buttons are disabled
+    const googleButton = screen.getByTestId("google-login");
+    const kakaoButton = screen.getByTestId("kakao-login");
 
-    // Step 5: Verify redirect attempt
-    await waitFor(() => {
-      expect(openInExternalBrowserSpy).toHaveBeenCalled();
-    });
+    expect(googleButton).toBeDisabled();
+    expect(kakaoButton).toBeDisabled();
   });
 
-  it("handles user dismissal and retry", async () => {
+  it("does not show modal when clicking disabled button", async () => {
     renderWithProviders(<LoginPage />, { withAuth: false });
 
-    // Click Google login - modal appears
-    fireEvent.click(screen.getByText(/Google로 로그인/));
+    const googleButton = screen.getByTestId("google-login");
 
-    await waitFor(() => {
-      expect(screen.getByText("브라우저에서 열어주세요")).toBeInTheDocument();
-    });
+    // Button is disabled
+    expect(googleButton).toBeDisabled();
 
-    // User dismisses modal
-    fireEvent.click(screen.getByText("취소"));
+    // Try to click (should not work since button is disabled)
+    fireEvent.click(googleButton);
 
-    await waitFor(() => {
-      expect(
-        screen.queryByText("브라우저에서 열어주세요")
-      ).not.toBeInTheDocument();
-    });
-
-    // User can retry
-    fireEvent.click(screen.getByText(/Google로 로그인/));
-
-    await waitFor(() => {
-      expect(screen.getByText("브라우저에서 열어주세요")).toBeInTheDocument();
-    });
-  });
-
-  it("shows manual instructions when auto-redirect fails", async () => {
-    vi.spyOn(browserDetection, "openInExternalBrowser").mockResolvedValue(
-      false
+    // Modal should not appear (button click doesn't trigger handler)
+    await waitFor(
+      () => {
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      },
+      { timeout: 2000 }
     );
+  });
+
+  it("enables buttons and hides banner in standard browser", async () => {
+    // Change to standard browser
+    Object.defineProperty(window.navigator, "userAgent", {
+      value:
+        "Mozilla/5.0 (Linux; Android 13) Chrome/120.0.0.0 Mobile Safari/537.36",
+      writable: true,
+      configurable: true,
+    });
 
     renderWithProviders(<LoginPage />, { withAuth: false });
 
-    fireEvent.click(screen.getByText(/Google로 로그인/));
+    // Verify detection
+    expect(browserDetection.isEmbeddedBrowser()).toBe(false);
 
-    await waitFor(() => {
-      expect(screen.getByText(/수동으로 여는 방법/)).toBeInTheDocument();
-      expect(screen.getByText(/메뉴\(⋮\) 버튼을 누르세요/)).toBeInTheDocument();
-    });
+    // Verify buttons are enabled
+    const googleButton = screen.getByTestId("google-login");
+    const kakaoButton = screen.getByTestId("kakao-login");
+
+    expect(googleButton).not.toBeDisabled();
+    expect(kakaoButton).not.toBeDisabled();
+
+    // Verify banner is not shown
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
 
