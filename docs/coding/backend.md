@@ -5,20 +5,21 @@ Python backend application guidelines.
 ### Core Principles
 
 **DO:**
-- Use Test Driven Development (TDD). Write tests before implementation.
-    - Write unit tests for individual functions/classes.
-    - Write integration tests for module interactions.
-    - Write end-to-end tests for full workflows.
+
+- Use Test Driven Development (TDD). Always write tests before implementation.
+    - Write unit tests (`tests/unit/`) for individual functions/classes.
+    - Write integration tests (`tests/integration/`) for module interactions.
+    - Write security tests (`tests/integration/api/test_security_e2e.py, tests/unit/security/test_cryptography.py`) for authentication, authorization, and cryptography.
     - Aim for high code coverage (>90%).
+- Use dependency injection for TDD. Write testable code (easy to test in isolation).
 - Apply SOLID principles (SRP, OCP, LSP, ISP, DIP)
-- Use dependency injection
 - Break code into small, focused functions/classes
 - Organize by features/domains, not types
 - Extract common functionality into reusable components
+    - Try to re-use existing components before creating new ones
 - Use design patterns where appropriate
 - Keep modules loosely coupled with clear interfaces
 - Use configuration files/env variables for settings
-- Write testable code (easy to test in isolation)
 - Follow the existing code style and conventions when modifying code
 - Clean-up codes after modification (remove unused imports, variables, functions, comments, and unnecessary changes that were prooved to be not needed anymore)
 
