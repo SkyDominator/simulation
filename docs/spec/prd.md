@@ -240,6 +240,11 @@ View public notices and announcements on dashboard
   - Kakao OAuth button with brand styling
   - Loading states per provider
   - Clear error messages with retry options
+  - **Embedded Browser Detection**:
+    - Warning banner when detected (dismissible)
+    - Google/Kakao login buttons disabled (grayed out)
+    - Banner explains why disabled
+    - "브라우저에서 열기" guidance in banner
 
 **Main Application**:
 
