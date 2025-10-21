@@ -1,6 +1,6 @@
 ---
 mode: agent
-tools: ['runCommands', 'runTasks', 'edit', 'search', 'new', 'context7/*', 'playwright/*', 'pylance mcp server/*', 'extensions', 'usages', 'think', 'problems', 'changes', 'testFailure', 'openSimpleBrowser', 'fetch', 'githubRepo', 'github.vscode-pull-request-github/copilotCodingAgent', 'github.vscode-pull-request-github/activePullRequest', 'github.vscode-pull-request-github/openPullRequest', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'todos']
+tools: ['runCommands', 'runTasks', 'edit', 'search', 'context7/*', 'usages', 'think', 'problems', 'changes', 'fetch', 'githubRepo', 'github.vscode-pull-request-github/copilotCodingAgent', 'github.vscode-pull-request-github/activePullRequest', 'github.vscode-pull-request-github/openPullRequest', 'todos']
 model: Claude Sonnet 4.5
 ---
 
