@@ -28,11 +28,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
   const [showEmbeddedBrowserWarning, setShowEmbeddedBrowserWarning] =
     useState(false);
   const [showEmbeddedBanner, setShowEmbeddedBanner] = useState(false);
+  const [isEmbedded, setIsEmbedded] = useState(false);
   const e2eMode = isE2EMode();
 
   // Detect embedded browser on mount and show persistent warning banner
   useEffect(() => {
-    if (isEmbeddedBrowser()) {
+    const embedded = isEmbeddedBrowser();
+    setIsEmbedded(embedded);
+    if (embedded) {
       setShowEmbeddedBanner(true);
     }
   }, []);
@@ -168,7 +171,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
             fullWidth
             size="large"
             onClick={() => handleSocialLogin("google")}
-            disabled={!!loadingProvider}
+            disabled={!!loadingProvider || isEmbedded}
             data-testid="google-login"
           >
             {loadingProvider === "google"
@@ -181,7 +184,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
             fullWidth
             size="large"
             onClick={() => handleSocialLogin("kakao")}
-            disabled={!!loadingProvider}
+            disabled={!!loadingProvider || isEmbedded}
             sx={{
               bgcolor: "#FEE500",
               color: "rgba(0,0,0,0.85)",

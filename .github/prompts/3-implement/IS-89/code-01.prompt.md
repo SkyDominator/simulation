@@ -12,8 +12,8 @@ Implement codes by following the $PLAN$.
 
 ## Mappings
 
-$RESEARCH_RESULT$: `docs/research/IS-89/research-00.md`
-$PLAN$: `docs/plan/IS-89/plan-00.md`
+$RESEARCH_RESULT$: `docs/research/IS-89/research-01.md`
+$PLAN$: `docs/plan/IS-89/plan-01.md`
 
 ## Tasks
 

@@ -35,18 +35,28 @@ describe("LoginPage - Embedded Browser Detection", () => {
     });
   });
 
-  it("shows warning modal when Google login clicked in embedded browser", async () => {
+  it("disables Google login button and shows banner in embedded browser", async () => {
     vi.mocked(browserDetection.isEmbeddedBrowser).mockReturnValue(true);
     vi.mocked(browserDetection.getBrowserName).mockReturnValue("KakaoTalk");
 
     renderWithProviders(<LoginPage />, { withAuth: false });
 
-    const googleButton = screen.getByText(/Google로 로그인/);
+    // Check button is disabled
+    const googleButton = screen.getByTestId("google-login");
+    expect(googleButton).toBeDisabled();
+
+    // Try to click (should not work)
     fireEvent.click(googleButton);
 
-    await waitFor(() => {
-      expect(screen.getByText("브라우저에서 열어주세요")).toBeInTheDocument();
-    });
+    // Modal should NOT appear because button is disabled
+    await waitFor(
+      () => {
+        expect(
+          screen.queryByText("브라우저에서 열어주세요")
+        ).not.toBeInTheDocument();
+      },
+      { timeout: 2000 }
+    );
 
     // OAuth should NOT be called
     expect(supabase.auth.signInWithOAuth).not.toHaveBeenCalled();
@@ -61,7 +71,11 @@ describe("LoginPage - Embedded Browser Detection", () => {
 
     renderWithProviders(<LoginPage />, { withAuth: false });
 
-    const googleButton = screen.getByText(/Google로 로그인/);
+    const googleButton = screen.getByTestId("google-login");
+
+    // Button should be enabled
+    expect(googleButton).not.toBeDisabled();
+
     fireEvent.click(googleButton);
 
     await waitFor(() => {
@@ -77,7 +91,7 @@ describe("LoginPage - Embedded Browser Detection", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows warning modal on OAuth 403 error in embedded browser", async () => {
+  it("button remains disabled even if OAuth error occurs in embedded browser", async () => {
     vi.mocked(browserDetection.isEmbeddedBrowser).mockReturnValue(true);
     vi.mocked(supabase.auth.signInWithOAuth).mockRejectedValue(
       new Error("403: disallowed_useragent")
@@ -85,12 +99,23 @@ describe("LoginPage - Embedded Browser Detection", () => {
 
     renderWithProviders(<LoginPage />, { withAuth: false });
 
-    const googleButton = screen.getByText(/Google로 로그인/);
+    const googleButton = screen.getByTestId("google-login");
+
+    // Button should be disabled, preventing any click
+    expect(googleButton).toBeDisabled();
+
+    // Try to click (should not work)
     fireEvent.click(googleButton);
 
-    await waitFor(() => {
-      expect(screen.getByText("브라우저에서 열어주세요")).toBeInTheDocument();
-    });
+    // Modal should NOT appear because button is disabled
+    await waitFor(
+      () => {
+        expect(
+          screen.queryByText("브라우저에서 열어주세요")
+        ).not.toBeInTheDocument();
+      },
+      { timeout: 2000 }
+    );
   });
 
   it("displays warning banner on mount in embedded browser", () => {
@@ -98,9 +123,13 @@ describe("LoginPage - Embedded Browser Detection", () => {
 
     renderWithProviders(<LoginPage />, { withAuth: false });
 
-    // If optional banner enhancement is implemented
+    // Banner should be displayed
     expect(
       screen.queryByText(/앱 내부 브라우저에서는 Google 로그인이 제한됩니다/)
     ).toBeInTheDocument();
+
+    // Both buttons should be disabled
+    expect(screen.getByTestId("google-login")).toBeDisabled();
+    expect(screen.getByTestId("kakao-login")).toBeDisabled();
   });
 });

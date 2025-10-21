@@ -1,6 +1,6 @@
 ---
 mode: agent
-tools: ['runCommands', 'runTasks', 'edit', 'search', 'new', 'context7/*', 'playwright/*', 'pylance mcp server/*', 'extensions', 'usages', 'think', 'problems', 'changes', 'testFailure', 'openSimpleBrowser', 'fetch', 'githubRepo', 'github.vscode-pull-request-github/copilotCodingAgent', 'github.vscode-pull-request-github/activePullRequest', 'github.vscode-pull-request-github/openPullRequest', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'todos']
+tools: ['runCommands', 'runTasks', 'edit', 'search', 'context7/*', 'usages', 'think', 'problems', 'changes', 'fetch', 'githubRepo', 'github.vscode-pull-request-github/copilotCodingAgent', 'github.vscode-pull-request-github/activePullRequest', 'github.vscode-pull-request-github/openPullRequest', 'todos']
 model: Claude Sonnet 4.5
 ---
 
@@ -43,7 +43,7 @@ gh issue view 89 --repo SkyDominator/simulation
 gh pr view 90 --repo SkyDominator/simulation
 ```
 
-The PR 90 was merged to solve issue 89, but the issue still remains.
+The PR 90 was merged to solve issue 89, but the issue still remains. The user experiences exactly the same problem as described in the issue after the merge.
 
 ## The goal of research
 
@@ -60,12 +60,10 @@ The basic goal of this research is to identify source codes:
     2. Data flow
     3. Code execution flow
 
-### Research Items
-
-Report the below items are fully covered.  
+The research should answer to the following check:
 
 ```markdown
-PWA의 로그인 페이지에 다음 로직을 추가하세요.
+PWA의 로그인 페이지에 다음 로직을 추가해야 한다.
 KakaoTalk 인앱 브라우저 감지: 사용자의 navigator.userAgent 문자열에 KAKAOTALK이 포함되어 있는지 확인합니다.
 
 UI 분기 처리:
@@ -79,4 +77,4 @@ KakaoTalk 감지 시: "Google 로그인" 버튼을 숨기거나 비활성화합�
 
 - Create $RESEARCH_RESULT$ file to report results.
 - Refer to the following examples for the structure, format, style of the report:
-    - `../../../../.github/prompts/1-research/IS-89/research-00.prompt.md`
+    - `../../../../docs/research/IS-89/research-00.md`

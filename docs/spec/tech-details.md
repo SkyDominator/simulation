@@ -391,6 +391,28 @@ export const useSimulationActions = () => {
 2. Show `EmbeddedBrowserWarningModal` to inform user
 3. Call `openInExternalBrowser()` to guide user to system browser
 
+**Button State Management**:
+
+**Implementation**: `src/frontend/src/pages/LoginPage.tsx:31, 36-42, 174, 185`
+
+When embedded browser is detected:
+
+1. `isEmbedded` state is set to `true` on component mount
+2. Google login button `disabled` prop: `disabled={!!loadingProvider || isEmbedded}`
+3. Kakao login button `disabled` prop: `disabled={!!loadingProvider || isEmbedded}`
+
+**Visual Feedback**:
+
+- Disabled buttons appear grayed out (MUI default disabled styling)
+- Kakao button uses custom disabled styles via `sx` prop
+- Warning banner above buttons explains why disabled
+
+**User Experience**:
+
+- Immediate visual feedback: Users see button is disabled
+- No confusion: Users don't attempt impossible action
+- Clear guidance: Banner explains situation and solution
+
 **Testing**: Verify with actual KakaoTalk, Facebook, Instagram apps on mobile devices
 
 ### 6.5 Testing Configuration

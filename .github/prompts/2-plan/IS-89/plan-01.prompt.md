@@ -16,9 +16,9 @@ gh issue view 89 --repo SkyDominator/simulation
 
 ## Mappings
 
-$RESEARCH_RESULT$: `docs/research/IS-89/research-00.md`
-$PLAN$: `docs/plan/IS-89/plan-00.md`
-$APPROACH$: `Approach 1: Detect and Redirect to External Browser (Recommended)`
+$RESEARCH_RESULT$: `docs/research/IS-89/research-01.md`
+$PLAN$: `docs/plan/IS-89/plan-01.md`
+$APPROACH$: Directed in the $RESEARCH_RESULT$.
 
 (If the file already exists, overwrite it. If the directory and the file do not exist, create them.)
 
@@ -31,13 +31,9 @@ $APPROACH$: `Approach 1: Detect and Redirect to External Browser (Recommended)`
     - Consider side effects and edge cases.
     - Consider not introducing new issues or regressions by code changes.
     - Refer to the following examples for the structure, format, style of the plan:
-        - `/docs/examples/example1-plan.md`
-        - `docs/plans/test-code/test-plan-01-backend-unit.md`
+        - `docs/plan/IS-89/plan-00.md`
 
 
 ## Notes
 
-- $PLAN$ should MUST include the implementation plan for test codes.
-    - Plan for defining test cases
-    - Plan for writing test codes
-    - For the type of tests, refer to `.vscode/launch.json`.
+- $PLAN$ should MUST include the implementation plan for test codes. Refer to the backend and frontend coding guideline for the test code structure and style.
