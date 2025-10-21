@@ -1,6 +1,6 @@
 ---
 mode: agent
-tools: ['runCommands', 'runTasks', 'edit', 'search', 'context7/*', 'playwright/*', 'pylance mcp server/*', 'usages', 'think', 'problems', 'changes', 'testFailure', 'fetch', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'todos', 'runTests']
+tools: ['runCommands', 'runTasks', 'edit', 'search', 'context7/*', 'pylance mcp server/*', 'usages', 'think', 'problems', 'changes', 'fetch', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'todos']
 model: Claude Sonnet 4.5
 ---
 
