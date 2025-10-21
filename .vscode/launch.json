@@ -161,7 +161,11 @@
         "NODE_ENV": "test"
       }
     },
-        {
+
+    // Use this format when running myself:
+    // example: npx playwright test ./e2e/auth/embedded-browser.spec.ts --project="Mobile Chrome"
+
+    {
       "name": "E2E Test: Frontend",
       "type": "node",
       "request": "launch",
