@@ -1,6 +1,6 @@
 ---
 mode: agent
-tools: ['edit', 'search', 'runCommands', 'runTasks', 'pylance mcp server/*', 'context7/*', 'usages', 'think', 'problems', 'changes', 'fetch', 'githubRepo', 'github.vscode-pull-request-github/copilotCodingAgent', 'github.vscode-pull-request-github/activePullRequest', 'github.vscode-pull-request-github/openPullRequest', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'todos']
+tools: ['edit', 'search', 'pylance mcp server/pylanceDocuments', 'pylance mcp server/pylanceFileSyntaxErrors', 'pylance mcp server/pylancePythonEnvironments', 'pylance mcp server/pylanceSettings', 'pylance mcp server/pylanceSyntaxErrors', 'pylance mcp server/pylanceWorkspaceRoots', 'pylance mcp server/pylanceWorkspaceUserFiles', 'context7/*', 'usages', 'think', 'problems', 'changes', 'fetch', 'ms-python.python/getPythonEnvironmentInfo', 'todos']
 model: Claude Sonnet 4.5
 ---
 
@@ -10,7 +10,7 @@ Do research and create a research artifact.
 
 ## Mappings
 
-$RESEARCH_RESULT$: `docs/research/IS-93/research-00.md`
+$RESEARCH_RESULT$: `docs/research/IS-62/IS-93/research-00.md`
 
 (If the file already exists, overwrite it. If the directory and the file do not exist, create them.)
 

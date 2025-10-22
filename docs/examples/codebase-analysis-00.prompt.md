@@ -1,6 +1,6 @@
 ---
 mode: agent
-tools: ['edit', 'search', 'runCommands', 'runTasks', 'pylance mcp server/*', 'context7/*', 'usages', 'think', 'problems', 'changes', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'todos']
+tools: ['edit', 'search', 'pylance mcp server/pylanceDocuments', 'pylance mcp server/pylanceFileSyntaxErrors', 'pylance mcp server/pylanceImports', 'pylance mcp server/pylanceInstalledTopLevelModules', 'pylance mcp server/pylancePythonEnvironments', 'pylance mcp server/pylanceSettings', 'pylance mcp server/pylanceSyntaxErrors', 'pylance mcp server/pylanceWorkspaceRoots', 'pylance mcp server/pylanceWorkspaceUserFiles', 'context7/*', 'usages', 'think', 'problems', 'changes', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'todos']
 model: Claude Sonnet 4.5
 ---
 
@@ -14,8 +14,8 @@ The artifacts must provide the implementation details, context, code map, data f
 
 ## Mappings
 
-$RESEARCH_REPORT$: `docs/research/IS-93/research-00.md`
-$ANALYSIS_REPORT$: `docs/analysis/IS-93/analysis-00.md`
+$RESEARCH_REPORT$: `docs/research/IS-62/IS-93/research-00.md`
+$ANALYSIS_REPORT$: `docs/analysis/IS-62/IS-92/analysis-00.md`
 
 (If the file already exists, overwrite it. If the directory and the file do not exist, create them.)
 
@@ -37,11 +37,13 @@ gh auth login
 ## Tasks
 
 ```shell
-gh issue view 89 --repo SkyDominator/simulation
+gh issue view 92 --repo SkyDominator/simulation
 ```
 
 $RESEARCH_REPORT$ is the research report you need to read in.
 $ANALYSIS_REPORT$ is the analysis report you need to create.
+
+I will go with the Architecture 1 approach in the $RESEARCH_REPORT$.
 
 The analysis should includes:
 
