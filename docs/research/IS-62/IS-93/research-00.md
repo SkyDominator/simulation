@@ -1,8 +1,8 @@
 ---
 date: 2025-10-22T00:00:00+09:00
 researcher: GitHub Copilot
-git_commit: IS-93
-branch: IS-93
+git_commit: IS-62
+branch: IS-62
 repository: simulation
 topic: "E2E Testing Best Practices for Small-Scale PWA"
 tags: [research, e2e, testing, playwright, pwa, best-practices, architecture]

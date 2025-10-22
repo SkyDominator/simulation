@@ -10,7 +10,7 @@ Do research and create a research artifact.
 
 ## Mappings
 
-$RESEARCH_RESULT$: `docs/research/IS-93/research-00.md`
+$RESEARCH_RESULT$: `docs/research/IS-62/IS-93/research-00.md`
 
 (If the file already exists, overwrite it. If the directory and the file do not exist, create them.)
 
