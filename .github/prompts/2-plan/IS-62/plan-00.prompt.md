@@ -12,7 +12,7 @@ Create code implementation plan at $PLAN$ by reading $ANALYSIS_REPORT$. Follow t
 
 $ANALYSIS_REPORT$: `docs/analysis/IS-62/IS-92/analysis-00.md`
 $PLAN$: `docs/plan/IS-62/plan-00.md`
-$APPROACH$: Directed in the $ANALYSIS_REPORT$.
+$APPROACH$: `Option 1: Gradual Migration (Recommended)`.
 
 (If the file already exists, overwrite it. If the directory and the file do not exist, create them.)
 
