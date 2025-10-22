@@ -78,7 +78,7 @@ From PRD analysis, the application has these critical journeys:
    - Whitelist check → OTP verification → Privacy consent → OAuth login
 
 2. **Simulation Management**:
-   - Create simulation → Configure plan parameters → Run simulation → View results
+   - Create simulation → Configure plan parameters → Run simulation → View results → View Offline results → Get back to dashboard
 
 3. **Dashboard Operations**:
    - View simulations list → Multi-select → Get comprehensive results → Manage memos
