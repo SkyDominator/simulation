@@ -18,9 +18,8 @@ $APPROACH$: Directed in $ANALYSIS_REPORT$.
 
 ## Tasks
 
-1. Read $RESEARCH_REPORT$.
-2. Read $ANALYSIS_REPORT$.
-3. Create $PLAN$ which is driven by $APPROACH$.
+1. Read $ANALYSIS_REPORT$.
+2. Create $PLAN$ which is driven by $APPROACH$.
     - Take a holistic view of the codebase. Do not stray from the coding guideine.
     - Consider side effects and edge cases.
     - Consider not introducing new issues or regressions by code changes.
@@ -31,3 +30,4 @@ $APPROACH$: Directed in $ANALYSIS_REPORT$.
 ## Notes
 
 - Refer to the backend and frontend coding guideline for the test code structure and style.
+- The current Test Infrastructure (fixtures, Mocks, Stubs, Fakes, etc.) should be not trusted. The plan include the revisions and improvements if required.
