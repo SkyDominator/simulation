@@ -44,7 +44,7 @@ PWA React/TypeScript application guidelines.
 
 #### Test Philosophy
 
-- **Minimize E2E Tests**: Highest cost (maintenance, flakiness, runtime)
+- **Minimize E2E Tests**: E2E Tests are required but should be kept to a minimum due to their high cost (maintenance, flakiness, runtime)
 - **Focus on Critical Journeys**: Only test core user value paths
 - **Test User-Visible Behavior**: Focus on what users see/interact with, not implementation details
 - **Isolation**: Each test runs independently with own storage/cookies/data
@@ -80,6 +80,8 @@ PWA React/TypeScript application guidelines.
   /          \  Unit (many tests)
  /____________\
 ```
+
+> Note: The pyramid ratios are about test count distribution, not coverage percentage.
 
 **Ratios** (rough guidance):
 - Unit tests: 70%
