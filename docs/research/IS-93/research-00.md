@@ -265,7 +265,7 @@ Testing Strategy Distribution:
 
 2. **Core Simulation Journey** (`e2e/journeys/simulation-lifecycle.spec.ts`):
    ```typescript
-   test('create → configure → run → view results', async ({ page }) => {
+   test('create → configure → run → view results → view offline results → back to view results → back to dashboard', async ({ page }) => {
      // End-to-end simulation workflow
    });
    
@@ -424,6 +424,18 @@ test.describe('Simulation Lifecycle Journey', () => {
     const results = new SimulationResultsPage(page);
     await expect(results.resultsTable).toBeVisible();
     await expect(results.getCumulativeRevenue()).toContain('원');
+    
+    // Navigate to offline results view
+    await page.getByRole('button', { name: '수당표 보기' }).click();
+    await expect(page.locator('[data-testid="offline-results"]')).toBeVisible();
+
+    // Return to view results
+    await page.getByRole('button', { name: '돌아가기' }).click();
+    await expect(results.resultsTable).toBeVisible();
+
+    // Return to dashboard
+    await page.getByRole('button', { name: '돌아가기' }).click();
+    await expect(dashboard.simulationTable).toBeVisible();
   });
 });
 ```
