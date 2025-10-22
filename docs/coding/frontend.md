@@ -168,6 +168,8 @@ const handleApiCall = async () => {
     setLoading(true);
     const result = await api.createSimulation(data, token);
   } catch (error) {
+    // OK for development debugging of non-sensitive errors
+    // Remove or use proper logging service in production
     console.error('API Error:', error);
   } finally {
     setLoading(false);
@@ -270,7 +272,8 @@ const updatePage = (newPage: Page) => {
 - Store sensitive data in React state/props/localStorage
 - Put secrets in `.env` (frontend exposes them)
 - Use `dangerouslySetInnerHTML` without DOMPurify
-- Log sensitive info to console
+- Log sensitive info to console (tokens, passwords, PII, etc.)
+- Use console logging in production (use proper logging service instead)
 - Use `eval`, `Function()`, or dynamic script execution
 - Embed API keys/secrets in frontend code
 

@@ -575,8 +575,6 @@ test-e2e:
 
 ## Improvement Methodologies
 
-### Option 2: Big Bang Refactor
-
 **Philosophy**: Rewrite entire test suite at once using new architecture.
 
 **Approach**:
@@ -617,7 +615,7 @@ test-e2e:
 - ❌ Requires upfront time investment (planning)
 - ❌ No fallback if new suite has issues
 
-## Recommended Approach: Option 2 (Big Bang Refactor)
+## Recommended Approach
 
 **Rationale**:
 1. **Clean Architecture**: Start with optimal structure from day one without legacy compromises
