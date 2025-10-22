@@ -715,301 +715,214 @@ test-e2e:
 - ⚠️ Some temporary duplication
 - ⚠️ Requires careful tracking of coverage
 
-## Recommended Approach: Option 3 (Hybrid)
+## Recommended Approach: Option 2 (Big Bang Refactor)
 
 **Rationale**:
-1. **Solo developer context**: Need quick wins to see progress and stay motivated
-2. **Risk management**: Incremental approach reduces chance of coverage gaps
-3. **Flexibility**: Can pause at any time if priorities change
-4. **Learning**: Provides feedback to refine next step approach
+1. **Clean Architecture**: Start with optimal structure from day one without legacy compromises
+2. **Clear Cutover**: Single transition point makes rollback straightforward if needed
+3. **Comprehensive Planning**: Upfront design ensures all edge cases are covered
+4. **No Technical Debt**: Avoid temporary duplication that can linger in gradual migration
+5. **Faster Final Result**: Despite higher upfront cost, reaches target state faster than incremental approaches
 
 **Implementation Plan**:
 
-### Low-Hanging Fruit (Quick Wins)
+### Phase 1: Planning & Architecture Design (Week 1)
 
 **Tasks**:
-1. Create `src/test/utils/persist.test.ts`:
-   ```typescript
-   import { describe, test, expect, beforeEach } from 'vitest';
-   import { getJSON, setJSON } from '../../utils/persist';
-   
-   describe('persist utilities', () => {
-     beforeEach(() => {
-       localStorage.clear();
-     });
-     
-     test('setJSON stores data in localStorage', () => {
-       setJSON('ui.page', 'main');
-       expect(localStorage.getItem('ui.page')).toBe('"main"');
-     });
-     
-     test('getJSON retrieves data with default', () => {
-       expect(getJSON('ui.page', 'whitelist')).toBe('whitelist');
-       setJSON('ui.page', 'main');
-       expect(getJSON('ui.page', 'whitelist')).toBe('main');
-     });
-     
-     // ... 8 more tests from persistence.spec.ts
-   });
-   ```
 
-2. Create `src/test/utils/browserDetection.test.ts`:
-   ```typescript
-   import { describe, test, expect, beforeEach, afterEach } from 'vitest';
-   import { isEmbeddedBrowser } from '../../utils/browserDetection';
-   
-   describe('browserDetection', () => {
-     let originalUserAgent: string;
-     
-     beforeEach(() => {
-       originalUserAgent = navigator.userAgent;
-     });
-     
-     afterEach(() => {
-       Object.defineProperty(navigator, 'userAgent', {
-         value: originalUserAgent,
-         writable: true
-       });
-     });
-     
-     test('detects KakaoTalk browser', () => {
-       Object.defineProperty(navigator, 'userAgent', {
-         value: 'Mozilla/5.0 (Linux; Android 13) KAKAOTALK 10.0.0',
-         writable: true
-       });
-       expect(isEmbeddedBrowser()).toBe(true);
-     });
-     
-     test('detects standard Chrome browser', () => {
-       Object.defineProperty(navigator, 'userAgent', {
-         value: 'Mozilla/5.0 (Linux; Android 13) Chrome/120.0.0.0',
-         writable: true
-       });
-       expect(isEmbeddedBrowser()).toBe(false);
-     });
-     
-     // ... 3 more tests
-   });
-   ```
+1. **Test Audit & Categorization**:
+   - Create `docs/plan/test-code/test-migration-audit.md`
+   - Catalog all 150+ existing E2E tests with categorization:
+     - Keep as E2E (critical journeys): ~30 tests
+     - Move to integration: ~60 tests
+     - Move to unit: ~60 tests
+   - Document test ID mappings (old → new)
 
-3. Delete E2E files:
-   - ❌ `e2e/specs/persistence.spec.ts` (243 lines, 10 tests)
+2. **Design New Test Architecture**:
+   - Create `docs/plan/test-code/new-test-architecture.md`
+   - Define journey-based E2E structure (5-6 files)
+   - Define integration test structure (by feature domain)
+   - Define unit test structure (by component/utility)
+   - Document shared fixtures and helpers
 
-4. Update CI/CD to run unit tests:
-   ```yaml
-   # .github/workflows/ci-cd.yml
-   test-unit:
-     - name: Run unit tests
-       run: npx vitest run src/test/utils --reporter=verbose
-   ```
+3. **Coverage Analysis**:
+   - Run coverage report on current E2E suite
+   - Define target coverage metrics for each layer
+   - Identify coverage gaps to address in new suite
 
-**Expected Outcome**:
-- 10-15 tests moved from E2E to unit
-- E2E runtime: ~15 min → ~14 min (7% reduction)
-- Unit test runtime: ~5 seconds
-- Coverage: Maintained or improved
+4. **Risk Assessment**:
+   - Document rollback plan
+   - Create test suite comparison checklist
+   - Define acceptance criteria for cutover
 
-### Component Tests
+**Deliverables**:
+- Test migration audit spreadsheet
+- New architecture documentation
+- Coverage baseline report
+- Risk mitigation plan
+
+### Phase 2: Implementation (Weeks 2-4)
 
 **Tasks**:
-1. Create `src/test/components/LandscapeEnforcer.test.tsx`:
-   ```typescript
-   import { describe, test, expect } from 'vitest';
-   import { render } from '@testing-library/react';
-   import LandscapeEnforcer from '../../components/LandscapeEnforcer';
-   
-   describe('LandscapeEnforcer', () => {
-     test('shows overlay in portrait mode', () => {
-       // Mock window.innerWidth/innerHeight
-       Object.defineProperty(window, 'innerWidth', { value: 393, writable: true });
-       Object.defineProperty(window, 'innerHeight', { value: 851, writable: true });
-       
-       const { getByText } = render(<LandscapeEnforcer />);
-       expect(getByText('가로 모드로 전환해주세요')).toBeInTheDocument();
-     });
-     
-     test('hides overlay in landscape mode', () => {
-       Object.defineProperty(window, 'innerWidth', { value: 851, writable: true });
-       Object.defineProperty(window, 'innerHeight', { value: 393, writable: true });
-       
-       const { queryByText } = render(<LandscapeEnforcer />);
-       expect(queryByText('가로 모드로 전환해주세요')).not.toBeInTheDocument();
-     });
-     
-     test('respects E2E mode flag', () => {
-       Object.defineProperty(window, '__E2E_MODE__', { value: true });
-       Object.defineProperty(window, 'innerWidth', { value: 393, writable: true });
-       Object.defineProperty(window, 'innerHeight', { value: 851, writable: true });
-       
-       const { queryByText } = render(<LandscapeEnforcer />);
-       expect(queryByText('가로 모드로 전환해주세요')).not.toBeInTheDocument();
-     });
-   });
-   ```
 
-2. Create `src/test/components/PlanEditor.test.tsx`:
-   ```typescript
-   import { describe, test, expect } from 'vitest';
-   import { render, fireEvent, waitFor } from '@testing-library/react';
-   import PlanEditor from '../../components/PlanEditor';
-   
-   describe('PlanEditor', () => {
-     test('Step 1: plan type selector visible', () => {
-       const { getByText } = render(<PlanEditor />);
-       expect(getByText('플랜 타입')).toBeInTheDocument();
-     });
-     
-     test('Step 1: Next button enables after plan selection', () => {
-       const { getByRole } = render(<PlanEditor />);
-       const nextButton = getByRole('button', { name: /다음/i });
-       
-       expect(nextButton).toBeDisabled();
-       
-       fireEvent.click(getByRole('button', { name: 'A' }));
-       
-       expect(nextButton).toBeEnabled();
-     });
-     
-     // ... 25 more tests from plan-editor.spec.ts
-   });
-   ```
+1. **Unit Tests** (~60 tests, Week 2):
+   - `src/test/utils/persist.test.ts` (10 tests from `persistence.spec.ts`)
+   - `src/test/utils/browserDetection.test.ts` (3 tests from `embedded-browser.spec.ts`)
+   - `src/test/utils/validation.test.ts` (8 tests from `error-handling.spec.ts`)
+   - `src/test/services/simulation.test.ts` (15 tests - new coverage)
+   - `src/test/services/auth.test.ts` (12 tests - new coverage)
+   - `src/test/hooks/useSimulation.test.ts` (12 tests - new coverage)
 
-3. Delete E2E files:
-   - ❌ `e2e/specs/landscape-enforcer.spec.ts` (45 lines, 3 tests)
-   - ❌ `e2e/specs/plan-editor.spec.ts` (566 lines, 30 tests)
-   - ❌ `e2e/specs/mobile.spec.ts` (248 lines, 10 tests - mobile-specific tests)
+2. **Component Tests** (~40 tests, Week 2-3):
+   - `src/test/components/LandscapeEnforcer.test.tsx` (3 tests)
+   - `src/test/components/PlanEditor.test.tsx` (25 tests from `plan-editor.spec.ts`)
+   - `src/test/components/SimulationTable.test.tsx` (10 tests from `main-dashboard.spec.ts`)
+   - `src/test/components/ResultsTable.test.tsx` (8 tests from `results-display.spec.ts`)
+   - `src/test/components/MobileLayout.test.tsx` (8 tests from `mobile.spec.ts`)
 
-**Expected Outcome**:
-- 40-45 tests moved from E2E to component
-- E2E runtime: ~14 min → ~8 min (43% reduction)
-- Component test runtime: ~2 seconds
-- Coverage: Maintained
+3. **Integration Tests** (~60 tests, Week 3):
+   - `src/test/integration/auth-flow.test.ts` (15 tests from `auth-session.spec.ts`)
+   - `src/test/integration/dashboard.test.tsx` (20 tests from `main-dashboard.spec.ts`)
+   - `src/test/integration/admin.test.tsx` (15 tests from `admin-features.spec.ts`)
+   - `src/test/integration/api-client.test.ts` (10 tests from `error-handling.spec.ts`)
 
-### Consolidate E2E to Journeys
+4. **Journey-Based E2E Tests** (~30 tests, Week 3-4):
+   - `e2e/journeys/onboarding.spec.ts` (5 tests):
+     - Happy path: whitelist → OTP → consent → login → dashboard
+     - Invalid whitelist entry
+     - OTP timeout
+     - Consent decline
+     - OAuth failure
+   - `e2e/journeys/simulation-lifecycle.spec.ts` (8 tests):
+     - Create → configure → run → view results
+     - Update simulation → re-run
+     - Delete simulation
+     - Multi-round simulation with varying parameters
+     - Offline results view
+     - Plan editor draft persistence
+     - Plan editor validation errors
+     - Export results
+   - `e2e/journeys/dashboard-ops.spec.ts` (6 tests):
+     - Multi-select → comprehensive results (valid)
+     - Multi-select validation (duplicate plan types)
+     - Sorting by multiple columns
+     - Memo add/edit/view
+     - Batch operations
+     - Pagination (if applicable)
+   - `e2e/journeys/admin-content.spec.ts` (5 tests):
+     - Create → publish notice
+     - Pin/unpin notice
+     - Create → publish privacy policy
+     - Policy version history
+     - Non-admin access denial
+   - `e2e/auth/embedded-browser.spec.ts` (1 test):
+     - KakaoTalk browser detection → button disabled
+   - `e2e/pwa.spec.ts` (2 tests):
+     - PWA manifest validation
+     - Service worker registration
+   - `e2e/mobile/landscape-enforcer.spec.ts` (3 tests):
+     - Portrait mode overlay
+     - Landscape mode normal operation
+     - E2E mode bypass
 
-**Tasks**:
-1. Create `e2e/journeys/onboarding.spec.ts`:
-   ```typescript
-   import { test, expect } from '@playwright/test';
-   import { initE2EMode } from '../utils/test-helpers';
-   
-   test.describe('User Onboarding Journey', () => {
-     test('complete onboarding: whitelist → OTP → consent → login → dashboard', async ({ page }) => {
-       await initE2EMode(page);
-       // ... single happy path test only
-     });
-   });
-   ```
+5. **Test Infrastructure** (Week 4):
+   - Create fixtures:
+     - `e2e/fixtures/authenticated.ts`
+     - `e2e/fixtures/with-simulation.ts`
+     - `e2e/fixtures/admin-user.ts`
+   - Refactor test helpers:
+     - Keep `TestHelpers` class (refine for journey tests)
+     - Keep `APIHelpers` class (refine mocking strategy)
+     - Keep `auth-helpers.ts` (simplify for fixtures)
+   - Update Playwright config:
+     - Increase workers to 2-4 on CI
+     - Reduce projects to 2 (Mobile Chrome + Desktop Chrome)
+     - Add screenshot/video on failure only
 
-2. Create `e2e/journeys/simulation-lifecycle.spec.ts`:
-   ```typescript
-   test.describe('Simulation Lifecycle Journey', () => {
-     test('create → configure → run → view results → offline results → back to dashboard', async ({ page }) => {
-       // ... full simulation workflow
-     });
-     
-     test('update simulation parameters and re-run', async ({ page }) => {
-       // ... edit + re-run workflow
-     });
-   });
-   ```
+**Deliverables**:
+- Complete new test suite (unit + component + integration + E2E)
+- Test helpers and fixtures
+- Updated Playwright configuration
 
-3. Create `e2e/journeys/dashboard-ops.spec.ts`:
-   ```typescript
-   test.describe('Dashboard Operations Journey', () => {
-     test('multi-select → comprehensive results', async ({ page }) => {
-       // ... multi-simulation comparison
-     });
-     
-     test('delete simulation', async ({ page }) => {
-       // ... deletion workflow
-     });
-   });
-   ```
-
-4. Keep specialized E2E files:
-   - ✅ `e2e/auth/embedded-browser.spec.ts` (keep 1 test: button disabled)
-   - ✅ `e2e/specs/pwa.spec.ts` (keep 1 test: manifest check)
-
-5. Delete consolidated E2E files:
-   - ❌ `e2e/specs/onboarding.spec.ts` (329 lines, 15 tests)
-   - ❌ `e2e/specs/auth-session.spec.ts` (251 lines, 8 tests)
-   - ❌ `e2e/specs/simulation-flow.spec.ts` (50 lines, 2 tests)
-   - ❌ `e2e/specs/results-display.spec.ts` (331 lines, 15 tests)
-   - ❌ `e2e/specs/main-dashboard.spec.ts` (438 lines, 20 tests)
-   - ❌ `e2e/specs/error-handling.spec.ts` (294 lines, 10 tests)
-   - ❌ `e2e/specs/admin-features.spec.ts` (415 lines, 15 tests - move to integration)
-
-**Expected Outcome**:
-- 85+ tests removed from E2E
-- 6-8 critical journey tests remain
-- E2E runtime: ~8 min → ~2 min (75% reduction)
-- E2E file count: 13 → 5
-
-### Integration Tests + Optimization
+### Phase 3: Validation & Cutover (Week 5)
 
 **Tasks**:
-1. Create `src/test/integration/auth-flow.test.ts`:
-   ```typescript
-   import { describe, test, expect } from 'vitest';
-   import { render, waitFor } from '@testing-library/react';
-   import { AuthProvider } from '../../context/AuthContext';
-   import { supabase } from '../../supabaseClient';
-   
-   describe('Authentication Flow Integration', () => {
-     test('OAuth redirect after successful OTP', async () => {
-       // ... integration test with Supabase mock
-     });
-     
-     test('Session refresh on token expiry', async () => {
-       // ... token refresh logic
-     });
-   });
-   ```
 
-2. Create `src/test/integration/admin.test.tsx`:
-   ```typescript
-   describe('Admin Features Integration', () => {
-     test('Admin user can access policy management', async () => {
-       // ... admin privilege check
-     });
-     
-     test('Non-admin user receives 403', async () => {
-       // ... authorization check
-     });
-   });
-   ```
+1. **Parallel Test Execution**:
+   - Run old E2E suite (baseline)
+   - Run new test suite (validation)
+   - Compare coverage reports
+   - Run both suites in CI (separate jobs)
 
-3. Update Playwright config:
-   ```typescript
-   export default defineConfig({
-     workers: process.env.CI ? 2 : undefined, // Increase from 1 to 2
-     projects: [
-       { name: "Mobile Chrome", ... },
-       { name: "Desktop Chrome", ... },
-       // Remove Mobile Safari, Edge (reduce to 2 projects)
-     ],
-   });
-   ```
+2. **Coverage Verification**:
+   - Generate coverage report for new suite
+   - Compare against baseline coverage
+   - Address coverage gaps (add tests if needed)
+   - Document coverage improvements
 
-4. Create fixtures:
-   ```typescript
-   // e2e/fixtures/authenticated.ts
-   import { test as base } from '@playwright/test';
-   
-   export const test = base.extend({
-     authenticatedPage: async ({ page }, use) => {
-       await loginTestUser(page);
-       await use(page);
-     },
-   });
-   ```
+3. **Performance Validation**:
+   - Measure new suite runtime (target: <3 minutes total)
+   - Measure E2E-only runtime (target: <1.5 minutes)
+   - Compare against old suite (~15-20 minutes)
+   - Optimize slow tests if needed
+
+4. **Cutover**:
+   - Create cutover PR:
+     - Delete all 13 old E2E test files (~3,000 lines)
+     - Add new test files (~2,000 lines)
+     - Update CI/CD workflows
+     - Update documentation
+   - Merge cutover PR after review
+   - Monitor CI for 1 week
+
+5. **Documentation**:
+   - Update `docs/plan/test-code/` with new strategy
+   - Create test writing guidelines for each layer
+   - Document test helper usage
+   - Update PR review checklist
+
+**Deliverables**:
+- Coverage comparison report
+- Performance comparison report
+- Cutover PR (merged)
+- Updated documentation
+
+### Phase 4: Optimization & Refinement (Week 6)
+
+**Tasks**:
+
+1. **Test Suite Optimization**:
+   - Refine slow tests
+   - Add missing edge cases
+   - Improve test helper ergonomics
+   - Add more fixtures for common scenarios
+
+2. **CI/CD Refinement**:
+   - Fine-tune worker count for optimal speed
+   - Configure failure screenshot/video retention
+   - Set up test result reporting
+   - Add coverage badge to README
+
+3. **Documentation Finalization**:
+   - Create test writing guidelines
+   - Document common patterns
+   - Add troubleshooting guide
+   - Update onboarding docs for contributors
+
+**Deliverables**:
+- Optimized test suite (<3 min total runtime)
+- Complete test documentation
+- CI/CD monitoring dashboard
+
+**Expected Timeline**: 6 weeks total
 
 **Expected Outcome**:
-- 15-20 integration tests created
-- E2E runtime: ~2 min → ~1.5 min (with 2 workers)
-- CI runtime: ~15-20 min → ~1.5 min (90% reduction)
-- Total test suite: ~400 tests (70% unit, 20% integration, 10% E2E)
+- 90% faster test suite (15-20 min → ~1.5 min E2E, ~3 min total)
+- 80% reduction in E2E maintenance burden (150 tests → 30 tests)
+- 138% increase in total test coverage (155 → 370 tests)
+- Proper test pyramid distribution (70% unit, 20% integration, 10% E2E)
+- Clean architecture with no technical debt
+- Single cutover point with clear rollback plan
 
 ## Summary: Current State vs Target State
 
@@ -1047,17 +960,20 @@ e2e/
 ```
 e2e/
 ├── journeys/
-│   ├── onboarding.spec.ts               (1 test)
-│   ├── simulation-lifecycle.spec.ts     (2 tests)
-│   └── dashboard-ops.spec.ts            (2 tests)
+│   ├── onboarding.spec.ts               (5 tests)
+│   ├── simulation-lifecycle.spec.ts     (8 tests)
+│   ├── dashboard-ops.spec.ts            (6 tests)
+│   └── admin-content.spec.ts            (5 tests)
 ├── auth/embedded-browser.spec.ts        (1 test)
-├── pwa.spec.ts                          (1 test)
+├── pwa.spec.ts                          (2 tests)
+├── mobile/landscape-enforcer.spec.ts    (3 tests)
 └── utils/ (helpers)                     (✅ Keep)
 
 src/test/
-├── utils/ (unit tests)                  (~15 tests)
+├── utils/ (unit tests)                  (~60 tests)
 ├── components/ (component tests)        (~40 tests)
-└── integration/ (integration tests)     (~60 tests)
+├── integration/ (integration tests)     (~60 tests)
+└── services/ (service tests)            (~120 tests)
 ```
 
 ### Benefits Summary
@@ -1076,12 +992,14 @@ src/test/
 
 The current E2E test suite violates the Test Pyramid principle by placing 100% of tests at the slowest, most expensive layer. While the test infrastructure (helpers, mocking, fixtures) is well-designed, the overall strategy creates a maintenance burden unsuitable for a solo developer managing a 60-100 user PWA.
 
-**Key Recommendations**:
+**Recommended Approach: Option 2 (Big Bang Refactor)**
 
-1. **Immediate Action**: Move persistence and browser detection tests to unit layer (quick win)
-2. **Short-term**: Migrate component behavior tests to React Testing Library
-3. **Medium-term**: Consolidate E2E to 5-6 critical journey files
-4. **Long-term**: Build comprehensive integration test suite
+This approach provides:
+- Clean architecture from day one
+- No temporary technical debt
+- Comprehensive planning reduces execution risk
+- Single cutover point with clear rollback strategy
+- Faster time to optimal state (6 weeks)
 
 **Expected Outcomes**:
 - 90% faster E2E test suite (15-20 min → 1.5 min)
@@ -1090,17 +1008,19 @@ The current E2E test suite violates the Test Pyramid principle by placing 100% o
 - Proper test pyramid distribution (70% unit, 20% integration, 10% E2E)
 
 **Next Steps**:
-1. Create detailed task breakdown for implementation
-2. Set up unit test infrastructure (Vitest + RTL)
-3. Begin migration with low-hanging fruit (persistence tests)
-4. Track progress in `docs/plan/test-code/migration-tracker.md`
+1. Create detailed task breakdown for Phase 1 (Planning)
+2. Begin test audit and categorization
+3. Design new test architecture with fixtures
+4. Set up parallel CI jobs for validation
+5. Execute implementation in phases 2-4
+6. Document learnings and refine approach
 
 ## References
 
 - **Research Report**: [IS-93 E2E Best Practices](../../../research/IS-62/IS-93/research-00.md)
 - **Issue**: [IS-92 Statement Analysis](https://github.com/SkyDominator/simulation/issues/92)
-- **Playwright Docs**: https://playwright.dev/docs/best-practices
-- **Test Pyramid**: https://martinfowler.com/articles/practical-test-pyramid.html
+- **Playwright Docs**: <https://playwright.dev/docs/best-practices>
+- **Test Pyramid**: <https://martinfowler.com/articles/practical-test-pyramid.html>
 - **Current E2E Tests**: `src/frontend/e2e/`
 - **Playwright Config**: `src/frontend/playwright.config.ts`
 - **Test Helpers**: `src/frontend/e2e/utils/test-helpers.ts`
