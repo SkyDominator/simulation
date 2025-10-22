@@ -42,7 +42,7 @@ PWA React/TypeScript application guidelines.
 
 ### TDD Guidelines
 
-#### Test Philosophy
+#### E2E Test Philosophy
 
 - **Minimize E2E Tests**: E2E Tests are required but should be kept to a minimum due to their high cost (maintenance, flakiness, runtime)
 - **Focus on Critical Journeys**: Only test core user value paths
@@ -55,14 +55,14 @@ PWA React/TypeScript application guidelines.
     - Separate pure business logic (functional core) from side effects (imperative shell)
     - Makes testing easier: core is pure functions, shell handles I/O
 
-#### Technical Practices
+#### E2E Test Technical Practices
 
 - **Use Locators**: Prioritize user-facing attributes (role, text, test-id) over CSS/XPath
 - **Web-First Assertions**: Use `await expect(locator).toBeVisible()` instead of `isVisible()`
 - **Parallelism**: Run tests in parallel by default (Playwright does this automatically)
 - **Debugging**: Use trace viewer for CI failures (PWA-based tool)
 
-#### Test Structure 
+#### E2E Test Structure 
 
 **Use AAA Pattern**
 1. **Arrange**: Set up test data
@@ -88,7 +88,7 @@ PWA React/TypeScript application guidelines.
 - Integration tests: 20%
 - E2E tests: 10%
 
-#### Test Sizes (Google's approach)
+#### E2E Test Sizes (Google's approach)
 
 - **Small tests**: Single process, < 1 minute
 - **Medium tests**: Single machine, < 5 minutes

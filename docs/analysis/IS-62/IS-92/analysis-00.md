@@ -27,18 +27,20 @@ This analysis compares the current E2E test implementation (13 test files, ~150+
 
 **Key Findings**:
 
-1. **Over-Testing at E2E Layer**: Current implementation has ~13 test files covering scenarios that should be at unit/integration level (violation of Test Pyramid principle)
-2. **Test Duplication**: Multiple layers test the same functionality (e.g., auth flow tested in onboarding.spec.ts, auth-session.spec.ts, and embedded-browser.spec.ts)
-3. **Maintenance Burden**: Large E2E suite (~150+ tests) creates slow feedback and high maintenance cost for solo developer
-4. **Good Patterns Identified**: Excellent use of test helpers, API mocking, and fixtures - these should be preserved
-5. **Missing Coverage**: Lower-level tests (unit/integration) are insufficient, causing over-reliance on E2E tests
+1. **Test Distribution Imbalance**: Current test distribution (54% E2E, 33% unit, 13% integration) violates Test Pyramid principle (target: 10% E2E, 70% unit, 20% integration)
+2. **Over-Testing at E2E Layer**: ~150 E2E tests include scenarios that should be at unit/integration level (e.g., localStorage persistence, component validation, form behavior)
+3. **Test Duplication**: Multiple layers test the same functionality (e.g., auth flow tested in onboarding.spec.ts, auth-session.spec.ts, embedded-browser.spec.ts, and embeddedBrowser.test.tsx)
+4. **Maintenance Burden**: Large E2E suite (~150 tests) creates slow feedback (~15-20 min) and high maintenance cost for solo developer
+5. **Good Patterns Identified**: Excellent use of test helpers, API mocking, and fixtures in both E2E and unit/integration tests - these should be preserved
+6. **Existing Foundation**: ~127 unit/component/integration tests already exist, providing a solid foundation to build upon rather than starting from scratch
 
 **Recommended Actions**:
 
-- **Reduce E2E tests by 70%**: From 13 files to 5-6 critical journey files (~30-40 tests total)
-- **Move 100+ tests down**: Migrate to unit/integration layers
-- **Preserve infrastructure**: Keep TestHelpers, API mocking, fixtures
-- **Improve lower-level coverage**: Build comprehensive unit/integration test suite
+- **Reduce E2E tests by 80%**: From ~150 tests to ~30 critical journey tests
+- **Move ~120 E2E tests down**: Migrate to unit/integration layers
+- **Expand unit/integration coverage**: Add ~90 more tests to reach target distribution
+- **Eliminate duplication**: Consolidate overlapping test coverage (especially auth flows)
+- **Preserve infrastructure**: Keep TestHelpers, API mocking, fixtures from both test suites
 
 ## Analysis Methodology
 
@@ -60,7 +62,7 @@ This analysis compares the current E2E test implementation (13 test files, ~150+
 
 ### File Inventory
 
-**Total**: 13 test files across 3 directories
+**E2E Tests**: 13 test files across 4 directories
 
 ```
 e2e/
@@ -79,12 +81,43 @@ e2e/
 │   ├── pwa.spec.ts                       (1 test)
 │   ├── results-display.spec.ts           (~15 tests)
 │   └── simulation-flow.spec.ts           (2 tests)
+├── fixtures/                             (test fixtures)
 └── utils/
     ├── test-helpers.ts                   (TestHelpers class, APIHelpers)
     └── auth-helpers.ts                   (loginTestUser, loginAdminUser)
 ```
 
-**Estimated Total**: ~150+ individual test cases
+**Estimated Total**: ~150+ individual E2E test cases
+
+**Unit/Component/Integration Tests**: 12 test files in `src/test/`
+
+```
+src/test/
+├── components/
+│   ├── EmbeddedBrowserWarningModal.test.tsx  (6 tests)
+│   └── RealComponentTests.test.tsx           (10 tests)
+├── context/
+│   └── AuthContext.test.tsx                  (7 tests)
+├── integration/
+│   ├── UserFlowIntegration.test.tsx          (26 tests)
+│   └── auth/
+│       └── embeddedBrowser.test.tsx          (11 tests)
+├── pages/
+│   ├── LoginPage.test.tsx                    (4 tests)
+│   └── MainPage.improved.test.tsx            (8 tests)
+├── security/
+│   ├── auth-security.test.tsx                (13 tests)
+│   ├── pwa-security.test.tsx                 (11 tests)
+│   └── xss-prevention.test.tsx               (13 tests)
+├── utils/
+│   └── browserDetection.test.ts              (9 tests)
+├── mocks/                                    (test mocks)
+└── smoke.test.tsx                            (9 tests)
+```
+
+**Estimated Total**: ~127 individual unit/component/integration test cases
+
+**Grand Total**: ~277 test cases across all layers
 
 ### Test Categories
 
@@ -100,15 +133,19 @@ e2e/
 | **Error Handling** | 1 (error-handling) | ~10 | ❌ No | Unit/Integration |
 | **PWA** | 1 (pwa) | 1 | ✅ Yes | E2E |
 
-**Current Distribution** (estimated):
-- **E2E**: ~150 tests (100%)
-- **Integration**: ~0 tests (0%)
-- **Unit**: ~minimal tests (<5%)
+**Current Distribution** (actual):
+
+- **E2E**: ~150 tests (54%)
+- **Integration**: ~37 tests (13%)
+- **Unit**: ~90 tests (33%)
+- **Total**: ~277 tests
 
 **Target Distribution** (Test Pyramid):
+
 - **E2E**: ~30-40 tests (10%)
 - **Integration**: ~60-80 tests (20%)
 - **Unit**: ~280-300 tests (70%)
+- **Total**: ~370-420 tests
 
 ## Point-by-Point Comparison
 
@@ -120,9 +157,11 @@ e2e/
 > "End-to-end tests come with their own kind of problems. They are notoriously flaky and often fail for unexpected and unforeseeable reasons. Minimize E2E tests to critical user journeys only."
 
 **Current State**:
-- 100% of frontend tests are E2E tests
-- 0% unit tests for components
-- 0% integration tests for API client
+
+- 54% of tests are E2E tests (~150 tests)
+- 13% are integration tests (~37 tests)
+- 33% are unit tests (~90 tests)
+- Total: ~277 tests across all layers
 
 **Code Evidence**:
 
@@ -827,35 +866,50 @@ test-e2e:
 ### Test Distribution
 
 **Current**:
-```
-E2E:         150 tests (100%)  →  Runtime: ~15-20 min
-Integration:   0 tests (0%)    →  Runtime: 0 min
-Unit:          5 tests (<5%)   →  Runtime: <1 min
+
+```text
+E2E:         150 tests (54%)  →  Runtime: ~15-20 min
+Integration:  37 tests (13%)  →  Runtime: ~0.5 min
+Unit:         90 tests (33%)  →  Runtime: ~0.5 min
 ─────────────────────────────
-Total:       155 tests         →  Total: ~20 min
+Total:       277 tests        →  Total: ~16-21 min
 ```
 
 **Target**:
-```
-E2E:          30 tests (10%)   →  Runtime: ~1.5 min
-Integration:  60 tests (20%)   →  Runtime: ~1 min
-Unit:        280 tests (70%)   →  Runtime: ~0.5 min
+
+```text
+E2E:          30 tests (10%)  →  Runtime: ~1.5 min
+Integration:  80 tests (20%)  →  Runtime: ~1 min
+Unit:        280 tests (70%)  →  Runtime: ~0.5 min
 ─────────────────────────────
-Total:       370 tests         →  Total: ~3 min
+Total:       390 tests        →  Total: ~3 min
 ```
 
 ### File Structure
 
 **Current**:
-```
+
+```text
 e2e/
 ├── auth/embedded-browser.spec.ts         (3 tests)
-├── specs/ (12 files)                     (~150 tests)
-└── utils/ (helpers)                      (✅ Keep)
+├── specs/ (12 files)                     (~147 tests)
+├── fixtures/                             (test fixtures)
+└── utils/                                (helpers)
+
+src/test/
+├── components/                           (16 tests)
+├── context/                              (7 tests)
+├── integration/                          (37 tests)
+├── pages/                                (12 tests)
+├── security/                             (37 tests)
+├── utils/                                (9 tests)
+├── mocks/                                (test mocks)
+└── smoke.test.tsx                        (9 tests)
 ```
 
 **Target**:
-```
+
+```text
 e2e/
 ├── journeys/
 │   ├── onboarding.spec.ts               (5 tests)
@@ -865,13 +919,18 @@ e2e/
 ├── auth/embedded-browser.spec.ts        (1 test)
 ├── pwa.spec.ts                          (2 tests)
 ├── mobile/landscape-enforcer.spec.ts    (3 tests)
-└── utils/ (helpers)                     (✅ Keep)
+├── fixtures/                            (keep existing)
+└── utils/                               (keep existing)
 
 src/test/
-├── utils/ (unit tests)                  (~60 tests)
-├── components/ (component tests)        (~40 tests)
-├── integration/ (integration tests)     (~60 tests)
-└── services/ (service tests)            (~120 tests)
+├── utils/                               (~80 tests)
+├── components/                          (~60 tests)
+├── integration/                         (~80 tests)
+├── services/                            (~60 tests)
+├── security/                            (keep ~37 tests)
+├── context/                             (expand to ~20 tests)
+├── pages/                               (expand to ~30 tests)
+└── mocks/                               (keep existing)
 ```
 
 ### Benefits Summary
@@ -879,19 +938,30 @@ src/test/
 | Metric | Current | Target | Improvement |
 |--------|---------|--------|-------------|
 | **E2E Test Count** | 150 | 30 | 80% reduction |
-| **E2E Runtime** | 15-20 min | 1.5 min | 90% faster |
-| **CI Runtime** | 15-20 min | 3 min | 85% faster |
+| **E2E Runtime** | 15-20 min | 1.5 min | 92% faster |
+| **Total Test Count** | 277 | 390 | 41% increase |
+| **CI Runtime** | 16-21 min | 3 min | 86% faster |
 | **Maintenance Effort** | High (150 E2E tests) | Low (30 E2E tests) | 80% reduction |
-| **Feedback Loop** | 15-20 min | 3 min | 85% faster |
-| **Test Duplication** | 2-3x | 1x | Eliminated |
-| **Coverage** | ~155 tests | ~370 tests | 138% increase |
+| **Feedback Loop** | 16-21 min | 3 min | 86% faster |
+| **Test Duplication** | 2-3x (auth flows) | 1x | Eliminated |
+| **Pyramid Compliance** | 54%/13%/33% (E2E/Int/Unit) | 10%/20%/70% | Aligned |
 
 ## Conclusion
 
-The current E2E test suite violates the Test Pyramid principle by placing 100% of tests at the slowest, most expensive layer. While the test infrastructure (helpers, mocking, fixtures) is well-designed, the overall strategy creates a maintenance burden unsuitable for a solo developer managing a 60-100 user PWA.
+The current test suite has a distribution imbalance that violates the Test Pyramid principle: 54% E2E, 33% unit, 13% integration (target: 10% E2E, 70% unit, 20% integration). While there is a foundation of ~127 unit/component/integration tests, the E2E layer is over-utilized with ~150 tests that include scenarios better suited for faster, more maintainable unit/integration tests.
+
+The test infrastructure (helpers, mocking, fixtures) is well-designed across both E2E and unit/integration suites, providing a solid foundation for optimization. The primary issues are:
+
+1. **Test placement**: Many E2E tests (localStorage, component validation, form behavior) belong at unit/integration level
+2. **Duplication**: Auth flows tested in 3-4 different locations across test layers
+3. **Performance**: 16-21 minute test suite runtime exceeds solo developer productivity targets
+4. **Pyramid violation**: E2E tests represent 54% of total tests instead of target 10%
 
 **Expected Outcomes**:
-- 90% faster E2E test suite (15-20 min → 1.5 min)
+
+- 92% faster E2E test suite (15-20 min → 1.5 min)
 - 80% reduction in E2E maintenance burden (150 tests → 30 tests)
-- 138% increase in total test coverage (155 → 370 tests)
+- 41% increase in total test coverage (277 → 390 tests)
 - Proper test pyramid distribution (70% unit, 20% integration, 10% E2E)
+- Eliminated test duplication across layers
+- 86% faster total CI runtime (16-21 min → 3 min)
