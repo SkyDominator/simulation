@@ -1,3 +1,7 @@
+---
+applyTo: '**'
+---
+
 # Copilot Instructions
 
 This document helps you understand my project for all tasks including planning, code suggestions, and implementations.
