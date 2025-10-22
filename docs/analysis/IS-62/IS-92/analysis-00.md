@@ -581,7 +581,7 @@ test-e2e:
 
 **Approach**:
 
-**Phase 1: Week 1-2 (Quick Wins)**
+**Phase 1: Quick Wins**
 1. Create unit test suite for utilities:
    - `src/test/utils/persist.test.ts` (move from `persistence.spec.ts`)
    - `src/test/utils/browserDetection.test.ts` (move from `embedded-browser.spec.ts`)
@@ -590,7 +590,7 @@ test-e2e:
    - `src/test/components/PlanEditor.test.tsx` (move ~25 tests from `plan-editor.spec.ts`)
 3. Run both E2E and new tests in parallel to verify coverage
 
-**Phase 2: Week 3-4 (Integration Tests)**
+**Phase 2: Integration Tests**
 1. Create API integration tests:
    - `src/test/integration/api-client.test.ts` (move from `error-handling.spec.ts`)
    - `src/test/integration/auth-flow.test.ts` (move from `auth-session.spec.ts`)
@@ -598,7 +598,7 @@ test-e2e:
    - `src/test/integration/dashboard.test.tsx` (move from `main-dashboard.spec.ts`)
    - `src/test/integration/admin.test.tsx` (move from `admin-features.spec.ts`)
 
-**Phase 3: Week 5-6 (E2E Consolidation)**
+**Phase 3: E2E Consolidation**
 1. Create journey-based E2E files:
    - `e2e/journeys/onboarding.spec.ts` (consolidate onboarding + auth-session)
    - `e2e/journeys/simulation-lifecycle.spec.ts` (consolidate simulation-flow + plan-editor + results)
@@ -609,7 +609,7 @@ test-e2e:
    - Remove `plan-editor.spec.ts`, `results-display.spec.ts` (keep 1 test in simulation-lifecycle)
    - Remove `admin-features.spec.ts` (move to integration)
 
-**Phase 4: Week 7 (Optimization)**
+**Phase 4: Optimization**
 1. Update Playwright config:
    - Increase `workers` to 2-4 on CI
    - Reduce projects to 2 (Mobile Chrome + Desktop Chrome)
@@ -625,7 +625,6 @@ test-e2e:
 - ✅ Maintain coverage throughout migration
 
 **Trade-offs**:
-- ⚠️ Takes 6-7 weeks (longer timeline)
 - ⚠️ Duplicate tests exist during migration (temporary)
 - ⚠️ Requires discipline to not add new E2E tests
 
@@ -635,7 +634,7 @@ test-e2e:
 
 **Approach**:
 
-**Week 1-2: Planning**
+**Planning**
 1. Audit all 150+ tests and categorize:
    - Keep as E2E: ~30 tests
    - Move to integration: ~60 tests
@@ -646,7 +645,7 @@ test-e2e:
    - Unit test structure (by component/utility)
 3. Create detailed migration spreadsheet
 
-**Week 3-5: Implementation**
+**Implementation**
 1. Write all new tests simultaneously:
    - Unit tests (Vitest + RTL)
    - Integration tests (Vitest + MSW)
@@ -654,14 +653,14 @@ test-e2e:
 2. Run new suite in CI (separate job)
 3. Compare coverage reports (old vs new)
 
-**Week 6: Cutover**
+**Cutover**
 1. Delete all old E2E test files (13 files)
 2. Move new test suite to production
 3. Update CI/CD workflows
 4. Update documentation
 
 **Benefits**:
-- ✅ Fast cutover (6 weeks total)
+- ✅ Fast cutover
 - ✅ Clean slate (no legacy code)
 - ✅ Optimized from start (no incremental compromises)
 
@@ -677,20 +676,20 @@ test-e2e:
 
 **Approach**:
 
-**Week 1: Low-Hanging Fruit**
+**Low-Hanging Fruit**
 1. Move obvious unit tests:
    - `persistence.spec.ts` → `utils/persist.test.ts` (10 tests)
    - `error-handling.spec.ts` (validation tests) → `components/*.test.tsx` (5 tests)
 2. Delete these E2E files immediately (15 tests moved)
 
-**Week 2-3: Component Tests**
+**Component Tests**
 1. Create component test suite:
    - `LandscapeEnforcer.test.tsx` (3 tests)
    - `PlanEditor.test.tsx` (25 tests)
    - `SimulationTable.test.tsx` (10 tests)
 2. Delete corresponding E2E tests (38 tests moved)
 
-**Week 4-5: Consolidate E2E**
+**Consolidate E2E**
 1. Create 5 journey files:
    - `onboarding.spec.ts` (1 happy path test)
    - `simulation-lifecycle.spec.ts` (2 tests: create+run, update+re-run)
@@ -699,7 +698,7 @@ test-e2e:
    - `embedded-browser.spec.ts` (1 test)
 2. Delete all other E2E files
 
-**Week 6: Integration Tests**
+**Integration Tests**
 1. Create integration tests for remaining coverage:
    - API client error handling
    - Admin authentication
@@ -707,13 +706,12 @@ test-e2e:
 2. Verify coverage matches or exceeds original
 
 **Benefits**:
-- ✅ Quick early wins (Week 1 removes 15 tests)
+- ✅ Quick early wins (removes 15 tests)
 - ✅ Moderate risk (incremental but focused)
-- ✅ Visible progress (test count decreases weekly)
+- ✅ Visible progress (test count decreases)
 - ✅ Flexible (can adjust based on learnings)
 
 **Trade-offs**:
-- ⚠️ Still 6 weeks (similar to Option 1)
 - ⚠️ Some temporary duplication
 - ⚠️ Requires careful tracking of coverage
 
@@ -722,12 +720,12 @@ test-e2e:
 **Rationale**:
 1. **Solo developer context**: Need quick wins to see progress and stay motivated
 2. **Risk management**: Incremental approach reduces chance of coverage gaps
-3. **Flexibility**: Can pause at any week if priorities change
-4. **Learning**: Each week provides feedback to refine next week's approach
+3. **Flexibility**: Can pause at any time if priorities change
+4. **Learning**: Provides feedback to refine next step approach
 
 **Implementation Plan**:
 
-### Week 1: Low-Hanging Fruit (Quick Wins)
+### Low-Hanging Fruit (Quick Wins)
 
 **Tasks**:
 1. Create `src/test/utils/persist.test.ts`:
@@ -811,7 +809,7 @@ test-e2e:
 - Unit test runtime: ~5 seconds
 - Coverage: Maintained or improved
 
-### Week 2-3: Component Tests
+### Component Tests
 
 **Tasks**:
 1. Create `src/test/components/LandscapeEnforcer.test.tsx`:
@@ -887,7 +885,7 @@ test-e2e:
 - Component test runtime: ~2 seconds
 - Coverage: Maintained
 
-### Week 4-5: Consolidate E2E to Journeys
+### Consolidate E2E to Journeys
 
 **Tasks**:
 1. Create `e2e/journeys/onboarding.spec.ts`:
@@ -948,7 +946,7 @@ test-e2e:
 - E2E runtime: ~8 min → ~2 min (75% reduction)
 - E2E file count: 13 → 5
 
-### Week 6: Integration Tests + Optimization
+### Integration Tests + Optimization
 
 **Tasks**:
 1. Create `src/test/integration/auth-flow.test.ts`:
@@ -1026,7 +1024,7 @@ Unit:          5 tests (<5%)   →  Runtime: <1 min
 Total:       155 tests         →  Total: ~20 min
 ```
 
-**Target** (after 6 weeks):
+**Target**:
 ```
 E2E:          30 tests (10%)   →  Runtime: ~1.5 min
 Integration:  60 tests (20%)   →  Runtime: ~1 min
@@ -1080,10 +1078,10 @@ The current E2E test suite violates the Test Pyramid principle by placing 100% o
 
 **Key Recommendations**:
 
-1. **Immediate Action** (Week 1): Move persistence and browser detection tests to unit layer (quick win)
-2. **Short-term** (Weeks 2-3): Migrate component behavior tests to React Testing Library
-3. **Medium-term** (Weeks 4-5): Consolidate E2E to 5-6 critical journey files
-4. **Long-term** (Week 6): Build comprehensive integration test suite
+1. **Immediate Action**: Move persistence and browser detection tests to unit layer (quick win)
+2. **Short-term**: Migrate component behavior tests to React Testing Library
+3. **Medium-term**: Consolidate E2E to 5-6 critical journey files
+4. **Long-term**: Build comprehensive integration test suite
 
 **Expected Outcomes**:
 - 90% faster E2E test suite (15-20 min → 1.5 min)
@@ -1092,7 +1090,7 @@ The current E2E test suite violates the Test Pyramid principle by placing 100% o
 - Proper test pyramid distribution (70% unit, 20% integration, 10% E2E)
 
 **Next Steps**:
-1. Create detailed task breakdown for Week 1 implementation
+1. Create detailed task breakdown for implementation
 2. Set up unit test infrastructure (Vitest + RTL)
 3. Begin migration with low-hanging fruit (persistence tests)
 4. Track progress in `docs/plan/test-code/migration-tracker.md`

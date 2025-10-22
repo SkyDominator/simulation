@@ -6,11 +6,10 @@ model: Claude Sonnet 4.5
 
 # Plan
 
-Create code implementation plan at $PLAN$ by reading $RESEARCH_REPORT$ and $ANALYSIS_REPORT$. Follow the $APPROACH$.
+Create code implementation plan at $PLAN$ by reading $ANALYSIS_REPORT$. Follow the $APPROACH$.
 
 ## Mappings
 
-$RESEARCH_REPORT$: `docs/research/IS-62/IS-93/research-00.md`
 $ANALYSIS_REPORT$: `docs/analysis/IS-62/IS-92/analysis-00.md`
 $PLAN$: `docs/plan/IS-62/plan-00.md`
 $APPROACH$: Directed in the $ANALYSIS_REPORT$.
