@@ -40,6 +40,59 @@ PWA React/TypeScript application guidelines.
 - Modify props inside components
 - Over-optimize with unnecessary memoization
 
+### TDD Guidelines
+
+#### Test Philosophy
+
+- **Minimize E2E Tests**: Highest cost (maintenance, flakiness, runtime)
+- **Focus on Critical Journeys**: Only test core user value paths
+- **Test User-Visible Behavior**: Focus on what users see/interact with, not implementation details
+- **Isolation**: Each test runs independently with own storage/cookies/data
+- **Avoid Third-Party Dependencies**: Mock external services, don't test what you don't control
+- **Avoid Test Duplication**: If lower-level test covers it, don't repeat at E2E
+- **Subcutaneous Testing**: Test below UI when possible (REST API tests)
+- **Functional Core, Imperative Shell**
+    - Separate pure business logic (functional core) from side effects (imperative shell)
+    - Makes testing easier: core is pure functions, shell handles I/O
+
+#### Technical Practices
+
+- **Use Locators**: Prioritize user-facing attributes (role, text, test-id) over CSS/XPath
+- **Web-First Assertions**: Use `await expect(locator).toBeVisible()` instead of `isVisible()`
+- **Parallelism**: Run tests in parallel by default (Playwright does this automatically)
+- **Debugging**: Use trace viewer for CI failures (PWA-based tool)
+
+#### Test Structure 
+
+**Use AAA Pattern**
+1. **Arrange**: Set up test data
+2. **Act**: Call method/action under test
+3. **Assert**: Verify expected results
+
+**Use Pyramid Structure**
+
+```
+       /\
+      /  \  E2E (few tests)
+     /____\
+    /      \  Integration (some tests)
+   /________\
+  /          \  Unit (many tests)
+ /____________\
+```
+
+**Ratios** (rough guidance):
+- Unit tests: 70%
+- Integration tests: 20%
+- E2E tests: 10%
+
+#### Test Sizes (Google's approach)
+
+- **Small tests**: Single process, < 1 minute
+- **Medium tests**: Single machine, < 5 minutes
+- **Large tests**: Multiple machines, < 15 minutes
+- **Enormous tests**: Multiple machines, > 15 minutes
+  
 ### Architecture Patterns
 
 **Structure:**

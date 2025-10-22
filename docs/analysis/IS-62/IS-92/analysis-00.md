@@ -575,59 +575,6 @@ test-e2e:
 
 ## Improvement Methodologies
 
-### Option 1: Gradual Migration (Recommended)
-
-**Philosophy**: Incrementally move tests down the pyramid while maintaining coverage.
-
-**Approach**:
-
-**Phase 1: Quick Wins**
-1. Create unit test suite for utilities:
-   - `src/test/utils/persist.test.ts` (move from `persistence.spec.ts`)
-   - `src/test/utils/browserDetection.test.ts` (move from `embedded-browser.spec.ts`)
-2. Create component test suite:
-   - `src/test/components/LandscapeEnforcer.test.tsx` (move from `landscape-enforcer.spec.ts`)
-   - `src/test/components/PlanEditor.test.tsx` (move ~25 tests from `plan-editor.spec.ts`)
-3. Run both E2E and new tests in parallel to verify coverage
-
-**Phase 2: Integration Tests**
-1. Create API integration tests:
-   - `src/test/integration/api-client.test.ts` (move from `error-handling.spec.ts`)
-   - `src/test/integration/auth-flow.test.ts` (move from `auth-session.spec.ts`)
-2. Create page integration tests:
-   - `src/test/integration/dashboard.test.tsx` (move from `main-dashboard.spec.ts`)
-   - `src/test/integration/admin.test.tsx` (move from `admin-features.spec.ts`)
-
-**Phase 3: E2E Consolidation**
-1. Create journey-based E2E files:
-   - `e2e/journeys/onboarding.spec.ts` (consolidate onboarding + auth-session)
-   - `e2e/journeys/simulation-lifecycle.spec.ts` (consolidate simulation-flow + plan-editor + results)
-   - `e2e/journeys/dashboard-ops.spec.ts` (keep critical dashboard tests)
-2. Delete old E2E files:
-   - Remove `persistence.spec.ts`, `error-handling.spec.ts`, `landscape-enforcer.spec.ts`, `mobile.spec.ts`
-   - Remove `auth-session.spec.ts` (keep embedded-browser.spec.ts for 1 test)
-   - Remove `plan-editor.spec.ts`, `results-display.spec.ts` (keep 1 test in simulation-lifecycle)
-   - Remove `admin-features.spec.ts` (move to integration)
-
-**Phase 4: Optimization**
-1. Update Playwright config:
-   - Increase `workers` to 2-4 on CI
-   - Reduce projects to 2 (Mobile Chrome + Desktop Chrome)
-2. Add fixtures for common scenarios:
-   - `fixtures/authenticated.ts`
-   - `fixtures/with-simulation.ts`
-3. Document new test strategy in `docs/plan/test-code/`
-
-**Benefits**:
-- ✅ Low risk (both test suites run in parallel during migration)
-- ✅ Incremental progress (can stop at any phase)
-- ✅ Learn as you go (refine approach based on results)
-- ✅ Maintain coverage throughout migration
-
-**Trade-offs**:
-- ⚠️ Duplicate tests exist during migration (temporary)
-- ⚠️ Requires discipline to not add new E2E tests
-
 ### Option 2: Big Bang Refactor
 
 **Philosophy**: Rewrite entire test suite at once using new architecture.
@@ -670,51 +617,6 @@ test-e2e:
 - ❌ Requires upfront time investment (planning)
 - ❌ No fallback if new suite has issues
 
-### Option 3: Hybrid Approach (Middle Ground)
-
-**Philosophy**: Quick wins first, then strategic consolidation.
-
-**Approach**:
-
-**Low-Hanging Fruit**
-1. Move obvious unit tests:
-   - `persistence.spec.ts` → `utils/persist.test.ts` (10 tests)
-   - `error-handling.spec.ts` (validation tests) → `components/*.test.tsx` (5 tests)
-2. Delete these E2E files immediately (15 tests moved)
-
-**Component Tests**
-1. Create component test suite:
-   - `LandscapeEnforcer.test.tsx` (3 tests)
-   - `PlanEditor.test.tsx` (25 tests)
-   - `SimulationTable.test.tsx` (10 tests)
-2. Delete corresponding E2E tests (38 tests moved)
-
-**Consolidate E2E**
-1. Create 5 journey files:
-   - `onboarding.spec.ts` (1 happy path test)
-   - `simulation-lifecycle.spec.ts` (2 tests: create+run, update+re-run)
-   - `dashboard-ops.spec.ts` (2 tests: multi-select, delete)
-   - `pwa-install.spec.ts` (1 test)
-   - `embedded-browser.spec.ts` (1 test)
-2. Delete all other E2E files
-
-**Integration Tests**
-1. Create integration tests for remaining coverage:
-   - API client error handling
-   - Admin authentication
-   - Dashboard data loading
-2. Verify coverage matches or exceeds original
-
-**Benefits**:
-- ✅ Quick early wins (removes 15 tests)
-- ✅ Moderate risk (incremental but focused)
-- ✅ Visible progress (test count decreases)
-- ✅ Flexible (can adjust based on learnings)
-
-**Trade-offs**:
-- ⚠️ Some temporary duplication
-- ⚠️ Requires careful tracking of coverage
-
 ## Recommended Approach: Option 2 (Big Bang Refactor)
 
 **Rationale**:
@@ -726,7 +628,7 @@ test-e2e:
 
 **Implementation Plan**:
 
-### Phase 1: Planning & Architecture Design (Week 1)
+### Phase 1: Planning & Architecture Design
 
 **Tasks**:
 
@@ -761,11 +663,11 @@ test-e2e:
 - Coverage baseline report
 - Risk mitigation plan
 
-### Phase 2: Implementation (Weeks 2-4)
+### Phase 2: Implementation
 
 **Tasks**:
 
-1. **Unit Tests** (~60 tests, Week 2):
+1. **Unit Tests** (~60 tests):
    - `src/test/utils/persist.test.ts` (10 tests from `persistence.spec.ts`)
    - `src/test/utils/browserDetection.test.ts` (3 tests from `embedded-browser.spec.ts`)
    - `src/test/utils/validation.test.ts` (8 tests from `error-handling.spec.ts`)
@@ -773,20 +675,20 @@ test-e2e:
    - `src/test/services/auth.test.ts` (12 tests - new coverage)
    - `src/test/hooks/useSimulation.test.ts` (12 tests - new coverage)
 
-2. **Component Tests** (~40 tests, Week 2-3):
+2. **Component Tests** (~40 tests):
    - `src/test/components/LandscapeEnforcer.test.tsx` (3 tests)
    - `src/test/components/PlanEditor.test.tsx` (25 tests from `plan-editor.spec.ts`)
    - `src/test/components/SimulationTable.test.tsx` (10 tests from `main-dashboard.spec.ts`)
    - `src/test/components/ResultsTable.test.tsx` (8 tests from `results-display.spec.ts`)
    - `src/test/components/MobileLayout.test.tsx` (8 tests from `mobile.spec.ts`)
 
-3. **Integration Tests** (~60 tests, Week 3):
+3. **Integration Tests** (~60 tests):
    - `src/test/integration/auth-flow.test.ts` (15 tests from `auth-session.spec.ts`)
    - `src/test/integration/dashboard.test.tsx` (20 tests from `main-dashboard.spec.ts`)
    - `src/test/integration/admin.test.tsx` (15 tests from `admin-features.spec.ts`)
    - `src/test/integration/api-client.test.ts` (10 tests from `error-handling.spec.ts`)
 
-4. **Journey-Based E2E Tests** (~30 tests, Week 3-4):
+4. **Journey-Based E2E Tests** (~30 tests):
    - `e2e/journeys/onboarding.spec.ts` (5 tests):
      - Happy path: whitelist → OTP → consent → login → dashboard
      - Invalid whitelist entry
@@ -825,7 +727,7 @@ test-e2e:
      - Landscape mode normal operation
      - E2E mode bypass
 
-5. **Test Infrastructure** (Week 4):
+5. **Test Infrastructure**:
    - Create fixtures:
      - `e2e/fixtures/authenticated.ts`
      - `e2e/fixtures/with-simulation.ts`
@@ -844,7 +746,7 @@ test-e2e:
 - Test helpers and fixtures
 - Updated Playwright configuration
 
-### Phase 3: Validation & Cutover (Week 5)
+### Phase 3: Validation & Cutover
 
 **Tasks**:
 
@@ -887,7 +789,7 @@ test-e2e:
 - Cutover PR (merged)
 - Updated documentation
 
-### Phase 4: Optimization & Refinement (Week 6)
+### Phase 4: Optimization & Refinement
 
 **Tasks**:
 
@@ -913,8 +815,6 @@ test-e2e:
 - Optimized test suite (<3 min total runtime)
 - Complete test documentation
 - CI/CD monitoring dashboard
-
-**Expected Timeline**: 6 weeks total
 
 **Expected Outcome**:
 - 90% faster test suite (15-20 min → ~1.5 min E2E, ~3 min total)
@@ -992,35 +892,8 @@ src/test/
 
 The current E2E test suite violates the Test Pyramid principle by placing 100% of tests at the slowest, most expensive layer. While the test infrastructure (helpers, mocking, fixtures) is well-designed, the overall strategy creates a maintenance burden unsuitable for a solo developer managing a 60-100 user PWA.
 
-**Recommended Approach: Option 2 (Big Bang Refactor)**
-
-This approach provides:
-- Clean architecture from day one
-- No temporary technical debt
-- Comprehensive planning reduces execution risk
-- Single cutover point with clear rollback strategy
-- Faster time to optimal state (6 weeks)
-
 **Expected Outcomes**:
 - 90% faster E2E test suite (15-20 min → 1.5 min)
 - 80% reduction in E2E maintenance burden (150 tests → 30 tests)
 - 138% increase in total test coverage (155 → 370 tests)
 - Proper test pyramid distribution (70% unit, 20% integration, 10% E2E)
-
-**Next Steps**:
-1. Create detailed task breakdown for Phase 1 (Planning)
-2. Begin test audit and categorization
-3. Design new test architecture with fixtures
-4. Set up parallel CI jobs for validation
-5. Execute implementation in phases 2-4
-6. Document learnings and refine approach
-
-## References
-
-- **Research Report**: [IS-93 E2E Best Practices](../../../research/IS-62/IS-93/research-00.md)
-- **Issue**: [IS-92 Statement Analysis](https://github.com/SkyDominator/simulation/issues/92)
-- **Playwright Docs**: <https://playwright.dev/docs/best-practices>
-- **Test Pyramid**: <https://martinfowler.com/articles/practical-test-pyramid.html>
-- **Current E2E Tests**: `src/frontend/e2e/`
-- **Playwright Config**: `src/frontend/playwright.config.ts`
-- **Test Helpers**: `src/frontend/e2e/utils/test-helpers.ts`
