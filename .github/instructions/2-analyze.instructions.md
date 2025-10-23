@@ -1,5 +1,5 @@
 ---
-applyTo: 'docs/research/**/*.md'
+applyTo: '.github/prompts/2-analysis/**/*.md'
 ---
 
 ## Software Specification Document (SSD)
@@ -16,4 +16,4 @@ MUST ALWAYS read [Database Schema and RLS Policies](../../docs/spec/schema.md) b
 
 ## Documentation Standards
 
-If you are writing or editing markdown documentation files, MUST ALWAYS read and adhere to the [Documentation Standards](../../docs/markdown.md) when doing so.
+MUST ALWAYS read and adhere to the [Documentation Standards](../../docs/markdown.md).
