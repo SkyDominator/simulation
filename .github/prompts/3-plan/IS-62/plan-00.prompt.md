@@ -1,6 +1,6 @@
 ---
 mode: agent
-tools: ['edit', 'search', 'runCommands', 'runTasks', 'pylance mcp server/*', 'context7/*', 'usages', 'think', 'problems', 'changes', 'fetch', 'todos']
+tools: ['edit', 'search', 'pylance mcp server/pylanceDocuments', 'pylance mcp server/pylanceFileSyntaxErrors', 'pylance mcp server/pylanceInstalledTopLevelModules', 'pylance mcp server/pylancePythonEnvironments', 'pylance mcp server/pylanceRunCodeSnippet', 'pylance mcp server/pylanceSyntaxErrors', 'pylance mcp server/pylanceWorkspaceRoots', 'pylance mcp server/pylanceWorkspaceUserFiles', 'context7/*', 'usages', 'think', 'problems', 'changes', 'fetch', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'todos']
 model: Claude Sonnet 4.5
 ---
 
@@ -29,5 +29,4 @@ $APPROACH$: Directed in $ANALYSIS_REPORT$.
 
 ## Notes
 
-- Refer to the backend and frontend coding guideline for the test code structure and style.
 - The current Test Infrastructure (fixtures, Mocks, Stubs, Fakes, etc.) should be not trusted. The plan include the revisions and improvements if required.
