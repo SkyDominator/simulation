@@ -10,23 +10,28 @@ Create code implementation plan at $PLAN$ by reading $ANALYSIS_REPORT$. Follow t
 
 ## Mappings
 
-$ANALYSIS_REPORT$: `docs/analysis/IS-62/IS-92/analysis-00.md`
-$PLAN$: `docs/plan/IS-62/plan-00.md`
-$APPROACH$: Directed in $ANALYSIS_REPORT$.
+$ANALYSIS_REPORT$: `docs/analysis/IS-62/IS-92/analysis-00.md` 
+$PLAN_00$: `docs/plan/IS-62/plan-00.md`
+$PLAN_01$: `docs/plan/IS-62/plan-01.md`
+$PLAN_02$: `docs/plan/IS-62/plan-02.md`
+$PLAN_03$: `docs/plan/IS-62/plan-03.md`
+$PLAN_04$: `docs/plan/IS-62/plan-04.md`
+
+$TARGET_00$: `### Phase 1: Planning & Architecture Design` in $ANALYSIS_REPORT$.
 
 (If the file already exists, overwrite it. If the directory and the file do not exist, create them.)
 
 ## Tasks
 
 1. Read $ANALYSIS_REPORT$.
-2. Create $PLAN$ which is driven by $APPROACH$.
+2. Create $PLAN_00$ for $TARGET_00$.
     - Take a holistic view of the codebase. Do not stray from the coding guideine.
     - Consider side effects and edge cases.
     - Consider not introducing new issues or regressions by code changes.
     - Refer to the following examples for the structure, format, style of the plan:
         - `docs/plan/IS-89/plan-01.md`
 
-
 ## Notes
 
 - The current Test Infrastructure (fixtures, Mocks, Stubs, Fakes, etc.) should be not trusted. The plan include the revisions and improvements if required.
+- MUST NOT cover other areas except $TARGET_00$.
