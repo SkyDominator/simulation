@@ -17,7 +17,7 @@ $PLAN_02$: `docs/plan/IS-62/plan-02.md`
 $PLAN_03$: `docs/plan/IS-62/plan-03.md`
 $PLAN_04$: `docs/plan/IS-62/plan-04.md`
 
-$TARGET_00$: `### Phase 1: Planning & Architecture Design` in $ANALYSIS_REPORT$.
+$TARGET_00$: `**Test Infrastructure**` in $ANALYSIS_REPORT$.
 
 (If the file already exists, overwrite it. If the directory and the file do not exist, create them.)
 
@@ -33,5 +33,5 @@ $TARGET_00$: `### Phase 1: Planning & Architecture Design` in $ANALYSIS_REPORT$.
 
 ## Notes
 
-- The current Test Infrastructure (fixtures, Mocks, Stubs, Fakes, etc.) should be not trusted. The plan include the revisions and improvements if required.
+- The current Test Infrastructure (fixtures, Mocks, Stubs, Fakes, etc.) implementations should be not trusted. The plan include the revisions or the improvements if required.
 - MUST NOT cover other areas except $TARGET_00$.
