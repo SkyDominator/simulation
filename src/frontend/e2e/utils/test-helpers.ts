@@ -24,28 +24,8 @@ type ConsentMockSnapshot = {
 const consentMockStates = new WeakMap<Page, ConsentMockInternalState>();
 
 /**
- * Initialize E2E mode for the page.
- * Ensures the flag is available before scripts execute on navigation.
- */
-export async function initE2EMode(page: Page) {
-  await page.addInitScript(() => {
-    Object.defineProperty(window, "__E2E_MODE__", {
-      value: true,
-      writable: false,
-      configurable: false,
-      enumerable: true,
-    });
-
-    try {
-      localStorage.setItem("__E2E_MODE__", "true");
-    } catch {
-      // Ignore if storage is unavailable (e.g., sandboxed contexts)
-    }
-  });
-}
-
-/**
  * Test helpers for common page interactions
+ * @deprecated Use standalone functions from ./journeyActions instead
  */
 export class TestHelpers {
   constructor(private page: Page) {}
@@ -166,6 +146,7 @@ export class TestHelpers {
 
 /**
  * API mocking helpers for external dependencies
+ * @deprecated Use standalone functions from ./apiMocks/playwright instead
  */
 export class APIHelpers {
   /**
@@ -829,3 +810,67 @@ export type {
   SimulationSeedData,
   TestFixtures,
 } from "../fixtures/base";
+
+/**
+ * Re-exports from new helper architecture for backward compatibility
+ * @deprecated Use imports from './journeyActions' and './stateSetup' instead
+ *
+ * TestHelpers class methods are now available as standalone functions.
+ * Import specific functions from journeyActions.ts or stateSetup.ts as needed.
+ */
+export {
+  fillWhitelistForm,
+  fillOTPForm,
+  selectPlan,
+  fillInvestmentAmount,
+  clickNext,
+  clickPrevious,
+  clickCreateSimulation,
+  completeOnboardingFlow,
+  acceptPrivacyConsent,
+  declinePrivacyConsent,
+  clickGoogleLogin,
+  clickKakaoLogin,
+  navigateToPage,
+  logout,
+  openSimulationResults,
+  editSimulation,
+  deleteSimulation,
+  updateSimulationMemo,
+  selectSimulationsForComprehensive,
+  viewComprehensiveResults,
+} from "./journeyActions";
+
+export {
+  initE2EMode,
+  setAuthToken,
+  setAdminFlags,
+  clearAuthState,
+  isUserAuthenticated,
+  getCurrentUser,
+  waitForPageLoad,
+  waitForMainPage,
+  waitForSimulationResults,
+  waitForNotification,
+  isElementVisible,
+  setSimulationDraft,
+  clearSimulationDraft,
+  getSimulationDraft,
+} from "./stateSetup";
+
+/**
+ * Re-exports from new API mocks for backward compatibility
+ * @deprecated Use imports from './apiMocks/playwright' instead
+ *
+ * APIHelpers static methods are now available as standalone functions.
+ */
+export {
+  mockOTPSuccess,
+  mockOTPFailure,
+  mockSimulationAPI,
+  mockConsentSuccess,
+  mockNetworkError,
+  mockNoticesAPI,
+  mockAdminAPI,
+  getConsentMockState,
+} from "./apiMocks/playwright";

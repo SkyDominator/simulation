@@ -40,6 +40,24 @@ export default tseslint.config([
       "@typescript-eslint/no-explicit-any": "warn",
       "react-refresh/only-export-components": "off",
       "no-useless-escape": "warn",
+      // Enforce mock layer adoption - prevent direct Supabase client imports in tests
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/supabaseClient", "**/supabaseClient.*"],
+              message:
+                "Do not import Supabase client directly in tests. Use mock layers from test/shared/apiMocks instead.",
+            },
+            {
+              group: ["@supabase/supabase-js"],
+              message:
+                "Do not import @supabase/supabase-js directly in tests. Use mock layers from test/shared/apiMocks instead.",
+            },
+          ],
+        },
+      ],
     },
   },
 ]);

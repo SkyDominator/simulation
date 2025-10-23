@@ -16,6 +16,7 @@ import type {
   OTPSendResponse,
   OTPVerifyResponse,
 } from "../../types/types";
+import { otpMocks, consentMocks } from "../shared/apiMocks/node";
 
 /**
  * Integration Tests for Critical User Paths
@@ -50,17 +51,8 @@ describe("Critical User Path Integration Tests", () => {
       const user = userEvent.setup();
 
       // Step 1: Mock successful OTP flow
-      const mockOtpResponse: OTPSendResponse = {
-        success: true,
-        message: "OTP sent successfully",
-        user_hash: "test-hash-123",
-        expires_in_seconds: 300,
-      };
-
-      const mockVerifyResponse: OTPVerifyResponse = {
-        success: true,
-        message: "OTP verified successfully",
-      };
+      const mockOtpResponse = otpMocks.sendSuccess();
+      const mockVerifyResponse = otpMocks.verifySuccess();
 
       vi.mocked(mockApiService.sendOtp).mockResolvedValue(mockOtpResponse);
       vi.mocked(mockApiService.verifyOtp).mockResolvedValue(mockVerifyResponse);
@@ -113,10 +105,7 @@ describe("Critical User Path Integration Tests", () => {
       const user = userEvent.setup();
 
       // Mock OTP failure
-      const mockFailureResponse: OTPSendResponse = {
-        success: false,
-        message: "가입 허용 명단에 없는 사용자입니다.",
-      };
+      const mockFailureResponse = otpMocks.sendWhitelistFailure();
 
       vi.mocked(mockApiService.sendOtp).mockResolvedValue(mockFailureResponse);
 
@@ -152,17 +141,8 @@ describe("Critical User Path Integration Tests", () => {
       // INT-ONBOARD-003: Test OTP verification flow
       const user = userEvent.setup();
 
-      const mockOtpResponse: OTPSendResponse = {
-        success: true,
-        message: "OTP sent successfully",
-        user_hash: "test-hash-123",
-        expires_in_seconds: 300,
-      };
-
-      const mockVerifyResponse: OTPVerifyResponse = {
-        success: true,
-        message: "OTP verified successfully",
-      };
+      const mockOtpResponse = otpMocks.sendSuccess();
+      const mockVerifyResponse = otpMocks.verifySuccess();
 
       vi.mocked(mockApiService.sendOtp).mockResolvedValue(mockOtpResponse);
       vi.mocked(mockApiService.verifyOtp).mockResolvedValue(mockVerifyResponse);
@@ -193,13 +173,7 @@ describe("Critical User Path Integration Tests", () => {
 
     it("should handle consent flow integration with OTP", async () => {
       // INT-ONBOARD-004: Test consent page after OTP
-      const mockPolicyResponse = {
-        version: "1.0",
-        last_updated: "2024-01-01",
-        content: "# Privacy Policy\n\nTest content",
-        success: true,
-        source: "db" as const,
-      };
+      const mockPolicyResponse = consentMocks.privacyPolicy();
 
       vi.mocked(mockApiService.getPrivacyPolicy).mockResolvedValue(
         mockPolicyResponse
@@ -207,7 +181,7 @@ describe("Critical User Path Integration Tests", () => {
       vi.mocked(mockApiService.recordConsent).mockResolvedValue({
         user_hash: "test-hash-123",
         consent_type: "privacy_policy",
-        consent_version: "1.0",
+        consent_version: "v1",
         consent_given_at: "2024-01-01T00:00:00Z",
       });
 

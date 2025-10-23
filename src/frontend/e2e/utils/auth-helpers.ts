@@ -1,7 +1,19 @@
 import { Page } from "@playwright/test";
+import {
+  createMemberAuthToken,
+  createAdminAuthToken,
+  createExpiredAuthToken,
+} from "../../test/shared/fixtures";
 
 /**
  * Authentication helpers for E2E tests
+ * @deprecated Most functions have been moved to ./stateSetup and ./journeyActions
+ *
+ * - loginTestUser, loginAdminUser, logoutTestUser, isUserAuthenticated, getCurrentUser, mockSessionExpiry → use functions from ./stateSetup
+ * - completeOnboardingFlow → use function from ./journeyActions
+ *
+ * These legacy functions are kept for backward compatibility during migration.
+ * New tests should use the modular functions from ./stateSetup and ./journeyActions.
  */
 
 /**
@@ -249,3 +261,39 @@ export type {
   SimulationSeedData,
   TestFixtures,
 } from "../fixtures/base";
+
+/**
+ * Re-export shared fixtures for convenience
+ * @deprecated Import directly from '../../test/shared/fixtures' instead
+ */
+export {
+  createMemberAuthToken,
+  createAdminAuthToken,
+  createExpiredAuthToken,
+} from "../../test/shared/fixtures";
+
+/**
+ * Re-export state setup functions
+ * @deprecated Import directly from './stateSetup' instead
+ */
+export {
+  setAuthToken,
+  setAdminFlags,
+  clearAuthState,
+  initE2EMode,
+  waitForPageLoad,
+  waitForMainPage,
+} from "./stateSetup";
+
+/**
+ * Re-export journey actions
+ * @deprecated Import directly from './journeyActions' instead
+ */
+export {
+  fillWhitelistForm,
+  fillOTPForm,
+  acceptPrivacyConsent,
+  clickGoogleLogin,
+  clickKakaoLogin,
+  completeOnboardingFlow as completeOnboardingFlowNew,
+} from "./journeyActions";
