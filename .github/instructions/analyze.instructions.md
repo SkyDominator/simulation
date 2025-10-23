@@ -1,5 +1,5 @@
 ---
-applyTo: 'docs/analysis/**/*.md'
+applyTo: 'docs/research/**/*.md'
 ---
 
 ## Software Specification Document (SSD)

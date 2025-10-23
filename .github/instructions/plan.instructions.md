@@ -1,5 +1,5 @@
 ---
-applyTo: 'docs/plan/**/*.md'
+applyTo: 'docs/analysis/**/*.md'
 ---
 
 ## Back-end Coding Guidelines
