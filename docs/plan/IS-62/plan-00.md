@@ -36,13 +36,13 @@
 
 ## Implementation Strategy
 
-### Phase 0: Inventory & Safety Net (0.5 day)
+### Phase 0: Inventory & Safety Net
 
 - Snapshot current helper APIs and their call sites; document signatures in `docs/plan/IS-62/appendix.md`.
 - Add temporary smoke job running `pnpm test:e2e --grep "E2E-JOURNEY"` to ensure infra parity during migration.
 - Capture baseline metrics: total runtime, flake rate, and artifact size.
 
-### Phase 1: Playwright Fixture Rework (1.5 days)
+### Phase 1: Playwright Fixture Rework
 
 - Create `src/frontend/e2e/fixtures/base.ts` exporting `test = base.extend({})` per Microsoft Playwright guidance.
 - Implement fixtures:
@@ -58,7 +58,7 @@
   - Move shared options into `use` block with typed options for fixture overrides.
 - Verify locally with targeted specs (`onboarding`, `simulation-lifecycle`) before touching rest.
 
-### Phase 2: Cross-Layer Helper Consolidation (2 days)
+### Phase 2: Cross-Layer Helper Consolidation
 
 - Split existing helper classes:
   - `TestHelpers` → `journeyActions` (UI flows) and `setupActions` (pre-test state).
@@ -68,7 +68,7 @@
 - Ensure TypeScript types shared via `@/test/types/testState.ts` to avoid drift.
 - Add lint rule override (eslint `no-restricted-imports`) to prevent direct Supabase client usage in tests; force mock layer.
 
-### Phase 3: Observability & CI Integration (1 day)
+### Phase 3: Observability & CI Integration
 
 - Extend `package.json` scripts:
   - `test:e2e:journeys` uses new fixture entrypoint.
@@ -82,8 +82,8 @@
 
 ## Risks & Mitigations
 
-- **Fixture drift between layers** → add type-shared DTOs and lint guard; schedule monthly review.
-- **Increased CI cost from videos** → gate `retain-on-failure` to CI only; clean artifacts after 14 days.
+- **Fixture drift between layers** → add type-shared DTOs and lint guard; schedule regular review.
+- **Increased CI cost from videos** → gate `retain-on-failure` to CI only; clean artifacts on a rolling retention schedule.
 - **Hidden dependencies in legacy tests** → migrate specs incrementally, keep fallback helper exports until final cleanup.
 - **StorageState staleness** → regenerate via script `pnpm test:e2e --update-auth-state` when Supabase schema changes.
 
@@ -93,4 +93,4 @@
 - Flake rate < 2% over 10 consecutive runs.
 - All test layers reference shared helper/fixture modules (no direct Supabase/mock duplication).
 - Documentation updated and linked from repo README testing section.
-- Post-migration smoke job passes for three consecutive days; old helper aliases removed.
+- Post-migration smoke job passes consistently across consecutive runs; old helper aliases removed.
