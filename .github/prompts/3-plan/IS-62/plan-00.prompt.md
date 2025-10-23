@@ -10,6 +10,7 @@ Create code implementation plan at $PLAN_00$ by reading $ANALYSIS_REPORT$.
 
 ## Mappings
 
+$INSTRUCTIONS$: `.github/instructions/3-plan.instructions.md`
 $ANALYSIS_REPORT$: `docs/analysis/IS-62/IS-92/analysis-00.md` 
 $PLAN_00$: `docs/plan/IS-62/plan-00.md`
 $TARGET_00$: `**Test Infrastructure**` in $ANALYSIS_REPORT$.
@@ -18,8 +19,9 @@ $TARGET_00$: `**Test Infrastructure**` in $ANALYSIS_REPORT$.
 
 ## Tasks
 
-1. Read $ANALYSIS_REPORT$.
-2. Create $PLAN_00$ for $TARGET_00$.
+1. Read $INSTRUCTIONS$.
+2. Read $ANALYSIS_REPORT$.
+3. Create $PLAN_00$ for $TARGET_00$ following $INSTRUCTIONS$.
     - Take a holistic view of the codebase. Do not stray from the coding guideine.
     - Consider side effects and edge cases.
     - Consider not introducing new issues or regressions by code changes.

@@ -6,31 +6,28 @@ model: Claude Sonnet 4.5
 
 # Implement
 
-## Overview
-
 Implement codes by following the $PLAN$.
 
 ## Mappings
 
 $PLAN$: `docs/plan/IS-62/plan-00.md`
+$INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
 
 ## Tasks
 
 DO the following tasks:
 
-1. Read $PLAN$ carefully.
-2. Modify codebase following the $PLAN$.
-3. Continuously & thoroughly iterate on a review-and-self-correct loop until the $PLAN$ is fully and accurately implemented.
-4. Stop and wait for user order.
+1. Read $INSTRUCTIONS$.
+2. Read $PLAN$.
+3. Modify codebase following the $PLAN$ and $INSTRUCTIONS$.
+4. Continuously & thoroughly iterate on a review-and-self-correct loop until the $PLAN$ is fully and accurately implemented.
+5. Stop and wait for user order.
 
 ## Notes
 
 Implement only what are described in the $PLAN$. NO MORE, NO LESS.
 
-If the $PLAN$ is ambiguous, incomplete or problematic, DO:
-
-1. First, consult the $RESEARCH_RESULT$ for more information and try to suggest alternative solutions. If some solutions come out after consulting, update the $PLAN$ accordingly and continue implementation.
-2. If no solutions are found or still unclear about something, stop and ask for clarification instead of making assumptions.
+If the $PLAN$ is ambiguous, incomplete or problematic, stop and ask for clarification instead of making assumptions.
 
 DO NOT:
 

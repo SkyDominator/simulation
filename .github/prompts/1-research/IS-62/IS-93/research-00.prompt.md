@@ -10,6 +10,7 @@ Do research and create a research artifact.
 
 ## Mappings
 
+$INSTRUCTIONS$: `.github/instructions/1-research.instructions.md`
 $RESEARCH_RESULT$: `docs/research/IS-62/IS-93/research-00.md`
 
 (If the file already exists, overwrite it. If the directory and the file do not exist, create them.)
@@ -37,7 +38,7 @@ gh issue view 93 --repo SkyDominator/simulation
 
 ## The research report
 
-- Create $RESEARCH_RESULT$ file to report results.
+- Create $RESEARCH_RESULT$ file to report results following $INSTRUCTIONS$.
 - Refer to the following examples for the structure, format, style of the report:
     - `../../../../docs/research/IS-89/research-01.md`
     - If the given example format is inapplicable for some contents, create a suitable format for them.

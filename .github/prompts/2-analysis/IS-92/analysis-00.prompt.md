@@ -14,6 +14,7 @@ The artifacts must provide the implementation details, context, code map, data f
 
 ## Mappings
 
+$INSTRUCTIONS$: `.github/instructions/2-analysis.instructions.md`
 $RESEARCH_REPORT$: `docs/research/IS-62/IS-93/research-00.md`
 $ANALYSIS_REPORT$: `docs/analysis/IS-62/IS-92/analysis-00.md`
 
@@ -60,6 +61,6 @@ The analysis should includes:
 
 ## The analysis report 
 
-- Create $ANALYSIS_REPORT$ file to report results.
+- Create $ANALYSIS_REPORT$ file to report results following $INSTRUCTIONS$.
 - Refer to the following examples for the structure, format, style of the report:
     - `../../../../docs/research/IS-89/research-01.md`
