@@ -20,7 +20,9 @@ test.describe("User Onboarding Flow", () => {
     });
   });
 
-  test("allows a whitelisted user to complete onboarding", async ({ page }) => {
+  test("E2E-JOURNEY: allows a whitelisted user to complete onboarding", async ({
+    page,
+  }) => {
     await page.goto("/");
 
     // Whitelist form

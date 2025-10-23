@@ -18,14 +18,16 @@ test.describe("Simulation management basics", () => {
     await APIHelpers.mockSimulationAPI(page);
   });
 
-  test("shows the simulation dashboard", async ({ page }) => {
+  test("E2E-JOURNEY: shows the simulation dashboard", async ({ page }) => {
     await page.goto("/");
 
     await expect(page.getByTestId("main-page")).toBeVisible();
     await expect(page.getByTestId("create-simulation")).toBeVisible();
   });
 
-  test("allows navigating to the plan editor", async ({ page }) => {
+  test("E2E-JOURNEY: allows navigating to the plan editor", async ({
+    page,
+  }) => {
     await page.goto("/");
     await page.getByTestId("create-simulation").click();
 
