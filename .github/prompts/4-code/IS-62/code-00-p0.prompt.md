@@ -19,13 +19,13 @@ DO the following tasks:
 
 1. Read $INSTRUCTIONS$.
 2. Read $PLAN$.
-3. Modify codebase following the $PLAN$ and $INSTRUCTIONS$.
+3. Modify codebase following the `Phase 0` of $PLAN$ and $INSTRUCTIONS$.
 4. Continuously & thoroughly iterate on a review-and-self-correct loop until the $PLAN$ is fully and accurately implemented.
 5. Stop and wait for user order.
 
 ## Notes
 
-Implement only what are described in the $PLAN$. NO MORE, NO LESS.
+Implement only what are described in the `Phase 0` of $PLAN$. NO MORE, NO LESS.
 
 If the $PLAN$ is ambiguous, incomplete or problematic, stop and ask for clarification instead of making assumptions.
 
