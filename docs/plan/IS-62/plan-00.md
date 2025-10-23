@@ -1,96 +1,79 @@
 # Implementation Plan: Test Infrastructure Realignment (IS-62)
 
-## Context
+## Overview
 
-- Target scope: "Test Infrastructure" findings in docs/analysis/IS-62/IS-92/analysis-00.md.
-- Goal: unblock the IS-62 pyramid shift by modernizing fixtures, helpers, mocks, and Playwright config.
-- References: Google Testing Blog (test pyramid) and Microsoft Playwright fixture guidance.
+Modernize the frontend testing infrastructure highlighted in `docs/analysis/IS-62/IS-92/analysis-00.md` ("Test Infrastructure") so the IS-62 test pyramid reshaping can proceed safely. Existing helpers, fixtures, and Playwright configuration are considered untrusted. The rebuilt stack should preserve the working abstractions called out in §4.1 of the analysis while aligning with Google SRE *Testing for Reliability* guidance (2025-10 review) and Playwright fixture best practices.
 
 ## Goals
 
-- Provide reusable fixtures covering whitelist, authenticated user, admin, and seeded simulation states.
-- Standardize mocking strategy for API, OTP, and Supabase across test layers.
-- Reduce Playwright runtime cost while keeping debug assets on failure.
-- Make helper APIs layer-appropriate and type-safe for React, Vitest, and Playwright suites.
+- Provide reusable, typed fixtures delivering whitelist, authenticated member, admin, and seeded simulation states for Playwright.
+- Unify mocking layers across Vitest and Playwright so OTP, API, and Supabase doubles share contracts and payload factories.
+- Reduce E2E runtime by pruning excess projects, enabling CI parallelism, and capturing actionable failure artifacts.
+- Deliver guardrails (smoke jobs, lint rules, docs) that keep contributors on the new infrastructure without regressions.
 
 ## Non-Goals
 
-- No functional code changes outside testing utilities.
-- No rewrite of individual test cases beyond smoke checks validating infra refactor.
-- No backend schema or service changes.
+- No application feature changes or backend schema/service adjustments.
+- No wholesale rewrite of existing test cases (migration handled in separate suite plan).
+- No changes to production Supabase configuration or OAuth provider wiring.
 
 ## Constraints & Assumptions
 
-- Solo maintainer, 60-100 ko-KR users, Playwright + Vitest stack.
-- Tests must run on Windows CI agents and local dev machines.
-- Keep existing helper conventions (data-testids, naming) to avoid cascade regressions.
-- Preserve ability to run offline journeys for PWA requirements.
+- Solo maintainer; workflows must succeed on Windows-based CI with PowerShell shell.
+- Existing `data-testid` usage remains stable during infra rollout to avoid cascading failures.
+- Offline/PWA flows must stay reachable after fixture refactor, supporting ko-KR mobile users.
+- Storage state artifacts must remain free of real credentials; rely on Supabase stub payloads.
 
-## Current Infra Gaps (from analysis)
+## Baseline Issues (Analysis References)
 
-1. Helpers (`TestHelpers`, `APIHelpers`) couple E2E flows and low-level checks, blocking reuse (analysis §4.1).
-2. No typed fixture modules for authenticated or seeded states; every spec recreates setup (analysis §5 bullet 5).
-3. Playwright config runs four device projects with CI workers=1, extending runtime (~20 min) (analysis §4.2).
-4. API mocking lives in browser-context scripts; unit/integration suites reimplement mocks differently.
-5. Logging, tracing, and storageState assets are inconsistent, hampering flake triage.
+1. `TestHelpers` and `APIHelpers` mix browser actions with setup logic, limiting reuse (§4.1).
+2. Lack of typed fixture modules forces each spec to recreate auth/admin state (§5 bullet 5).
+3. `playwright.config.ts` runs four device projects with `workers=1`, causing 15–20 minute runtime (§4.2).
+4. Playwright and Vitest maintain distinct mock implementations, drifting over time (§4.1, conclusion).
+5. Debug artifacts (trace/video/screenshot) are inconsistent, slowing flake triage (§4.2 observations).
 
 ## Implementation Strategy
 
-### Phase 0: Inventory & Safety Net
+### Phase 0 — Baseline & Safety Net
 
-- Snapshot current helper APIs and their call sites; document signatures in `docs/plan/IS-62/appendix.md`.
-- Add temporary smoke job running `pnpm test:e2e --grep "E2E-JOURNEY"` to ensure infra parity during migration.
-- Capture baseline metrics: total runtime, flake rate, and artifact size.
+- Snapshot current helper signatures and usage sites; store inventory in `docs/plan/IS-62/appendix.md` for backward-reference.
+- Add temporary smoke script `pnpm test:e2e --grep "E2E-JOURNEY"` ensuring parity while infra transitions.
+- Record metrics: total runtime, worker count, retry frequency, artifact sizes; use as success benchmark.
 
-### Phase 1: Playwright Fixture Rework
+### Phase 1 — Playwright Fixture Architecture
 
-- Create `src/frontend/e2e/fixtures/base.ts` exporting `test = base.extend({})` per Microsoft Playwright guidance.
+- Create `src/frontend/e2e/fixtures/base.ts` exposing `test = base.extend({...})` following Playwright fixture guidance.
 - Implement fixtures:
-  - `e2eAuth`: uses storageState for whitelisted member; derives from Supabase stub response.
-  - `e2eAdmin`: extends `e2eAuth` with admin claims.
-  - `e2eSimulation`: seeds simulation API mock & localStorage drafts; composes with `e2eAuth`.
-  - `mockedApis`: wraps `APIHelpers` with deterministic, typed mock payloads.
-- Replace direct helper imports in journey specs with fixture injection.
+  - `memberSession`: loads storageState derived from Supabase stub to mimic whitelisted member login.
+  - `adminSession`: composes `memberSession` with admin claims and admin API mocks.
+  - `simulationSeed`: injects deterministic simulation API responses and localStorage drafts, composing with `memberSession`.
+  - `mockedApis`: centralizes request interception with typed payloads for OTP, simulation, and admin endpoints.
+- Refactor journey specs to consume fixtures via dependency injection; supply transitional re-exports for untouched specs.
+
+### Phase 2 — Helper & Mock Consolidation
+
+- Split `TestHelpers` into `journeyActions.ts` (user flows) and `stateSetup.ts` (environment prep) under `src/frontend/e2e/utils/`.
+- Separate `APIHelpers` into `apiMocks/playwright.ts` and `apiMocks/node.ts` so Playwright and Vitest pull from identical factories.
+- Introduce shared DTO types in `src/frontend/test/shared/types.ts` and factories in `src/frontend/test/shared/fixtures.ts`.
+- Update unit/integration suites (auth, dashboard, results) to use shared factories instead of bespoke JSON fixtures.
+- Add ESLint guard (`no-restricted-imports`) preventing direct Supabase client usage within tests, enforcing mock layer adoption.
+
+### Phase 3 — Playwright Configuration Realignment
+
 - Update `playwright.config.ts`:
-  - Projects: keep `mobile-chromium`, `desktop-chromium` only.
-  - Set `workers = process.env.CI ? 3 : undefined`.
-  - Enable `screenshot: "only-on-failure"`, `video: "retain-on-failure"`, `trace: "retain-on-failure"`.
-  - Move shared options into `use` block with typed options for fixture overrides.
-- Verify locally with targeted specs (`onboarding`, `simulation-lifecycle`) before touching rest.
+  - Reduce projects to `mobile-chromium` and `desktop-chromium` with landscape viewport to satisfy LandscapeEnforcer.
+  - Set `workers = process.env.CI ? 3 : undefined` to unlock parallelism while respecting container quotas.
+  - Configure `screenshot: "only-on-failure"`, `video: "retain-on-failure"`, `trace: "retain-on-failure"` per Google SRE MTTR guidance.
+  - Move fixture-tunable options into the `use` block so tests can override defaults cleanly.
+- Validate updated config locally on onboarding and simulation journeys before enabling CI rollout.
 
-### Phase 2: Cross-Layer Helper Consolidation
+### Phase 4 — Observability, Tooling
 
-- Split existing helper classes:
-  - `TestHelpers` → `journeyActions` (UI flows) and `setupActions` (pre-test state).
-  - `APIHelpers` → `apiMocks/playwright.ts` and `apiMocks/node.ts` for Vitest compatibility.
-- Introduce `src/frontend/test/shared/fixtures.ts` exporting Vitest/RTL-friendly factories (whitelist user, simulations, admin policy data).
-- Refactor unit/integration suites to import shared factories instead of bespoke mocks (focus on auth, dashboard, results modules).
-- Ensure TypeScript types shared via `@/test/types/testState.ts` to avoid drift.
-- Add lint rule override (eslint `no-restricted-imports`) to prevent direct Supabase client usage in tests; force mock layer.
-
-### Phase 3: Observability & CI Integration
-
-- Extend `package.json` scripts:
-  - `test:e2e:journeys` uses new fixture entrypoint.
-  - `test:integration` loads shared factories.
-  - `test:lint:tests` runs eslint with test-focused config.
-- Update CI workflow:
-  - Parallel jobs for `journey-e2e` (Playwright) and `unit+integration` (Vitest) with artifact uploads for trace/video on failure.
-  - Cache `playwright/.auth` storageState per branch.
-- Add `docs/cicd/ci-cd.md` appendix describing new jobs and debug artifact locations.
-- Instrument `mockedApis` to emit console marks (start/end) for flaky test investigation.
-
-## Risks & Mitigations
-
-- **Fixture drift between layers** → add type-shared DTOs and lint guard; schedule regular review.
-- **Increased CI cost from videos** → gate `retain-on-failure` to CI only; clean artifacts on a rolling retention schedule.
-- **Hidden dependencies in legacy tests** → migrate specs incrementally, keep fallback helper exports until final cleanup.
-- **StorageState staleness** → regenerate via script `pnpm test:e2e --update-auth-state` when Supabase schema changes.
-
-## Success Metrics & Exit Criteria
-
-- CI Playwright journey suite ≤ 4 minutes (down from ~15).
-- Flake rate < 2% over 10 consecutive runs.
-- All test layers reference shared helper/fixture modules (no direct Supabase/mock duplication).
-- Documentation updated and linked from repo README testing section.
-- Post-migration smoke job passes consistently across consecutive runs; old helper aliases removed.
+- Modify `package.json` scripts:
+  - `test:e2e:journeys` targeting fixture entrypoint.
+  - `test:integration` bootstrapping shared factories.
+  - `lint:tests` applying test-specific ESLint rules.
+- Update CI workflow (`.github/workflows/ci-cd.yml`):
+  - Split jobs into `journey-e2e` (Playwright) and `unit-integration` (Vitest) with artifact uploads on failure.
+  - Cache `playwright/.auth` storageState per branch and purge nightly to prevent staleness.
+- Instrument `mockedApis` to emit console marks for request start/end to improve flaky test investigation.
