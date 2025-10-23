@@ -814,3 +814,18 @@ export class APIHelpers {
     };
   }
 }
+
+/**
+ * Re-exports from new fixture architecture for backward compatibility
+ * @deprecated Use imports from '../fixtures/base' instead
+ *
+ * This allows existing specs to continue working during migration.
+ * New tests should import from '../fixtures/base' directly.
+ */
+export { test, expect } from "../fixtures/base";
+export type {
+  MockAuthToken,
+  MockedApiController,
+  SimulationSeedData,
+  TestFixtures,
+} from "../fixtures/base";
