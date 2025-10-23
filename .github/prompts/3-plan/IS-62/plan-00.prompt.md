@@ -6,17 +6,12 @@ model: Claude Sonnet 4.5
 
 # Plan
 
-Create code implementation plan at $PLAN$ by reading $ANALYSIS_REPORT$. Follow the $APPROACH$.
+Create code implementation plan at $PLAN_00$ by reading $ANALYSIS_REPORT$.
 
 ## Mappings
 
 $ANALYSIS_REPORT$: `docs/analysis/IS-62/IS-92/analysis-00.md` 
 $PLAN_00$: `docs/plan/IS-62/plan-00.md`
-$PLAN_01$: `docs/plan/IS-62/plan-01.md`
-$PLAN_02$: `docs/plan/IS-62/plan-02.md`
-$PLAN_03$: `docs/plan/IS-62/plan-03.md`
-$PLAN_04$: `docs/plan/IS-62/plan-04.md`
-
 $TARGET_00$: `**Test Infrastructure**` in $ANALYSIS_REPORT$.
 
 (If the file already exists, overwrite it. If the directory and the file do not exist, create them.)
