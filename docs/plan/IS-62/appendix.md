@@ -227,6 +227,14 @@ This document captures the baseline state of the frontend test infrastructure be
 - **HTML Report**: Generated in `playwright-report/`
 - **JSON Report**: Generated in `test-results/results.json`
 
+**Artifact Sizes (Latest Baseline Run)**:
+
+- **Trace**: 0 MB (feature disabled, no trace files produced)
+- **Screenshot**: 0 MB (feature disabled)
+- **Video**: 0 MB (feature disabled)
+- **HTML Report**: Not generated in baseline run (requires manual `playwright show-report`)
+- **JSON Report**: Not generated in baseline run (command not executed)
+
 **Issues from Analysis** (`docs/analysis/IS-62/IS-92/analysis-00.md` §4.2):
 
 - Long CI runtime due to sequential execution
