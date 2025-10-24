@@ -12,6 +12,7 @@ Implement codes by following the $PLAN$.
 
 $PLAN$: `docs/plan/IS-62/plan-00.md`
 $INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
+$REFERENCE$: `docs/plan/IS-62/appendix.md`
 
 ## Tasks
 
@@ -19,9 +20,10 @@ DO the following tasks:
 
 1. Read $INSTRUCTIONS$.
 2. Read $PLAN$.
-3. Modify codebase following the `Phase 1` of $PLAN$ and $INSTRUCTIONS$.
-4. Continuously & thoroughly iterate on a review-and-self-correct loop until the $PLAN$ is fully and accurately implemented.
-5. Stop and wait for user order.
+3. Read $REFERENCE$.
+4. Modify codebase following the `Phase 1` of $PLAN$. Strictly Adhere to $INSTRUCTIONS$ and $REFERENCE$ for the implementation.
+5. Continuously & thoroughly iterate on a review-and-self-correct loop until the $PLAN$ is fully and accurately implemented.
+6. Stop and wait for user order.
 
 ## Notes
 
