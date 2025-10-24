@@ -8,7 +8,9 @@
    * Zero Annonimousity
 2. One shot boilerplate
    * Every code/concept/process that has been exposed/utiled just once is now a boilerplate
-   * 
+3. Everything is a software
+   * Can be decomposed into: PRD, SDD, details, research, analysis, plan, implement, test, finalize
+    
 ## Resources
 
 ### Prototype
