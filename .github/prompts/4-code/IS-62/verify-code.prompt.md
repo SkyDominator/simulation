@@ -17,5 +17,6 @@ I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT$ as result. Verify this result a
 1. No missing items in the task description in $TASK_RUNNER_PROMPT$.
 2. Strict adherence to the task requirements is maintained, with no arbitrary guessing or assumptions applied in the result.
 3. Exactly implemented as per the task description, with no deviations or alterations (NO MORE, NO LESS).
+4. Ignore all the other commits except for the ones in $TASK_RESULT$.
 
 Respond with "The task result is verified and correct." if the result is correct. If there are issues, list them clearly and concisely, and correct the $TASK_RESULT$ accordingly.
