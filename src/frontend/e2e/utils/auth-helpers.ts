@@ -1,4 +1,9 @@
 import { Page } from "@playwright/test";
+import {
+  createMemberAuthToken,
+  createAdminAuthToken,
+  createExpiredAuthToken,
+} from "../../test/shared/fixtures";
 
 /**
  * Authentication helpers for E2E tests
