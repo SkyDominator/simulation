@@ -23,12 +23,8 @@
  * });
  */
 
+import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/base";
-import {
-  fillWhitelistForm,
-  fillOTPForm,
-  acceptPrivacyConsent,
-} from "../utils/journeyActions";
 
 /**
  * Example 1: Using memberSession fixture
@@ -173,3 +169,26 @@ test("tracks consent recording", async ({ page, mockedApis }) => {
   const state = mockedApis.consent.getState();
   expect(state?.postCount).toBe(1);
 });
+
+async function fillWhitelistForm(
+  page: Page,
+  name: string,
+  phone: string
+): Promise<void> {
+  await page.getByLabel("이름").fill(name);
+  await page.getByLabel("휴대폰 번호").fill(phone);
+  await page.getByRole("button", { name: "인증번호 받기" }).click();
+}
+
+async function fillOTPForm(page: Page, code: string): Promise<void> {
+  await page.getByLabel("인증번호").fill(code);
+  await page.getByRole("button", { name: "인증하기" }).click();
+}
+
+async function acceptPrivacyConsent(page: Page): Promise<void> {
+  const checkbox = page.getByTestId("consent-checkbox");
+  if (await checkbox.isVisible()) {
+    await checkbox.check();
+    await page.getByTestId("accept-consent").click();
+  }
+}
