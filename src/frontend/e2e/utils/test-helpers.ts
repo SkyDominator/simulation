@@ -24,6 +24,12 @@ type ConsentMockSnapshot = {
 const consentMockStates = new WeakMap<Page, ConsentMockInternalState>();
 
 /**
+ * Re-export initE2EMode for backward compatibility
+ * @deprecated Import from ./stateSetup instead
+ */
+export { initE2EMode } from "./stateSetup";
+
+/**
  * Test helpers for common page interactions
  * @deprecated Use standalone functions from ./journeyActions instead
  */
