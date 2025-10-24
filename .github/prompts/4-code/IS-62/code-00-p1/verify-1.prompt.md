@@ -14,12 +14,6 @@ model: GPT-5-Codex (Preview)
     * `e3b6d527788372d9014c9aaf3aee412b37237ceb`
     * `efbfe525878884987183c03497e441be96ce0ed6`
 
-Use this command to read the changes made in each commit:
-
-```shell
-git diff --name-only {commit_hash}^ {commit_hash}
-```
-
 I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT$ as result. Verify this result according to:
 
 1. NO LESS: No missing items in $TASK_RUNNER_PROMPT$.
@@ -29,7 +23,13 @@ I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT$ as result. Verify this result a
 
 ## Notes
 
-Ignore all the other commits except for the ones in $TASK_RESULT$
+Ignore all the other commits except for the ones in $TASK_RESULT$.
+
+Use this command to read the changes made in each commit:
+
+```shell
+git diff --name-only {commit_hash}^ {commit_hash}
+```
 
 ## Response
 
