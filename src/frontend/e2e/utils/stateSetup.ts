@@ -1,11 +1,18 @@
 /**
  * State setup helpers for E2E tests
  *
- * Functions for preparing test environment state (localStorage, sessionStorage, flags).
- * These handle environment setup without user interactions.
+ * ⚠️ TRANSITIONAL/LEGACY FILE - Phase 2 Deliverable ⚠️
  *
- * @see docs/plan/IS-62/plan-00.md - Phase 2: Helper & Mock Consolidation
+ * This file was created prematurely and belongs to Phase 2, not Phase 1.
+ * It is kept temporarily as a "transitional re-export" mechanism per Phase 1 plan:
+ * "supply transitional re-exports for untouched specs"
+ *
+ * @deprecated This file should NOT be used by new tests. Use fixtures from base.ts instead.
+ * @see docs/plan/IS-62/plan-00.md - Phase 1: Refactor journey specs to consume fixtures
+ * @see docs/plan/IS-62/plan-00.md - Phase 2: Helper & Mock Consolidation (where this belongs)
  * @see docs/plan/IS-62/appendix.md - Section 8.2: Preserved Abstractions
+ *
+ * Migration Status: This file will be removed or properly implemented in Phase 2.
  */
 
 import { Page, expect } from "@playwright/test";

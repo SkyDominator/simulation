@@ -1,10 +1,17 @@
 /**
  * Shared test fixture factories
  *
- * These factories produce consistent mock payloads for both Playwright and Vitest tests.
- * They provide a single source of truth for test data structures.
+ * ⚠️ TRANSITIONAL/LEGACY FILE - Phase 2 Deliverable ⚠️
  *
- * @see docs/plan/IS-62/plan-00.md - Phase 2: Helper & Mock Consolidation
+ * This file was created prematurely and belongs to Phase 2, not Phase 1.
+ * It is kept temporarily to support legacy helper files (auth-helpers.ts, stateSetup.ts)
+ * per Phase 1 plan: "supply transitional re-exports for untouched specs"
+ *
+ * @deprecated New tests should use inline factories from base.ts fixtures
+ * @see docs/plan/IS-62/plan-00.md - Phase 1: Refactor journey specs to consume fixtures
+ * @see docs/plan/IS-62/plan-00.md - Phase 2: Helper & Mock Consolidation (where this belongs)
+ *
+ * Migration Status: This file will be consolidated as single source of truth in Phase 2.
  */
 
 import type {

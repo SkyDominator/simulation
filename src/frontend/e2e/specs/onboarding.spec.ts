@@ -1,42 +1,38 @@
-import { test, expect } from "@playwright/test";
-import { TestHelpers, APIHelpers, initE2EMode } from "../utils/test-helpers";
-import { loginTestUser } from "../utils/auth-helpers";
+import { test, expect } from "../fixtures/base";
 import { TEST_USERS, TEST_OTP_CODES } from "../fixtures/test-data";
 
+/**
+ * User Onboarding Flow E2E Tests
+ * Refactored to use Phase 1 fixtures (mockedApis)
+ * @see docs/plan/IS-62/plan-00.md - Phase 1: Refactor journey specs to consume fixtures
+ */
 test.describe("User Onboarding Flow", () => {
-  let helpers: TestHelpers;
-
-  test.beforeEach(async ({ page }) => {
-    await initE2EMode(page); // Initialize E2E mode for all onboarding tests
-    helpers = new TestHelpers(page);
-    await APIHelpers.mockOTPSuccess(page);
-    await APIHelpers.mockConsentSuccess(page);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await page.evaluate(() => {
-      window.localStorage.clear();
-      window.sessionStorage.clear();
-    });
-  });
-
   test("E2E-JOURNEY: allows a whitelisted user to complete onboarding", async ({
     page,
+    mockedApis,
   }) => {
+    // Setup API mocks
+    await mockedApis.otp.mockSendSuccess();
+    await mockedApis.otp.mockVerifySuccess();
+    await mockedApis.consent.mockPrivacyPolicy();
+    await mockedApis.consent.mockConsentRecord();
+
     await page.goto("/");
 
     // Whitelist form
     await expect(
       page.locator("h5").filter({ hasText: "환영합니다!" })
     ).toBeVisible();
-    await helpers.fillWhitelistForm(
-      TEST_USERS.WHITELISTED.name,
-      TEST_USERS.WHITELISTED.phone
-    );
+
+    // Fill whitelist form
+    await page.getByLabel("이름").fill(TEST_USERS.WHITELISTED.name);
+    await page.getByLabel("휴대폰 번호").fill(TEST_USERS.WHITELISTED.phone);
+    await page.getByRole("button", { name: "인증번호 받기" }).click();
 
     // OTP verification
     await expect(page.locator('[data-testid="otp-form"]')).toBeVisible();
-    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
+    await page.getByLabel("인증번호").fill(TEST_OTP_CODES.VALID);
+    await page.getByRole("button", { name: "인증하기" }).click();
 
     // Consent and login
     await expect(page.locator('[data-testid="consent-page"]')).toBeVisible();
@@ -44,20 +40,37 @@ test.describe("User Onboarding Flow", () => {
     await page.getByTestId("accept-consent").click();
 
     await expect(page.getByTestId("login-form")).toBeVisible();
-    await loginTestUser(page);
-    await page.getByTestId("google-login").click();
 
+    // Mock login success (simplified for E2E)
+    await page.evaluate(() => {
+      const mockToken = {
+        access_token: "mock-token",
+        user: { id: "test-user", email: "test@example.com" },
+      };
+      window.localStorage.setItem(
+        "supabase.auth.token",
+        JSON.stringify(mockToken)
+      );
+      window.localStorage.setItem("ui.page", '"main"');
+    });
+
+    await page.getByTestId("google-login").click();
     await expect(page.getByTestId("main-page")).toBeVisible({ timeout: 5000 });
   });
 
-  test("shows an error for non-whitelisted users", async ({ page }) => {
-    await APIHelpers.mockOTPFailure(page, "whitelist");
+  test("shows an error for non-whitelisted users", async ({
+    page,
+    mockedApis,
+  }) => {
+    await mockedApis.otp.mockSendWhitelistFailure();
+    await mockedApis.consent.mockPrivacyPolicy();
+
     await page.goto("/");
 
-    await helpers.fillWhitelistForm(
-      TEST_USERS.NON_WHITELISTED.name,
-      TEST_USERS.NON_WHITELISTED.phone
-    );
+    // Fill whitelist form
+    await page.getByLabel("이름").fill(TEST_USERS.NON_WHITELISTED.name);
+    await page.getByLabel("휴대폰 번호").fill(TEST_USERS.NON_WHITELISTED.phone);
+    await page.getByRole("button", { name: "인증번호 받기" }).click();
 
     await expect(page.getByRole("alert")).toContainText(
       "가입 허용 명단에 없는 사용자입니다."
@@ -67,32 +80,50 @@ test.describe("User Onboarding Flow", () => {
 
   test("surfaces invalid OTP errors without advancing the flow", async ({
     page,
+    mockedApis,
   }) => {
-    await APIHelpers.mockOTPFailure(page, "invalid_code");
+    await mockedApis.otp.mockSendSuccess();
+    await mockedApis.otp.mockVerifyInvalidCode();
+    await mockedApis.consent.mockPrivacyPolicy();
+
     await page.goto("/");
 
-    await helpers.fillWhitelistForm(
-      TEST_USERS.WHITELISTED.name,
-      TEST_USERS.WHITELISTED.phone
-    );
+    // Fill whitelist form
+    await page.getByLabel("이름").fill(TEST_USERS.WHITELISTED.name);
+    await page.getByLabel("휴대폰 번호").fill(TEST_USERS.WHITELISTED.phone);
+    await page.getByRole("button", { name: "인증번호 받기" }).click();
+
     await expect(page.getByTestId("otp-form")).toBeVisible();
 
-    await helpers.fillOTPForm(TEST_OTP_CODES.INVALID);
+    // Fill OTP form
+    await page.getByLabel("인증번호").fill(TEST_OTP_CODES.INVALID);
+    await page.getByRole("button", { name: "인증하기" }).click();
+
     await expect(page.getByRole("alert")).toContainText(
       "인증번호가 올바르지 않습니다."
     );
     await expect(page.getByTestId("otp-form")).toBeVisible();
   });
 
+  /**
+   * Remaining tests use transitional helpers (Phase 1 allows this for untouched specs)
+   * These will be migrated in later phases
+   * @see docs/plan/IS-62/plan-00.md - Phase 1: supply transitional re-exports for untouched specs
+   */
+
   test("E2E-PREAUTH-004: OTP timer counts down and displays remaining time", async ({
     page,
+    mockedApis,
   }) => {
+    await mockedApis.otp.mockSendSuccess();
+    await mockedApis.consent.mockPrivacyPolicy();
+
     await page.goto("/");
 
-    await helpers.fillWhitelistForm(
-      TEST_USERS.WHITELISTED.name,
-      TEST_USERS.WHITELISTED.phone
-    );
+    // Fill whitelist form
+    await page.getByLabel("이름").fill(TEST_USERS.WHITELISTED.name);
+    await page.getByLabel("휴대폰 번호").fill(TEST_USERS.WHITELISTED.phone);
+    await page.getByRole("button", { name: "인증번호 받기" }).click();
 
     // Wait for OTP form to appear
     await expect(page.getByTestId("otp-form")).toBeVisible();
@@ -121,13 +152,17 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-005: Resend button triggers new OTP send with rate limiting", async ({
     page,
+    mockedApis,
   }) => {
+    await mockedApis.otp.mockSendSuccess();
+    await mockedApis.consent.mockPrivacyPolicy();
+
     await page.goto("/");
 
-    await helpers.fillWhitelistForm(
-      TEST_USERS.WHITELISTED.name,
-      TEST_USERS.WHITELISTED.phone
-    );
+    // Fill whitelist form
+    await page.getByLabel("이름").fill(TEST_USERS.WHITELISTED.name);
+    await page.getByLabel("휴대폰 번호").fill(TEST_USERS.WHITELISTED.phone);
+    await page.getByRole("button", { name: "인증번호 받기" }).click();
 
     await expect(page.getByTestId("otp-form")).toBeVisible();
 
@@ -156,16 +191,23 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-007: Consent page shows privacy policy content with network call", async ({
     page,
+    mockedApis,
   }) => {
+    await mockedApis.otp.mockSendSuccess();
+    await mockedApis.otp.mockVerifySuccess();
+    await mockedApis.consent.mockPrivacyPolicy();
+
     await page.goto("/");
 
     // Complete whitelist and OTP steps
-    await helpers.fillWhitelistForm(
-      TEST_USERS.WHITELISTED.name,
-      TEST_USERS.WHITELISTED.phone
-    );
+    await page.getByLabel("이름").fill(TEST_USERS.WHITELISTED.name);
+    await page.getByLabel("휴대폰 번호").fill(TEST_USERS.WHITELISTED.phone);
+    await page.getByRole("button", { name: "인증번호 받기" }).click();
+
     await expect(page.getByTestId("otp-form")).toBeVisible();
-    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
+
+    await page.getByLabel("인증번호").fill(TEST_OTP_CODES.VALID);
+    await page.getByRole("button", { name: "인증하기" }).click();
 
     // Should now be on consent page
     await expect(page.getByTestId("consent-page")).toBeVisible({
@@ -184,16 +226,23 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-008: Consent checkbox must be checked to enable accept button", async ({
     page,
+    mockedApis,
   }) => {
+    await mockedApis.otp.mockSendSuccess();
+    await mockedApis.otp.mockVerifySuccess();
+    await mockedApis.consent.mockPrivacyPolicy();
+
     await page.goto("/");
 
     // Complete whitelist and OTP steps
-    await helpers.fillWhitelistForm(
-      TEST_USERS.WHITELISTED.name,
-      TEST_USERS.WHITELISTED.phone
-    );
+    await page.getByLabel("이름").fill(TEST_USERS.WHITELISTED.name);
+    await page.getByLabel("휴대폰 번호").fill(TEST_USERS.WHITELISTED.phone);
+    await page.getByRole("button", { name: "인증번호 받기" }).click();
+
     await expect(page.getByTestId("otp-form")).toBeVisible();
-    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
+
+    await page.getByLabel("인증번호").fill(TEST_OTP_CODES.VALID);
+    await page.getByRole("button", { name: "인증하기" }).click();
 
     // On consent page
     await expect(page.getByTestId("consent-page")).toBeVisible({
@@ -212,7 +261,13 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-009: Accept consent proceeds to login page with API call", async ({
     page,
+    mockedApis,
   }) => {
+    await mockedApis.otp.mockSendSuccess();
+    await mockedApis.otp.mockVerifySuccess();
+    await mockedApis.consent.mockPrivacyPolicy();
+    await mockedApis.consent.mockConsentRecord();
+
     // Network spy to verify API call was made
     const consentRequests: Array<{ method: string; url: string }> = [];
     page.on("request", (request) => {
@@ -230,12 +285,14 @@ test.describe("User Onboarding Flow", () => {
     await page.goto("/");
 
     // Complete whitelist and OTP steps
-    await helpers.fillWhitelistForm(
-      TEST_USERS.WHITELISTED.name,
-      TEST_USERS.WHITELISTED.phone
-    );
+    await page.getByLabel("이름").fill(TEST_USERS.WHITELISTED.name);
+    await page.getByLabel("휴대폰 번호").fill(TEST_USERS.WHITELISTED.phone);
+    await page.getByRole("button", { name: "인증번호 받기" }).click();
+
     await expect(page.getByTestId("otp-form")).toBeVisible();
-    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
+
+    await page.getByLabel("인증번호").fill(TEST_OTP_CODES.VALID);
+    await page.getByRole("button", { name: "인증하기" }).click();
 
     // On consent page, check and accept
     await expect(page.getByTestId("consent-page")).toBeVisible({
@@ -254,16 +311,23 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-010: Decline consent returns to whitelist page", async ({
     page,
+    mockedApis,
   }) => {
+    await mockedApis.otp.mockSendSuccess();
+    await mockedApis.otp.mockVerifySuccess();
+    await mockedApis.consent.mockPrivacyPolicy();
+
     await page.goto("/");
 
     // Complete whitelist and OTP steps
-    await helpers.fillWhitelistForm(
-      TEST_USERS.WHITELISTED.name,
-      TEST_USERS.WHITELISTED.phone
-    );
+    await page.getByLabel("이름").fill(TEST_USERS.WHITELISTED.name);
+    await page.getByLabel("휴대폰 번호").fill(TEST_USERS.WHITELISTED.phone);
+    await page.getByRole("button", { name: "인증번호 받기" }).click();
+
     await expect(page.getByTestId("otp-form")).toBeVisible();
-    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
+
+    await page.getByLabel("인증번호").fill(TEST_OTP_CODES.VALID);
+    await page.getByRole("button", { name: "인증하기" }).click();
 
     // On consent page
     await expect(page.getByTestId("consent-page")).toBeVisible({
@@ -281,16 +345,24 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-011: Back button from login returns to whitelist page", async ({
     page,
+    mockedApis,
   }) => {
+    await mockedApis.otp.mockSendSuccess();
+    await mockedApis.otp.mockVerifySuccess();
+    await mockedApis.consent.mockPrivacyPolicy();
+    await mockedApis.consent.mockConsentRecord();
+
     await page.goto("/");
 
     // Complete full flow to login page
-    await helpers.fillWhitelistForm(
-      TEST_USERS.WHITELISTED.name,
-      TEST_USERS.WHITELISTED.phone
-    );
+    await page.getByLabel("이름").fill(TEST_USERS.WHITELISTED.name);
+    await page.getByLabel("휴대폰 번호").fill(TEST_USERS.WHITELISTED.phone);
+    await page.getByRole("button", { name: "인증번호 받기" }).click();
+
     await expect(page.getByTestId("otp-form")).toBeVisible();
-    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
+
+    await page.getByLabel("인증번호").fill(TEST_OTP_CODES.VALID);
+    await page.getByRole("button", { name: "인증하기" }).click();
 
     await expect(page.getByTestId("consent-page")).toBeVisible({
       timeout: 5000,
@@ -312,7 +384,10 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-012: Phone input auto-formats to 010-XXXX-XXXX pattern", async ({
     page,
+    mockedApis,
   }) => {
+    await mockedApis.consent.mockPrivacyPolicy();
+
     await page.goto("/");
 
     // Find phone input using label (MUI TextField)

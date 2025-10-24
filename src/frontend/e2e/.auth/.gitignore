@@ -1,0 +1,6 @@
+# Ignore generated storageState files
+*.json
+
+# Keep the README and setup scripts
+!README.md
+!*.setup.ts
