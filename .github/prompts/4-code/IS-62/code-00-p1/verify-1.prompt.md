@@ -25,10 +25,16 @@ I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT$ as result. Verify this result a
 
 Ignore all the other commits except for the ones in $TASK_RESULT$.
 
-Use this command to read the changes made in each commit:
+Use this command to read the changed files made in each commit:
 
 ```shell
 git diff --name-only {commit_hash}^ {commit_hash}
+```
+
+Use this command to read the changes made in each file in each commit:
+
+```shell
+git diff {commit_hash}^ {commit_hash} -- {file_path}
 ```
 
 ## Response
