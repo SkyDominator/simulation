@@ -139,23 +139,21 @@ export const test = base.extend<CustomFixtures>({
   /**
    * adminSession fixture
    * Provides authenticated admin context
+   * Composes memberSession and adds admin privileges on top
    */
-  adminSession: async ({ page }, use) => {
-    // Initialize E2E mode
-    await initE2EMode(page);
-
-    // Set admin auth token
+  adminSession: async ({ memberSession }, use) => {
+    // Override with admin auth token
     const adminToken = createAdminAuthToken();
-    await setAuthToken(page, adminToken);
+    await setAuthToken(memberSession, adminToken);
 
     // Set admin flags
-    await setAdminFlags(page);
+    await setAdminFlags(memberSession);
 
     // Mock admin API endpoints
-    await mockAdminAPI(page);
+    await mockAdminAPI(memberSession);
 
     // Provide page to test
-    await use(page);
+    await use(memberSession);
 
     // Cleanup (automatic via page context close)
   },
@@ -163,20 +161,14 @@ export const test = base.extend<CustomFixtures>({
   /**
    * simulationSeed fixture
    * Provides member session with simulation data seeded
+   * Composes memberSession and injects simulation mocks on top
    */
-  simulationSeed: async ({ page }, use) => {
-    // Initialize E2E mode
-    await initE2EMode(page);
-
-    // Set member auth token
-    const memberToken = createMemberAuthToken();
-    await setAuthToken(page, memberToken);
-
+  simulationSeed: async ({ memberSession }, use) => {
     // Mock simulation API
-    await mockSimulationAPI(page);
+    await mockSimulationAPI(memberSession);
 
     // Set simulation draft in localStorage
-    await setSimulationDraft(page, {
+    await setSimulationDraft(memberSession, {
       plan_id: "A",
       starting_company_round: 1,
       current_company_round: 1,
@@ -189,7 +181,7 @@ export const test = base.extend<CustomFixtures>({
     });
 
     // Provide page to test
-    await use(page);
+    await use(memberSession);
 
     // Cleanup (automatic via page context close)
   },
