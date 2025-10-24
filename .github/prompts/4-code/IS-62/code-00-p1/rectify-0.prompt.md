@@ -6,7 +6,7 @@ model: Claude Sonnet 4.5
 
 In the last session we did:
 
-1. I requested `../IS-62/code-00-p1.prompt.md`
+1. I requested `../code-00-p1/code-0.prompt.md`
 2. You responded with the result: `c15afa15368f4a068023dce6df0409fede4d56af` (commit hash)
 3. We verified the result and found the followings:
 

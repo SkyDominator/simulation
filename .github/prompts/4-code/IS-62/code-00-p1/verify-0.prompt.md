@@ -8,7 +8,7 @@ model: GPT-5-Codex (Preview)
 
 ## Mappings
 
-* $TASK_RUNNER_PROMPT$: `../IS-62/code-00-p1.prompt.md`
+* $TASK_RUNNER_PROMPT$: `../code-00-p1/code-0.prompt.md`
 * $TASK_RESULT$ (commit hash):
     * `c15afa15368f4a068023dce6df0409fede4d56af`
 
