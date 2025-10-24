@@ -18,6 +18,8 @@ In the last session we did:
 
 ```markdown
 On `base.ts`, the `simulationSeed` re-runs the member login work directly on `{ page }`. Per Phase 1, it must compose `memberSession` (should be injected), then inject the deterministic simulation mocks and draft state on top of the already-initialized member session.
+
+Also, `adminSession` duplicates the `memberSession` setup instead of composing it as required (“adminSession: composes memberSession with admin claims and admin API mocks”). The fixture should accept { memberSession } (or equivalent) from base.extend and layer admin flags/mocks atop that shared session so the plan’s composition requirement is met.
 ```
 
 Based on the findings above, rectify codes.
