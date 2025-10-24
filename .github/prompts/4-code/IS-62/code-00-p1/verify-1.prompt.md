@@ -9,9 +9,9 @@ model: GPT-5-Codex (Preview)
 ## Mappings
 
 * $TASK_RUNNER_PROMPT$: `../code-00-p1/code-0.prompt.md`
-* $TASK_RESULT$ (commit hash):
-    * `c15afa15368f4a068023dce6df0409fede4d56af`
-    * `e3b6d527788372d9014c9aaf3aee412b37237ceb`
+* $TASK_RESULT$:
+    * `src/frontend/e2e`
+    * `src/frontend/test`
 
 I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT$ as result. Verify this result according to:
 
