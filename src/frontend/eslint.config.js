@@ -40,9 +40,6 @@ export default tseslint.config([
       "@typescript-eslint/no-explicit-any": "warn",
       "react-refresh/only-export-components": "off",
       "no-useless-escape": "warn",
-      // Disable React hooks rules for E2E tests (Playwright uses 'use' for fixtures, not React hooks)
-      "react-hooks/rules-of-hooks": "off",
-      "react-hooks/exhaustive-deps": "off",
       // Enforce mock layer adoption - prevent direct Supabase client imports in tests
       "no-restricted-imports": [
         "error",
