@@ -1,36 +1,42 @@
-import { test, expect } from "../fixtures/base";
-import { fillWhitelistForm, fillOTPForm } from "../utils/journeyActions";
-import {
-  createOTPSendWhitelistFailureResponse,
-  createOTPVerifyInvalidCodeResponse,
-} from "../../test/shared/fixtures";
+import { test, expect } from "@playwright/test";
+import { TestHelpers, APIHelpers, initE2EMode } from "../utils/test-helpers";
+import { loginTestUser } from "../utils/auth-helpers";
 import { TEST_USERS, TEST_OTP_CODES } from "../fixtures/test-data";
 
 test.describe("User Onboarding Flow", () => {
+  let helpers: TestHelpers;
+
+  test.beforeEach(async ({ page }) => {
+    await initE2EMode(page); // Initialize E2E mode for all onboarding tests
+    helpers = new TestHelpers(page);
+    await APIHelpers.mockOTPSuccess(page);
+    await APIHelpers.mockConsentSuccess(page);
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(() => {
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+    });
+  });
+
   test("E2E-JOURNEY: allows a whitelisted user to complete onboarding", async ({
     page,
-    mockedApis,
-    memberSession: _memberSession,
   }) => {
-    // Set up API mocks for onboarding flow
-    await mockedApis.mockOTPSuccess();
-    await mockedApis.mockConsent();
-
     await page.goto("/");
 
     // Whitelist form
     await expect(
       page.locator("h5").filter({ hasText: "환영합니다!" })
     ).toBeVisible();
-    await fillWhitelistForm(
-      page,
+    await helpers.fillWhitelistForm(
       TEST_USERS.WHITELISTED.name,
       TEST_USERS.WHITELISTED.phone
     );
 
     // OTP verification
     await expect(page.locator('[data-testid="otp-form"]')).toBeVisible();
-    await fillOTPForm(page, TEST_OTP_CODES.VALID);
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
 
     // Consent and login
     await expect(page.locator('[data-testid="consent-page"]')).toBeVisible();
@@ -38,23 +44,17 @@ test.describe("User Onboarding Flow", () => {
     await page.getByTestId("accept-consent").click();
 
     await expect(page.getByTestId("login-form")).toBeVisible();
+    await loginTestUser(page);
     await page.getByTestId("google-login").click();
 
     await expect(page.getByTestId("main-page")).toBeVisible({ timeout: 5000 });
   });
 
-  test("shows an error for non-whitelisted users", async ({
-    page,
-    mockedApis,
-  }) => {
-    // Mock OTP failure for non-whitelisted user
-    await mockedApis.mockOTPSend(createOTPSendWhitelistFailureResponse());
-    await mockedApis.mockConsent();
-
+  test("shows an error for non-whitelisted users", async ({ page }) => {
+    await APIHelpers.mockOTPFailure(page, "whitelist");
     await page.goto("/");
 
-    await fillWhitelistForm(
-      page,
+    await helpers.fillWhitelistForm(
       TEST_USERS.NON_WHITELISTED.name,
       TEST_USERS.NON_WHITELISTED.phone
     );
@@ -67,23 +67,17 @@ test.describe("User Onboarding Flow", () => {
 
   test("surfaces invalid OTP errors without advancing the flow", async ({
     page,
-    mockedApis,
   }) => {
-    // Mock OTP send success but verify failure
-    await mockedApis.mockOTPSuccess();
-    await mockedApis.mockOTPVerify(createOTPVerifyInvalidCodeResponse());
-    await mockedApis.mockConsent();
-
+    await APIHelpers.mockOTPFailure(page, "invalid_code");
     await page.goto("/");
 
-    await fillWhitelistForm(
-      page,
+    await helpers.fillWhitelistForm(
       TEST_USERS.WHITELISTED.name,
       TEST_USERS.WHITELISTED.phone
     );
     await expect(page.getByTestId("otp-form")).toBeVisible();
 
-    await fillOTPForm(page, TEST_OTP_CODES.INVALID);
+    await helpers.fillOTPForm(TEST_OTP_CODES.INVALID);
     await expect(page.getByRole("alert")).toContainText(
       "인증번호가 올바르지 않습니다."
     );
@@ -92,16 +86,10 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-004: OTP timer counts down and displays remaining time", async ({
     page,
-    mockedApis,
   }) => {
-    // Set up API mocks
-    await mockedApis.mockOTPSuccess();
-    await mockedApis.mockConsent();
-
     await page.goto("/");
 
-    await fillWhitelistForm(
-      page,
+    await helpers.fillWhitelistForm(
       TEST_USERS.WHITELISTED.name,
       TEST_USERS.WHITELISTED.phone
     );
@@ -133,16 +121,10 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-005: Resend button triggers new OTP send with rate limiting", async ({
     page,
-    mockedApis,
   }) => {
-    // Set up API mocks
-    await mockedApis.mockOTPSuccess();
-    await mockedApis.mockConsent();
-
     await page.goto("/");
 
-    await fillWhitelistForm(
-      page,
+    await helpers.fillWhitelistForm(
       TEST_USERS.WHITELISTED.name,
       TEST_USERS.WHITELISTED.phone
     );
@@ -174,23 +156,16 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-007: Consent page shows privacy policy content with network call", async ({
     page,
-    mockedApis,
   }) => {
-    // Set up API mocks
-    await mockedApis.mockOTPSuccess();
-    await mockedApis.mockConsent();
-    await mockedApis.mockPrivacyPolicy();
-
     await page.goto("/");
 
     // Complete whitelist and OTP steps
-    await fillWhitelistForm(
-      page,
+    await helpers.fillWhitelistForm(
       TEST_USERS.WHITELISTED.name,
       TEST_USERS.WHITELISTED.phone
     );
     await expect(page.getByTestId("otp-form")).toBeVisible();
-    await fillOTPForm(page, TEST_OTP_CODES.VALID);
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
 
     // Should now be on consent page
     await expect(page.getByTestId("consent-page")).toBeVisible({
@@ -209,23 +184,16 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-008: Consent checkbox must be checked to enable accept button", async ({
     page,
-    mockedApis,
   }) => {
-    // Set up API mocks
-    await mockedApis.mockOTPSuccess();
-    await mockedApis.mockConsent();
-    await mockedApis.mockPrivacyPolicy();
-
     await page.goto("/");
 
     // Complete whitelist and OTP steps
-    await fillWhitelistForm(
-      page,
+    await helpers.fillWhitelistForm(
       TEST_USERS.WHITELISTED.name,
       TEST_USERS.WHITELISTED.phone
     );
     await expect(page.getByTestId("otp-form")).toBeVisible();
-    await fillOTPForm(page, TEST_OTP_CODES.VALID);
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
 
     // On consent page
     await expect(page.getByTestId("consent-page")).toBeVisible({
@@ -244,13 +212,7 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-009: Accept consent proceeds to login page with API call", async ({
     page,
-    mockedApis,
   }) => {
-    // Set up API mocks
-    await mockedApis.mockOTPSuccess();
-    await mockedApis.mockConsent();
-    await mockedApis.mockPrivacyPolicy();
-
     // Network spy to verify API call was made
     const consentRequests: Array<{ method: string; url: string }> = [];
     page.on("request", (request) => {
@@ -268,13 +230,12 @@ test.describe("User Onboarding Flow", () => {
     await page.goto("/");
 
     // Complete whitelist and OTP steps
-    await fillWhitelistForm(
-      page,
+    await helpers.fillWhitelistForm(
       TEST_USERS.WHITELISTED.name,
       TEST_USERS.WHITELISTED.phone
     );
     await expect(page.getByTestId("otp-form")).toBeVisible();
-    await fillOTPForm(page, TEST_OTP_CODES.VALID);
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
 
     // On consent page, check and accept
     await expect(page.getByTestId("consent-page")).toBeVisible({
@@ -293,23 +254,16 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-010: Decline consent returns to whitelist page", async ({
     page,
-    mockedApis,
   }) => {
-    // Set up API mocks
-    await mockedApis.mockOTPSuccess();
-    await mockedApis.mockConsent();
-    await mockedApis.mockPrivacyPolicy();
-
     await page.goto("/");
 
     // Complete whitelist and OTP steps
-    await fillWhitelistForm(
-      page,
+    await helpers.fillWhitelistForm(
       TEST_USERS.WHITELISTED.name,
       TEST_USERS.WHITELISTED.phone
     );
     await expect(page.getByTestId("otp-form")).toBeVisible();
-    await fillOTPForm(page, TEST_OTP_CODES.VALID);
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
 
     // On consent page
     await expect(page.getByTestId("consent-page")).toBeVisible({
@@ -327,23 +281,16 @@ test.describe("User Onboarding Flow", () => {
 
   test("E2E-PREAUTH-011: Back button from login returns to whitelist page", async ({
     page,
-    mockedApis,
   }) => {
-    // Set up API mocks
-    await mockedApis.mockOTPSuccess();
-    await mockedApis.mockConsent();
-    await mockedApis.mockPrivacyPolicy();
-
     await page.goto("/");
 
     // Complete full flow to login page
-    await fillWhitelistForm(
-      page,
+    await helpers.fillWhitelistForm(
       TEST_USERS.WHITELISTED.name,
       TEST_USERS.WHITELISTED.phone
     );
     await expect(page.getByTestId("otp-form")).toBeVisible();
-    await fillOTPForm(page, TEST_OTP_CODES.VALID);
+    await helpers.fillOTPForm(TEST_OTP_CODES.VALID);
 
     await expect(page.getByTestId("consent-page")).toBeVisible({
       timeout: 5000,

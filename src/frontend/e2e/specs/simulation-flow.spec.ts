@@ -1,5 +1,6 @@
-import { test, expect } from "../fixtures/base";
-import { selectPlan, clickNext } from "../utils/journeyActions";
+import { test, expect } from "@playwright/test";
+import { TestHelpers, APIHelpers, initE2EMode } from "../utils/test-helpers";
+import { loginTestUser } from "../utils/auth-helpers";
 
 /**
  * CAT-SIMFLOW: Simulation Management Flow Tests
@@ -7,14 +8,17 @@ import { selectPlan, clickNext } from "../utils/journeyActions";
  */
 
 test.describe("Simulation management basics", () => {
-  test("E2E-JOURNEY: shows the simulation dashboard", async ({
-    page,
-    memberSession: _memberSession,
-    mockedApis,
-  }) => {
-    // Set up API mocks
-    await mockedApis.mockSimulations();
+  let helpers: TestHelpers;
 
+  test.beforeEach(async ({ page }) => {
+    await initE2EMode(page);
+    helpers = new TestHelpers(page);
+    // Pre-authenticate user for all simulation tests
+    await loginTestUser(page);
+    await APIHelpers.mockSimulationAPI(page);
+  });
+
+  test("E2E-JOURNEY: shows the simulation dashboard", async ({ page }) => {
     await page.goto("/");
 
     await expect(page.getByTestId("main-page")).toBeVisible();
@@ -23,18 +27,13 @@ test.describe("Simulation management basics", () => {
 
   test("E2E-JOURNEY: allows navigating to the plan editor", async ({
     page,
-    memberSession: _memberSession,
-    mockedApis,
   }) => {
-    // Set up API mocks
-    await mockedApis.mockSimulations();
-
     await page.goto("/");
     await page.getByTestId("create-simulation").click();
 
     await expect(page.locator("text=플랜 타입")).toBeVisible();
-    await selectPlan(page, "A");
-    await clickNext(page);
+    await helpers.selectPlan("A");
+    await helpers.clickNext();
     await expect(page.locator("text=가입한 회차")).toBeVisible();
   });
 });
