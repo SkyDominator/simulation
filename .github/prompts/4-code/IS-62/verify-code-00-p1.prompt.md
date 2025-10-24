@@ -11,14 +11,13 @@ model: GPT-5-Codex (Preview)
 * $TASK_RUNNER_PROMPT$: `../IS-62/code-00-p1.prompt.md`
 * $TASK_RESULT$ (commit hash):
     * `4334181989a172b254dc7f890afddcc22b20da01`
-* $REFERENCE$: `docs/plan/IS-62/appendix.md`
 
 I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT$ as result. Verify this result according to:
 
-1. Strict adherence to $REFERENCE$.
-1. No missing items in the task description in $TASK_RUNNER_PROMPT$.
-2. Strict adherence to the task requirements in $TASK_RUNNER_PROMPT$ is maintained, with no arbitrary guessing or assumptions applied in the result.
-3. Exactly implemented as per the task description, with no deviations or alterations (NO MORE, NO LESS).
+1. NO LESS: No missing items in $TASK_RUNNER_PROMPT$.
+2. NO MORE: No deviations or alterations or additions exist. Exactly implemented as per the task description.
+3. FULL COMPLIANCE: Strict adherence to the every detail in $TASK_RUNNER_PROMPT$ is kept, with no arbitrary guessing or assumptions applied in the result.
+4. NO GUESSING: No assumptions or guesses were made during implementation. If any ambiguity or incompleteness existed in $TASK_RUNNER_PROMPT$, it should have been reported instead of guessed.
 
 ## Notes
 
