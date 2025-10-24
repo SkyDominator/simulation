@@ -1,6 +1,4 @@
-import { test, expect } from "@playwright/test";
-import { APIHelpers, initE2EMode } from "../utils/test-helpers";
-import { loginAdminUser, loginTestUser } from "../utils/auth-helpers";
+import { test, expect } from "../fixtures/base";
 
 /**
  * CAT-ADMIN: Admin Features Tests
@@ -8,23 +6,16 @@ import { loginAdminUser, loginTestUser } from "../utils/auth-helpers";
  */
 
 test.describe("Admin Features - Access Control", () => {
-  test.beforeEach(async ({ page }) => {
-    await initE2EMode(page);
-    await APIHelpers.mockAdminAPI(page);
-    await APIHelpers.mockNoticesAPI(page);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await page.evaluate(() => {
-      window.localStorage.clear();
-      window.sessionStorage.clear();
-    });
-  });
-
   test("E2E-ADMIN-001: Admin user can navigate to policy page", async ({
     page,
+    adminSession: _adminSession,
+    mockedApis,
   }) => {
-    await loginAdminUser(page);
+    // Set up API mocks
+    await mockedApis.mockAdminVerify();
+    await mockedApis.mockNotices();
+    await mockedApis.mockAdminPolicies();
+
     await page.goto("/");
 
     // Look for admin menu or button
@@ -48,8 +39,17 @@ test.describe("Admin Features - Access Control", () => {
 
   test("E2E-ADMIN-002: Non-admin user cannot access policy page", async ({
     page,
+    memberSession: _memberSession,
+    mockedApis,
   }) => {
-    await loginTestUser(page); // Regular user, not admin
+    // Set up API mocks - member should fail admin verification
+    await mockedApis.mockAdminVerify({
+      success: false,
+      is_admin: false,
+      user_id: "test-user-123",
+    });
+    await mockedApis.mockNotices();
+
     await page.goto("/");
 
     // Try to access admin page (might be hidden or show error)
@@ -76,19 +76,16 @@ test.describe("Admin Features - Access Control", () => {
 });
 
 test.describe("Admin Features - Privacy Policy Management", () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAdminUser(page);
-    await APIHelpers.mockAdminAPI(page);
-  });
+  test("E2E-ADMIN-003: Policy list displays all versions", async ({
+    page,
+    adminSession: _adminSession,
+    mockedApis,
+  }) => {
+    // Set up admin API mocks
+    await mockedApis.mockAdminVerify();
+    await mockedApis.mockAdminPolicies();
+    await mockedApis.mockNotices();
 
-  test.afterEach(async ({ page }) => {
-    await page.evaluate(() => {
-      window.localStorage.clear();
-      window.sessionStorage.clear();
-    });
-  });
-
-  test("E2E-ADMIN-003: Policy list displays all versions", async ({ page }) => {
     await page.goto("/");
 
     // Navigate to admin policy page
