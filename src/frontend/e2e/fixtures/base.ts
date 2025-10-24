@@ -10,161 +10,18 @@
  */
 
 import { test as base, Page } from "@playwright/test";
-
-/**
- * Mock auth token structure matching Supabase JWT
- */
-interface MockAuthToken {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  expires_at: number;
-  refresh_token: string;
-  user: {
-    id: string;
-    email: string;
-    user_metadata: {
-      name: string;
-      phone: string;
-      role?: string;
-    };
-  };
-}
-
-/**
- * Factory functions for mock data (Phase 1 inline implementation)
- * Phase 2 will consolidate these into shared factories
- */
-
-function createMemberAuthToken(): MockAuthToken {
-  const now = Date.now();
-  return {
-    access_token: "mock-member-access-token",
-    token_type: "bearer",
-    expires_in: 3600,
-    expires_at: now + 3600000,
-    refresh_token: "mock-member-refresh-token",
-    user: {
-      id: "member-user-id-001",
-      email: "member@test.com",
-      user_metadata: {
-        name: "테스트 회원",
-        phone: "010-1234-5678",
-      },
-    },
-  };
-}
-
-function createAdminAuthToken(): MockAuthToken {
-  const now = Date.now();
-  return {
-    access_token: "mock-admin-access-token",
-    token_type: "bearer",
-    expires_in: 3600,
-    expires_at: now + 3600000,
-    refresh_token: "mock-admin-refresh-token",
-    user: {
-      id: "admin-user-id-001",
-      email: "admin@test.com",
-      user_metadata: {
-        name: "테스트 관리자",
-        phone: "010-9999-0000",
-        role: "admin",
-      },
-    },
-  };
-}
-
-function createOTPSendSuccessResponse() {
-  return {
-    success: true,
-    message: "인증번호가 전송되었습니다.",
-  };
-}
-
-function createOTPVerifySuccessResponse() {
-  return {
-    success: true,
-    message: "인증 되었습니다.",
-    user_hash: "mock-user-hash-123",
-  };
-}
-
-function createPrivacyPolicyResponse() {
-  return {
-    success: true,
-    data: {
-      id: "policy-001",
-      version: "1.0",
-      locale: "ko-KR",
-      content: "개인정보 처리방침 내용...",
-      published: true,
-      effective_date: new Date().toISOString(),
-    },
-  };
-}
-
-function createSimulationData(overrides?: { id?: string; plan_id?: string }) {
-  return {
-    id: overrides?.id || "sim-default-001",
-    user_id: "member-user-id-001",
-    plan_id: overrides?.plan_id || "A",
-    starting_company_round: 1,
-    current_company_round: 1,
-    simulation_rounds: 10,
-    investments: {},
-    memo: "",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-}
-
-function createSimulationRunResponse() {
-  return {
-    success: true,
-    data: {
-      rounds: [
-        {
-          round: 1,
-          investors_count: 10,
-          sales: 1000000,
-          cumulative_sales: 1000000,
-          revenue_pretax: 320000,
-          revenue_posttax: 309440,
-          net_income: 309440,
-          cumulative_net_income: 309440,
-          achievement_rate: 1.0,
-        },
-      ],
-    },
-  };
-}
-
-function createNoticeListResponse() {
-  return {
-    success: true,
-    data: [
-      {
-        id: "notice-001",
-        title: "공지사항 제목",
-        content: "공지사항 내용",
-        pinned: false,
-        published: true,
-        created_at: new Date().toISOString(),
-      },
-    ],
-  };
-}
-
-function createAdminVerifyResponse(isAdmin = true) {
-  return {
-    success: true,
-    data: {
-      is_admin: isAdmin,
-      user_id: isAdmin ? "admin-user-id-001" : "member-user-id-001",
-    },
-  };
-}
+import {
+  createMemberAuthToken,
+  createAdminAuthToken,
+  createOTPSendSuccessResponse,
+  createOTPVerifySuccessResponse,
+  createPrivacyPolicyResponse,
+  createSimulationData,
+  createSimulationRunResponse,
+  createNoticeListResponse,
+  createAdminVerifyResponse,
+} from "../../test/shared/fixtures";
+import type { MockAuthToken } from "../../test/shared/types";
 
 /**
  * Fixture for member (regular user) session
@@ -376,6 +233,58 @@ async function initE2EMode(page: Page): Promise<void> {
     });
   } catch {
     // Ignore if page not ready; init script will handle it
+  }
+}
+
+/**
+ * Setup member authentication in page storage
+ */
+async function setupMemberAuth(
+  page: Page,
+  authToken: MockAuthToken
+): Promise<void> {
+  await page.addInitScript((token) => {
+    window.localStorage.setItem("supabase.auth.token", JSON.stringify(token));
+    window.localStorage.setItem("ui.page", '"main"');
+    window.localStorage.setItem("ui.noticeOpen", "false");
+  }, authToken);
+
+  // Apply immediately if page already loaded
+  try {
+    await page.evaluate((token) => {
+      window.localStorage.setItem("supabase.auth.token", JSON.stringify(token));
+      window.localStorage.setItem("ui.page", '"main"');
+      window.localStorage.setItem("ui.noticeOpen", "false");
+    }, authToken);
+  } catch {
+    // Init script will handle if page not ready
+  }
+}
+
+/**
+ * Setup admin authentication in page storage
+ */
+async function setupAdminAuth(
+  page: Page,
+  authToken: MockAuthToken
+): Promise<void> {
+  await page.addInitScript((token) => {
+    window.localStorage.setItem("supabase.auth.token", JSON.stringify(token));
+    window.localStorage.setItem("ui.page", '"main"');
+    window.localStorage.setItem("ui.noticeOpen", "false");
+    window.sessionStorage.setItem("user.isAdmin", "true");
+  }, authToken);
+
+  // Apply immediately if page already loaded
+  try {
+    await page.evaluate((token) => {
+      window.localStorage.setItem("supabase.auth.token", JSON.stringify(token));
+      window.localStorage.setItem("ui.page", '"main"');
+      window.localStorage.setItem("ui.noticeOpen", "false");
+      window.sessionStorage.setItem("user.isAdmin", "true");
+    }, authToken);
+  } catch {
+    // Init script will handle if page not ready
   }
 }
 
@@ -1071,44 +980,25 @@ function createAdminMockController(page: Page): AdminMockController {
 export const test = base.extend<TestFixtures>({
   /**
    * Member session fixture
-   * Provides authenticated member state via storageState artifact
-   * Loads pre-generated member.json from setup script
+   * Provides authenticated member state via localStorage
    * Auto-initializes E2E mode
    */
-  memberSession: async ({ browser }, use) => {
-    // Create context with member storageState
-    const context = await browser.newContext({
-      storageState: "./e2e/.auth/member.json",
-    });
-    const page = await context.newPage();
-
-    // Auth token is already in storageState, create matching object for tests
+  memberSession: async ({ page }, use) => {
     const authToken = createMemberAuthToken();
-
+    await initE2EMode(page);
+    await setupMemberAuth(page, authToken);
     await use({ page, authToken });
-
-    // Cleanup
-    await context.close();
   },
 
   /**
    * Admin session fixture
-   * Composes memberSession with admin role and admin API mocks
+   * Provides authenticated admin state with admin role and privileges
    * Auto-initializes E2E mode
    */
-  adminSession: async ({ memberSession, mockedApis }, use) => {
-    const { page } = memberSession;
-
-    // Override with admin token and add admin-specific storage
+  adminSession: async ({ page }, use) => {
     const authToken = createAdminAuthToken();
-    await page.evaluate((token) => {
-      window.localStorage.setItem("supabase.auth.token", JSON.stringify(token));
-      window.sessionStorage.setItem("user.isAdmin", "true");
-    }, authToken);
-
-    // Pre-wire admin API mocks
-    await mockedApis.admin.mockVerify(true);
-
+    await initE2EMode(page);
+    await setupAdminAuth(page, authToken);
     await use({ page, authToken });
   },
 
@@ -1127,6 +1017,21 @@ export const test = base.extend<TestFixtures>({
       notice: createNoticeMockController(page),
       admin: createAdminMockController(page),
     };
+
+    // Emit console marks for request tracking (observability per plan §4)
+    page.on("request", (request) => {
+      const url = request.url();
+      if (url.includes("/api/")) {
+        console.log(`[E2E Mock Request] ${request.method()} ${url}`);
+      }
+    });
+
+    page.on("response", (response) => {
+      const url = response.url();
+      if (url.includes("/api/")) {
+        console.log(`[E2E Mock Response] ${response.status()} ${url}`);
+      }
+    });
 
     await use(apis);
   },

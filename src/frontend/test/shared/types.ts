@@ -1,17 +1,10 @@
 /**
  * Shared type definitions for test fixtures
  *
- * ⚠️ TRANSITIONAL/LEGACY FILE - Phase 2 Deliverable ⚠️
+ * These types are used across Playwright E2E tests and Vitest unit/integration tests
+ * to ensure consistent mock data structures.
  *
- * This file was created prematurely and belongs to Phase 2, not Phase 1.
- * It is kept temporarily to support legacy helper files (auth-helpers.ts, stateSetup.ts)
- * per Phase 1 plan: "supply transitional re-exports for untouched specs"
- *
- * @deprecated New tests should use inline types or fixtures from base.ts
- * @see docs/plan/IS-62/plan-00.md - Phase 1: Refactor journey specs to consume fixtures
- * @see docs/plan/IS-62/plan-00.md - Phase 2: Helper & Mock Consolidation (where this belongs)
- *
- * Migration Status: This file will be consolidated/removed in Phase 2.
+ * @see docs/plan/IS-62/plan-00.md - Phase 2: Helper & Mock Consolidation
  */
 
 /**
