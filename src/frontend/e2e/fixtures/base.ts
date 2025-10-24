@@ -191,24 +191,6 @@ export const test = base.extend<CustomFixtures>({
    * Provides controller for API mocking
    */
   mockedApis: async ({ page }, use) => {
-    // Emit console marks for request tracking
-    await page.addInitScript(() => {
-      const originalFetch = window.fetch;
-      window.fetch = async (...args) => {
-        const [url] = args;
-        const urlStr = typeof url === "string" ? url : url.toString();
-        performance.mark(`fetch-start-${urlStr}`);
-        try {
-          const response = await originalFetch(...args);
-          performance.mark(`fetch-end-${urlStr}`);
-          return response;
-        } catch (error) {
-          performance.mark(`fetch-error-${urlStr}`);
-          throw error;
-        }
-      };
-    });
-
     const controller: MockedApisController = {
       mockOTPSuccess: () => mockOTPSuccess(page),
       mockOTPFailure: (scenario) => mockOTPFailure(page, scenario),
