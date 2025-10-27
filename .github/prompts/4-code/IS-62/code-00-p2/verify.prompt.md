@@ -8,10 +8,9 @@ model: Claude Sonnet 4.5
 
 ## Mappings
 
-* $TASK_RUNNER_PROMPT$: `../code-00-p1/code-0.prompt.md`
+* $TASK_RUNNER_PROMPT$: `../code-00-p2/code.prompt.md`
 * $TASK_RESULT$ (commit hash):
-    1. `commit_hash_first`: `76f16960ae92e85ea65da87a454707ab0aa02e23`
-    2. `commit_hash_last`: `f546100f1ecbbf09ed0d0b4fe7227f32b4b22dd5`
+    1. `commit_hash`: `d6911405734a06508b47dc067b6a89dcbbee213b`
 
 ## Status
 
