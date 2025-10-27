@@ -11,12 +11,15 @@ test.describe("User Onboarding Flow (Journey Tests)", () => {
     page,
     mockedApis,
   }) => {
+    // Create mocked APIs controller for this page
+    const apis = mockedApis(page);
+
     // Setup API mocks using fixture
-    await mockedApis.mockOTPSuccess();
-    await mockedApis.mockConsentSuccess();
+    await apis.mockOTPSuccess();
+    await apis.mockConsentSuccess();
     // Mock dashboard APIs to prevent real requests when landing on main page
-    await mockedApis.mockSimulationAPI();
-    await mockedApis.mockNoticesAPI();
+    await apis.mockSimulationAPI();
+    await apis.mockNoticesAPI();
 
     await page.goto("/");
 

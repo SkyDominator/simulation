@@ -96,11 +96,12 @@ type CustomFixtures = {
   simulationSeed: Page;
 
   /**
-   * Centralized API mocking controller
+   * Centralized API mocking controller factory
+   * - Returns a function that creates a controller for a given page
    * - Provides typed methods for API interception
    * - Uses shared payload factories
    */
-  mockedApis: MockedApisController;
+  mockedApis: (page: Page) => MockedApisController;
 };
 
 /**
@@ -233,10 +234,11 @@ export const test = base.extend<CustomFixtures>({
 
   /**
    * mockedApis fixture
-   * Provides controller for API mocking
+   * Provides factory for creating API mocking controller for any page
    */
-  mockedApis: async ({ page }, use) => {
-    const controller: MockedApisController = {
+  mockedApis: async ({}, use) => {
+    // Return a factory function that creates a controller for a given page
+    const factory = (page: Page): MockedApisController => ({
       mockOTPSuccess: () => mockOTPSuccess(page),
       mockOTPFailure: (scenario) => mockOTPFailure(page, scenario),
       mockSimulationAPI: () => mockSimulationAPI(page),
@@ -244,9 +246,9 @@ export const test = base.extend<CustomFixtures>({
       mockNoticesAPI: () => mockNoticesAPI(page),
       mockAdminAPI: () => mockAdminAPI(page),
       mockNetworkError: (endpoint) => mockNetworkError(page, endpoint),
-    };
+    });
 
-    await use(controller);
+    await use(factory);
 
     // Cleanup (routes are automatically cleaned up when page closes)
   },

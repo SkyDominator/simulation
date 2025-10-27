@@ -13,9 +13,12 @@ test.describe("Simulation management basics", () => {
     memberSession,
     mockedApis,
   }) => {
+    // Create mocked APIs controller for memberSession page
+    const apis = mockedApis(memberSession);
+
     // Mock simulation API to prevent real requests to /api/simulations
-    await mockedApis.mockSimulationAPI();
-    await mockedApis.mockNoticesAPI();
+    await apis.mockSimulationAPI();
+    await apis.mockNoticesAPI();
 
     await memberSession.goto("/");
 
@@ -27,9 +30,12 @@ test.describe("Simulation management basics", () => {
     memberSession,
     mockedApis,
   }) => {
+    // Create mocked APIs controller for memberSession page
+    const apis = mockedApis(memberSession);
+
     // Mock simulation API to prevent real requests to /api/simulations
-    await mockedApis.mockSimulationAPI();
-    await mockedApis.mockNoticesAPI();
+    await apis.mockSimulationAPI();
+    await apis.mockNoticesAPI();
 
     await memberSession.goto("/");
     await memberSession.getByTestId("create-simulation").click();
