@@ -1,5 +1,5 @@
 import { Page } from "@playwright/test";
-import * as journeyActions from "./journeyActions";
+import * as journeyActions from "./journey-actions";
 import {
   initE2EMode as setupInitE2EMode,
   waitForPageLoad,

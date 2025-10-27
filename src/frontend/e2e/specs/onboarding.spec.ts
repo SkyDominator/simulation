@@ -3,7 +3,7 @@ import { test } from "../fixtures/base";
 import { TestHelpers, APIHelpers, initE2EMode } from "../utils/test-helpers";
 import { loginTestUser } from "../utils/auth-helpers";
 import { TEST_USERS, TEST_OTP_CODES } from "../fixtures/test-data";
-import { fillWhitelistForm, fillOTPForm } from "../utils/journeyActions";
+import { fillWhitelistForm, fillOTPForm } from "../utils/journey-actions";
 
 // Journey tests use new fixture architecture
 test.describe("User Onboarding Flow (Journey Tests)", () => {

@@ -12,7 +12,7 @@ import {
   createAdminAuthToken,
   createExpiredAuthToken,
 } from "../../test/shared/fixtures";
-import { completeOnboardingFlow as actionsCompleteOnboardingFlow } from "./journeyActions";
+import { completeOnboardingFlow as actionsCompleteOnboardingFlow } from "./journey-actions";
 
 /**
  * Legacy authentication helpers delegating to the modular state/fixture utilities.

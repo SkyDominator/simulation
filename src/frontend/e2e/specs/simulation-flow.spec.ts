@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures/base";
-import { selectPlan, clickNext } from "../utils/journeyActions";
+import { selectPlan, clickNext } from "../utils/journey-actions";
 
 /**
  * CAT-SIMFLOW: Simulation Management Flow Tests (Journey Tests)
