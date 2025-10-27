@@ -23,11 +23,6 @@ I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT$ as result.
 src/frontend/e2e/utils/apiMocks/playwright.ts
 src/frontend/e2e/utils/auth-helpers.ts
 src/frontend/e2e/utils/test-helpers.ts
-<!-- src/frontend/src/test/components/RealComponentTests.test.tsx
-src/frontend/src/test/context/AuthContext.test.tsx
-src/frontend/src/test/mocks/AuthContext.tsx
-src/frontend/src/test/pages/MainPage.improved.test.tsx
-src/frontend/src/test/utils/mockApiService.ts -->
 
 ### Step 2. Read code changes in each changed file in $TASK_RESULT$.
 
@@ -58,8 +53,6 @@ Verify $TASK_RESULT$ according to:
 ## Notes
 
 If any contradictions or ambiguities found in whatever the provided contexts (instructions, research, analysis, plan, etc.), STOP and REPORT them clearly to me instead of guessing or making assumptions.
-
-Ignore commented lines in this prompt.
 
 ## Response
 
