@@ -1,0 +1,26 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:4173",
+      "localStorage": [
+        {
+          "name": "__E2E_MODE__",
+          "value": "true"
+        },
+        {
+          "name": "supabase.auth.token",
+          "value": "{\"access_token\":\"mock-jwt-token\",\"refresh_token\":\"mock-refresh-token\",\"expires_at\":1761609600000,\"user\":{\"id\":\"test-user-123\",\"email\":\"test@example.com\",\"user_metadata\":{\"name\":\"Test User\",\"phone\":\"010-1234-5678\"}}}"
+        },
+        {
+          "name": "ui.page",
+          "value": "\"main\""
+        },
+        {
+          "name": "ui.noticeOpen",
+          "value": "false"
+        }
+      ]
+    }
+  ]
+}

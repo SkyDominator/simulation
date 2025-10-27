@@ -1,0 +1,32 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:4173",
+      "localStorage": [
+        {
+          "name": "__E2E_MODE__",
+          "value": "true"
+        },
+        {
+          "name": "supabase.auth.token",
+          "value": "{\"access_token\":\"mock-admin-jwt-token\",\"refresh_token\":\"mock-admin-refresh-token\",\"expires_at\":1761609600000,\"user\":{\"id\":\"admin-user-123\",\"email\":\"admin@example.com\",\"user_metadata\":{\"name\":\"Admin User\",\"role\":\"admin\"}}}"
+        },
+        {
+          "name": "ui.page",
+          "value": "\"main\""
+        },
+        {
+          "name": "ui.noticeOpen",
+          "value": "false"
+        }
+      ],
+      "sessionStorage": [
+        {
+          "name": "user.isAdmin",
+          "value": "true"
+        }
+      ]
+    }
+  ]
+}

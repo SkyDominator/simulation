@@ -11,17 +11,9 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 // ^ Playwright fixtures use 'use' callback parameter, not React hooks
 
+import path from "path";
 import { test as base, Page } from "@playwright/test";
-import {
-  createMemberAuthToken,
-  createAdminAuthToken,
-} from "../../test/shared/fixtures";
-import {
-  initE2EMode,
-  setAuthToken,
-  setAdminFlags,
-  setSimulationDraft,
-} from "../utils/stateSetup";
+import { initE2EMode, setSimulationDraft } from "../utils/stateSetup";
 import {
   mockOTPSuccess,
   mockOTPFailure,
@@ -121,54 +113,106 @@ export const test = base.extend<CustomFixtures>({
   /**
    * memberSession fixture
    * Provides authenticated member context
+   * Loads storageState derived from Supabase stub
    */
-  memberSession: async ({ page }, use) => {
-    // Initialize E2E mode
-    await initE2EMode(page);
+  memberSession: async ({ browser }, use) => {
+    // Path to member storageState JSON
+    const storageStatePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "playwright",
+      ".auth",
+      "member.json"
+    );
 
-    // Set member auth token
-    const memberToken = createMemberAuthToken();
-    await setAuthToken(page, memberToken);
+    // Create context with member storageState
+    const context = await browser.newContext({
+      storageState: storageStatePath,
+    });
+
+    // Create page from context
+    const page = await context.newPage();
+
+    // Initialize E2E mode (adds __E2E_MODE__ flag)
+    await initE2EMode(page);
 
     // Provide page to test
     await use(page);
 
-    // Cleanup (automatic via page context close)
+    // Cleanup
+    await context.close();
   },
 
   /**
    * adminSession fixture
    * Provides authenticated admin context
-   * Composes memberSession and adds admin privileges on top
+   * Loads storageState derived from admin Supabase stub
    */
-  adminSession: async ({ memberSession }, use) => {
-    // Override with admin auth token
-    const adminToken = createAdminAuthToken();
-    await setAuthToken(memberSession, adminToken);
+  adminSession: async ({ browser }, use) => {
+    // Path to admin storageState JSON
+    const storageStatePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "playwright",
+      ".auth",
+      "admin.json"
+    );
 
-    // Set admin flags
-    await setAdminFlags(memberSession);
+    // Create context with admin storageState
+    const context = await browser.newContext({
+      storageState: storageStatePath,
+    });
+
+    // Create page from context
+    const page = await context.newPage();
+
+    // Initialize E2E mode
+    await initE2EMode(page);
 
     // Mock admin API endpoints
-    await mockAdminAPI(memberSession);
+    await mockAdminAPI(page);
 
     // Provide page to test
-    await use(memberSession);
+    await use(page);
 
-    // Cleanup (automatic via page context close)
+    // Cleanup
+    await context.close();
   },
 
   /**
    * simulationSeed fixture
    * Provides member session with simulation data seeded
-   * Composes memberSession and injects simulation mocks on top
+   * Loads member storageState and injects simulation mocks on top
    */
-  simulationSeed: async ({ memberSession }, use) => {
+  simulationSeed: async ({ browser }, use) => {
+    // Path to member storageState JSON
+    const storageStatePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "playwright",
+      ".auth",
+      "member.json"
+    );
+
+    // Create context with member storageState
+    const context = await browser.newContext({
+      storageState: storageStatePath,
+    });
+
+    // Create page from context
+    const page = await context.newPage();
+
+    // Initialize E2E mode
+    await initE2EMode(page);
+
     // Mock simulation API
-    await mockSimulationAPI(memberSession);
+    await mockSimulationAPI(page);
 
     // Set simulation draft in localStorage
-    await setSimulationDraft(memberSession, {
+    await setSimulationDraft(page, {
       plan_id: "A",
       starting_company_round: 1,
       current_company_round: 1,
@@ -181,9 +225,10 @@ export const test = base.extend<CustomFixtures>({
     });
 
     // Provide page to test
-    await use(memberSession);
+    await use(page);
 
-    // Cleanup (automatic via page context close)
+    // Cleanup
+    await context.close();
   },
 
   /**
