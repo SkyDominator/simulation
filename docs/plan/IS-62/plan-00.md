@@ -37,7 +37,7 @@ Modernize the frontend testing infrastructure highlighted in `docs/analysis/IS-6
 ### Phase 0 — Baseline & Safety Net
 
 - Snapshot current helper signatures and usage sites; store inventory in `docs/plan/IS-62/appendix.md` for backward-reference.
-- Add temporary smoke script `pnpm test:e2e:journeys` ensuring parity while infra transitions.
+- Keep the existing `pnpm test:e2e:journeys` smoke script as the gating parity check before and after each infrastructure change.
 - Record metrics: total runtime, worker count, retry frequency, artifact sizes; use as success benchmark.
 
 ### Phase 1 — Playwright Fixture Architecture
@@ -54,6 +54,7 @@ Modernize the frontend testing infrastructure highlighted in `docs/analysis/IS-6
 
 - Retain the public `TestHelpers` class while refactoring its internals to delegate to functional helpers in `src/frontend/e2e/utils/journey-actions.ts`; ensure method signatures remain stable for existing specs.
 - Keep the `APIHelpers` static interface but move implementation details into `src/frontend/e2e/utils/api-mocks/playwright.ts`, backed by shared factories, so both Playwright and Vitest consume a single contract.
+- Preserve `auth-helpers.ts` entry points by wrapping them with fixture-aware adapters so existing login utilities flow through the new storage-state fixtures without breaking consumers.
 - Introduce shared DTO types in `src/frontend/test/shared/types.ts` and payload factories in `src/frontend/test/shared/fixtures.ts`, re-used by `APIHelpers` and Vitest suites alike.
 - Update unit/integration suites (auth, dashboard, results) to source data from the shared factories, eliminating drift between browser and node contexts.
 - Add ESLint guard (`no-restricted-imports`) preventing direct Supabase client usage within tests, enforcing mock layer adoption.
