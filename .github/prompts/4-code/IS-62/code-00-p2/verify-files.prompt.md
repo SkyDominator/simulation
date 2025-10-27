@@ -59,6 +59,8 @@ Verify $TASK_RESULT$ according to:
 
 If any contradictions or ambiguities found in whatever the provided contexts (instructions, research, analysis, plan, etc.), STOP and REPORT them clearly to me instead of guessing or making assumptions.
 
+Ignore commented lines in this prompt.
+
 ## Response
 
 Respond with "The task result is verified and correct." if the result is correct. If there are issues, list them clearly and concisely, and correct the $TASK_RESULT$ accordingly.
