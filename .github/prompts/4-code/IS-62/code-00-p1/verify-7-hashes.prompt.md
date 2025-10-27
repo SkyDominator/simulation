@@ -33,7 +33,7 @@ When there are multiple commits, use this command to read the changed files:
 git diff --name-only {commit_hash_first}^ {commit_hash_last}
 ```
 
-> Note: Ignore all the other commits except for the ones in $TASK_RESULT$.
+> Note: Ignore the changes except code changes.
 
 ### Step 2. Read code changes in each changed file in $TASK_RESULT$.
 
