@@ -14,6 +14,9 @@ test.describe("User Onboarding Flow (Journey Tests)", () => {
     // Setup API mocks using fixture
     await mockedApis.mockOTPSuccess();
     await mockedApis.mockConsentSuccess();
+    // Mock dashboard APIs to prevent real requests when landing on main page
+    await mockedApis.mockSimulationAPI();
+    await mockedApis.mockNoticesAPI();
 
     await page.goto("/");
 

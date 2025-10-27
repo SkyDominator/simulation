@@ -11,7 +11,12 @@ import { selectPlan, clickNext } from "../utils/journeyActions";
 test.describe("Simulation management basics", () => {
   test("E2E-JOURNEY: shows the simulation dashboard", async ({
     memberSession,
+    mockedApis,
   }) => {
+    // Mock simulation API to prevent real requests to /api/simulations
+    await mockedApis.mockSimulationAPI();
+    await mockedApis.mockNoticesAPI();
+
     await memberSession.goto("/");
 
     await expect(memberSession.getByTestId("main-page")).toBeVisible();
@@ -20,7 +25,12 @@ test.describe("Simulation management basics", () => {
 
   test("E2E-JOURNEY: allows navigating to the plan editor", async ({
     memberSession,
+    mockedApis,
   }) => {
+    // Mock simulation API to prevent real requests to /api/simulations
+    await mockedApis.mockSimulationAPI();
+    await mockedApis.mockNoticesAPI();
+
     await memberSession.goto("/");
     await memberSession.getByTestId("create-simulation").click();
 
