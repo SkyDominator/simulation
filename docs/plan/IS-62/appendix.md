@@ -321,7 +321,8 @@ The following patterns are working well and should be preserved in the new fixtu
     - Should become a base fixture or auto-fixture in Phase 1
 
 2. **Init Script Pattern**: `addInitScript` for pre-navigation state (auth tokens, flags)
-    - Fixtures should leverage this for `memberSession` and `adminSession`
+    - `memberSession` fixture uses this via storageState loading (member.json)
+    - `adminSession` fixture creates separate context with admin storageState (admin.json) containing admin claims
 
 3. **Stateful Mocking**: `consentMockStates` WeakMap pattern for tracking request counts
     - Useful for complex interaction scenarios, should be ported to `mockedApis` fixture

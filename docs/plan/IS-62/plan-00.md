@@ -44,8 +44,8 @@ Modernize the frontend testing infrastructure highlighted in `docs/analysis/IS-6
 
 - Create `src/frontend/e2e/fixtures/base.ts` exposing `test = base.extend({...})` following Playwright fixture guidance.
 - Implement fixtures:
-  - `memberSession`: loads storageState derived from Supabase stub to mimic whitelisted member login.
-  - `adminSession`: composes `memberSession` with admin claims and admin API mocks.
+  - `memberSession`: loads storageState derived from Supabase stub (member.json) to mimic whitelisted member login.
+  - `adminSession`: creates separate browser context with admin storageState (admin.json) containing admin claims, then layers admin API mocks on top.
   - `simulationSeed`: injects deterministic simulation API responses and localStorage drafts, composing with `memberSession`.
   - `mockedApis`: centralizes request interception with typed payloads for OTP, simulation, and admin endpoints.
 - Refactor journey specs to consume fixtures via dependency injection; supply transitional re-exports for untouched specs.

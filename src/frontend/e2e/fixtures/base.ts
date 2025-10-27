@@ -76,16 +76,16 @@ type CustomFixtures = {
   /**
    * Authenticated member session
    * - Initializes E2E mode
-   * - Sets member auth token in localStorage
+   * - Loads member storageState (member.json) with member auth token
    * - Provides authenticated member context
    */
   memberSession: Page;
 
   /**
    * Authenticated admin session
-   * - Composes memberSession
-   * - Sets admin claims and flags
-   * - Mocks admin API endpoints
+   * - Creates separate browser context with admin storageState (admin.json)
+   * - Contains admin claims and sessionStorage flags
+   * - Layers admin API mocks on top
    */
   adminSession: Page;
 
@@ -150,16 +150,38 @@ export const test = base.extend<CustomFixtures>({
   /**
    * adminSession fixture
    * Provides authenticated admin context
-   * Composes memberSession with admin API mocks
+   * Loads admin storageState with admin claims and layers admin API mocks
    */
-  adminSession: async ({ memberSession }, use) => {
-    // Layer admin API mocks on top of memberSession
-    await mockAdminAPI(memberSession);
+  adminSession: async ({ browser }, use) => {
+    // Path to admin storageState JSON
+    const storageStatePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "playwright",
+      ".auth",
+      "admin.json"
+    );
 
-    // Provide composed page to test
-    await use(memberSession);
+    // Create context with admin storageState
+    const context = await browser.newContext({
+      storageState: storageStatePath,
+    });
 
-    // Cleanup handled by memberSession fixture
+    // Create page from context
+    const page = await context.newPage();
+
+    // Initialize E2E mode (adds __E2E_MODE__ flag)
+    await initE2EMode(page);
+
+    // Layer admin API mocks on top
+    await mockAdminAPI(page);
+
+    // Provide page to test
+    await use(page);
+
+    // Cleanup
+    await context.close();
   },
 
   /**
