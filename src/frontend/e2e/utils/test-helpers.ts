@@ -1,803 +1,122 @@
-import { Page, expect } from "@playwright/test";
+import { Page } from "@playwright/test";
+import * as journeyActions from "./journeyActions";
+import {
+  initE2EMode as setupInitE2EMode,
+  waitForPageLoad,
+  waitForMainPage as waitForMainPageState,
+  waitForSimulationResults as waitForSimulationResultsState,
+  waitForNotification as waitForNotificationState,
+  isElementVisible as isElementVisibleState,
+  setAuthToken,
+} from "./stateSetup";
+import {
+  mockOTPSuccess as routeMockOTPSuccess,
+  mockOTPFailure as routeMockOTPFailure,
+  mockSimulationAPI as routeMockSimulationAPI,
+  mockConsentSuccess as routeMockConsentSuccess,
+  mockNetworkError as routeMockNetworkError,
+  mockNoticesAPI as routeMockNoticesAPI,
+  mockAdminAPI as routeMockAdminAPI,
+  getConsentMockState as routeGetConsentMockState,
+  type ConsentMockSnapshot,
+} from "./apiMocks/playwright";
+import { createMemberAuthToken } from "../../test/shared/fixtures";
 
-type ConsentRecordMock = {
-  user_hash: string;
-  consent_type: string;
-  consent_version: string;
-  consent_given_at: string;
-  ip_address?: string;
-  user_agent?: string;
-};
-
-type ConsentMockInternalState = {
-  consentMap: Map<string, ConsentRecordMock[]>;
-  postCount: number;
-  getCount: number;
-};
-
-type ConsentMockSnapshot = {
-  postCount: number;
-  getCount: number;
-  consentsByHash: Record<string, ConsentRecordMock[]>;
-};
-
-const consentMockStates = new WeakMap<Page, ConsentMockInternalState>();
-
-/**
- * Re-export initE2EMode for backward compatibility
- * @deprecated Import from ./stateSetup instead
- */
 export { initE2EMode } from "./stateSetup";
 
-/**
- * Test helpers for common page interactions
- * @deprecated Use standalone functions from ./journeyActions instead
- */
 export class TestHelpers {
-  constructor(private page: Page) {}
+  constructor(private readonly page: Page) {}
 
-  /**
-   * Fill the whitelist verification form
-   */
-  async fillWhitelistForm(name: string, phone: string) {
-    // Use Material-UI label-based selectors
-    await this.page.getByLabel("이름").fill(name);
-    await this.page.getByLabel("휴대폰 번호").fill(phone);
-    await this.page.getByRole("button", { name: "인증번호 받기" }).click();
+  async fillWhitelistForm(name: string, phone: string): Promise<void> {
+    await journeyActions.fillWhitelistForm(this.page, name, phone);
   }
 
-  /**
-   * Fill the OTP verification form
-   */
-  async fillOTPForm(code: string) {
-    await this.page.getByLabel("인증번호").fill(code);
-    await this.page.getByRole("button", { name: "인증하기" }).click();
+  async fillOTPForm(code: string): Promise<void> {
+    await journeyActions.fillOTPForm(this.page, code);
   }
 
-  /**
-   * Select a plan in the plan editor
-   */
-  async selectPlan(planId: string) {
-    // Look for Material-UI Select component
-    await this.page.click('[role="button"][aria-haspopup="listbox"]');
-    await this.page.click(`text="${planId}"`);
+  async selectPlan(planId: string): Promise<void> {
+    await journeyActions.selectPlan(this.page, planId);
   }
 
-  /**
-   * Fill investment amount for specific round
-   */
-  async fillInvestmentAmount(round: number, amount: string) {
-    // Find the input field associated with the round by locating the text, then its parent, then the input
-    await this.page
-      .locator(`text=${round}회차`)
-      .locator("..")
-      .locator('input[type="text"]')
-      .fill(amount);
+  async fillInvestmentAmount(round: number, amount: string): Promise<void> {
+    await journeyActions.fillInvestmentAmount(this.page, round, amount);
   }
 
-  /**
-   * Wait for simulation results to appear
-   */
-  async waitForSimulationResults() {
-    // Look for results content or table
-    await this.page.waitForSelector("text=/시뮬레이션.*결과/", {
-      timeout: 10000,
-    });
-    await expect(this.page.locator('table, [role="table"]')).toBeVisible();
+  async waitForSimulationResults(): Promise<void> {
+    await waitForSimulationResultsState(this.page);
   }
 
-  /**
-   * Wait for notification message
-   */
-  async waitForNotification(message: string) {
-    // Look for Material-UI Alert or Snackbar
-    await expect(
-      this.page
-        .locator('[role="alert"], .MuiAlert-root')
-        .filter({ hasText: message })
-    ).toBeVisible();
+  async waitForNotification(message: string): Promise<void> {
+    await waitForNotificationState(this.page, message);
   }
 
-  /**
-   * Navigate through multi-step forms
-   */
-  async clickNext() {
-    await this.page.getByRole("button", { name: /다음|Next|계속/i }).click();
+  async clickNext(): Promise<void> {
+    await journeyActions.clickNext(this.page);
   }
 
-  async clickPrevious() {
-    await this.page
-      .getByRole("button", { name: /이전|Previous|뒤로/i })
-      .click();
+  async clickPrevious(): Promise<void> {
+    await journeyActions.clickPrevious(this.page);
   }
 
-  /**
-   * Wait for page to load completely
-   */
-  async waitForPageLoad() {
-    await this.page.waitForLoadState("networkidle");
+  async waitForPageLoad(): Promise<void> {
+    await waitForPageLoad(this.page);
   }
 
-  /**
-   * Check if element is visible with timeout
-   */
   async isElementVisible(
     selector: string,
     timeout: number = 5000
   ): Promise<boolean> {
-    try {
-      await this.page.waitForSelector(selector, { timeout });
-      return await this.page.isVisible(selector);
-    } catch {
-      return false;
-    }
+    return await isElementVisibleState(this.page, selector, timeout);
   }
 
-  /**
-   * Wait for main page to load
-   */
-  async waitForMainPage() {
-    await expect(this.page.locator("text=내 시뮬레이션")).toBeVisible({
-      timeout: 10000,
-    });
+  async waitForMainPage(): Promise<void> {
+    await waitForMainPageState(this.page);
   }
 
-  /**
-   * Click create simulation button
-   */
-  async clickCreateSimulation() {
-    await this.page.getByRole("button", { name: "새 시뮬레이션" }).click();
+  async clickCreateSimulation(): Promise<void> {
+    await journeyActions.clickCreateSimulation(this.page);
   }
 }
 
-/**
- * API mocking helpers for external dependencies
- * @deprecated Use standalone functions from ./apiMocks/playwright instead
- */
 export class APIHelpers {
-  /**
-   * Mock successful OTP flow
-   */
-  static async mockOTPSuccess(page: Page) {
-    try {
-      await page.unroute("**/api/otp/send");
-    } catch {
-      // ignore if no existing route
-    }
-    await page.route("**/api/otp/send", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          message: "OTP sent successfully",
-          user_hash: "test-hash-123",
-          expires_in_seconds: 300,
-        }),
-      });
-    });
-
-    try {
-      await page.unroute("**/api/otp/verify");
-    } catch {
-      // ignore if no existing route
-    }
-    await page.route("**/api/otp/verify", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          message: "OTP verified successfully",
-        }),
-      });
-    });
+  static async mockOTPSuccess(page: Page): Promise<void> {
+    await routeMockOTPSuccess(page);
   }
 
-  /**
-   * Mock OTP failure scenarios
-   */
   static async mockOTPFailure(
     page: Page,
     scenario: "whitelist" | "invalid_code" | "expired"
-  ) {
-    if (scenario === "whitelist") {
-      try {
-        await page.unroute("**/api/otp/send");
-      } catch {
-        // ignore
-      }
-      await page.route("**/api/otp/send", async (route) => {
-        await route.fulfill({
-          status: 400,
-          contentType: "application/json",
-          body: JSON.stringify({
-            success: false,
-            message: "가입 허용 명단에 없는 사용자입니다.",
-          }),
-        });
-      });
-    } else if (scenario === "invalid_code") {
-      try {
-        await page.unroute("**/api/otp/verify");
-      } catch {
-        // ignore
-      }
-      await page.route("**/api/otp/verify", async (route) => {
-        await route.fulfill({
-          status: 400,
-          contentType: "application/json",
-          body: JSON.stringify({
-            success: false,
-            message: "인증번호가 올바르지 않습니다.",
-            remaining_attempts: 2,
-          }),
-        });
-      });
-    }
+  ): Promise<void> {
+    await routeMockOTPFailure(page, scenario);
   }
 
-  /**
-   * Mock simulation API endpoints
-   */
-  static async mockSimulationAPI(page: Page) {
-    // Clean up existing routes
-    try {
-      await page.unroute("**/api/simulation/create");
-    } catch {
-      // ignore
-    }
-    try {
-      await page.unroute("**/api/simulation/run");
-    } catch {
-      // ignore
-    }
-    try {
-      await page.unroute("**/api/simulations**");
-    } catch {
-      // ignore
-    }
-
-    // Mock simulation creation
-    await page.route("**/api/simulation/create", async (route) => {
-      await route.fulfill({
-        status: 201,
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          data: {
-            id: "sim-123",
-            plan_id: "A",
-            starting_company_round: 1,
-            current_company_round: 1,
-            simulation_rounds: 12,
-            created_at: new Date().toISOString(),
-          },
-        }),
-      });
-    });
-
-    // Mock simulation run
-    await page.route("**/api/simulation/run", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          data: {
-            history: [
-              {
-                company_round: 1,
-                investor_count: 1,
-                total_payment: 1000000,
-                total_revenue_after_tax: 970000,
-                cumulative_net_profit: -30000,
-                round_bonus: 0,
-                settlement_bonus: 100000,
-              },
-              {
-                company_round: 2,
-                investor_count: 2,
-                total_payment: 2000000,
-                total_revenue_after_tax: 1940000,
-                cumulative_net_profit: -60000,
-                round_bonus: 0,
-                settlement_bonus: 100000,
-              },
-            ],
-            summary: {
-              total_rounds: 2,
-              final_profit: -60000,
-              total_investment: 3000000,
-              total_revenue: 2910000,
-              roi: -0.02,
-            },
-          },
-        }),
-      });
-    });
-
-    // Mock simulation list GET and specific simulation operations
-    await page.route("**/api/simulations**", async (route) => {
-      const method = route.request().method();
-      const url = route.request().url();
-
-      if (method === "GET") {
-        // Check if requesting specific simulation by ID
-        const idMatch = url.match(/\/simulations\/([^/?]+)/);
-        if (idMatch) {
-          // GET specific simulation
-          await route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              success: true,
-              data: {
-                id: idMatch[1],
-                plan_id: "A",
-                memo: "Test simulation",
-                created_at: "2024-01-01T00:00:00Z",
-                updated_at: "2024-01-01T00:00:00Z",
-                starting_company_round: 1,
-                current_company_round: 1,
-                simulation_rounds: 12,
-                investments: { 1: 110000, 2: 220000 },
-                simulation_results: null,
-              },
-            }),
-          });
-        } else {
-          // GET all simulations
-          await route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify([
-              {
-                id: "sim-123",
-                plan_id: "A",
-                memo: "Test simulation",
-                created_at: "2024-01-01T00:00:00Z",
-                updated_at: "2024-01-01T00:00:00Z",
-                starting_company_round: 1,
-                current_company_round: 1,
-                simulation_rounds: 12,
-              },
-            ]),
-          });
-        }
-      } else if (method === "PATCH") {
-        // UPDATE simulation
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            success: true,
-            data: {
-              id: "sim-123",
-              updated_at: new Date().toISOString(),
-            },
-          }),
-        });
-      } else if (method === "DELETE") {
-        // DELETE simulation
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            success: true,
-            message: "Simulation deleted successfully",
-          }),
-        });
-      } else {
-        // Fallback for other methods
-        await route.continue();
-      }
-    });
+  static async mockSimulationAPI(page: Page): Promise<void> {
+    await routeMockSimulationAPI(page);
   }
 
-  /**
-   * Mock privacy policy retrieval and consent recording
-   */
-  static async mockConsentSuccess(page: Page) {
-    const state: ConsentMockInternalState = {
-      consentMap: new Map(),
-      postCount: 0,
-      getCount: 0,
-    };
-    consentMockStates.set(page, state);
-    page.once("close", () => consentMockStates.delete(page));
-
-    // Mock GET /api/privacy-policy (with optional query params)
-    try {
-      await page.unroute("**/api/privacy-policy**");
-    } catch {
-      // ignore
-    }
-    await page.route("**/api/privacy-policy**", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          version: "v1",
-          locale: "ko-KR",
-          last_updated: new Date().toISOString(),
-          content: "<p>Mock privacy policy content.</p>",
-          source: "db",
-        }),
-      });
-    });
-
-    // Mock POST /api/consents - Record consent
-    try {
-      await page.unroute("**/api/consents");
-    } catch {
-      // ignore
-    }
-    await page.route("**/api/consents", async (route) => {
-      if (route.request().method() === "POST") {
-        let requestBody: Record<string, unknown> = {};
-        try {
-          requestBody = route.request().postDataJSON?.() ?? {};
-        } catch {
-          requestBody = {};
-        }
-        const userHash =
-          typeof requestBody.user_hash === "string"
-            ? requestBody.user_hash
-            : "test-hash-123";
-        const consentType =
-          typeof requestBody.consent_type === "string"
-            ? requestBody.consent_type
-            : "privacy_policy";
-        const consentVersion =
-          typeof requestBody.consent_version === "string"
-            ? requestBody.consent_version
-            : "v1";
-
-        const consentRecord: ConsentRecordMock = {
-          user_hash: userHash,
-          consent_type: consentType,
-          consent_version: consentVersion,
-          consent_given_at: new Date().toISOString(),
-          ip_address:
-            typeof requestBody.ip_address === "string"
-              ? requestBody.ip_address
-              : "127.0.0.1",
-          user_agent:
-            typeof requestBody.user_agent === "string"
-              ? requestBody.user_agent
-              : "Mozilla/5.0 (E2E)",
-        };
-
-        const existingConsents = state.consentMap.get(userHash) ?? [];
-        state.consentMap.set(userHash, [...existingConsents, consentRecord]);
-        state.postCount += 1;
-
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify(consentRecord),
-        });
-      } else {
-        // Unexpected method on /api/consents
-        await route.continue();
-      }
-    });
-
-    // Mock GET /api/consents/{user_hash} - Get user consents
-    try {
-      await page.unroute("**/api/consents/*");
-    } catch {
-      // ignore
-    }
-    await page.route("**/api/consents/*", async (route) => {
-      if (route.request().method() === "GET") {
-        const url = route.request().url();
-        const hashMatch = url.match(/\/api\/consents\/([^/?#]+)/);
-        const userHash = hashMatch?.[1] ?? "test-hash-123";
-        const consents = state.consentMap.get(userHash) ?? [];
-        state.getCount += 1;
-
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            consents,
-            success: true,
-          }),
-        });
-      } else {
-        await route.continue();
-      }
-    });
+  static async mockConsentSuccess(page: Page): Promise<void> {
+    await routeMockConsentSuccess(page);
   }
 
-  /**
-   * Mock network error scenarios
-   */
-  static async mockNetworkError(page: Page, endpoint: string) {
-    await page.route(`**${endpoint}`, async (route) => {
-      await route.abort("failed");
-    });
+  static async mockNetworkError(page: Page, endpoint: string): Promise<void> {
+    await routeMockNetworkError(page, endpoint);
   }
 
-  /**
-   * Mock authentication success
-   */
-  static async mockAuthSuccess(page: Page) {
-    await page.addInitScript(() => {
-      // Mock Supabase authentication
-      const mockSession = {
-        access_token: "mock-jwt-token",
-        refresh_token: "mock-refresh-token",
-        expires_at: Date.now() + 3600000, // 1 hour from now
-        user: {
-          id: "test-user-123",
-          email: "test@example.com",
-          user_metadata: { name: "Test User" },
-        },
-      };
-
-      window.localStorage.setItem(
-        "sb-test-auth-token",
-        JSON.stringify(mockSession)
-      );
-      window.localStorage.setItem(
-        "supabase.auth.token",
-        JSON.stringify(mockSession)
-      );
-    });
+  static async mockAuthSuccess(page: Page): Promise<void> {
+    await setupInitE2EMode(page);
+    await setAuthToken(page, createMemberAuthToken());
   }
 
-  /**
-   * Mock notices API endpoints
-   */
-  static async mockNoticesAPI(page: Page) {
-    try {
-      await page.unroute("**/api/notices**");
-    } catch {
-      // ignore
-    }
-
-    await page.route("**/api/notices**", async (route) => {
-      const method = route.request().method();
-      const url = route.request().url();
-
-      if (method === "GET") {
-        const idMatch = url.match(/\/notices\/([^/?]+)/);
-        if (idMatch) {
-          // GET specific notice
-          await route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              success: true,
-              notice: {
-                id: idMatch[1],
-                title: "Test Notice",
-                content: "This is a test notice content.",
-                pinned: false,
-                published: true,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              },
-            }),
-          });
-        } else {
-          // GET all notices
-          await route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              success: true,
-              notices: [
-                {
-                  id: "notice-1",
-                  title: "Welcome Notice",
-                  content: "Welcome to the simulation platform!",
-                  pinned: true,
-                  published: true,
-                  created_at: "2024-01-01T00:00:00Z",
-                  updated_at: "2024-01-01T00:00:00Z",
-                },
-                {
-                  id: "notice-2",
-                  title: "System Update",
-                  content: "System maintenance scheduled.",
-                  pinned: false,
-                  published: true,
-                  created_at: "2024-01-02T00:00:00Z",
-                  updated_at: "2024-01-02T00:00:00Z",
-                },
-              ],
-            }),
-          });
-        }
-      } else {
-        await route.continue();
-      }
-    });
+  static async mockNoticesAPI(page: Page): Promise<void> {
+    await routeMockNoticesAPI(page);
   }
 
-  /**
-   * Mock admin API endpoints
-   */
-  static async mockAdminAPI(page: Page) {
-    try {
-      await page.unroute("**/api/admin/**");
-    } catch {
-      // ignore
-    }
-
-    // Mock admin verification endpoint
-    await page.route("**/api/admin/me", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          is_admin: true,
-          user_id: "admin-user-123",
-        }),
-      });
-    });
-
-    // Mock admin notices endpoints
-    await page.route("**/api/admin/notices**", async (route) => {
-      const method = route.request().method();
-
-      if (method === "POST") {
-        await route.fulfill({
-          status: 201,
-          contentType: "application/json",
-          body: JSON.stringify({
-            success: true,
-            data: {
-              id: "notice-new",
-              title: "New Notice",
-              content: "New content",
-              created_at: new Date().toISOString(),
-            },
-          }),
-        });
-      } else if (method === "PATCH") {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            success: true,
-            data: {
-              id: "notice-1",
-              updated_at: new Date().toISOString(),
-            },
-          }),
-        });
-      } else if (method === "DELETE") {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            success: true,
-            message: "Notice deleted successfully",
-          }),
-        });
-      } else {
-        await route.continue();
-      }
-    });
-
-    // Mock admin privacy policy endpoints
-    await page.route("**/api/admin/privacy-policies**", async (route) => {
-      const method = route.request().method();
-      const url = route.request().url();
-
-      if (method === "GET") {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            success: true,
-            policies: [
-              {
-                id: "policy-1",
-                version: "v1",
-                locale: "ko-KR",
-                content: "<p>Privacy policy content v1</p>",
-                published: true,
-                effective_date: "2024-01-01",
-                created_at: "2024-01-01T00:00:00Z",
-              },
-              {
-                id: "policy-2",
-                version: "v2",
-                locale: "ko-KR",
-                content: "<p>Privacy policy content v2 (draft)</p>",
-                published: false,
-                effective_date: null,
-                created_at: "2024-01-10T00:00:00Z",
-              },
-            ],
-          }),
-        });
-      } else if (method === "POST") {
-        if (url.includes("/publish")) {
-          // Publish policy
-          await route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              success: true,
-              data: {
-                id: "policy-2",
-                published: true,
-                effective_date: new Date().toISOString(),
-              },
-            }),
-          });
-        } else {
-          // Create policy
-          await route.fulfill({
-            status: 201,
-            contentType: "application/json",
-            body: JSON.stringify({
-              success: true,
-              data: {
-                id: "policy-new",
-                version: "v3",
-                created_at: new Date().toISOString(),
-              },
-            }),
-          });
-        }
-      } else if (method === "PATCH") {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            success: true,
-            data: {
-              id: "policy-1",
-              updated_at: new Date().toISOString(),
-            },
-          }),
-        });
-      } else if (method === "DELETE") {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            success: true,
-            message: "Policy deleted successfully",
-          }),
-        });
-      } else {
-        await route.continue();
-      }
-    });
+  static async mockAdminAPI(page: Page): Promise<void> {
+    await routeMockAdminAPI(page);
   }
 
-  /**
-   * Retrieve consent mock state for diagnostics
-   */
   static getConsentMockState(page: Page): ConsentMockSnapshot | null {
-    const state = consentMockStates.get(page);
-    if (!state) {
-      return null;
-    }
-
-    const consentsByHash: Record<string, ConsentRecordMock[]> =
-      Object.fromEntries(
-        Array.from(state.consentMap.entries()).map(([hash, records]) => [
-          hash,
-          records.map((record) => ({ ...record })),
-        ])
-      );
-
-    return {
-      postCount: state.postCount,
-      getCount: state.getCount,
-      consentsByHash,
-    };
+    return routeGetConsentMockState(page);
   }
 }

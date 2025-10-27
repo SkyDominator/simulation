@@ -1,38 +1,55 @@
 import React, { createContext } from "react";
 import { vi } from "vitest";
-import type { User, Session } from "@supabase/supabase-js";
+import { createMemberAuthToken } from "../../../test/shared/fixtures";
+
+type MockUser = {
+  id: string;
+  email: string;
+  app_metadata: Record<string, unknown>;
+  user_metadata: Record<string, unknown>;
+  aud: string;
+  created_at: string;
+};
+
+type MockSession = {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  expires_at: number;
+  refresh_token: string;
+  user: MockUser;
+};
 
 interface MockAuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: MockUser | null;
+  session: MockSession | null;
   loading: boolean;
   signOut: ReturnType<typeof vi.fn>;
 }
 
+const memberToken = createMemberAuthToken();
+
+const mockUser: MockUser = {
+  id: memberToken.user.id,
+  email: memberToken.user.email,
+  app_metadata: {},
+  user_metadata: memberToken.user.user_metadata ?? {},
+  aud: "authenticated",
+  created_at: "2024-01-01T00:00:00Z",
+};
+
+const mockSession: MockSession = {
+  access_token: memberToken.access_token,
+  token_type: "bearer",
+  expires_in: 3600,
+  expires_at: memberToken.expires_at,
+  refresh_token: memberToken.refresh_token,
+  user: mockUser,
+};
+
 export const mockAuthContext: MockAuthContextType = {
-  user: {
-    id: "test-user-id",
-    email: "test@example.com",
-    app_metadata: {},
-    user_metadata: {},
-    aud: "authenticated",
-    created_at: "2024-01-01T00:00:00Z",
-  } as User,
-  session: {
-    access_token: "mock-access-token",
-    token_type: "bearer",
-    expires_in: 3600,
-    expires_at: Date.now() + 3600 * 1000,
-    refresh_token: "mock-refresh-token",
-    user: {
-      id: "test-user-id",
-      email: "test@example.com",
-      app_metadata: {},
-      user_metadata: {},
-      aud: "authenticated",
-      created_at: "2024-01-01T00:00:00Z",
-    },
-  } as Session,
+  user: mockUser,
+  session: mockSession,
   loading: false,
   signOut: vi.fn(),
 };

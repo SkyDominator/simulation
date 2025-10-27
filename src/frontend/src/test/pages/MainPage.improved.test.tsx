@@ -4,6 +4,13 @@ import { renderWithProviders } from "../utils/renderWithProviders";
 import MainPage from "../../pages/MainPage";
 import { ApiServiceInterface } from "../../services/ApiService";
 import type { Plan, SimulationRunResponse } from "../../types/types";
+import { mockAuthContext } from "../mocks/AuthContext";
+import { mapSimulationDataToPlan } from "../utils/mockApiService";
+import {
+  createSimulationData,
+  createSimulationResults,
+} from "../../../test/shared/fixtures";
+import type { SimulationRoundResult } from "../../../test/shared/types";
 
 // Create a mock API service that implements the interface
 const createMockApiService = (): ApiServiceInterface => ({
@@ -70,25 +77,22 @@ describe("MainPage with Dependency Injection", () => {
 
       // Verify API was called with real implementation
       expect(mockApiService.getSimulations).toHaveBeenCalledWith(
-        "mock-access-token"
+        mockAuthContext.session?.access_token ?? ""
       );
     });
 
     it("should display simulation table when data is available", async () => {
       const mockSimulations: Plan[] = [
-        {
-          simulation_id: "1",
-          plan_id: "A",
-          memo: "Test simulation 1",
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-          starting_company_round: 1,
-          current_company_round: 1,
-          simulation_rounds: 12,
-          investments: [{ round: 1, amount: 1000000 }],
-          sales_achievement_rates: [],
-          simulation_results: null,
-        },
+        mapSimulationDataToPlan(
+          createSimulationData({
+            id: "sim-1",
+            plan_id: "A",
+            current_company_round: 1,
+            simulation_rounds: 12,
+            memo: "Test simulation 1",
+            investments: { 1: 1000000 },
+          })
+        ),
       ];
 
       vi.mocked(mockApiService.getSimulations).mockResolvedValue(
@@ -155,40 +159,30 @@ describe("MainPage with Dependency Injection", () => {
   describe("MAIN-003: Simulation actions work with injected API", () => {
     it("should run simulation with real API service", async () => {
       // User interaction setup (currently no user actions in this test)
-      const mockSimulation: Plan = {
-        simulation_id: "1",
-        plan_id: "A",
-        memo: "Test simulation",
-        created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-01T00:00:00Z",
-        starting_company_round: 1,
-        current_company_round: 1,
-        simulation_rounds: 12,
-        investments: [],
-        sales_achievement_rates: [],
-        simulation_results: null,
-      };
+      const mockSimulation: Plan = mapSimulationDataToPlan(
+        createSimulationData({ id: "sim-1", plan_id: "A" })
+      );
 
+      const resultsFixture = createSimulationResults(1);
       const mockRunResult: SimulationRunResponse = {
-        success: true,
+        simulation_id: mockSimulation.simulation_id,
+        plan_id: mockSimulation.plan_id,
+        starting_company_round: mockSimulation.starting_company_round,
+        current_company_round: mockSimulation.current_company_round,
+        simulation_rounds: resultsFixture.summary.total_rounds,
+        scheduled_payment: {},
+        sales_achievement_rates: {},
+        history: resultsFixture.history.map((round: SimulationRoundResult) => ({
+          company_round: round.company_round,
+          investor_count: round.investor_count,
+          total_payment: round.total_payment,
+          total_revenue_after_tax: round.total_revenue_after_tax,
+          cumulative_net_profit: round.cumulative_net_profit,
+          round_bonus: round.round_bonus,
+          settlement_bonus: round.settlement_bonus,
+        })),
         message: "Simulation completed",
-        data: {
-          history: [
-            {
-              company_round: 1,
-              investor_count: 1,
-              total_payment: 1000000,
-              total_revenue_after_tax: 970000,
-              cumulative_net_profit: -30000,
-            },
-          ],
-          summary: {
-            total_rounds: 1,
-            final_profit: -30000,
-            total_investment: 1000000,
-            total_revenue: 970000,
-          },
-        },
+        success: true,
       };
 
       vi.mocked(mockApiService.getSimulations).mockResolvedValue([
@@ -207,24 +201,14 @@ describe("MainPage with Dependency Injection", () => {
       // Find and click run simulation button (this would need to exist in the real component)
       // Note: This test validates that the API service is properly injected and called
       expect(mockApiService.getSimulations).toHaveBeenCalledWith(
-        "mock-access-token"
+        mockAuthContext.session?.access_token ?? ""
       );
     });
 
     it("should delete simulation with confirmation", async () => {
-      const mockSimulation: Plan = {
-        simulation_id: "1",
-        plan_id: "A",
-        memo: "Test simulation",
-        created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-01T00:00:00Z",
-        starting_company_round: 1,
-        current_company_round: 1,
-        simulation_rounds: 12,
-        investments: [],
-        sales_achievement_rates: [],
-        simulation_results: null,
-      };
+      const mockSimulation: Plan = mapSimulationDataToPlan(
+        createSimulationData({ id: "sim-1", plan_id: "A" })
+      );
 
       vi.mocked(mockApiService.getSimulations).mockResolvedValue([
         mockSimulation,
@@ -250,19 +234,13 @@ describe("MainPage with Dependency Injection", () => {
 
   describe("MAIN-004: Component behavior validation", () => {
     it("should update memo using real API", async () => {
-      const mockSimulation: Plan = {
-        simulation_id: "1",
-        plan_id: "A",
-        memo: "Original memo",
-        created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-01T00:00:00Z",
-        starting_company_round: 1,
-        current_company_round: 1,
-        simulation_rounds: 12,
-        investments: [],
-        sales_achievement_rates: [],
-        simulation_results: null,
-      };
+      const mockSimulation: Plan = mapSimulationDataToPlan(
+        createSimulationData({
+          id: "sim-1",
+          plan_id: "A",
+          memo: "Original memo",
+        })
+      );
 
       vi.mocked(mockApiService.getSimulations).mockResolvedValue([
         mockSimulation,
@@ -284,7 +262,7 @@ describe("MainPage with Dependency Injection", () => {
 
       // Verify API service is properly injected for memo operations
       expect(mockApiService.getSimulations).toHaveBeenCalledWith(
-        "mock-access-token"
+        mockAuthContext.session?.access_token ?? ""
       );
     });
 

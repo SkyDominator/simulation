@@ -24,7 +24,6 @@ import {
   createNoticeListResponse,
   createPrivacyPolicyListResponse,
   createAdminVerifyResponse,
-  createAPIErrorResponse,
 } from "../../../test/shared/fixtures";
 
 import type { ConsentRecord } from "../../../test/shared/types";
@@ -35,7 +34,7 @@ type ConsentMockInternalState = {
   getCount: number;
 };
 
-type ConsentMockSnapshot = {
+export type ConsentMockSnapshot = {
   postCount: number;
   getCount: number;
   consentsByHash: Record<string, ConsentRecord[]>;

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import "@testing-library/jest-dom";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "../utils/renderWithProviders";
@@ -123,7 +124,7 @@ describe("AuthContext", () => {
         "test@example.com"
       );
       expect(screen.getByTestId("loading-state")).toHaveTextContent("false");
-      expect(screen.getByTestId("user-id")).toHaveTextContent("test-user-id");
+      expect(screen.getByTestId("user-id")).toHaveTextContent("test-user-123");
     });
 
     it("should provide consistent user data structure", () => {
@@ -151,7 +152,9 @@ describe("AuthContext", () => {
       expect(screen.getByTestId("user-created")).toHaveTextContent(
         "2024-01-01T00:00:00Z"
       );
-      expect(screen.getByTestId("user-metadata")).toHaveTextContent("{}");
+      expect(screen.getByTestId("user-metadata")).toHaveTextContent(
+        '{"name":"Test User","phone":"010-1234-5678"}'
+      );
     });
   });
 });
