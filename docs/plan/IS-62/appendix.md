@@ -34,15 +34,14 @@ This document captures the baseline state of the frontend test infrastructure be
 
 **Design Pattern**: Helper class with instance methods tied to page context. Mixes UI interaction with assertion patterns.
 
-**Usage Sites**: 10 spec files
+**Usage Sites**: 6 spec files
 
-- `e2e/specs/simulation-flow.spec.ts`
-- `e2e/specs/results-display.spec.ts`
-- `e2e/specs/plan-editor.spec.ts`
-- `e2e/specs/onboarding.spec.ts`
-- `e2e/specs/mobile.spec.ts`
-- `e2e/specs/error-handling.spec.ts`
 - `e2e/specs/auth-session.spec.ts`
+- `e2e/specs/error-handling.spec.ts`
+- `e2e/specs/mobile.spec.ts`
+- `e2e/specs/onboarding.spec.ts`
+- `e2e/specs/plan-editor.spec.ts`
+- `e2e/specs/results-display.spec.ts`
 
 ### 1.2 APIHelpers Class
 
@@ -62,7 +61,17 @@ This document captures the baseline state of the frontend test infrastructure be
 
 **Design Pattern**: Static utility class. Each method sets up page route handlers. Uses `WeakMap` for consent state tracking per page.
 
-**Usage Sites**: 10 spec files (same as TestHelpers)
+**Usage Sites**: 9 spec files
+
+- `e2e/specs/admin-features.spec.ts`
+- `e2e/specs/auth-session.spec.ts`
+- `e2e/specs/error-handling.spec.ts`
+- `e2e/specs/main-dashboard.spec.ts`
+- `e2e/specs/mobile.spec.ts`
+- `e2e/specs/onboarding.spec.ts`
+- `e2e/specs/persistence.spec.ts`
+- `e2e/specs/plan-editor.spec.ts`
+- `e2e/specs/results-display.spec.ts`
 
 **Internal State Management**:
 
@@ -84,10 +93,17 @@ This document captures the baseline state of the frontend test infrastructure be
 
 **Design Pattern**: Standalone exported functions. Each function operates on a page instance. Uses both `addInitScript` and `page.evaluate` for localStorage manipulation to ensure state before and after navigation.
 
-**Usage Sites**: 10 spec files
+**Usage Sites**: 9 spec files
 
-- Same as TestHelpers usage sites
-- `e2e/specs/admin-features.spec.ts` (uses `loginAdminUser`)
+- `e2e/specs/admin-features.spec.ts`
+- `e2e/specs/auth-session.spec.ts`
+- `e2e/specs/error-handling.spec.ts`
+- `e2e/specs/main-dashboard.spec.ts`
+- `e2e/specs/mobile.spec.ts`
+- `e2e/specs/onboarding.spec.ts`
+- `e2e/specs/persistence.spec.ts`
+- `e2e/specs/plan-editor.spec.ts`
+- `e2e/specs/results-display.spec.ts`
 
 ### 1.4 Utility Functions
 
