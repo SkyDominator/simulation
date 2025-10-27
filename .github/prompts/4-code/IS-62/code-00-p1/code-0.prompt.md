@@ -29,7 +29,7 @@ DO the following tasks:
 
 Implement only what are described in the `Phase 1` of $PLAN$. NO MORE, NO LESS.
 
-If the $PLAN$ is ambiguous, incomplete or problematic, stop and ask for clarification instead of making assumptions.
+If any contradictions or ambiguities found in any of the given contexts (including $PLAN$, $INSTRUCTIONS$, $REFERENCE$, etc.), STOP AND ASK for clarification to me instead of making assumptions.
 
 If the legacy code is not consistent to the $PLAN$ or $REFERENCE$ or $INSTRUCTIONS$, erase the legacy code and implement according to the $PLAN$, $REFERENCE$ and $INSTRUCTIONS$.
 
