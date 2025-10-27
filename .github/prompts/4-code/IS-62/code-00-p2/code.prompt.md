@@ -13,6 +13,7 @@ Implement codes by following the $PLAN$.
 $PLAN$: `docs/plan/IS-62/plan-00.md`
 $INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
 $PLAN_APPENDIX$: `docs/plan/IS-62/appendix.md`
+$PHASE$: `Phase 2`
 
 ## Tasks
 
@@ -21,13 +22,13 @@ DO the following tasks:
 1. Read $INSTRUCTIONS$.
 2. Read $PLAN$.
 3. Read $PLAN_APPENDIX$.
-4. Modify codebase following the `Phase 2` of $PLAN$. Strictly Adhere to $INSTRUCTIONS$ and $PLAN_APPENDIX$ for the implementation.
+4. Modify codebase following the $PHASE$ of $PLAN$. Strictly Adhere to $INSTRUCTIONS$ and $PLAN_APPENDIX$ for the implementation.
 5. Continuously & thoroughly iterate on a review-and-self-correct loop until the $PLAN$ is fully and accurately implemented.
 6. Stop and wait for user order.
 
 ## Notes
 
-Implement only what are described in the `Phase 2` of $PLAN$. NO MORE, NO LESS.
+Implement only what are described in the $PHASE$ of $PLAN$. NO MORE, NO LESS.
 
 If any contradictions or ambiguities found in any of the given contexts (including $PLAN$, $INSTRUCTIONS$, $PLAN_APPENDIX$, etc.), STOP AND ASK for clarification to me instead of making assumptions.
 
@@ -38,3 +39,4 @@ DO NOT:
 1. Create any report documents.
 2. Stary to solve other issues not mentioned in the $PLAN$. If other issues are found, stop and report and wait for user order.
 3. Refactor the codebase beyond what is necessary to solve the mentioned issues in the $PLAN$.
+4. Make regressions that hurt the implementations of the previous phases of the $PLAN$.
