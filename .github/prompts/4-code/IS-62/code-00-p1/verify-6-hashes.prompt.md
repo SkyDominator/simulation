@@ -10,14 +10,8 @@ model: GPT-5-Codex (Preview)
 
 * $TASK_RUNNER_PROMPT$: `../code-00-p1/code-0.prompt.md`
 * $TASK_RESULT$ (commit hash):
-    1. `76f16960ae92e85ea65da87a454707ab0aa02e23`
-    2. `a86f0db707bbd913e627552bb1c8226ec9af91f5`
-    3. `b2003f19d60b82b975da283b9f31a599138afa71`
-    4. `8276c69dc082cc5e1b26a1b5e505c92bb78cb5fc`
-    5. `08b9b7d9b955d365f1f8381f9d2f7112af8de617`
-    6. `f9dafad3ef95ab99b029f13533d59b96702d27ad`
-    7. `3a5d717ed643364c58c54892fb9a2c8b2f5016b3`
-    8. `7315345a582b0fff6e53d35cf429cd2e7c12f8e6`
+    1. `commit_hash_first`: `76f16960ae92e85ea65da87a454707ab0aa02e23`
+    2. `commit_hash_last`: `7315345a582b0fff6e53d35cf429cd2e7c12f8e6`
 
 I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT$ as result. Verify this result according to:
 
