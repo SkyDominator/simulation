@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 /**
  * Playwright Fixture Architecture
  *
@@ -148,72 +150,29 @@ export const test = base.extend<CustomFixtures>({
   /**
    * adminSession fixture
    * Provides authenticated admin context
-   * Loads storageState derived from admin Supabase stub
+   * Composes memberSession with admin API mocks
    */
-  adminSession: async ({ browser }, use) => {
-    // Path to admin storageState JSON
-    const storageStatePath = path.join(
-      __dirname,
-      "..",
-      "..",
-      "playwright",
-      ".auth",
-      "admin.json"
-    );
+  adminSession: async ({ memberSession }, use) => {
+    // Layer admin API mocks on top of memberSession
+    await mockAdminAPI(memberSession);
 
-    // Create context with admin storageState
-    const context = await browser.newContext({
-      storageState: storageStatePath,
-    });
+    // Provide composed page to test
+    await use(memberSession);
 
-    // Create page from context
-    const page = await context.newPage();
-
-    // Initialize E2E mode
-    await initE2EMode(page);
-
-    // Mock admin API endpoints
-    await mockAdminAPI(page);
-
-    // Provide page to test
-    await use(page);
-
-    // Cleanup
-    await context.close();
+    // Cleanup handled by memberSession fixture
   },
 
   /**
    * simulationSeed fixture
    * Provides member session with simulation data seeded
-   * Loads member storageState and injects simulation mocks on top
+   * Composes memberSession and injects simulation mocks on top
    */
-  simulationSeed: async ({ browser }, use) => {
-    // Path to member storageState JSON
-    const storageStatePath = path.join(
-      __dirname,
-      "..",
-      "..",
-      "playwright",
-      ".auth",
-      "member.json"
-    );
-
-    // Create context with member storageState
-    const context = await browser.newContext({
-      storageState: storageStatePath,
-    });
-
-    // Create page from context
-    const page = await context.newPage();
-
-    // Initialize E2E mode
-    await initE2EMode(page);
-
+  simulationSeed: async ({ memberSession }, use) => {
     // Mock simulation API
-    await mockSimulationAPI(page);
+    await mockSimulationAPI(memberSession);
 
     // Set simulation draft in localStorage
-    await setSimulationDraft(page, {
+    await setSimulationDraft(memberSession, {
       plan_id: "A",
       starting_company_round: 1,
       current_company_round: 1,
@@ -225,18 +184,17 @@ export const test = base.extend<CustomFixtures>({
       },
     });
 
-    // Provide page to test
-    await use(page);
+    // Provide composed page to test
+    await use(memberSession);
 
-    // Cleanup
-    await context.close();
+    // Cleanup handled by memberSession fixture
   },
 
   /**
    * mockedApis fixture
    * Provides factory for creating API mocking controller for any page
    */
-  mockedApis: async ({}, use) => {
+  mockedApis: async (_fixtures, use) => {
     // Return a factory function that creates a controller for a given page
     const factory = (page: Page): MockedApisController => ({
       mockOTPSuccess: () => mockOTPSuccess(page),
