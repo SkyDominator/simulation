@@ -28,4 +28,4 @@ onboarding.spec.ts (lines 10-31): the new “E2E-JOURNEY” path also lands on t
 Because of these regressions, the task result does not satisfy Phase 1, so the verification fails.
 ```
 
-Based on the findings above, rectify codes. Make no regressions. Follow the $INSTRUCTIONS$ strictly.
+Based on the findings above, rectify codes. Make no regressions nor side-effects. Follow the $INSTRUCTIONS$ strictly.
