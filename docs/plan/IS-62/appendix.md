@@ -330,19 +330,19 @@ The following patterns are working well and should be preserved in the new fixtu
 4. **Korean Locale Text Matching**: `getByRole`, `getByLabel` with Korean text
     - Preserved in journey action helpers after split
 
-### Deprecated Patterns (to be replaced)
+### Patterns To Refine
 
-1. **Class-Based Helpers**: `TestHelpers` class instance per test
-    - Replace with standalone action functions in `journeyActions.ts`
+1. **Mixed Responsibilities Inside `TestHelpers`**
+    - Funnel side-effect-heavy methods through internal modules (for example `journey-actions.ts`) while keeping the class API stable for specs consuming it.
 
-2. **Static-Only API Helpers**: `APIHelpers` static methods
-    - Replace with composable `mockedApis` fixture returning typed mock controllers
+2. **`APIHelpers` Route Duplication**
+    - Centralize request templates inside `api-mocks/playwright.ts` and re-use them from the existing static methods to avoid divergence from Vitest mocks.
 
-3. **Mixed Responsibilities**: Helper methods doing both actions and assertions
-    - Separate into pure actions and let specs handle assertions
+3. **Manual Mock Lifecycle**
+    - Replace explicit `unroute()` try-catch blocks with fixture teardown handlers so cleanup executes even when tests fail.
 
-4. **Manual Mock Lifecycle**: Explicit `unroute()` try-catch blocks
-    - Fixtures should auto-cleanup via Playwright fixture teardown
+4. **Data Factory Fragmentation**
+    - Consolidate payload construction into `test/shared/fixtures.ts` so both browser and node environments read from the same source of truth.
 
 ---
 
@@ -391,15 +391,16 @@ src/frontend/
 **Phase 1** will introduce:
 
 - `e2e/fixtures/base.ts` with Playwright fixture extensions
-- `e2e/utils/journeyActions.ts` and `e2e/utils/stateSetup.ts` (split from TestHelpers)
-- `e2e/utils/apiMocks/playwright.ts` and `e2e/utils/apiMocks/node.ts` (split from APIHelpers)
+- `e2e/fixtures/authenticated.ts`, `e2e/fixtures/admin-user.ts`, and `e2e/fixtures/with-simulation.ts` building on the existing `playwright/.auth/member.json` and `playwright/.auth/admin.json` storageState snapshots
+- `e2e/fixtures/mocked-apis.ts` for reusable request interception hooks shared across suites
+- `e2e/utils/journey-actions.ts` supporting the existing `TestHelpers` class
 - `test/shared/types.ts` and `test/shared/fixtures.ts` for cross-test payload factories
 
 **Transition Strategy**:
 
-- Provide re-exports from old helpers to new locations
-- Update one spec at a time to new fixtures
-- Remove old helpers only after all specs migrated
+- Provide re-exports from the new fixture modules so specs transition incrementally
+- Update one spec at a time to the new fixtures while verifying against the smoke suite
+- Keep current helper contracts in place; deprecate legacy code only after all specs migrate successfully
 
 ---
 

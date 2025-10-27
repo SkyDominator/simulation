@@ -2,7 +2,7 @@
 
 ## Overview
 
-Modernize the frontend testing infrastructure highlighted in `docs/analysis/IS-62/IS-92/analysis-00.md` ("Test Infrastructure") so the IS-62 test pyramid reshaping can proceed safely. Existing helpers, fixtures, and Playwright configuration are considered untrusted. The rebuilt stack should preserve the working abstractions called out in §4.1 of the analysis while aligning with Google SRE *Testing for Reliability* guidance (2025-10 review) and Playwright fixture best practices.
+Modernize the frontend testing infrastructure highlighted in `docs/analysis/IS-62/IS-92/analysis-00.md` ("Test Infrastructure") so the IS-62 test pyramid reshaping can proceed safely. Existing helpers, fixtures, and Playwright configuration are considered untrusted. The rebuilt stack should preserve the working abstractions called out in §4.1 of the analysis—specifically the `TestHelpers` and `APIHelpers` contracts—while aligning with Google SRE *Testing for Reliability* guidance (2025-10 review) and Playwright fixture best practices.
 
 ## Goals
 
@@ -37,25 +37,25 @@ Modernize the frontend testing infrastructure highlighted in `docs/analysis/IS-6
 ### Phase 0 — Baseline & Safety Net
 
 - Snapshot current helper signatures and usage sites; store inventory in `docs/plan/IS-62/appendix.md` for backward-reference.
-- Add temporary smoke script `pnpm test:e2e --grep "E2E-JOURNEY"` ensuring parity while infra transitions.
+- Add temporary smoke script `pnpm test:e2e:journeys` ensuring parity while infra transitions.
 - Record metrics: total runtime, worker count, retry frequency, artifact sizes; use as success benchmark.
 
 ### Phase 1 — Playwright Fixture Architecture
 
-- Create `src/frontend/e2e/fixtures/base.ts` exposing `test = base.extend({...})` following Playwright fixture guidance.
-- Implement fixtures:
-  - `memberSession`: loads storageState derived from Supabase stub (member.json) to mimic whitelisted member login.
-  - `adminSession`: creates separate browser context with admin storageState (admin.json) containing admin claims, then layers admin API mocks on top.
-  - `simulationSeed`: injects deterministic simulation API responses and localStorage drafts, composing with `memberSession`.
-  - `mockedApis`: centralizes request interception with typed payloads for OTP, simulation, and admin endpoints.
-- Refactor journey specs to consume fixtures via dependency injection; supply transitional re-exports for untouched specs.
+- Create `src/frontend/e2e/fixtures/base.ts` exposing `test = base.extend({...})` following Playwright fixture guidance and re-exporting helper-friendly types.
+- Introduce scoped fixture modules called out in the analysis:
+  - `src/frontend/e2e/fixtures/authenticated.ts` provides `memberSession` and `initE2EMode` orchestration by reusing the existing `playwright/.auth/member.json` storage state generated with Supabase stubs.
+  - `src/frontend/e2e/fixtures/admin-user.ts` layers the existing `playwright/.auth/admin.json` storage state plus admin API doubles on top of `memberSession`.
+  - `src/frontend/e2e/fixtures/with-simulation.ts` composes deterministic simulation payloads, localStorage drafts, and offline state to support dashboard/results specs.
+  - `src/frontend/e2e/fixtures/mocked-apis.ts` centralizes request interception with typed payload factories for OTP, simulation, notices, and policy endpoints.
+- Refactor journey specs to consume fixtures via dependency injection; supply transitional re-exports for untouched specs so adopters can continue calling `test` from a single module.
 
 ### Phase 2 — Helper & Mock Consolidation
 
-- Split `TestHelpers` into `journeyActions.ts` (user flows) and `stateSetup.ts` (environment prep) under `src/frontend/e2e/utils/`.
-- Separate `APIHelpers` into `apiMocks/playwright.ts` and `apiMocks/node.ts` so Playwright and Vitest pull from identical factories.
-- Introduce shared DTO types in `src/frontend/test/shared/types.ts` and factories in `src/frontend/test/shared/fixtures.ts`.
-- Update unit/integration suites (auth, dashboard, results) to use shared factories instead of bespoke JSON fixtures.
+- Retain the public `TestHelpers` class while refactoring its internals to delegate to functional helpers in `src/frontend/e2e/utils/journey-actions.ts`; ensure method signatures remain stable for existing specs.
+- Keep the `APIHelpers` static interface but move implementation details into `src/frontend/e2e/utils/api-mocks/playwright.ts`, backed by shared factories, so both Playwright and Vitest consume a single contract.
+- Introduce shared DTO types in `src/frontend/test/shared/types.ts` and payload factories in `src/frontend/test/shared/fixtures.ts`, re-used by `APIHelpers` and Vitest suites alike.
+- Update unit/integration suites (auth, dashboard, results) to source data from the shared factories, eliminating drift between browser and node contexts.
 - Add ESLint guard (`no-restricted-imports`) preventing direct Supabase client usage within tests, enforcing mock layer adoption.
 
 ### Phase 3 — Playwright Configuration Realignment
