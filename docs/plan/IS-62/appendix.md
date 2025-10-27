@@ -180,6 +180,7 @@ This document captures the baseline state of the frontend test infrastructure be
 - `"test:e2e:ui": "playwright test --ui"` - Opens Playwright UI
 - `"test:e2e:debug": "playwright test --debug"` - Debug mode
 - `"test:e2e:report": "playwright show-report"` - Shows HTML report
+- `"test:e2e:journeys": "pnpm test:e2e --grep \"E2E-JOURNEY\""` - Runs tagged smoke journeys
 - `"test:e2e:mobile": "playwright test --max-failures=5 --project=\"Mobile Chrome\""` - Mobile Chrome only
 - `"test:e2e:mobile:auth": "playwright test e2e/specs/auth-session.spec.ts --max-failures=5 --project=\"Mobile Chrome\""` - Specific spec, mobile
 - `"test:e2e:desktop": "playwright test --max-failures=5 --project=\"Google Chrome\""` - Desktop Chrome only
@@ -198,7 +199,7 @@ This document captures the baseline state of the frontend test infrastructure be
 
 ## 5. Test Specs Inventory
 
-**E2E Specs** (14 spec files identified):
+**E2E Specs** (13 spec files identified):
 
 1. `e2e/specs/onboarding.spec.ts` - User onboarding flow (whitelist, OTP, consent, login)
 2. `e2e/specs/simulation-flow.spec.ts` - Simulation creation and management basics
