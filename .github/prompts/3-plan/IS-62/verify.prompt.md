@@ -9,10 +9,10 @@ model: GPT-5-Codex (Preview)
 ## Mappings
 
 $TASK_RUNNER_PROMPT$: `../../3-plan/IS-62/plan-00.prompt.md`
-<!-- $TASK_RESULT_FILE$: `../../../../docs/plan/IS-62/plan-00.md` -->
-$TASK_RESULT_FILE$: `../../../../docs/plan/IS-62/appendix.md`
+$TASK_RESULT_FILE$: `../../../../docs/plan/IS-62/plan-00.md`
+$TASK_RESULT_APPENDIX$: `../../../../docs/plan/IS-62/appendix.md`
 
-I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT_FILE$ as result. Verify this result according to:
+I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT_FILE$ and $TASK_RESULT_APPENDIX$ as result. Verify this result according to:
 
 1. No items of $TASK_RUNNER_PROMPT$ is missing in $TASK_RESULT_FILE$.
 2. Duplicated items are removed.
@@ -20,4 +20,4 @@ I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT_FILE$ as result. Verify this res
 4. Unnecessary information not requested in $TASK_RUNNER_PROMPT$ are removed.
 5. No conflicts, contradictions, or ambiguities in $TASK_RESULT_FILE$ content.
 
-Respond with "The task result is verified and correct." if the result is correct. If there are issues, list them clearly and concisely, and correct the $TASK_RESULT_FILE$ content accordingly.
+Respond with "The task result is verified and correct." if the result is correct. If there are issues, list them clearly and concisely, and correct the $TASK_RESULT_FILE$ or $TASK_RESULT_APPENDIX$ content accordingly.
