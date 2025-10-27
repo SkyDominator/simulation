@@ -19,5 +19,6 @@ I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT_FILE$ and $TASK_RESULT_APPENDIX$
 3. The format, structure, style is correctly followed as per the examples in $TASK_RUNNER_PROMPT$.
 4. Unnecessary information not requested in $TASK_RUNNER_PROMPT$ are removed.
 5. No conflicts, contradictions, or ambiguities in $TASK_RESULT_FILE$ content.
+6. All contents in $TASK_RESULT_APPENDIX$ is completely consistent with $TASK_RESULT_FILE$.
 
 Respond with "The task result is verified and correct." if the result is correct. If there are issues, list them clearly and concisely, and correct the $TASK_RESULT_FILE$ or $TASK_RESULT_APPENDIX$ content accordingly.
