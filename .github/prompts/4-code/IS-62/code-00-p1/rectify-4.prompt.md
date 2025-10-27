@@ -13,7 +13,7 @@ $INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
 In the last session we did:
 
 1. I requested `../code-00-p1/code-0.prompt.md`
-2. You responded with the result: 
+2. Your responses include: 
     * `src/frontend/e2e/fixtures/base.ts`
 3. We verified the result and found the followings:
 
