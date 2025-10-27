@@ -28,4 +28,4 @@ Blocking – missing baseURL on custom contexts base.ts: both memberSession and 
 
 ## Notes
 
-If any contradictions or ambiguities found in any of the references (instructions, plan, etc.), STOP and REPORT them clearly to me instead of guessing or making assumptions.
+If any contradictions or ambiguities found in whatever the provided contexts (instructions, research, analysis, plan, etc.), STOP and REPORT them clearly to me instead of guessing or making assumptions.
