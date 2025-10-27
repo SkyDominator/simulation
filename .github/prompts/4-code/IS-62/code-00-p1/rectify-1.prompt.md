@@ -14,9 +14,10 @@ In the last session we did:
 
 1. I requested `../code-00-p1/code-0.prompt.md`
 2. You responded with the result: 
-    * `76f16960ae92e85ea65da87a454707ab0aa02e23`
-    * `a86f0db707bbd913e627552bb1c8226ec9af91f5`
-    * `b2003f19d60b82b975da283b9f31a599138afa71`
+    * `src/frontend/e2e/specs/simulation-flow.spec.ts`
+    * `src/frontend/e2e/specs/onboarding.spec.ts`
+    * `src/frontend/e2e/fixtures/base.ts`
+    * `src/frontend/e2e/utils/apiMocks/playwright.ts`
 3. We verified the result and found the followings:
 
 ```markdown
@@ -27,18 +28,4 @@ onboarding.spec.ts (lines 10-31): the new “E2E-JOURNEY” path also lands on t
 Because of these regressions, the task result does not satisfy Phase 1, so the verification fails.
 ```
 
-Based on the findings above, rectify codes.
-
-## Notes
-
-```shell
-git diff --name-only {commit_hash}^ {commit_hash}
-```
-
-Use this command to read the changes made in each file in each commit:
-
-```shell
-git diff {commit_hash}^ {commit_hash} -- {file_path}
-```
-
-Follow the $INSTRUCTIONS$ strictly.
+Based on the findings above, rectify codes. Make no regressions. Follow the $INSTRUCTIONS$ strictly.
