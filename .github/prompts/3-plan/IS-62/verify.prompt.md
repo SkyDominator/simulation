@@ -9,7 +9,8 @@ model: GPT-5-Codex (Preview)
 ## Mappings
 
 $TASK_RUNNER_PROMPT$: `../../3-plan/IS-62/plan-00.prompt.md`
-$TASK_RESULT_FILE$: `../../../../docs/plan/IS-62/plan-00.md`
+<!-- $TASK_RESULT_FILE$: `../../../../docs/plan/IS-62/plan-00.md` -->
+$TASK_RESULT_FILE$: `../../../../docs/plan/IS-62/appendix.md`
 
 I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT_FILE$ as result. Verify this result according to:
 
