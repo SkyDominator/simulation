@@ -118,7 +118,7 @@ export const test = base.extend<CustomFixtures>({
    * Provides authenticated member context
    * Loads storageState derived from Supabase stub
    */
-  memberSession: async ({ browser }, use) => {
+  memberSession: async ({ browser }, use, testInfo) => {
     // Path to member storageState JSON
     const storageStatePath = path.join(
       __dirname,
@@ -129,9 +129,10 @@ export const test = base.extend<CustomFixtures>({
       "member.json"
     );
 
-    // Create context with member storageState
+    // Create context with member storageState and baseURL
     const context = await browser.newContext({
       storageState: storageStatePath,
+      baseURL: testInfo.project.use.baseURL,
     });
 
     // Create page from context
@@ -152,7 +153,7 @@ export const test = base.extend<CustomFixtures>({
    * Provides authenticated admin context
    * Loads admin storageState with admin claims and layers admin API mocks
    */
-  adminSession: async ({ browser }, use) => {
+  adminSession: async ({ browser }, use, testInfo) => {
     // Path to admin storageState JSON
     const storageStatePath = path.join(
       __dirname,
@@ -163,9 +164,10 @@ export const test = base.extend<CustomFixtures>({
       "admin.json"
     );
 
-    // Create context with admin storageState
+    // Create context with admin storageState and baseURL
     const context = await browser.newContext({
       storageState: storageStatePath,
+      baseURL: testInfo.project.use.baseURL,
     });
 
     // Create page from context
