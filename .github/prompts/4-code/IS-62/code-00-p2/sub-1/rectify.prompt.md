@@ -17,13 +17,7 @@ In the last session we did:
 3. We verified your result and found the followings:
 
 ```markdown
-FILENAME MISMATCH (NO MORE / FULL COMPLIANCE violation)
-
-The plan explicitly specifies: src/frontend/e2e/utils/journey-actions.ts
-
-But the actual implementation uses: src/frontend/e2e/utils/journeyActions.ts
-
-This is a deviation from the plan specification. The plan uses kebab-case (journey-actions.ts) but the implementation uses camelCase (journeyActions.ts). This violates the "NO MORE" principle - the filename should match exactly what was specified in the plan.
+Add ESLint configuration with no-restricted-imports rule for test files to block direct Supabase client usage
 ```
 
 # Tasks
