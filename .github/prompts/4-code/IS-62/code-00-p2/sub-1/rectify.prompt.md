@@ -4,9 +4,33 @@ tools: ['edit', 'search', 'runCommands', 'runTasks', 'pylance mcp server/pylance
 model: Claude Sonnet 4.5
 ---
 
+# Rectify Task Result Based on Verification Findings
+
 ## Mappings
 
-$INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
+* $CODE$: `../code.prompt.md`
+* $VERIFY$: `../sub-1/verify.prompt.md`
+* $INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
+* $TASK_TARGETS$ (files to verify for this subtask):
+    * `src/frontend/src/test/components/RealComponentTests.test.tsx`
+    * `src/frontend/src/test/context/AuthContext.test.tsx`
+    * `src/frontend/src/test/mocks/AuthContext.tsx`
+    * `src/frontend/src/test/pages/MainPage.improved.test.tsx`
+    * `src/frontend/src/test/utils/mockApiService.ts`
+
+## History
+
+So far during the past Chat sessions, we did:
+
+1. $CODE$
+2. Response commit hashes:
+    1. `d6911405734a06508b47dc067b6a89dcbbee213b`
+3. $VERIFY$
+4. Response - Verification Findings:
+```
+src/frontend/src/test/mocks/AuthContext.tsx: mockAuthContext.session.access_token now comes from createMemberAuthToken(), which yields "mock-jwt-token".
+UserFlowIntegration.test.tsx (e.g., lines ~303, 503, 616, 622, 824): expectations still assert getSimulations is called with "mock-access-token". With the new mock, these assertions will fail, so the change introduces a regression until the remaining tests are updated (or the mock token is kept stable).
+```
 
 # Tasks
 
