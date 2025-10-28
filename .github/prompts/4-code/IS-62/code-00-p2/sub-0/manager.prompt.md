@@ -109,7 +109,7 @@ So far during the past Chat sessions, we did:
 
 ## Task
 
-Do the next step.
+Do the next step: $RECTIFY$
 
 ## Notes for Future Steps (FOR LATER REFERENCE ONLY)
 
