@@ -32,11 +32,6 @@ auth-helpers.ts (completeOnboardingFlow): the delegate now just forwards to jour
 
 Let journey-actions.completeOnboardingFlow accept an optional hook (for example { onBeforeOAuth?: (page) => Promise<void> }) that runs right after it waits for the login buttons and before it clicks Google/Kakao. Then auth-helpers.completeOnboardingFlow can pass async () => { await initE2EMode(page); await setAuthToken(page, createMemberAuthToken()); }. Keeps the action helper pure, reuses the new split helpers, and restores the legacy token injection you prefer.
 ```
-3. $RECTIFY$
-4. Response commit hashes (cumulative):
-    1. `d6911405734a06508b47dc067b6a89dcbbee213b`
-    2. `f391851eb2f84b3e4da585ccdefe8e7f57cdfc37`
-    3. `8f9a121bfdab75ff01242ca7cc602e63cf4e89e5`
 
 # Tasks
 

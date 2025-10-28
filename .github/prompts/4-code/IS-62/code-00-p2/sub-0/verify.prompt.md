@@ -6,6 +6,36 @@ model: GPT-5-Codex (Preview)
 
 #  Verify Task Result
 
+## Mappings
+
+* $CODE$: `../code.prompt.md`
+* $TASK_TARGETS$:
+    * `src/frontend/e2e/utils/journey-actions.ts`
+    * `src/frontend/e2e/utils/apiMocks/playwright.ts`
+    * `src/frontend/e2e/utils/auth-helpers.ts`
+    * `src/frontend/e2e/utils/test-helpers.ts`
+
+## History
+
+So far during the past Chat sessions, we did:
+
+1. $CODE$
+2. Response commit hashes (cumulative):
+    1. `d6911405734a06508b47dc067b6a89dcbbee213b`
+    2. `f391851eb2f84b3e4da585ccdefe8e7f57cdfc37`
+3. $VERIFY$
+4. Response - Verification Findings:
+```
+auth-helpers.ts (completeOnboardingFlow): the delegate now just forwards to journey-actions.completeOnboardingFlow and no longer seeds a Supabase session token before clicking the OAuth button. In E2E mode the LoginPage expects that token to be injected (see AuthContext’s e2e:oauth-click handler); without it the flow never reaches main-page, regressing the legacy helper the plan asked us to preserve.
+
+Let journey-actions.completeOnboardingFlow accept an optional hook (for example { onBeforeOAuth?: (page) => Promise<void> }) that runs right after it waits for the login buttons and before it clicks Google/Kakao. Then auth-helpers.completeOnboardingFlow can pass async () => { await initE2EMode(page); await setAuthToken(page, createMemberAuthToken()); }. Keeps the action helper pure, reuses the new split helpers, and restores the legacy token injection you prefer.
+```
+3. $RECTIFY$
+4. Response commit hashes (cumulative):
+    1. `d6911405734a06508b47dc067b6a89dcbbee213b`
+    2. `f391851eb2f84b3e4da585ccdefe8e7f57cdfc37`
+    3. `8f9a121bfdab75ff01242ca7cc602e63cf4e89e5`
+
 ## Tasks
 
 ### Step 1. Read changed files from the commit(s).
