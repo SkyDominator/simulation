@@ -39,6 +39,10 @@ Let journey-actions.completeOnboardingFlow accept an optional hook (for example 
 
 ## Tasks
 
+### Step 0. Read instructions.
+
+Refer to $INSTRUCTIONS$ for the task history.
+
 ### Step 1. Read changed files from the commit(s).
 
 When there is a single commit, use this command to read the changed files made in the commit:
