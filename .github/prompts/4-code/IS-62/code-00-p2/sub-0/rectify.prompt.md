@@ -8,22 +8,10 @@ model: Claude Sonnet 4.5
 
 $INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
 
-## Status
-
-In the last session we did:
-
-1. I requested `../code-00-p2/code.prompt.md`
-2. Your responded with some code changes.
-3. We verified your result and found the followings:
-
-```markdown
-Add ESLint configuration with no-restricted-imports rule for test files to block direct Supabase client usage
-```
-
 # Tasks
 
-1. Check the foundings above is valid.
-2. If yes, rectify codes based on the findings above. Make no regressions nor side-effects. Follow the $INSTRUCTIONS$ strictly.
+1. Check the findings is valid.
+2. If yes, rectify codes based on the findings. Make no regressions nor side-effects. Follow the $INSTRUCTIONS$ strictly.
 3. If not, explain why not and stop.
 
 ## Notes

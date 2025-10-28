@@ -6,25 +6,9 @@ model: GPT-5-Codex (Preview)
 
 #  Verify Task Result
 
-## Mappings
-
-* $TASK_RUNNER_PROMPT$: `../code.prompt.md`
-* $TASK_RESULT$ (commit hash):
-    1. `commit_hash_first`: `d6911405734a06508b47dc067b6a89dcbbee213b`
-    2. `commit_hash_last`: `f391851eb2f84b3e4da585ccdefe8e7f57cdfc37`
-* $VERIFICATION_TARGETS$ (files to verify):
-    * `src/frontend/e2e/utils/journey-actions.ts`
-    * `src/frontend/e2e/utils/apiMocks/playwright.ts`
-    * `src/frontend/e2e/utils/auth-helpers.ts`
-    * `src/frontend/e2e/utils/test-helpers.ts`
-
-## Status
-
-I ran $TASK_RUNNER_PROMPT$ and got $TASK_RESULT$ as result.
-
 ## Tasks
 
-### Step 1. Read changed files in $TASK_RESULT$.
+### Step 1. Read changed files from the commit(s).
 
 When there is a single commit, use this command to read the changed files made in the commit:
 
@@ -40,9 +24,9 @@ git diff --name-only {commit_hash_first}^ {commit_hash_last}
 
 > Note: Ignore the changes except code changes.
 
-If $VERIFICATION_TARGETS$ exists in the [mappings](#mappings), they are THE ONLY TARGETS to verify. Ignore other changed files for the steps below.
+The $TASK_TARGETS$ are THE ONLY TARGETS to verify. Ignore other changed files for the steps below.
 
-### Step 2. Read code changes in each changed file in $TASK_RESULT$.
+### Step 2. Read code changes in each changed file.
 
 For each file, do the following.
 
@@ -58,14 +42,14 @@ When there are multiple commits, use this command to read the changes made in ea
 git diff {commit_hash_first}^ {commit_hash_last} -- {file_path}
 ```
 
-### Step 3. Verify $TASK_RESULT$.
+### Step 3. Verify code changes.
 
-Verify $TASK_RESULT$ according to:
+Verify them according to:
 
-1. NO LESS: No missing items in $TASK_RUNNER_PROMPT$.
+1. NO LESS: No missing items in the $CODE$.
 2. NO MORE: No deviations or alterations or additions exist. Exactly implemented as per the task description.
-3. FULL COMPLIANCE: Strict adherence to the every detail in $TASK_RUNNER_PROMPT$ is kept, with no arbitrary guessing or assumptions applied in the result.
-4. NO GUESSING: No assumptions or guesses were made during implementation. If any ambiguity or incompleteness existed in $TASK_RUNNER_PROMPT$, it should have been reported instead of guessed.
+3. FULL COMPLIANCE: Strict adherence to the every detail in the $CODE$ is kept, with no arbitrary guessing or assumptions applied in the result.
+4. NO GUESSING: No assumptions or guesses were made during implementation. If any ambiguity or incompleteness existed in the $CODE$, it should have been reported instead of guessed.
 5. NO SIDE-EFFECTS NOR REGRESSIONS: No unintended side-effects or regressions were introduced in the codebase outside the scope of the task description.
 
 ## Notes
@@ -74,4 +58,4 @@ If any contradictions or ambiguities found in whatever the provided contexts (in
 
 ## Response
 
-Respond with "The task result is verified and correct." if the result is correct. If there are issues, list them clearly and concisely, and correct the $TASK_RESULT$ accordingly.
+Respond with "The task result is verified and correct." if the result is correct. If there are issues, list them clearly, concisely, and in detail.
