@@ -52,5 +52,10 @@ export async function completeOnboardingFlow(
     phone: "010-1234-5678",
   }
 ): Promise<void> {
-  await actionsCompleteOnboardingFlow(page, userData);
+  await actionsCompleteOnboardingFlow(page, userData, {
+    onBeforeOAuth: async (page) => {
+      await initE2EMode(page);
+      await setAuthToken(page, createMemberAuthToken());
+    },
+  });
 }
