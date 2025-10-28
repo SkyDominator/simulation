@@ -8,7 +8,7 @@ model: GPT-5-Codex (Preview)
 
 ## Mappings
 
-* $CODE$: `../../code-00-p2/code.prompt.md`
+* $CODE$: `../code.prompt.md`
 * $TASK_TARGETS$:
     * `src/frontend/src/test/components/RealComponentTests.test.tsx`
     * `src/frontend/src/test/context/AuthContext.test.tsx`
