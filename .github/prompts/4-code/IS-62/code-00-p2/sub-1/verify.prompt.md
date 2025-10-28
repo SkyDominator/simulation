@@ -6,6 +6,24 @@ model: GPT-5-Codex (Preview)
 
 #  Verify Task Result
 
+## Mappings
+
+* $CODE$: `../../code-00-p2/code.prompt.md`
+* $TASK_TARGETS$:
+    * `src/frontend/src/test/components/RealComponentTests.test.tsx`
+    * `src/frontend/src/test/context/AuthContext.test.tsx`
+    * `src/frontend/src/test/mocks/AuthContext.tsx`
+    * `src/frontend/src/test/pages/MainPage.improved.test.tsx`
+    * `src/frontend/src/test/utils/mockApiService.ts`
+
+## History
+
+So far during the past Chat sessions, we did:
+
+1. $CODE$
+2. Response commit hashes:
+    1. `d6911405734a06508b47dc067b6a89dcbbee213b`
+
 ## Tasks
 
 ### Step 1. Read changed files from the commit(s).
