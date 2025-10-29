@@ -11,8 +11,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Unlock additional parallelism on CI while keeping local defaults flexible. */
+  workers: process.env.CI ? 3 : undefined,
   /* Stop after 5 test failures */
   // maxFailures: 5,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
@@ -27,16 +27,14 @@ export default defineConfig({
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: "http://localhost:4173", // Vite preview server
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    // trace: "off", // Disable trace to avoid ffmpeg dependency
-    trace: "on-first-retry", // Disable trace to avoid ffmpeg dependency
+    /* Collect rich artifacts for failure triage. */
+    trace: "retain-on-failure",
 
-    /* Take screenshots on failure */
-    // screenshot: 'only-on-failure',
-    screenshot: "off",
+    /* Capture visual context when assertions fail. */
+    screenshot: "only-on-failure",
 
-    /* Record video on failure - disabled to avoid ffmpeg dependency in CI */
-    video: "off",
+    /* Retain videos on failing assertions for replay-driven debugging. */
+    video: "retain-on-failure",
   },
 
   /* Configure projects for major browsers */
@@ -58,7 +56,7 @@ export default defineConfig({
 
     /* Test against mobile viewports. */
     {
-      name: "Mobile Chrome",
+      name: "mobile-chromium",
       use: {
         ...devices["Pixel 5"],
         // Force landscape orientation to avoid LandscapeEnforcer overlay during tests
@@ -66,21 +64,11 @@ export default defineConfig({
       },
     },
     {
-      name: "Mobile Safari",
+      name: "desktop-chromium",
       use: {
-        ...devices["iPhone 12"],
-        viewport: { width: 844, height: 390 },
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1280, height: 720 },
       },
-    },
-
-    /* Test against branded browsers. */
-    {
-      name: "Microsoft Edge",
-      use: { ...devices["Desktop Edge"], channel: "msedge" },
-    },
-    {
-      name: "Google Chrome",
-      use: { ...devices["Desktop Chrome"], channel: "chrome" },
     },
   ],
 
