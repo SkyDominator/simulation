@@ -254,6 +254,8 @@ jobs:
               working-directory: src/backend
               env:
                   PYTHONPATH: .
+                  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+                  SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
               run: |
                   export SUPABASE_URL=${SUPABASE_URL:-https://test.supabase.co}
                   export SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY:-test_secret_key}
