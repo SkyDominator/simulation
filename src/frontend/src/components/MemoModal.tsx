@@ -55,6 +55,7 @@ export const MemoModal: React.FC<MemoModalProps> = ({
           placeholder="메모를 입력하세요..."
           InputProps={{ readOnly: !editing }}
           size="small"
+          data-testid="memo-input"
         />
         {!editing && value && (
           <Typography
@@ -80,6 +81,7 @@ export const MemoModal: React.FC<MemoModalProps> = ({
             onClick={handleSave}
             disabled={saving}
             className="bg-green-600 hover:bg-green-700 disabled:opacity-60"
+            data-testid="memo-save"
           >
             {saving ? "저장 중..." : "저장"}
           </Button>
