@@ -15,6 +15,7 @@
 // ^ Playwright fixtures use 'use' callback parameter, not React hooks
 
 import path from "path";
+import { fileURLToPath } from "url";
 import {
   test as base,
   Page,
@@ -25,6 +26,10 @@ import {
   TestInfo,
 } from "@playwright/test";
 import { initE2EMode } from "../utils/stateSetup";
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Authenticated member fixture type
