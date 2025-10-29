@@ -8,14 +8,9 @@ model: Claude Sonnet 4.5
 
 ## Mappings
 
-* $CODE$: `../code.prompt.md`
-* $VERIFY$: `../sub-0/verify.prompt.md`
+* $CODE$: `../code-00-p4/code.prompt.md`
+* $VERIFY$: `../code-00-p4/verify.prompt.md`
 * $INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
-* $TASK_TARGETS$ (files to verify for this subtask):
-    * `src/frontend/e2e/utils/journey-actions.ts`
-    * `src/frontend/e2e/utils/apiMocks/playwright.ts`
-    * `src/frontend/e2e/utils/auth-helpers.ts`
-    * `src/frontend/e2e/utils/test-helpers.ts`
 
 ## History
 
@@ -23,14 +18,14 @@ So far during the past Chat sessions, we did:
 
 1. $CODE$
 2. Response commit hashes (cumulative):
-    1. `d6911405734a06508b47dc067b6a89dcbbee213b`
-    2. `f391851eb2f84b3e4da585ccdefe8e7f57cdfc37`
+    1. `b76fa7dba0e78190ab1c68d0706edd3039a23495`
+    2. `0106c81e2624f4b34780b6e17249615c0c16f986`
 3. $VERIFY$
 4. Response - Verification Findings:
 ```
-auth-helpers.ts (completeOnboardingFlow): the delegate now just forwards to journey-actions.completeOnboardingFlow and no longer seeds a Supabase session token before clicking the OAuth button. In E2E mode the LoginPage expects that token to be injected (see AuthContext’s e2e:oauth-click handler); without it the flow never reaches main-page, regressing the legacy helper the plan asked us to preserve.
+High ci-cd.yml: In the unit_integration job’s “Backend Integration Tests” step the env: block that injected SUPABASE_URL/SUPABASE_SECRET_KEY from GitHub secrets was removed. The new export SUPABASE_URL=${SUPABASE_URL:-…} logic never sees those secrets (they aren’t defined in the step anymore), so the suite always falls back to the stub values, regressing the previous behavior where real Supabase credentials could be exercised.
 
-Let journey-actions.completeOnboardingFlow accept an optional hook (for example { onBeforeOAuth?: (page) => Promise<void> }) that runs right after it waits for the login buttons and before it clicks Google/Kakao. Then auth-helpers.completeOnboardingFlow can pass async () => { await initE2EMode(page); await setAuthToken(page, createMemberAuthToken()); }. Keeps the action helper pure, reuses the new split helpers, and restores the legacy token injection you prefer.
+High ci-cd.yml: The test-security job’s “Backend Security Tests” step has the same regression—secrets are no longer passed into the environment, so the security suite can no longer honor repository or environment-provided Supabase credentials.
 ```
 
 # Tasks
