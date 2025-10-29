@@ -12,11 +12,11 @@ model: GPT-5-Codex (Preview)
 * $RECTIFY$: `../sub-2/rectify.prompt.md`
 * $INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
 * $TASK_TARGETS$:
-    * `src/frontend/src/test/components/RealComponentTests.test.tsx`
-    * `src/frontend/src/test/context/AuthContext.test.tsx`
-    * `src/frontend/src/test/mocks/AuthContext.tsx`
-    * `src/frontend/src/test/pages/MainPage.improved.test.tsx`
-    * `src/frontend/src/test/utils/mockApiService.ts`
+    * `src/frontend/e2e/utils/journey-actions.ts`
+    * `src/frontend/e2e/utils/apiMocks/playwright.ts`
+    * `src/frontend/e2e/utils/auth-helpers.ts`
+    * `src/frontend/e2e/utils/test-helpers.ts`
+
 
 ## History
 
