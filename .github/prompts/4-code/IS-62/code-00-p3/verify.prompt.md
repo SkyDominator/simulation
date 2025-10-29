@@ -76,7 +76,7 @@ If any contradictions or ambiguities found in whatever the provided contexts (in
 
 ## Notes for Future Steps (FOR LATER REFERENCE ONLY)
 
-* journey-actions.ts: the new simulation-table helpers are wired to data-test ids that don’t exist. The UI exposes data-testid="results-${id}", edit-${id}, delete-${id}, simulation-checkbox-${id}, and memo-chip-${id}, with the memo modal lacking memo-input/memo-save test ids altogether (see SimulationTable.tsx and MemoModal.tsx). The current selectors (view-results-*, edit-simulation-*, delete-simulation-*, select-simulation-*, memo-*) will never match, so these helpers can’t be used as written.
+None.
 
 ## Response
 
