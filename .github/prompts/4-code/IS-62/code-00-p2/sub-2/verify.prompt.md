@@ -36,6 +36,18 @@ So, we need to add or update data-test ids to ALL the UI components matching the
 6. Response commit hashes (cumulative):
     1. `d6911405734a06508b47dc067b6a89dcbbee213b`
     2. `16362f48a987429fad21fdcd089d8ee2c22dd966`
+7. $VERIFY$
+8. Response - Verification Findings:
+```
+journey-actions.ts line ~137: openSimulationResults still targets [data-testid="view-results-${simulationId}"], but SimulationTable.tsx exposes data-testid="results-${simulationId}". This selector never matches, so the helper can’t open results — the verification finding remains unresolved.
+
+journey-actions.ts lines ~160-170: updateSimulationMemo immediately fills memo-input and clicks memo-save. When the memo already exists the modal opens in read-only mode, the “편집” button must be clicked before the field becomes editable and memo-save is rendered. As written the helper hits a readOnly input and a missing save button, so it can’t update an existing memo.
+```
+8. $REFIFY$
+9. Response commit hashes (cumulative):
+    1. `d6911405734a06508b47dc067b6a89dcbbee213b`
+    2. `16362f48a987429fad21fdcd089d8ee2c22dd966`
+    3. `fcfa9f131e86c1584074502723597984f554cdc5`
 
 ## Tasks
 
