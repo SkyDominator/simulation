@@ -62,6 +62,7 @@ Verify them according to:
 1. NO LESS: No missing items in the $CODE$.
 2. NO MORE: No deviations or alterations or additions exist. Exactly implemented as per the task description.
 3. FULL COMPLIANCE: 
+    * Strict adherence to the $PHASE$ in the $PLAN$ described in $CODE$
     * Strict adherence to the every instruction in the $CODE$
     * Strict adherence to the every detail in the $CODE$ with no arbitrary guessing or assumptions applied in the result 
     * Strict adherence to the $INSTRUCTIONS$
