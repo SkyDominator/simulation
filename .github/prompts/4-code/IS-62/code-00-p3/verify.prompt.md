@@ -10,11 +10,6 @@ model: GPT-5-Codex (Preview)
 
 * $CODE$: `../code.prompt.md`
 * $INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
-* $TASK_TARGETS$:
-    * `src/frontend/e2e/utils/journey-actions.ts`
-    * `src/frontend/e2e/utils/apiMocks/playwright.ts`
-    * `src/frontend/e2e/utils/auth-helpers.ts`
-    * `src/frontend/e2e/utils/test-helpers.ts`
 
 ## History
 
@@ -22,20 +17,8 @@ So far during the past Chat sessions, we did:
 
 1. $CODE$
 2. Response commit hashes (cumulative):
-    1. `d6911405734a06508b47dc067b6a89dcbbee213b`
-    2. `f391851eb2f84b3e4da585ccdefe8e7f57cdfc37`
-3. $VERIFY$
-4. Response - Verification Findings:
-```
-auth-helpers.ts (completeOnboardingFlow): the delegate now just forwards to journey-actions.completeOnboardingFlow and no longer seeds a Supabase session token before clicking the OAuth button. In E2E mode the LoginPage expects that token to be injected (see AuthContext’s e2e:oauth-click handler); without it the flow never reaches main-page, regressing the legacy helper the plan asked us to preserve.
+    1. `24fc3d10531ca8829d2c51afeadc8f2ff1ce4a04`
 
-Let journey-actions.completeOnboardingFlow accept an optional hook (for example { onBeforeOAuth?: (page) => Promise<void> }) that runs right after it waits for the login buttons and before it clicks Google/Kakao. Then auth-helpers.completeOnboardingFlow can pass async () => { await initE2EMode(page); await setAuthToken(page, createMemberAuthToken()); }. Keeps the action helper pure, reuses the new split helpers, and restores the legacy token injection you prefer.
-```
-5. $RECTIFY$
-6. Response commit hashes (cumulative):
-    1. `d6911405734a06508b47dc067b6a89dcbbee213b`
-    2. `f391851eb2f84b3e4da585ccdefe8e7f57cdfc37`
-    3. `8f9a121bfdab75ff01242ca7cc602e63cf4e89e5`
 
 ## Tasks
 
@@ -59,7 +42,7 @@ git diff --name-only {commit_hash_first}^ {commit_hash_last}
 
 > Note: Ignore the changes except code changes.
 
-The $TASK_TARGETS$ are THE ONLY TARGETS to verify. Ignore other changed files for the steps below.
+If the $TASK_TARGETS$ exist in the [mapping](#mappings), the $TASK_TARGETS$ are THE ONLY TARGETS to verify. Ignore other changed files for the steps below.
 
 ### Step 2. Read code changes in each changed file.
 
