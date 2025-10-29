@@ -138,7 +138,7 @@ export async function openSimulationResults(
   page: Page,
   simulationId: string
 ): Promise<void> {
-  await page.click(`[data-testid="view-results-${simulationId}"]`);
+  await page.click(`[data-testid="results-${simulationId}"]`);
 }
 
 /**
@@ -170,8 +170,15 @@ export async function updateSimulationMemo(
   memo: string
 ): Promise<void> {
   await page.click(`[data-testid="memo-edit-${simulationId}"]`);
-  await page.fill('[data-testid="memo-input"]', memo);
-  await page.click('[data-testid="memo-save"]');
+  const editButton = page.getByRole("button", { name: "편집" });
+  if (await editButton.isVisible()) {
+    await editButton.click();
+  }
+
+  const memoInput = page.getByTestId("memo-input");
+  await memoInput.fill("");
+  await memoInput.fill(memo);
+  await page.getByTestId("memo-save").click();
 }
 
 /**
