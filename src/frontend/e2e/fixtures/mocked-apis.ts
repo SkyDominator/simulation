@@ -91,7 +91,9 @@ export const mockedApisFixtures = {
    * Provides factory for creating API mocking controller for any page
    */
   mockedApis: async (
-    _fixtures: unknown,
+    // Playwright requires object destructuring, but this fixture has no dependencies
+    // eslint-disable-next-line no-empty-pattern
+    {},
     use: (r: (page: Page) => MockedApisController) => Promise<void>
   ) => {
     // Return a factory function that creates a controller for a given page
