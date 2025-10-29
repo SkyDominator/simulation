@@ -43,7 +43,10 @@ test.describe("Simulation management basics", () => {
     await expect(memberSession.locator("text=플랜 타입")).toBeVisible();
     await selectPlan(memberSession, "A");
     await clickNext(memberSession);
-    await expect(memberSession.locator("text=가입한 회차")).toBeVisible();
+    // Use heading role to disambiguate from stepper label
+    await expect(
+      memberSession.getByRole("heading", { name: /가입한 회차/ })
+    ).toBeVisible();
   });
 });
 

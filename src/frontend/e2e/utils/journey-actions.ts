@@ -36,9 +36,11 @@ export async function fillOTPForm(page: Page, code: string): Promise<void> {
  * Select a plan in the plan editor
  */
 export async function selectPlan(page: Page, planId: string): Promise<void> {
-  // Look for Material-UI Select component
-  await page.click('[role="button"][aria-haspopup="listbox"]');
-  await page.click(`text="${planId}"`);
+  // Material-UI Select component renders as a combobox
+  // Use data-testid for reliable selection
+  await page.click('[data-testid="plan-selector"]');
+  // Click the option in the dropdown menu
+  await page.click(`li[role="option"]:has-text("${planId} 플랜")`);
 }
 
 /**
