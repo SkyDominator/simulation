@@ -61,7 +61,10 @@ Verify them according to:
 
 1. NO LESS: No missing items in the $CODE$.
 2. NO MORE: No deviations or alterations or additions exist. Exactly implemented as per the task description.
-3. FULL COMPLIANCE: Strict adherence to the every detail in the $CODE$ is kept, with no arbitrary guessing or assumptions applied in the result. Strict adherence to the $INSTRUCTIONS$ is also a must.
+3. FULL COMPLIANCE: 
+    * Strict adherence to the every instruction in the $CODE$
+    * Strict adherence to the every detail in the $CODE$ with no arbitrary guessing or assumptions applied in the result 
+    * Strict adherence to the $INSTRUCTIONS$
 4. NO GUESSING: No assumptions or guesses were made during implementation. If any ambiguity or incompleteness existed in the $CODE$, it should have been reported instead of guessed.
 5. NO SIDE-EFFECTS NOR REGRESSIONS: No unintended side-effects or regressions were introduced in the codebase outside the scope of the task description.
 
