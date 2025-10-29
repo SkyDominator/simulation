@@ -19,7 +19,7 @@ Read `./task-history.md` for the task history so far.
 
 ### Step 0. Read instructions.
 
-Refer to $INSTRUCTIONS$ for the task history.
+Read $INSTRUCTIONS$ and $CODE$.
 
 ### Step 1. Read changed files from the commit(s).
 
