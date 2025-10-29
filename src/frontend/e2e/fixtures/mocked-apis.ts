@@ -25,6 +25,79 @@ import {
   mockNetworkError,
 } from "../utils/apiMocks/playwright";
 
+const pageLabels = new WeakMap<Page, string>();
+let pageLabelCounter = 0;
+let markCounter = 0;
+
+const getPageLabel = (page: Page): string => {
+  const existing = pageLabels.get(page);
+  if (existing) {
+    return existing;
+  }
+
+  pageLabelCounter += 1;
+  const label = `page-${pageLabelCounter}`;
+  pageLabels.set(page, label);
+  return label;
+};
+
+const formatArg = (arg: unknown): string => {
+  if (arg === null || arg === undefined) {
+    return String(arg);
+  }
+
+  if (typeof arg === "string") {
+    return arg;
+  }
+
+  if (typeof arg === "number" || typeof arg === "boolean") {
+    return String(arg);
+  }
+
+  if (Array.isArray(arg)) {
+    return `Array(${arg.length})`;
+  }
+
+  if (typeof arg === "object") {
+    const ctor = Object.getPrototypeOf(arg)?.constructor?.name;
+    return ctor ? `Object(${ctor})` : "Object";
+  }
+
+  return typeof arg;
+};
+
+const describeArgs = (args: unknown[]): string => {
+  if (args.length === 0) {
+    return "";
+  }
+
+  const rendered = args.map(formatArg).join(", ");
+  return ` (${rendered})`;
+};
+
+const instrument = <Args extends unknown[], Result>(
+  page: Page,
+  action: string,
+  impl: (page: Page, ...args: Args) => Promise<Result>
+) => {
+  return async (...args: Args): Promise<Result> => {
+    const pageLabel = getPageLabel(page);
+    const suffix = describeArgs(args);
+    const baseLabel = `[mockedApis][${pageLabel}] ${action}${suffix}`;
+    const timerLabel = `${baseLabel} #${++markCounter}`;
+
+    console.info(`${baseLabel} :: start`);
+    console.time(timerLabel);
+
+    try {
+      return await impl(page, ...args);
+    } finally {
+      console.timeEnd(timerLabel);
+      console.info(`${baseLabel} :: end`);
+    }
+  };
+};
+
 /**
  * MockedApisController
  * Provides typed methods for setting up API mocks
@@ -98,13 +171,21 @@ export const mockedApisFixtures = {
   ) => {
     // Return a factory function that creates a controller for a given page
     const factory = (page: Page): MockedApisController => ({
-      mockOTPSuccess: () => mockOTPSuccess(page),
-      mockOTPFailure: (scenario) => mockOTPFailure(page, scenario),
-      mockSimulationAPI: () => mockSimulationAPI(page),
-      mockConsentSuccess: () => mockConsentSuccess(page),
-      mockNoticesAPI: () => mockNoticesAPI(page),
-      mockAdminAPI: () => mockAdminAPI(page),
-      mockNetworkError: (endpoint) => mockNetworkError(page, endpoint),
+      mockOTPSuccess: instrument(page, "mockOTPSuccess", mockOTPSuccess),
+      mockOTPFailure: instrument(page, "mockOTPFailure", mockOTPFailure),
+      mockSimulationAPI: instrument(
+        page,
+        "mockSimulationAPI",
+        mockSimulationAPI
+      ),
+      mockConsentSuccess: instrument(
+        page,
+        "mockConsentSuccess",
+        mockConsentSuccess
+      ),
+      mockNoticesAPI: instrument(page, "mockNoticesAPI", mockNoticesAPI),
+      mockAdminAPI: instrument(page, "mockAdminAPI", mockAdminAPI),
+      mockNetworkError: instrument(page, "mockNetworkError", mockNetworkError),
     });
 
     await use(factory);
