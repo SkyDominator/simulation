@@ -6,6 +6,10 @@ model: Claude Sonnet 4.5
 
 # Rectify Task Result Based on Verification Findings
 
+## Mappings
+
+* $INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
+
 ## Task History
 
 Read `./task-history.md` for the task history so far.
