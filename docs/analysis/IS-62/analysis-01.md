@@ -1,3 +1,4 @@
+# Journey Test Coverage Verification
 
 ## Question 1: Should Journey Tests Include Run Simulation & Results?
 
@@ -7,23 +8,26 @@ According to the analysis document (`docs/analysis/IS-62/IS-92/analysis-00.md`),
 
 1. **Onboarding** ✅ Already covered
 2. **Create Simulation** ⚠️ Partially covered (navigation only)
-3. **Run Simulation** ❌ NOT covered
-4. **View Results** ❌ NOT covered (includes Results Page + Allowance Table navigation)
+3. **Run Simulation** ✅ Already covered (via `e2e/specs/main-dashboard.spec.ts` & `e2e/specs/results-display.spec.ts`, though still on legacy helpers)
+4. **View Results** ⚠️ Partially covered (results tables verified, but Allowance Table navigation missing)
 5. **Multi-Select Comprehensive Results** ❌ NOT covered (aggregated metrics across plans)
 6. PWA Install (lower priority for smoke)
-7. Mobile Landscape (lower priority for smoke)
+7. Mobile Landscape ✅ Already covered (`e2e/specs/landscape-enforcer.spec.ts`)
 
 ### Recommended Journey Tests to Add
 
 Based on the Test Pyramid principle (10% E2E, focusing on critical business flows), the smoke test suite should include:
 
 #### **Journey 1: Complete Onboarding Flow** ✅
+
 **Status**: Already implemented  
 **Coverage**: Whitelist → OTP → Consent → Login → Dashboard
 
 #### **Journey 2: Create and Configure Simulation** 🔨 Needs Expansion
+
 **File**: `e2e/specs/simulation-flow.spec.ts` (expand existing)  
 **Flow**:
+
 ```typescript
 test("E2E-JOURNEY: creates a new simulation with investment plan", async ({
   memberSession,
@@ -65,65 +69,38 @@ test("E2E-JOURNEY: creates a new simulation with investment plan", async ({
 
 **Rationale**: This is the core business functionality - creating financial simulations. Must work end-to-end.
 
-#### **Journey 3: Run Simulation and View Results** 🆕 New Test Required
-**File**: `e2e/specs/simulation-flow.spec.ts` (add new)  
-**Flow**:
+
+#### **Journey 3: Run Simulation and View Results** ✅ Covered (migrate & extend)
+
+**Existing Coverage**: `e2e/specs/results-display.spec.ts` drives the run → results table journey, and `e2e/specs/main-dashboard.spec.ts` verifies the run/results entry points. Both still rely on legacy `TestHelpers` instead of the new fixture stack from Phase 1–2, and neither asserts the Allowance Table navigation called out in the PRD (Section “Results Page”).
+
+**Next Step**: Migrate the existing flow onto the shared fixtures (`simulationSeed`, `mockedApis`) and layer the missing Allowance Table assertion so the journey matches the PRD/SSD contract.
+
+
 ```typescript
-test("E2E-JOURNEY: runs simulation and displays results", async ({
-  simulationSeed, // Uses fixture that pre-creates simulation
+test("E2E-JOURNEY: runs simulation and drills into allowance table", async ({
+  simulationSeed,
   mockedApis,
 }) => {
   const apis = mockedApis(simulationSeed);
-  
-  // Mock simulation run API with deterministic results
   await apis.mockSimulationAPI();
   await apis.mockNoticesAPI();
-  
+
   await simulationSeed.goto("/");
-  
-  // Find and click run button for first simulation
-  const runButton = simulationSeed
-    .locator('[data-testid^="run-"]')
-    .first();
-  
-  await runButton.click();
-  
-  // Wait for results to appear
+  await simulationSeed.locator('[data-testid^="run-"]').first().click();
+
   await expect(
     simulationSeed.locator("text=/시뮬레이션.*결과/i")
-  ).toBeVisible({ timeout: 10000 });
-  
-  // Verify key result data points are displayed
+  ).toBeVisible({ timeout: 10_000 });
   await expect(
-    simulationSeed.locator("text=/회차/i")
+    simulationSeed.locator("text=/누적 순이익|cumulative net income/i")
   ).toBeVisible();
+
+  await simulationSeed.getByTestId("view-allowance-table").click();
   await expect(
-    simulationSeed.locator("text=/누적 순이익/i")
-  ).toBeVisible();
-  
-  // Verify actual result values from mock
-  await expect(
-    simulationSeed.locator("text=/1,000,000|1000000/")
+    simulationSeed.locator("text=/수당.*내역|allowance/i")
   ).toBeVisible();
 });
-```
-
-**Rationale**: Running simulations is the PRIMARY business value. This must be tested end-to-end to ensure the full stack (frontend → backend → database → response → UI rendering) works.
-
-**Note**: Should also verify navigation to **Allowance Table** view from results (per PRD Section 6):
-```typescript
-// After results are visible, test allowance table navigation
-await expect(
-  simulationSeed.locator("text=/시뮬레이션.*결과/i")
-).toBeVisible();
-
-// Click button/link to view allowance table
-await simulationSeed.getByTestId("view-allowance-table").click();
-
-// Verify allowance table displays
-await expect(
-  simulationSeed.locator("text=/수당.*내역/i")
-).toBeVisible();
 ```
 
 #### **Journey 4: Multi-Select Comprehensive Results** 🆕 New Test Required
@@ -131,6 +108,7 @@ await expect(
 **File**: `e2e/specs/comprehensive-results.spec.ts` (new file)
 
 **Flow**:
+
 ```typescript
 test("E2E-JOURNEY: multi-select and view comprehensive results", async ({
   simulationSeed,
@@ -186,14 +164,17 @@ test("E2E-JOURNEY: multi-select and view comprehensive results", async ({
 ```
 
 **Rationale**: Comprehensive results is a KEY feature per PRD Section "Get Comprehensive Simulation Results". Users need to compare multiple investment plans side-by-side to make informed decisions. This tests:
+
 - Multi-select UI (checkboxes)
 - Validation (one per plan type)
 - Aggregated financial metrics
 - Combined data display
 
 #### **Journey 5: Offline Results Persistence (PWA)** 🆕 New Test Required
+
 **File**: `e2e/specs/pwa-offline.spec.ts` (new file)  
 **Flow**:
+
 ```typescript
 test("E2E-JOURNEY: simulation results persist offline", async ({
   simulationSeed,
@@ -234,60 +215,31 @@ test("E2E-JOURNEY: simulation results persist offline", async ({
 **Rationale**: Your app is a PWA targeting Korean mobile users who may have intermittent connectivity. Offline capability is a critical feature that must work end-to-end.
 
 **Note**: Per SSD/tech-details:
+
 - Results are persisted in `simulation_results` jsonb field in database
 - PWA uses **NetworkFirst** strategy for `/api/notices`
 - **StaleWhileRevalidate** for images
 - localStorage/sessionStorage for UI state only (not simulation data)
 
-#### **Journey 6: Mobile Landscape Enforcement** 🆕 New Test Required
-**File**: `e2e/specs/mobile-landscape.spec.ts` (new file)  
-**Flow**:
+#### **Journey 6: Mobile Landscape Enforcement** ✅ Covered
+
+**Existing Coverage**: `e2e/specs/landscape-enforcer.spec.ts` already validates the portrait overlay, landscape dismissal, and E2E bypass logic that the PRD mandates for mobile devices. The test exercises both orientations and uses the shared `initE2EMode` helper to mirror authenticated flows.
+
 ```typescript
-test("E2E-JOURNEY: enforces landscape on mobile for results", async ({
-  memberSession,
-  mockedApis,
-}) => {
-  const apis = mockedApis(memberSession);
-  await apis.mockSimulationAPI();
-  await apis.mockNoticesAPI();
-  
-  // Set mobile portrait viewport
-  await memberSession.setViewportSize({ width: 375, height: 667 });
-  
-  await memberSession.goto("/");
-  
-  // Navigate to simulation results (create mock results in localStorage)
-  await memberSession.evaluate(() => {
-    localStorage.setItem("simulationResult", JSON.stringify({
-      history: [{ company_round: 1, total_payment: 1000000 }],
-      summary: { final_profit: 1000000 }
-    }));
-  });
-  
-  await memberSession.goto("/?page=results");
-  
-  // Should show landscape overlay
-  await expect(
-    memberSession.locator("text=/화면을 가로 모드로 회전/i")
-  ).toBeVisible();
-  
-  // Rotate to landscape
-  await memberSession.setViewportSize({ width: 667, height: 375 });
-  await memberSession.reload();
-  
-  // Overlay should disappear
-  await expect(
-    memberSession.locator("text=/화면을 가로 모드로 회전/i")
-  ).not.toBeVisible();
-  
-  // Results should be visible
-  await expect(
-    memberSession.locator("text=/시뮬레이션.*결과/i")
-  ).toBeVisible();
+test("Skips overlay in E2E mode regardless of orientation", async ({ page }) => {
+  await initE2EMode(page);
+  await page.setViewportSize({ width: 393, height: 851 });
+  await page.goto("/");
+
+  await expect(page.getByText("가로 모드로 전환해주세요")).not.toBeVisible();
+
+  const nameInput = page.getByLabel("이름");
+  await expect(nameInput).toBeVisible();
+  await nameInput.fill("Test User");
 });
 ```
 
-**Rationale**: The landscape enforcer is a UX requirement for mobile users viewing complex tables. This must work correctly to avoid user frustration.
+**Next Step**: Keep the spec aligned with the new fixture architecture when `test` re-exports are consolidated, but no additional coverage is required for the landscape enforcement behaviour itself.
 
 ### Summary: Recommended Journey Test Suite (Total: 6-7 tests)
 
@@ -295,10 +247,10 @@ test("E2E-JOURNEY: enforces landscape on mobile for results", async ({
 |---------|----------|--------|------|
 | 1. Onboarding | Critical | ✅ Complete | `onboarding.spec.ts` |
 | 2. Create Simulation | Critical | 🔨 Expand | `simulation-flow.spec.ts` |
-| 3. Run Simulation + Allowance Table | Critical | 🆕 Add | `simulation-flow.spec.ts` |
+| 3. Run Simulation + Allowance Table | Critical | ⚠️ Migrate & extend | `results-display.spec.ts` → fixtures |
 | 4. Comprehensive Results | Critical | 🆕 Add | `comprehensive-results.spec.ts` |
 | 5. Offline Results | High | 🆕 Add | `pwa-offline.spec.ts` |
-| 6. Mobile Landscape | Medium | 🆕 Add | `mobile-landscape.spec.ts` |
+| 6. Mobile Landscape | Medium | ✅ Complete | `landscape-enforcer.spec.ts` |
 | 7. Admin Content (optional) | Low | ❌ Skip | Move to integration |
 
 **Expected Runtime**: 6-7 tests × ~30 seconds = **3-3.5 minutes** (target: <5 min)
