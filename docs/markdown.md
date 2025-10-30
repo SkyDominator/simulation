@@ -28,7 +28,7 @@ If you are modifying the existing documents, fits the new or modified contents t
 
 ### 4. Short, Simple, Machine-Friendly
 
-If you are writing new documents, write in a short, simple, and machine-friendly style. Do not verbose. Leave critical details only.
+If you are writing new documents, write in a short, simple, and machine-friendly style. Do not verbose. Leave critical details only. Do not write spending efforts (hours, days, weeks, months, etc.).
 
 ## Quality Assurance Checklist
 
