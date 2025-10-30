@@ -423,10 +423,10 @@ This section documents the detailed user experience flow at the component and AP
 
 **API Call**: `api.getUserConsents(userHash)`
 - **Backend Route**: GET `/api/consents/{user_hash}`
-- **Backend Handler**: `get_consent_records()` in `routes.py`
-  - Queries `consent_records` table by `user_hash`
-  - Filters by `consent_type='privacy_policy'`
-  - Returns `{ consents: [], success: true }`
+- **Backend Handler**: `get_user_consents()` in `routes.py`
+  - Verifies `user_hash` exists in `whitelist`
+  - Returns every consent row for the user without filtering by `consent_type`
+  - Responds with `{ consents: ConsentRecord[], success: true }`
 - **Frontend Response Handling**:
   - Has consent: `setPage('login')`
   - No consent: `setPage('consent')`
@@ -458,7 +458,7 @@ This section documents the detailed user experience flow at the component and AP
   - Filters by `published=true` and locale
   - Orders by `effective_date DESC`
   - Returns latest version or fallback to static file
-  - Returns `{ version, content, last_updated, source, locale }`
+  - Responds with `{ version, content, last_updated, success, source }` (no `locale` field in payload)
 - **Frontend Response Handling**:
   - Success: stores `policyContent`, `policyVersion`, `policyLastUpdated` in state
   - Error: displays fallback message
@@ -533,11 +533,12 @@ This section documents the detailed user experience flow at the component and AP
 
 **User Focus**:
 1. User sees `Stepper` component showing current step (1/5)
-2. User sees plan type buttons (A, B, C, D, E, F, G, K, P, R)
-3. User clicks plan type `Button`
+2. User opens a single plan type dropdown (`Select`) listing A, B, C, D, E, F, G, K, P, R
+3. User chooses the desired plan option from the menu
 4. User clicks "다음" `Button` (next-button)
 
 **Component Behavior**:
+- `PlanTypeSelector` renders one MUI `Select` with `MenuItem` entries instead of discrete buttons
 - `setPlan()` updates `plan.plan_id`
 - `useEffect()` persists to localStorage via `setJSON('ui.planEditor.plan', plan)`
 - Navigation: increments `step` state
@@ -587,9 +588,9 @@ This section documents the detailed user experience flow at the component and AP
 3. User clicks "다음" `Button`
 
 **Component Behavior**:
-- `validateSimulationRounds()` checks limits based on plan type
-- Plan G: max 12, others: 15 (A/B/C) or 18 (D/E/F/K/P/R)
-- If invalid: shows `ValidationModal` with limit info
+- `getSimulationRoundLimits()` returns a global `{ min: 1, max: 100 }` range for every plan type
+- `validateSimulationRounds()` applies that single range without plan-specific caps
+- If user input falls outside 1–100: shows `ValidationModal` with the global bounds
 - `generateInvestments()` creates default investment array
 
 **Transition**: Step 5/5 (Investment Editor)
@@ -601,12 +602,13 @@ This section documents the detailed user experience flow at the component and AP
 **User Focus**:
 1. User sees table with rows for each simulation round
 2. User enters investment amount per round in `TextField`
-3. User enters sales achievement rate (%) in `TextField`
+3. Starting at 개인 회차 4, user enters sales achievement rate (%) via inline input (rounds 1–3 show no rate field)
 4. User clicks "저장" `Button` (save-button)
 
 **Component Behavior**:
 - Validates minimum investment amount per plan type
 - If below minimum: shows `DefaultValueWarningModal`
+- `InvestmentTable` renders `SalesRateInput` only when `round >= 4`, leaving earlier rounds blank
 - `handleSave()` prepares plan data for API submission
 
 **API Call**: `apiService.createSimulation()` or `apiService.updateSimulation()`
@@ -640,9 +642,9 @@ This section documents the detailed user experience flow at the component and AP
 2. User clicks "결과 보기" `Button` (view-results-button) on simulation row
 
 **Component Behavior**:
-- `handleViewResults(plan)` triggered
-- If `plan.simulation_results` exists: directly navigate to results
-- If no results: calls `useSimulationActions.handleViewResults()`
+- `handleViewResults(plan)` invokes `useSimulationActions.handleViewResults()` for every run request
+- The helper posts to `/api/simulation/run` on each click, even when `plan.simulation_results` already contains cached data
+- Upon success, the hook stores the fresh payload and navigates to `ResultsPage`
 
 **API Call**: `apiService.runSimulation(simulation_id, token)`
 - **Backend Route**: POST `/api/simulation/run`
@@ -660,9 +662,9 @@ This section documents the detailed user experience flow at the component and AP
   - Updates `simulation_results` column in database
   - Returns `{ simulation_id, history, summary, scheduled_payment, success: true }`
 - **Frontend Response Handling**:
-  - Success: stores result via `setSimulationResult(result)`
+  - Success: stores the newly fetched result via `setSimulationResult(result)`
   - Navigates to `ResultsPage` (`setPage('results')`)
-  - Shows `CircularProgress` while loading
+  - Shows `CircularProgress` while the re-run request is in flight
 
 **Transition**: `AppController` renders `ResultsPage`
 
@@ -690,7 +692,7 @@ This section documents the detailed user experience flow at the component and AP
 - `findMaxNegativeDeepIndex()` identifies first positive profit round
 - Highlights row where profit turns positive
 
-**Transition**: 
+**Transition**:
 - "수당표 보기": renders `AllowanceTablePage`
 - "돌아가기": returns to `MainPage`
 
@@ -778,10 +780,11 @@ This section documents the detailed user experience flow at the component and AP
 **Component Behavior**:
 - `useSelectedSimulations()` hook manages selection state
 - Validates selection constraints (one per plan type)
-- `generateSummaryReport()` aggregates financial metrics
-- Displays combined totals and per-plan breakdown
+- `generateSummaryReport()` re-runs each selected simulation via `api.runSimulation()` to gather fresh histories
+- Aggregates the backend responses into combined totals and per-plan breakdown
 
-**No API Call**: Calculation performed client-side from cached results
+**API Calls**:
+- Issues POST `/api/simulation/run` for every selected simulation ID (identical to Step 7 handler)
 
 **Transition**: Inline expansion within `MainPage`
 
