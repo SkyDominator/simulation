@@ -501,7 +501,7 @@ This section documents the detailed user experience flow at the component and AP
 **Component Behavior**:
 
 - `useEffect()` detects embedded browser via `isEmbeddedBrowser()` utility
-- If embedded: disables OAuth buttons, shows `EmbeddedBrowserWarningModal`
+- If embedded: sets `showEmbeddedBanner`/`isEmbedded`, which renders a warning banner and disables both OAuth buttons (so the modal never opens unless detection fails later)
 - `handleSocialLogin(provider)` triggers OAuth flow
 - E2E mode: emits `window.dispatchEvent('e2e:oauth-click')` for testing
 
