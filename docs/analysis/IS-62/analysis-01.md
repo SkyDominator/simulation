@@ -41,6 +41,8 @@ Based on the Test Pyramid principle (10% E2E, focusing on critical business flow
 **File**: `e2e/specs/simulation-flow.spec.ts` (expand existing)  
 **Flow** (to be implemented):
 
+> Plan Editor inputs expose `data-testid` attributes on their underlying `<input>` elements (`starting-round-input`, `current-round-input`, `simulation-rounds-input`), and the final CTA uses `data-testid="save-button"`. Use them directly with Playwright's `getByTestId` helpers after selecting the plan type.
+
 ```typescript
 test("E2E-JOURNEY: creates a new simulation with investment plan", async ({
   memberSession,
@@ -49,32 +51,33 @@ test("E2E-JOURNEY: creates a new simulation with investment plan", async ({
   const apis = mockedApis(memberSession);
   await apis.mockSimulationAPI();
   await apis.mockNoticesAPI();
-  
+
   await memberSession.goto("/");
   await memberSession.getByTestId("create-simulation").click();
-  
+
   // Step 1: Select plan type
   await selectPlan(memberSession, "A");
   await clickNext(memberSession);
-  
-  // Step 2: Starting company round
-  await fillStartingRound(memberSession, 1);
+
+  // Step 2: Starting company round (input carries data-testid on the inner input element)
+  await memberSession.getByTestId("starting-round-input").fill("1");
   await clickNext(memberSession);
-  
+
   // Step 3: Current company round
-  await fillCurrentRound(memberSession, 1);
+  await memberSession.getByTestId("current-round-input").fill("1");
   await clickNext(memberSession);
-  
-  // Step 4: Investment amounts (3 rounds)
+
+  // Step 4: Limit the simulation to three rounds for a fast journey assertion
+  await memberSession.getByTestId("simulation-rounds-input").fill("3");
+  await clickNext(memberSession);
+
+  // Step 5: Enter round amounts before saving
   await fillInvestmentAmount(memberSession, 1, "1000000");
   await fillInvestmentAmount(memberSession, 2, "2000000");
   await fillInvestmentAmount(memberSession, 3, "3000000");
-  await clickNext(memberSession);
-  
-  // Step 5: Save simulation
-  await memberSession.getByTestId("save-simulation").click();
-  
-  // Verify back on dashboard with new simulation
+  await memberSession.getByTestId("save-button").click();
+
+  // Verify the dashboard reflects the new plan
   await expect(memberSession.getByTestId("main-page")).toBeVisible();
   await expect(memberSession.locator("text=/플랜 A/i")).toBeVisible();
 });
@@ -87,7 +90,7 @@ test("E2E-JOURNEY: creates a new simulation with investment plan", async ({
 
 **Current State**: `e2e/specs/results-display.spec.ts` drives the run → results table journey but **uses deprecated legacy `TestHelpers` and `APIHelpers`**. The allowance table button exists in ResultsPage.tsx (button text "수당표 보기", navigates to 'allowance-table' page), so the feature is implemented.
 
-**REQUIRED Migration**: Abandon legacy helpers and migrate to the shared fixture architecture (`simulationSeed`, `mockedApis`) per plan-00.md Phase 1–2. Add verification for allowance table navigation.
+**REQUIRED Migration**: Abandon legacy helpers and migrate to the shared fixture architecture (`simulationSeed`, `mockedApis`) per plan-00.md Phase 1–2. Add verification for allowance table navigation. The run button in `SimulationTable` is rendered as an icon button with `data-testid="results-{simulation_id}"`.
 
 ```typescript
 test("E2E-JOURNEY: runs simulation, views results, and navigates to allowance table", async ({
@@ -99,19 +102,18 @@ test("E2E-JOURNEY: runs simulation, views results, and navigates to allowance ta
   await apis.mockNoticesAPI();
 
   await simulationSeed.goto("/");
-  await simulationSeed.locator('[data-testid^="run-"]').first().click();
+  await simulationSeed.locator('[data-testid^="results-"]').first().click();
 
+  await expect(simulationSeed.getByTestId("results-page")).toBeVisible({
+    timeout: 10_000,
+  });
   await expect(
-    simulationSeed.locator("text=/시뮬레이션.*결과/i")
-  ).toBeVisible({ timeout: 10_000 });
-  await expect(
-    simulationSeed.locator("text=/누적 순이익|cumulative net income/i")
+    simulationSeed.locator("text=/실납입계|cumulative_net_profit/i")
   ).toBeVisible();
 
-  // Click the "수당표 보기" button (no testid, use text locator)
   await simulationSeed.getByRole("button", { name: /수당표 보기/i }).click();
   await expect(
-    simulationSeed.locator("text=/수당.*내역|allowance/i")
+    simulationSeed.locator("text=/수당누계|allowance/i")
   ).toBeVisible();
 });
 ```
@@ -122,7 +124,14 @@ test("E2E-JOURNEY: runs simulation, views results, and navigates to allowance ta
 
 **Flow**:
 
+> `mockSimulationAPI()` seeds a single plan (plan A). Override the GET handler for `/api/simulations` inside the test so the dashboard renders two distinct A plans plus one B, one P, and one G plan, letting the journey cover both duplicate-plan validation and multi-plan aggregation.
+
 ```typescript
+import {
+  createSimulationData,
+  createSimulationListResponse,
+} from "../../test/shared/fixtures";
+
 test("E2E-JOURNEY: multi-select and view comprehensive results", async ({
   simulationSeed,
   mockedApis,
@@ -130,50 +139,64 @@ test("E2E-JOURNEY: multi-select and view comprehensive results", async ({
   const apis = mockedApis(simulationSeed);
   await apis.mockSimulationAPI();
   await apis.mockNoticesAPI();
-  
+
+  // Override the default single-plan payload so the table exercises the per-plan validation.
+  await simulationSeed.route("**/api/simulations**", async (route) => {
+    if (route.request().method() === "GET") {
+      const response = createSimulationListResponse(5, {
+        data: [
+          createSimulationData({ id: "sim-a-1", plan_id: "A" }),
+          createSimulationData({ id: "sim-b-1", plan_id: "B" }),
+          createSimulationData({ id: "sim-p-1", plan_id: "P" }),
+          createSimulationData({ id: "sim-a-2", plan_id: "A" }),
+          createSimulationData({ id: "sim-g-1", plan_id: "G" }),
+        ],
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(response.data),
+      });
+      return;
+    }
+
+    await route.continue();
+  });
+
   await simulationSeed.goto("/");
-  
-  // simulationSeed fixture should provide 2-3 pre-created simulations with different plan types
-  
-  // Select multiple simulations (one per plan type)
-  // Note: Checkboxes don't have plan-specific testids. Use table row locators instead.
-  const firstRow = simulationSeed.getByTestId("simulation-row-0");
-  await firstRow.locator('input[type="checkbox"]').click();
-  
-  const secondRow = simulationSeed.getByTestId("simulation-row-1");
-  await secondRow.locator('input[type="checkbox"]').click();
-  
-  // Verify validation: cannot select two simulations of same plan type
-  // (Checkbox becomes disabled with tooltip, no error message shown)
-  const thirdRow = simulationSeed.getByTestId("simulation-row-2");
-  const thirdCheckbox = thirdRow.locator('input[type="checkbox"]');
-  if (await thirdCheckbox.isVisible()) {
-    // Check if it's disabled (same plan type as previously selected)
-    const isDisabled = await thirdCheckbox.isDisabled();
-    expect(isDisabled).toBe(true); // Should be disabled if same plan type
+
+  // Select initial distinct plan types (A, B, P)
+  await simulationSeed
+    .getByTestId("simulation-row-0")
+    .locator('input[type="checkbox"]').click();
+  await simulationSeed
+    .getByTestId("simulation-row-1")
+    .locator('input[type="checkbox"]').click();
+  await simulationSeed
+    .getByTestId("simulation-row-2")
+    .locator('input[type="checkbox"]').click();
+
+  // Verify validation: cannot select two simulations of same plan type (row 3 is second plan A)
+  const duplicateCheckbox = simulationSeed
+    .getByTestId("simulation-row-3")
+    .locator('input[type="checkbox"]');
+  if (await duplicateCheckbox.isVisible()) {
+    expect(await duplicateCheckbox.isDisabled()).toBe(true);
   }
-  
-  // Click "종합 결과" (Comprehensive Results) button (no testid, use text locator)
+
+  // Select remaining unique plan type (plan G)
+  await simulationSeed
+    .getByTestId("simulation-row-4")
+    .locator('input[type="checkbox"]').click();
+
   await simulationSeed.getByRole("button", { name: /종합 결과/i }).click();
-  
-  // Verify comprehensive results modal/section displays (SummaryReport component)
-  await expect(
-    simulationSeed.locator("text=/종합 결과 보고서/i")
-  ).toBeVisible();
-  
-  // Verify aggregated metrics are shown (총 필요 준비금)
-  await expect(
-    simulationSeed.locator("text=/총 필요 준비금/i")
-  ).toBeVisible();
-  
-  // Verify multiple plan data is combined in report
-  // The report displays plan sections with plan IDs
-  await expect(
-    simulationSeed.locator("text=/플랜 A/i")
-  ).toBeVisible();
-  await expect(
-    simulationSeed.locator("text=/플랜 B/i")
-  ).toBeVisible();
+
+  await expect(simulationSeed.locator("text=/종합 결과 보고서/i")).toBeVisible();
+  await expect(simulationSeed.locator("text=/총 필요 준비금/i")).toBeVisible();
+  await expect(simulationSeed.locator("text=/플랜 A/i")).toBeVisible();
+  await expect(simulationSeed.locator("text=/플랜 B/i")).toBeVisible();
+  await expect(simulationSeed.locator("text=/플랜 P/i")).toBeVisible();
+  await expect(simulationSeed.locator("text=/플랜 G/i")).toBeVisible();
 });
 ```
 
