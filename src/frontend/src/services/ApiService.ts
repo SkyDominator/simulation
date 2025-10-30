@@ -825,8 +825,7 @@ export class ApiService implements ApiServiceInterface {
 // Default instance using environment URL
 export const API_BASE_URL: string =
   (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
-  "https://simulation.lightoflifeclub.com/api";
-// "http://localhost:8001/api";
+  "http://localhost:8001/api";
 
 export const defaultApiService = new ApiService(API_BASE_URL);
 // dummy comment
