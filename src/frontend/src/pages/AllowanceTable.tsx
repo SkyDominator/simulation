@@ -14,7 +14,7 @@ import {
   TableContainer,
 } from "@mui/material";
 
-interface OfflineResultsPageProps {
+interface AllowanceTablePageProps {
   setPage: (page: Page) => void;
   result: SimulationRunResponse | null;
 }
@@ -36,7 +36,7 @@ interface ProcessedRoundData {
   investor_details: InvestorDetail[]; // raw details for cell-level rendering
 }
 
-const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
+const AllowanceTablePage: React.FC<AllowanceTablePageProps> = ({
   setPage,
   result,
 }) => {
@@ -475,4 +475,4 @@ const OfflineResultsPage: React.FC<OfflineResultsPageProps> = ({
   );
 };
 
-export default OfflineResultsPage;
+export default AllowanceTablePage;

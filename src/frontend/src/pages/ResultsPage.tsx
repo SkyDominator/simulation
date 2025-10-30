@@ -182,7 +182,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ setPage, result }) => {
           <Button
             variant="contained"
             color="primary"
-            onClick={() => setPage("offline-results")}
+            onClick={() => setPage("allowance-table")}
           >
             수당표 보기
           </Button>

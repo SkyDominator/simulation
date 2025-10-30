@@ -5,7 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import MainPage from "./pages/MainPage";
 import PlanEditorPage from "./pages/PlanEditor";
 import ResultsPage from "./pages/ResultsPage";
-import OfflineResultsPage from "./pages/OfflineResults.tsx";
+import AllowanceTablePage from "./pages/AllowanceTable.tsx";
 import ConsentPage from "./pages/ConsentPage";
 import AdminPolicyPage from "./pages/AdminPolicyPage";
 import { type Plan, type Page } from "./types/types";
@@ -94,7 +94,7 @@ const AppController = () => {
   );
 
   const mainPages: Record<
-    "main" | "plan-editor" | "results" | "offline-results" | "admin-policy",
+    "main" | "plan-editor" | "results" | "allowance-table" | "admin-policy",
     React.ReactElement
   > = useMemo(
     () => ({
@@ -110,8 +110,8 @@ const AppController = () => {
         <PlanEditorPage setPage={setPage} editingPlan={editingPlan} />
       ),
       results: <ResultsPage setPage={setPage} result={simulationResult} />,
-      "offline-results": (
-        <OfflineResultsPage setPage={setPage} result={simulationResult} />
+      "allowance-table": (
+        <AllowanceTablePage setPage={setPage} result={simulationResult} />
       ),
       "admin-policy": <AdminPolicyPage setPage={setPage} />,
     }),
@@ -141,7 +141,7 @@ const AppController = () => {
       page === "main" ||
       page === "plan-editor" ||
       page === "results" ||
-      page === "offline-results" ||
+      page === "allowance-table" ||
       page === "admin-policy"
     ) {
       return mainPages[page];
@@ -181,7 +181,7 @@ const AppController = () => {
         page === "main" ||
         page === "plan-editor" ||
         page === "results" ||
-        page === "offline-results"
+        page === "allowance-table"
       ) {
         setPage("whitelist");
       }

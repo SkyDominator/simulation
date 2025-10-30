@@ -171,5 +171,5 @@ export type Page =
   | "main"
   | "plan-editor"
   | "results"
-  | "offline-results"
+  | "allowance-table"
   | "admin-policy";
