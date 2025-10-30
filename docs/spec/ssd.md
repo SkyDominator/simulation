@@ -384,6 +384,7 @@ This section documents the detailed user experience flow at the component and AP
 **Component**: `OtpVerificationPage`
 
 **User Focus**:
+
 1. User sees OTP entry form with countdown timer (MM:SS)
 2. User enters 6-digit code in `TextField` (otp-input)
 3. User clicks "인증" `Button` (verify-otp)
@@ -391,11 +392,14 @@ This section documents the detailed user experience flow at the component and AP
 5. If need to change info: User clicks "이전" `Button` (back-button)
 
 **Component Behavior**:
+
 - `useEffect()` manages countdown timer
 - `handleSendOtp()` resends OTP
 - `handleVerify()` validates code entry
+- Countdown starts at `0` on initial load; it is only seeded after the user taps "재전송" and receives `expires_in_seconds` from the resend response.
 
 **API Call**: `ApiService.verifyOtp(phone, otpCode)`
+
 - **Backend Route**: POST `/api/otp/verify`
 - **Backend Handler**: `verify_otp()` in `routes.py`
   - Calls `OTPService.verify_otp()`
@@ -407,7 +411,7 @@ This section documents the detailed user experience flow at the component and AP
   - Returns `{ success: true, message }` or `{ success: false, message, remaining_attempts }`
 - **Frontend Response Handling**:
   - Success: calls `onVerified(userHash)` callback
-  - Error: displays error with remaining attempts in `Alert`
+  - Error: displays backend-provided `message` via `Alert` (current UI does not surface `remaining_attempts`)
 
 **Transition**: `AppController` receives `userHash` via `onVerified()` callback, triggers `useConsentFlow` hook
 
@@ -418,10 +422,12 @@ This section documents the detailed user experience flow at the component and AP
 **Hook**: `useConsentFlow(user, userHash, page, setPage)`
 
 **Behavior**:
+
 1. `useEffect()` triggers when `userHash` is set and `user` is null
 2. Hook calls `api.getUserConsents(userHash)` to check existing consent
 
 **API Call**: `api.getUserConsents(userHash)`
+
 - **Backend Route**: GET `/api/consents/{user_hash}`
 - **Backend Handler**: `get_user_consents()` in `routes.py`
   - Verifies `user_hash` exists in `whitelist`
@@ -439,12 +445,14 @@ This section documents the detailed user experience flow at the component and AP
 **Component**: `ConsentPage`
 
 **User Focus**:
+
 1. User sees privacy policy content in scrollable container
 2. User reads markdown-formatted policy via `ReactMarkdown`
 3. User checks agreement `Checkbox` (consent-checkbox)
 4. User clicks "동의" `Button` (accept-button) or "거부" `Button` (decline-button)
 
 **Component Behavior**:
+
 - `useEffect()` loads privacy policy on mount
 - `handleAccept()` validates checkbox and records consent
 - `onDecline()` returns to whitelist check
@@ -452,6 +460,7 @@ This section documents the detailed user experience flow at the component and AP
 **API Calls**:
 
 **Call 1**: `apiService.getPrivacyPolicy({ locale })`
+
 - **Backend Route**: GET `/api/privacy-policy?locale=ko-KR`
 - **Backend Handler**: `get_privacy_policy()` in `routes.py`
   - Queries `privacy_policies` table
@@ -464,6 +473,7 @@ This section documents the detailed user experience flow at the component and AP
   - Error: displays fallback message
 
 **Call 2**: `apiService.recordConsent(userHash, 'privacy_policy', policyVersion)`
+
 - **Backend Route**: POST `/api/consents`
 - **Backend Handler**: `record_consent()` in `routes.py`
   - Inserts or updates `consent_records` table
@@ -480,6 +490,7 @@ This section documents the detailed user experience flow at the component and AP
 **Component**: `LoginPage`
 
 **User Focus**:
+
 1. User sees OAuth provider buttons (Google, Kakao)
 2. If embedded browser detected: sees warning banner with "브라우저에서 열기" guidance
 3. User clicks "Google로 로그인" `Button` (google-login-button) or "Kakao로 로그인" `Button` (kakao-login-button)
@@ -488,12 +499,14 @@ This section documents the detailed user experience flow at the component and AP
 6. User redirected back to app
 
 **Component Behavior**:
+
 - `useEffect()` detects embedded browser via `isEmbeddedBrowser()` utility
 - If embedded: disables OAuth buttons, shows `EmbeddedBrowserWarningModal`
 - `handleSocialLogin(provider)` triggers OAuth flow
 - E2E mode: emits `window.dispatchEvent('e2e:oauth-click')` for testing
 
 **OAuth Flow**: Handled by `supabase.auth.signInWithOAuth()` method
+
 - **Frontend**: Supabase client redirects to provider OAuth URL
 - **Backend**: No direct backend involvement (Supabase handles OAuth)
 - **Frontend**: Supabase receives callback, exchanges code for JWT
@@ -519,10 +532,12 @@ This section documents the detailed user experience flow at the component and AP
 **Component**: `MainPage`
 
 **User Focus**:
+
 1. User sees dashboard with simulation table
 2. User clicks "새 시뮬레이션" `Button` (add-simulation-button)
 
 **Component Behavior**:
+
 - `onClick` handler calls `setPage('plan-editor')` and `setEditingPlan(null)`
 
 **Transition**: `AppController` renders `PlanEditorPage`
@@ -532,12 +547,14 @@ This section documents the detailed user experience flow at the component and AP
 **Component**: `PlanEditorPage` → `PlanTypeSelector`
 
 **User Focus**:
+
 1. User sees `Stepper` component showing current step (1/5)
 2. User opens a single plan type dropdown (`Select`) listing A, B, C, D, E, F, G, K, P, R
 3. User chooses the desired plan option from the menu
 4. User clicks "다음" `Button` (next-button)
 
 **Component Behavior**:
+
 - `PlanTypeSelector` renders one MUI `Select` with `MenuItem` entries instead of discrete buttons
 - `setPlan()` updates `plan.plan_id`
 - `useEffect()` persists to localStorage via `setJSON('ui.planEditor.plan', plan)`
@@ -552,11 +569,13 @@ This section documents the detailed user experience flow at the component and AP
 **Component**: `PlanEditorPage` → `StartingCompanyRoundSelector`
 
 **User Focus**:
+
 1. User sees round number input (1-100)
 2. User enters starting company round in `TextField`
 3. User clicks "다음" `Button`
 
 **Component Behavior**:
+
 - `handleStartingCompanyRoundChange()` updates `plan.starting_company_round`
 - Validation: must be numeric, range 1-100
 - If invalid: shows `StartingRoundValidationModal`
@@ -568,11 +587,13 @@ This section documents the detailed user experience flow at the component and AP
 **Component**: `PlanEditorPage` → `CurrentCompanyRoundSelector`
 
 **User Focus**:
+
 1. User sees round number input
 2. User enters current company round in `TextField`
 3. User clicks "다음" `Button`
 
 **Component Behavior**:
+
 - Validation: `current_company_round >= starting_company_round`
 - If invalid: shows `CurrentRoundValidationModal`
 
@@ -583,11 +604,13 @@ This section documents the detailed user experience flow at the component and AP
 **Component**: `PlanEditorPage` → `SimulationRoundsSelector`
 
 **User Focus**:
+
 1. User sees simulation rounds input
 2. User enters total simulation rounds in `TextField`
 3. User clicks "다음" `Button`
 
 **Component Behavior**:
+
 - `getSimulationRoundLimits()` returns a global `{ min: 1, max: 100 }` range for every plan type
 - `validateSimulationRounds()` applies that single range without plan-specific caps
 - If user input falls outside 1–100: shows `ValidationModal` with the global bounds
@@ -600,12 +623,14 @@ This section documents the detailed user experience flow at the component and AP
 **Component**: `PlanEditorPage` → `InvestmentEditor`
 
 **User Focus**:
+
 1. User sees table with rows for each simulation round
 2. User enters investment amount per round in `TextField`
 3. Starting at 개인 회차 4, user enters sales achievement rate (%) via inline input (rounds 1–3 show no rate field)
 4. User clicks "저장" `Button` (save-button)
 
 **Component Behavior**:
+
 - Validates minimum investment amount per plan type
 - If below minimum: shows `DefaultValueWarningModal`
 - `InvestmentTable` renders `SalesRateInput` only when `round >= 4`, leaving earlier rounds blank
@@ -614,6 +639,7 @@ This section documents the detailed user experience flow at the component and AP
 **API Call**: `apiService.createSimulation()` or `apiService.updateSimulation()`
 
 **Create Simulation**:
+
 - **Backend Route**: POST `/api/simulation/create`
 - **Backend Handler**: `create_simulation()` in `routes.py`
   - Depends on `authenticate_jwt_token()` for auth
@@ -625,6 +651,7 @@ This section documents the detailed user experience flow at the component and AP
   - Error: displays error in `Alert`
 
 **Update Simulation** (if `editingPlan` exists):
+
 - **Backend Route**: PATCH `/api/simulations/{simulation_id}`
 - **Backend Handler**: `update_simulation()` in `routes.py`
   - Validates ownership (`user_id` match)
@@ -660,11 +687,11 @@ This section documents the detailed user experience flow at the component and AP
     - Calculates tax (3.3%)
     - Generates `history[]` array with per-round breakdown
   - Updates `simulation_results` column in database
-  - Returns `{ simulation_id, history, summary, scheduled_payment, success: true }`
+    - Returns `{ simulation_id, plan_id, starting_company_round, current_company_round, simulation_rounds, scheduled_payment, sales_achievement_rates?, history, success: true }`
 - **Frontend Response Handling**:
   - Success: stores the newly fetched result via `setSimulationResult(result)`
   - Navigates to `ResultsPage` (`setPage('results')`)
-  - Shows `CircularProgress` while the re-run request is in flight
+    - Disables the "결과 보기" button for the active row while the request is in flight
 
 **Transition**: `AppController` renders `ResultsPage`
 
@@ -688,9 +715,9 @@ This section documents the detailed user experience flow at the component and AP
 4. User clicks "돌아가기" `Button` (back-button)
 
 **Component Behavior**:
-- `injectDerivedHistory()` utility enriches history with cumulative fields
-- `findMaxNegativeDeepIndex()` identifies first positive profit round
-- Highlights row where profit turns positive
+- `injectDerivedHistory()` utility adds `company_round`, per-round `amount`, and defaults the `sales_achievement_rate` to 100 when missing
+- `findMaxNegativeDeepIndex()` returns the last index before the cumulative net profit begins to recover
+- Highlights the deepest cumulative-loss row (still negative) to mark when the trajectory starts improving
 
 **Transition**:
 - "수당표 보기": renders `AllowanceTablePage`
