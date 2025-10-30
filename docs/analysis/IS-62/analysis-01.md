@@ -90,7 +90,7 @@ test("E2E-JOURNEY: creates a new simulation with investment plan", async ({
 
 **Current State**: `e2e/specs/results-display.spec.ts` drives the run → results table journey but **uses deprecated legacy `TestHelpers` and `APIHelpers`**. The allowance table button exists in ResultsPage.tsx (button text "수당표 보기", navigates to 'allowance-table' page), so the feature is implemented.
 
-**REQUIRED Migration**: Abandon legacy helpers and migrate to the shared fixture architecture (`simulationSeed`, `mockedApis`) per plan-00.md Phase 1–2. Add verification for allowance table navigation. The run button in `SimulationTable` is rendered as an icon button with `data-testid="results-{simulation_id}"`.
+**REQUIRED Migration**: Abandon legacy helpers and migrate to the shared fixture architecture (`simulationSeed`, `mockedApis`) per plan-00.md Phase 1–2. Add verification for allowance table navigation. The results/run button in `SimulationTable` is rendered as an icon button with `data-testid="results-{simulation_id}"`.
 
 ```typescript
 test("E2E-JOURNEY: runs simulation, views results, and navigates to allowance table", async ({
@@ -113,7 +113,7 @@ test("E2E-JOURNEY: runs simulation, views results, and navigates to allowance ta
 
   await simulationSeed.getByRole("button", { name: /수당표 보기/i }).click();
   await expect(
-    simulationSeed.locator("text=/수당누계|allowance/i")
+    simulationSeed.locator("text=/수당표 보기/i")
   ).toBeVisible();
 });
 ```
@@ -124,13 +124,10 @@ test("E2E-JOURNEY: runs simulation, views results, and navigates to allowance ta
 
 **Flow**:
 
-> `mockSimulationAPI()` seeds a single plan (plan A). Override the GET handler for `/api/simulations` inside the test so the dashboard renders two distinct A plans plus one B, one P, and one G plan, letting the journey cover both duplicate-plan validation and multi-plan aggregation.
+> `mockSimulationAPI()` seeds a single plan (plan A). Override the GET handler for `/api/simulations` inside the test so the dashboard renders two distinct A plans plus one B, one P, and one G plan, letting the journey cover both duplicate-plan validation and multi-plan aggregation. The comprehensive results button has `data-testid="summary-report"` and displays text "종합 결과".
 
 ```typescript
-import {
-  createSimulationData,
-  createSimulationListResponse,
-} from "../../test/shared/fixtures";
+import { test, expect } from "../fixtures/base";
 
 test("E2E-JOURNEY: multi-select and view comprehensive results", async ({
   simulationSeed,
@@ -143,19 +140,16 @@ test("E2E-JOURNEY: multi-select and view comprehensive results", async ({
   // Override the default single-plan payload so the table exercises the per-plan validation.
   await simulationSeed.route("**/api/simulations**", async (route) => {
     if (route.request().method() === "GET") {
-      const response = createSimulationListResponse(5, {
-        data: [
-          createSimulationData({ id: "sim-a-1", plan_id: "A" }),
-          createSimulationData({ id: "sim-b-1", plan_id: "B" }),
-          createSimulationData({ id: "sim-p-1", plan_id: "P" }),
-          createSimulationData({ id: "sim-a-2", plan_id: "A" }),
-          createSimulationData({ id: "sim-g-1", plan_id: "G" }),
-        ],
-      });
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(response.data),
+        body: JSON.stringify([
+          { simulation_id: 1, plan_id: "A", starting_company_round: 1, simulation_rounds: 3, simulation_results: { history: [] } },
+          { simulation_id: 2, plan_id: "B", starting_company_round: 1, simulation_rounds: 3, simulation_results: { history: [] } },
+          { simulation_id: 3, plan_id: "P", starting_company_round: 1, simulation_rounds: 3, simulation_results: { history: [] } },
+          { simulation_id: 4, plan_id: "A", starting_company_round: 2, simulation_rounds: 5, simulation_results: { history: [] } },
+          { simulation_id: 5, plan_id: "G", starting_company_round: 1, simulation_rounds: 3, simulation_results: { history: [] } },
+        ]),
       });
       return;
     }
@@ -166,30 +160,19 @@ test("E2E-JOURNEY: multi-select and view comprehensive results", async ({
   await simulationSeed.goto("/");
 
   // Select initial distinct plan types (A, B, P)
-  await simulationSeed
-    .getByTestId("simulation-row-0")
-    .locator('input[type="checkbox"]').click();
-  await simulationSeed
-    .getByTestId("simulation-row-1")
-    .locator('input[type="checkbox"]').click();
-  await simulationSeed
-    .getByTestId("simulation-row-2")
-    .locator('input[type="checkbox"]').click();
+  await simulationSeed.locator('[data-testid="select-simulation-1"]').click();
+  await simulationSeed.locator('[data-testid="select-simulation-2"]').click();
+  await simulationSeed.locator('[data-testid="select-simulation-3"]').click();
 
-  // Verify validation: cannot select two simulations of same plan type (row 3 is second plan A)
-  const duplicateCheckbox = simulationSeed
-    .getByTestId("simulation-row-3")
-    .locator('input[type="checkbox"]');
-  if (await duplicateCheckbox.isVisible()) {
-    expect(await duplicateCheckbox.isDisabled()).toBe(true);
-  }
+  // Verify validation: cannot select two simulations of same plan type (simulation_id 4 is second plan A)
+  const duplicateCheckbox = simulationSeed.locator('[data-testid="select-simulation-4"]');
+  await expect(duplicateCheckbox).toBeDisabled();
 
   // Select remaining unique plan type (plan G)
-  await simulationSeed
-    .getByTestId("simulation-row-4")
-    .locator('input[type="checkbox"]').click();
+  await simulationSeed.locator('[data-testid="select-simulation-5"]').click();
 
-  await simulationSeed.getByRole("button", { name: /종합 결과/i }).click();
+  // Click comprehensive results button
+  await simulationSeed.getByTestId("summary-report").click();
 
   await expect(simulationSeed.locator("text=/종합 결과 보고서/i")).toBeVisible();
   await expect(simulationSeed.locator("text=/총 필요 준비금/i")).toBeVisible();
