@@ -355,17 +355,17 @@ This section outlines the key user focus steps for each major user journey.
 1. User sees centered form with club branding
 2. User enters name in `TextField` (name-input)
 3. User enters phone number with auto-formatting (010-XXXX-XXXX) in `TextField` (phone-input)
-4. User clicks "확인" `Button` (submit-whitelist)
+4. User clicks "인증번호 받기" `Button` (submit-whitelist)
 
 #### Step 2: OTP Verification
 
 **User Focus**:
 
-1. User sees OTP entry form with countdown timer (MM:SS)
+1. User sees OTP entry form; countdown timer appears only after requesting a resend
 2. User enters 6-digit code in `TextField` (otp-input)
-3. User clicks "인증" `Button` (verify-otp)
-4. If expired/incorrect: User clicks "재전송" `Button` (resend-otp)
-5. If need to change info: User clicks "이전" `Button` (back-button)
+3. User clicks "인증하기" `Button` (verify-otp)
+4. If expired/incorrect: User clicks "인증번호 재전송" `Button` (resend-otp)
+5. If need to change info: User clicks "이전으로" `Button` (back-button)
 
 #### Step 3: Consent Flow Orchestration
 
@@ -382,7 +382,7 @@ This section outlines the key user focus steps for each major user journey.
 1. User sees privacy policy content in scrollable container
 2. User reads markdown-formatted policy via `ReactMarkdown`
 3. User checks agreement `Checkbox` (consent-checkbox)
-4. User clicks "동의" `Button` (accept-button) or "거부" `Button` (decline-button)
+4. User clicks "계속하기" `Button` (accept-button) or "취소" `Button` (decline-button)
 
 #### Step 5: OAuth Login
 
