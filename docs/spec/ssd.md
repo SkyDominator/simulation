@@ -572,7 +572,7 @@ This section outlines the key user focus steps for each major user journey.
 
 **User Focus**:
 
-1. User sees inline alerts whenever network or server issues occur
+1. User sees inline alerts on pre-auth screens, while dashboard actions and the plan editor surface failures via browser alert dialogs
 2. User retries actions using prompts like "재전송" when errors appear
 3. User is guided back to login if authentication becomes invalid
 4. User receives targeted validation tips to correct incorrect input
