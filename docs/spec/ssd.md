@@ -583,5 +583,5 @@ This section outlines the key user focus steps for each major user journey.
 
 1. User resumes draft simulations from the last saved step after reopening the editor
 2. User returns to dashboard views with previous selections still applied
-3. User reopens notice or results modals in the same state after refresh
+3. User reopens the notice modal or results page in the same state after refresh
 4. User sees temporary data cleared automatically once a save completes or they cancel
