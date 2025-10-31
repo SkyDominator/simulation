@@ -10,9 +10,9 @@ This document helps you understand my project for all tasks.
 
 MUST ALWAYS read [Product Requirements Document (PRD)](../../docs/spec/prd.md) before initiating any tasks and adhere to it when doing all tasks.
 
-## Software Specification Document (SSD)
+## User Flow Document (UXD)
 
-MUST ALWAYS read [Software Specification Document (SSD)](../../docs/spec/ssd.md) before initiating any tasks and FOLLOW it when doing all tasks.
+MUST ALWAYS read [User Flow Document (UXD)](../../docs/spec/ux-flow.md) before initiating any tasks and FOLLOW it when doing all tasks.
 
 ## Agent Behavior
 
