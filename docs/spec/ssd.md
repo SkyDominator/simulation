@@ -353,19 +353,19 @@ This section outlines the key user focus steps for each major user journey.
 **User Focus**:
 
 1. User sees centered form with club branding
-2. User enters name in `TextField` (name-input)
-3. User enters phone number with auto-formatting (010-XXXX-XXXX) in `TextField` (phone-input)
-4. User clicks "인증번호 받기" `Button` (submit-whitelist)
+2. User enters name in `TextField`
+3. User enters phone number with auto-formatting (010-XXXX-XXXX) in `TextField`
+4. User clicks "인증번호 받기" `Button`
 
 #### Step 2: OTP Verification
 
 **User Focus**:
 
 1. User sees OTP entry form; countdown timer appears only after requesting a resend
-2. User enters 6-digit code in `TextField` (otp-input)
-3. User clicks "인증하기" `Button` (verify-otp)
-4. If expired/incorrect: User clicks "인증번호 재전송" `Button` (resend-otp)
-5. If need to change info: User clicks "이전으로" `Button` (back-button)
+2. User enters 6-digit code in `TextField`
+3. User clicks "인증하기" `Button`
+4. If expired/incorrect: User clicks "인증번호 재전송" `Button`
+5. If need to change info: User clicks "이전으로" `Button`
 
 #### Step 3: Consent Flow Orchestration
 
@@ -381,8 +381,8 @@ This section outlines the key user focus steps for each major user journey.
 
 1. User sees privacy policy content in scrollable container
 2. User reads markdown-formatted policy via `ReactMarkdown`
-3. User checks agreement `Checkbox` (consent-checkbox)
-4. User clicks "계속하기" `Button` (accept-button) or "취소" `Button` (decline-button)
+3. User checks agreement `Checkbox`
+4. User clicks "계속하기" `Button` or "취소" `Button`
 
 #### Step 5: OAuth Login
 
@@ -390,7 +390,7 @@ This section outlines the key user focus steps for each major user journey.
 
 1. User sees OAuth provider buttons (Google, Kakao)
 2. If embedded browser is detected, user reads banner explaining why login buttons are disabled
-3. User clicks "Google로 로그인" `Button` (google-login-button) or "Kakao로 로그인" `Button` (kakao-login-button)
+3. User clicks "Google로 로그인" `Button` or "Kakao로 로그인" `Button`
 4. User completes provider authentication and returns to the app
 5. User regains control once Supabase session is established
 
@@ -410,7 +410,7 @@ This section outlines the key user focus steps for each major user journey.
 **User Focus**:
 
 1. User sees dashboard with simulation table
-2. User clicks "새 시뮬레이션" `Button` (add-simulation-button)
+2. User clicks "새 시뮬레이션" `Button`
 
 #### Step 2: Plan Type Selection (Step 1/5)
 
@@ -419,7 +419,7 @@ This section outlines the key user focus steps for each major user journey.
 1. User views stepper indicator showing current progress (1/5)
 2. User opens plan type dropdown listing A, B, C, D, E, F, G, K, P, R
 3. User selects the desired plan option
-4. User advances with "다음" `Button` (next-button)
+4. User advances with "다음" `Button`
 
 #### Step 3: Starting Company Round Selection (Step 2/5)
 
@@ -452,14 +452,14 @@ This section outlines the key user focus steps for each major user journey.
 1. User sees table with rows for each simulation round
 2. User enters investment amount per round in `TextField`
 3. Starting at 개인 회차 4, user inputs sales achievement rate (%) via inline field
-4. User clicks "저장" `Button` (save-button) to commit entries
+4. User clicks "저장" `Button` to commit entries
 
 #### Step 7: Run Simulation from Dashboard
 
 **User Focus**:
 
 1. User reviews simulation list in `SimulationTable`
-2. User clicks "결과 보기" `Button` (view-results-button) for the desired plan
+2. User clicks "결과 보기" `Button` for the desired plan
 3. User waits for processing and then views the results page
 
 #### Step 8: View Results
@@ -485,7 +485,7 @@ This section outlines the key user focus steps for each major user journey.
 
 **User Focus**:
 
-1. User clicks "수정" `Button` (edit-button) on a simulation row
+1. User clicks "수정" `Button` on a simulation row
 2. User returns to the plan editor pre-filled with existing plan data
 3. User adjusts fields and saves changes to update the simulation
 
@@ -493,7 +493,7 @@ This section outlines the key user focus steps for each major user journey.
 
 **User Focus**:
 
-1. User clicks "삭제" `Button` (delete-button) on a simulation row
+1. User clicks "삭제" `Button` on a simulation row
 2. User reviews the confirmation modal and decides whether to proceed
 3. User confirms deletion to remove the plan from the dashboard
 
@@ -511,7 +511,7 @@ This section outlines the key user focus steps for each major user journey.
 **User Focus**:
 
 1. User selects simulations via checkboxes with one selection per plan type
-2. User clicks "종합 결과" `Button` (summary-report-button)
+2. User clicks "종합 결과" `Button`
 3. User waits while combined calculations finish
 4. User reviews consolidated metrics inside the dashboard summary section
 
@@ -521,7 +521,7 @@ This section outlines the key user focus steps for each major user journey.
 
 **User Focus**:
 
-1. User clicks "공지사항" `Button` (notice-button)
+1. User clicks "공지사항" `Button`
 2. User browses the notice list inside the modal
 3. User selects a notice to read sanitized content
 4. User closes the modal after reviewing announcements
@@ -556,7 +556,7 @@ This section outlines the key user focus steps for each major user journey.
 
 **User Focus**:
 
-1. User clicks "로그아웃" `Button` (logout-button)
+1. User clicks "로그아웃" `Button`
 2. User observes a brief loading state while the session clears
 3. User returns to the whitelist page ready for a fresh login
 
