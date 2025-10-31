@@ -501,7 +501,7 @@ This section outlines the key user focus steps for each major user journey.
 
 **User Focus**:
 
-1. User opens the memo modal via memo icon or "메모" button
+1. User opens the memo modal by selecting the memo chip, which shows the memo snippet or "메모 없음" when empty
 2. User edits memo text in the multiline field
 3. User saves to persist the updated memo with the simulation
 4. User cancels or closes the modal to discard changes when needed
@@ -574,7 +574,7 @@ This section outlines the key user focus steps for each major user journey.
 
 1. User sees inline alerts on pre-auth screens, while dashboard actions and the plan editor surface failures via browser alert dialogs
 2. User retries actions using prompts like "재전송" when errors appear
-3. User is guided back to login if authentication becomes invalid
+3. User is guided back to the whitelist check flow if authentication becomes invalid
 4. User receives targeted validation tips to correct incorrect input
 
 ### 15.9 State Persistence Patterns
