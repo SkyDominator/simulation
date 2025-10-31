@@ -419,7 +419,7 @@ This section outlines the key user focus steps for each major user journey.
 1. User views stepper indicator showing current progress (1/5)
 2. User opens plan type dropdown listing A, B, C, D, E, F, G, K, P, R
 3. User selects the desired plan option
-4. User advances with "다음" `Button`
+4. User advances with "다음 단계" `Button`
 
 #### Step 3: Starting Company Round Selection (Step 2/5)
 
@@ -427,7 +427,7 @@ This section outlines the key user focus steps for each major user journey.
 
 1. User enters starting company round between 1 and 100
 2. User adjusts value until validation passes
-3. User continues with "다음" `Button`
+3. User continues with "다음 단계" `Button`
 
 #### Step 4: Current Company Round Selection (Step 3/5)
 
@@ -435,7 +435,7 @@ This section outlines the key user focus steps for each major user journey.
 
 1. User inputs current company round that's at least the starting round
 2. User resolves validation prompts if the value is too low
-3. User proceeds with "다음" `Button`
+3. User proceeds with "다음 단계" `Button`
 
 #### Step 5: Simulation Rounds Selection (Step 4/5)
 
@@ -443,7 +443,7 @@ This section outlines the key user focus steps for each major user journey.
 
 1. User enters total simulation rounds within the allowed range
 2. User corrects entries that fall outside global limits
-3. User moves forward with "다음" `Button`
+3. User moves forward with "다음 단계" `Button`
 
 #### Step 6: Investment & Sales Achievement Rate Entry (Step 5/5)
 
@@ -459,7 +459,7 @@ This section outlines the key user focus steps for each major user journey.
 **User Focus**:
 
 1. User reviews simulation list in `SimulationTable`
-2. User clicks "결과 보기" `Button` for the desired plan
+2. User taps the green play icon (`결과 보기` tooltip) in the desired row
 3. User waits for processing and then views the results page
 
 #### Step 8: View Results
@@ -485,7 +485,7 @@ This section outlines the key user focus steps for each major user journey.
 
 **User Focus**:
 
-1. User clicks "수정" `Button` on a simulation row
+1. User taps the pencil icon (`편집` tooltip) on a simulation row
 2. User returns to the plan editor pre-filled with existing plan data
 3. User adjusts fields and saves changes to update the simulation
 
@@ -493,7 +493,7 @@ This section outlines the key user focus steps for each major user journey.
 
 **User Focus**:
 
-1. User clicks "삭제" `Button` on a simulation row
+1. User taps the trash can icon (`삭제` tooltip) on a simulation row
 2. User reviews the confirmation modal and decides whether to proceed
 3. User confirms deletion to remove the plan from the dashboard
 
