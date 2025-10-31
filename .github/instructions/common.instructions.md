@@ -12,7 +12,7 @@ MUST ALWAYS read [Product Requirements Document (PRD)](../../docs/spec/prd.md) b
 
 ## Software Specification Document (SSD)
 
-
+MUST ALWAYS read [Software Specification Document (SSD)](../../docs/spec/ssd.md) before initiating any tasks and FOLLOW it when doing all tasks.
 
 ## Agent Behavior
 
