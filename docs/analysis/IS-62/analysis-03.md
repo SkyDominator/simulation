@@ -1,3 +1,4 @@
+아래 이슈들을 divide & conquer 방식으로 해결하기 위해 부분 부분으로 나누어 여러 개의 implementation planning tasks 생성해야함. 즉, plan file이 여러개 나와야 하고, 각 plan file은 독립적으로 해결 가능한 문제 단위로 작성되어야 함.
 
 ## Problems
 
@@ -10,16 +11,36 @@ The current frontend codes does:
   - aria-label, aria-describedby
 - miss some test ids in many components, causing test codes cant get elements.
 
-### Frontend test code issues
+### Frontend test code issue 1
 
 The current frontend test codes does:
 
 - not correctly matches the test id with the frontend code
 - not consider accessibility when selecting elements for testing
 
+### Frontend test code issue 2
+
+Re-implement all E2E-JOURNEY tests from scracth. They must tests all the UX flows in docs/spec/ux-flow.md with the following test configs.
+
+Use these 2 test configs for simulations (so all tests should be done against the 2 cases below)
+
+A플랜, 
+가입한 회차 선택: 28
+현재 회차 선택: 29
+시뮬레이션 총 회차 선택: 30
+4회차부터 매출 달성율: 모두 65%
+개인 회차 매출액: 110, 242, 이후 모두 최소 매출액
+
+P플랜, 
+가입한 회차 선택: 13
+현재 회차 선택: 18
+시뮬레이션 총 회차 선택: 21
+4회차부터 매출 달성율: 개인 회차 4, 5회차는 64%, 6회차부터 모두 65%
+개인 회차 매출액: 550, 33, 33, 55, 110, 77, 이후 모두 최소 매출액
+
 ### Tasks
 
-Solve both issues.
+Solve all the issues.
 
 ## Note
 
