@@ -21,8 +21,8 @@
 - [ ] Refactor `MOCK_RESULTS` constants to use `createSimulationResults()` and `createSimulationRoundResult()` factories from shared fixtures.
 - [ ] Keep E2E-specific constants in `test-data.ts` that have no shared equivalent: `TEST_USERS`, `TEST_OTP_CODES`, `VIEWPORT_SIZES`, `TEST_CONSTANTS`, `TEST_MESSAGES`, `TEST_TIMEOUTS`.
 - [ ] Update `generateTestSimulation()` helper to wrap `createSimulationData()` rather than reimplementing structure.
-- [ ] Replace `createErrorResponse()`  with `createAPIErrorResponse()` from shared fixtures where applicable.
-- [ ] Create `createSuccessResponse()` in shared fixtures if not already present, to standardize success response structures, and replace `createSuccessResponse()` in `test-data.ts`.
+<!-- - [ ] Replace `createErrorResponse()`  with `createAPIErrorResponse()` from shared fixtures where applicable.
+- [ ] Create `createSuccessResponse()` in shared fixtures if not already present, to standardize success response structures, and replace `createSuccessResponse()` in `test-data.ts`. -->
 
 
 ## Phase 1 – Test Data Consolidation 2
