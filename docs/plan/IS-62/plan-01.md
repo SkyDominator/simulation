@@ -11,8 +11,25 @@
 
 - UX sequence: `docs/spec/ux-flow.md` (Section 1).
 - Test fixtures & mocks: `src/frontend/e2e/fixtures/*.ts`, `src/frontend/e2e/utils/apiMocks/playwright.ts`.
+- Shared fixtures: `src/frontend/test/shared/fixtures.ts`, `types.ts` (used by API mocks for consistent data).
 - UI components: `src/frontend/src/pages/WhitelistCheckPage.tsx`, `OtpVerificationPage.tsx`, `ConsentPage.tsx`, `LoginPage.tsx`.
 - Helper utilities: `src/frontend/e2e/utils/journey-actions.ts`, `TestHelpers`, `loginTestUser`.
+
+## Phase 0.5 – Test Data Consolidation - Part 1
+
+- [ ] Refactor `TEST_SIMULATIONS` constants to leverage `createSimulationData()` factory from shared fixtures with appropriate overrides for plan-specific parameters.
+- [ ] Refactor `MOCK_RESULTS` constants to use `createSimulationResults()` and `createSimulationRoundResult()` factories from shared fixtures.
+- [ ] Keep E2E-specific constants in `test-data.ts` that have no shared equivalent: `TEST_USERS`, `TEST_OTP_CODES`, `VIEWPORT_SIZES`, `TEST_CONSTANTS`, `TEST_MESSAGES`, `TEST_TIMEOUTS`.
+- [ ] Update `generateTestSimulation()` helper to wrap `createSimulationData()` rather than reimplementing structure.
+- [ ] Replace `createErrorResponse()`  with `createAPIErrorResponse()` from shared fixtures where applicable.
+- [ ] Create `createSuccessResponse()` in shared fixtures if not already present, to standardize success response structures, and replace `createSuccessResponse()` in `test-data.ts`.
+
+
+## Phase 0.5 – Test Data Consolidation - Part 2
+
+- [ ] Audit `e2e/fixtures/test-data.ts` for overlap with `test/shared/fixtures.ts` to identify redundant data definitions. If redundancies exist, refactor to use shared factories.
+- [ ] Document in `test-data.ts` header comment that shared fixtures should be preferred for API response structures to maintain consistency with Vitest unit tests.
+- [ ] Update all helpers under `src/frontend/e2e/utils` to use the shared fixture factories through the mockedApis controller instead of hardcoded values.
 
 ## Phase 0 – Surface Audit & Test Id Harmonization
 
