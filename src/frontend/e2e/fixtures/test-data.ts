@@ -1,8 +1,25 @@
 /**
  * Test data fixtures for E2E tests
  *
- * Note: Prefer using shared fixture factories from test/shared/fixtures.ts
- * for API response structures to maintain consistency with Vitest unit tests.
+ * ⚠️ IMPORTANT: Data Structure Consolidation Policy
+ *
+ * This file contains E2E-specific test data that has no equivalent in shared fixtures:
+ * - TEST_USERS: E2E user scenarios for whitelist verification
+ * - TEST_OTP_CODES: E2E OTP verification codes
+ * - VIEWPORT_SIZES: E2E viewport configurations for responsive testing
+ * - TEST_CONSTANTS: E2E-specific timeouts and validation constants
+ * - TEST_MESSAGES: E2E-specific UI message assertions
+ * - TEST_TIMEOUTS: E2E-specific timeout configurations
+ *
+ * For API response structures (simulations, OTP responses, consent records, etc.),
+ * ALWAYS use shared fixture factories from test/shared/fixtures.ts to maintain
+ * consistency between Playwright E2E tests and Vitest unit tests. This ensures:
+ * 1. Single source of truth for API payload structures
+ * 2. Type safety across test suites
+ * 3. Reduced maintenance burden when API contracts change
+ *
+ * @see test/shared/fixtures.ts - Shared factory functions for API payloads
+ * @see docs/plan/IS-62/plan-01.md - Phase 1: Test Data Consolidation 2
  */
 
 import {
