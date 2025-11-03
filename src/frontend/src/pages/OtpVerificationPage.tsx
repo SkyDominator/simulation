@@ -119,7 +119,11 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
           </Box>
 
           {error && (
-            <Alert severity="error" sx={{ width: "100%" }}>
+            <Alert
+              severity="error"
+              sx={{ width: "100%" }}
+              data-testid="otp-error"
+            >
               {error}
             </Alert>
           )}
@@ -171,6 +175,7 @@ const OtpVerificationPage: React.FC<OtpVerificationPageProps> = ({
               color="inherit"
               onClick={onBack}
               disabled={loading}
+              data-testid="otp-back-button"
             >
               이전으로
             </Button>

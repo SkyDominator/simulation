@@ -147,7 +147,11 @@ const WhitelistCheckPage: React.FC<WhitelistCheckPageProps> = ({
           </Box>
 
           {error && (
-            <Alert severity="error" sx={{ width: "100%" }}>
+            <Alert
+              severity="error"
+              sx={{ width: "100%" }}
+              data-testid="whitelist-error"
+            >
               {error}
             </Alert>
           )}

@@ -130,6 +130,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
               color="primary"
               size="small"
               aria-label="이전 단계로"
+              data-testid="login-back-button"
             >
               <ArrowBackIcon />
             </IconButton>
@@ -153,6 +154,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
               severity="warning"
               onClose={() => setShowEmbeddedBanner(false)}
               sx={{ mb: 2 }}
+              data-testid="embedded-browser-banner"
             >
               <Typography variant="body2">
                 앱 내부 브라우저에서는 Google 로그인이 제한됩니다. 일반
@@ -161,7 +163,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBackToWhitelist }) => {
             </Alert>
           )}
           {error && (
-            <Alert severity="error" onClose={() => setError(null)}>
+            <Alert
+              severity="error"
+              onClose={() => setError(null)}
+              data-testid="login-error"
+            >
               {error}
             </Alert>
           )}
