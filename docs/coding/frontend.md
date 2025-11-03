@@ -156,7 +156,14 @@ test("E2E-RESULTS-003: Summary section shows final metrics", async ({
 
 // ...existing code...
 ```
-  
+
+**3. `data-test-id` pattern**
+
+All UI elements that need to be selected in the E2E tests must have `data-testid` attributes with the following patterns:
+
+* `{page}-error` for error alerts (e.g., whitelist-error, otp-error, login-error)
+* `{page}-back-button` for back navigation buttons
+
 ### Architecture Patterns
 
 **Project Structure:**
