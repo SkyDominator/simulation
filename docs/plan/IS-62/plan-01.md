@@ -28,7 +28,7 @@
 ## Phase 0.5 – Test Data Consolidation - Part 2
 
 - [ ] Audit `e2e/fixtures/test-data.ts` for overlap with `test/shared/fixtures.ts` to identify redundant data definitions. If redundancies exist, refactor `e2e/fixtures/test-data.ts` to use shared factories under `test/shared`.
-- [ ] Search for remaining redundancy in the test infrastructures under `e2e` that could be replaced with shared fixture factories.
+- [ ] Search for remaining redundancy in the test infrastructures under `e2e` that could be replaced with shared fixture factories under `test/shared`.
 - [ ] Document in `test-data.ts` header comment that shared fixtures should be preferred for API response structures to maintain consistency with Vitest unit tests.
 - [ ] Update all helpers under `src/frontend/e2e/utils` to use the shared fixture factories through the mockedApis controller instead of hardcoded values.
 
