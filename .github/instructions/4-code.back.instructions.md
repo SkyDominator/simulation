@@ -78,7 +78,3 @@ If there are too many changed files or code changes in Initial Code Generation, 
 ## Back-end Coding Guidelines
 
 MUST ALWAYS read the [Back-end Coding Guidelines](../../docs/coding/backend.md).
-
-## Front-end Coding Guidelines
-
-MUST ALWAYS read the [Front-end Coding Guidelines](../../docs/coding/frontend.md).

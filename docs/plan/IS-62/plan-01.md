@@ -15,7 +15,7 @@
 - UI components: `src/frontend/src/pages/WhitelistCheckPage.tsx`, `OtpVerificationPage.tsx`, `ConsentPage.tsx`, `LoginPage.tsx`.
 - Helper utilities: `src/frontend/e2e/utils/journey-actions.ts`, `TestHelpers`, `loginTestUser`.
 
-## Phase 0.5 – Test Data Consolidation - Part 1
+## Phase 0 – Test Data Consolidation 1
 
 - [ ] Refactor `TEST_SIMULATIONS` constants to leverage `createSimulationData()` factory from shared fixtures with appropriate overrides for plan-specific parameters.
 - [ ] Refactor `MOCK_RESULTS` constants to use `createSimulationResults()` and `createSimulationRoundResult()` factories from shared fixtures.
@@ -25,20 +25,20 @@
 - [ ] Create `createSuccessResponse()` in shared fixtures if not already present, to standardize success response structures, and replace `createSuccessResponse()` in `test-data.ts`.
 
 
-## Phase 0.5 – Test Data Consolidation - Part 2
+## Phase 1 – Test Data Consolidation 2
 
 - [ ] Audit `e2e/fixtures/test-data.ts` for overlap with `test/shared/fixtures.ts` to identify redundant data definitions. If redundancies exist, refactor `e2e/fixtures/test-data.ts` to use shared factories under `test/shared`.
 - [ ] Search for remaining redundancy in the test infrastructures under `e2e` that could be replaced with shared fixture factories under `test/shared`.
 - [ ] Document in `test-data.ts` header comment that shared fixtures should be preferred for API response structures to maintain consistency with Vitest unit tests.
 - [ ] Update all helpers under `src/frontend/e2e/utils` to use the shared fixture factories through the mockedApis controller instead of hardcoded values.
 
-## Phase 0 – Surface Audit & Test Id Harmonization
+## Phase 2 – Surface Audit & Test Id Harmonization
 
 - [ ] Inventory existing `data-testid` hooks on the four pre-auth pages; add missing ids (e.g., whitelist validation alert, OTP resend button disabled states) while keeping naming consistent with `journey-actions` helpers.
 - [ ] Ensure alert elements expose either role `alert` with deterministic text or a dedicated `data-testid` for assertion stability.
 - [ ] Update `journey-actions.ts` selectors if new ids replace role-based fallbacks (keep accessibility-first strategy per guidelines).
 
-## Phase 1 – Positive Journey (Single Flow Test)
+## Phase 3 – Positive Journey (Single Flow Test)
 
 - [ ] Create new spec `src/frontend/e2e/specs/pre-auth-flow.spec.ts` (or repurpose `onboarding.spec.ts` by renaming) using `test` from `../fixtures/base` only.
 - [ ] Inside `test.describe("Pre-Authentication Journey")`, implement one test (`E2E-JOURNEY-PREAUTH-001`) that drives all six steps sequentially:
@@ -47,7 +47,7 @@
   - Capture intermediate expectations: form visibility toggles, countdown presence after OTP request, consent policy fetch, login banner state when not embedded.
 - [ ] Add a `completePreAuthJourney` helper in `journey-actions.ts` that wraps the sequential actions and accepts hooks for assertions between steps to keep the test concise and reusable.
 
-## Phase 2 – Critical Error Scenario Coverage
+## Phase 4 – Critical Error Scenario Coverage
 
 Implement focused tests in the same spec (order by flow step) using shared mocks:
 
@@ -57,14 +57,14 @@ Implement focused tests in the same spec (order by flow step) using shared mocks
 - [ ] **Consent submission failure** (`E2E-PREAUTH-ERR-004`): start from successful OTP, then apply `mockNetworkError("/api/consents")`, verify toast/alert messaging and that user remains on consent page with retry path.
 - [ ] **Embedded browser login block** (`E2E-PREAUTH-ERR-005`): set user agent before navigation to simulate Kakao in-app browser; confirm banner text, disabled OAuth buttons, and modal triggered on manual click (if logic still allows) without progressing.
 
-## Phase 3 – Helper & Fixture Enhancements
+## Phase 5 – Helper & Fixture Enhancements
 
 - [ ] Implement `completePreAuthFlow` helper in `journey-actions.ts` to return step handles so tests can assert between actions; ensure default OTP code uses fixture constant.
 - [ ] Update `loginTestUser` or add inline handler so the journey test can intercept `e2e:oauth-click` before expecting dashboard.
 - [ ] Expose helper in mocks to control `expires_in_seconds` for deterministic timer assertions; adjust `mockOTPSuccess` or add wrapper method on `MockedApisController` that accepts overrides.
 - [ ] Document any new helper in code comments sparingly, explaining non-obvious sequencing per repo rules.
 
-## Phase 4 – Cleanup & Migration
+## Phase 6 – Cleanup & Migration
 
 - [ ] Remove legacy `base.describe` block from `src/frontend/e2e/specs/onboarding.spec.ts` once new spec covers the cases; keep only shared utilities if still needed.
 - [ ] Delete redundant helper usage that is no longer referenced after migration and run TypeScript build to catch unused exports.
