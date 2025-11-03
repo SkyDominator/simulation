@@ -99,6 +99,8 @@ PWA React/TypeScript application guidelines.
 
 The frontend test codes should follow this 2-way approach. See the following examples.
 
+**Important**: The test ids in all the components frontend production code and its test codes must be match.
+
 **1. Base line: 3 tier strategy for selecting elements**
 
 ```ts
