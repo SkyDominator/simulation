@@ -20,14 +20,13 @@ PWA React/TypeScript application guidelines.
 - Call hooks at top level only (no loops/conditionals)
 - Apply SOLID principles (SRP, OCP, LSP, ISP, DIP)
 - Break UI into small, focused components (container vs presentational)
-- Organize by features/domains: `pages/`, `components/`, `hooks/`, `services/`
+- Organize by features/domains (see Architecture Patterns section for structure)
 - Use composition over inheritance
 - Use PascalCase for components, camelCase for variables/functions
 - Use unique keys in lists
 - Apply memoization only when needed (`React.memo`, `useMemo`, `useCallback`)
 - Use `React.lazy` + `Suspense` for code splitting
-- Use TypeScript for all props/state/API responses
-- Use `import type` for type-only imports
+- Use TypeScript with strict type safety for all props/state/API responses (see TypeScript section)
 - Treat props as immutable
 - Follow the existing code style and conventions when modifying code
 - Clean-up codes after modification (remove unused imports, variables, functions, comments, and unnecessary changes that were prooved to be not needed anymore)
@@ -159,7 +158,8 @@ test("E2E-RESULTS-003: Summary section shows final metrics", async ({
   
 ### Architecture Patterns
 
-**Structure:**
+**Project Structure:**
+
 ```
 src/
 ├── pages/           ## Route-level components
@@ -172,8 +172,10 @@ src/
 ```
 
 **State Management:**
+
 - Use backend API calls over local state
-- Use localStorage/sessionStorage only for UI state
+- Use localStorage/sessionStorage only for non-sensitive UI preferences (theme, language, layout settings)
+- Never store tokens, passwords, or PII in localStorage/sessionStorage
 - Use Context API for auth/global state
 - Calculate derived values in components (don't store)
 
@@ -194,9 +196,11 @@ export const MyComponent: React.FC<{ plan: Plan }> = ({ plan }) => {
 ```
 
 **TypeScript:**
+
 - Strict type safety for all props/state/API
 - Types centralized in `src/types/types.ts`
 - Use generics for reusable components
+- Use `import type` for type-only imports
 
 **Material-UI + Tailwind:**
 ```tsx
@@ -230,9 +234,11 @@ const handleApiCall = async () => {
     setLoading(true);
     const result = await api.createSimulation(data, token);
   } catch (error) {
-    // OK for development debugging of non-sensitive errors
-    // Remove or use proper logging service in production
-    console.error('API Error:', error);
+    // Use proper error logging service in production (e.g., Sentry, Datadog)
+    // Never log sensitive data (tokens, passwords, PII)
+    if (import.meta.env.DEV) {
+      console.error('API Error:', error);
+    }
   } finally {
     setLoading(false);
   }
@@ -315,7 +321,8 @@ const updatePage = (newPage: Page) => {
 ### Security
 
 **DO:**
-- Let Supabase handle JWT management
+
+- Let Supabase handle JWT management (see Authentication pattern for implementation)
 - Use session objects from auth context
 - Validate all user inputs before API calls
 - Sanitize dynamic content
@@ -326,31 +333,35 @@ const updatePage = (newPage: Page) => {
 - Enforce auth server-side
 - Use short-lived JWTs + refresh tokens
 - Set strict CSP headers
-- Use React Error Boundaries
+- Use React Error Boundaries (see Error Handling & UX section)
 - Monitor with Sentry/Datadog
 
 **DON'T:**
-- Store tokens in localStorage manually
+
+- Store tokens in localStorage manually (Supabase handles this)
 - Store sensitive data in React state/props/localStorage
 - Put secrets in `.env` (frontend exposes them)
 - Use `dangerouslySetInnerHTML` without DOMPurify
 - Log sensitive info to console (tokens, passwords, PII, etc.)
-- Use console logging in production (use proper logging service instead)
+- Use console logging in production (use proper logging service like Sentry/Datadog instead)
 - Use `eval`, `Function()`, or dynamic script execution
 - Embed API keys/secrets in frontend code
 
 **XSS Prevention:**
+
 - React escapes JSX by default
 - Validate/escape all external input (APIs, query params, localStorage)
 - Sanitize with DOMPurify if using `dangerouslySetInnerHTML`
 
 **API Security:**
+
 - Always HTTPS
 - Protect against CSRF (tokens or SameSite cookies)
 - Validate backend responses before rendering
 
-**Headers:**
-```
+**Security Headers:**
+
+```http
 X-Frame-Options: DENY
 Content-Security-Policy: frame-ancestors 'none';
 ```
