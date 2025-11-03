@@ -80,12 +80,13 @@ PWA React/TypeScript application guidelines.
  /____________\
 ```
 
-> Note: The pyramid ratios are about test count distribution, not coverage percentage.
+**Test Distribution Ratios** (rough guidance for test count, not coverage %):
 
-**Ratios** (rough guidance):
-- Unit tests: 70%
-- Integration tests: 20%
-- E2E tests: 10%
+- Unit tests: 70% of test count
+- Integration tests: 20% of test count
+- E2E tests: 10% of test count
+
+> Note: These ratios refer to the number of tests, not code coverage percentage. Aim for >90% overall code coverage through your test suite.
 
 #### E2E Test Sizes (Google's approach)
 
@@ -274,10 +275,12 @@ export const MainPage = () => (
 
 ### PWA & Performance
 
-**Service Worker:**
-- PWA via `vite-plugin-pwa`
-- NetworkFirst for APIs, StaleWhileRevalidate for assets
-- Graceful offline degradation
+**Progressive Web App:**
+
+- Use `vite-plugin-pwa` with workbox-precaching
+- NetworkFirst strategy for APIs, StaleWhileRevalidate for assets
+- Graceful offline degradation with clear UI states
+- Custom "Add to Home Screen" prompt after user engagement
 
 **Code Splitting:**
 ```tsx
@@ -305,7 +308,8 @@ const updatePage = (newPage: Page) => {
 ### Error Handling & UX
 
 **DO:**
-- Implement error boundaries
+
+- Implement React Error Boundaries for graceful error recovery
 - Provide actionable error messages
 - Show loading indicators for async operations
 - Use skeleton loaders
@@ -315,6 +319,7 @@ const updatePage = (newPage: Page) => {
 - Use MUI responsive breakpoints
 
 **DON'T:**
+
 - Expose technical error details to users
 - Leave async operations without feedback
 
@@ -369,18 +374,19 @@ Content-Security-Policy: frame-ancestors 'none';
 ### UI/UX Design
 
 **Visual Principles:**
+
 - Material Design 3 (MD3) with MUI for React
 - Mobile-first design
 - CSS Grid + Container Queries for adaptive layouts
 
 **Interaction:**
+
 - Mobile: Bottom Tab Bar navigation
 - Desktop/Tablet: Side Navigation Rail or header
 - Use `transform` and `opacity` for GPU-accelerated animations
-- Clear offline UI states with banners/toasts
-- Custom "Add to Home Screen" prompt after engagement
 
-**Implementation:**
+**Example Implementation:**
+
 ```jsx
 import { Box } from '@mui/material';
 import MobileNavigation from './MobileNavigation';
@@ -402,7 +408,8 @@ function AppShell({ children }) {
 }
 ```
 
-**Libraries:**
+**Key Libraries:**
+
 - UI: @mui/material
 - State: React Context + custom hooks
-- PWA: workbox-precaching
+- PWA: vite-plugin-pwa with workbox-precaching
