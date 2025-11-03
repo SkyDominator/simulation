@@ -1,7 +1,5 @@
 # Implementation Plan: E2E Pre-Authentication Flow (IS-62)
 
-> Web research: External web access is unavailable in this workspace; proceeding with internal PRD/UXD/coding guides only.
-
 ## Scope
 
 - Rebuild Playwright journey coverage for the six pre-authentication steps (whitelist → OTP → consent → login redirect) under `E2E-JOURNEY` naming.
@@ -27,9 +25,9 @@
 - [ ] Create new spec `src/frontend/e2e/specs/pre-auth-flow.spec.ts` (or repurpose `onboarding.spec.ts` by renaming) using `test` from `../fixtures/base` only.
 - [ ] Inside `test.describe("Pre-Authentication Journey")`, implement one test (`E2E-JOURNEY-PREAUTH-001`) that drives all six steps sequentially:
   - Initialize mocked APIs: `mockedApis(page).mockOTPSuccess()`, `.mockConsentSuccess()`, `.mockNoticesAPI()`, `.mockSimulationAPI()`.
-  - Use helper actions (after possible refactor) to submit whitelist, enter OTP, accept consent, perform OAuth click with `loginTestUser` hook, and expect landing on dashboard.
+  - Use helper actions from `journey-actions.ts` to submit whitelist, enter OTP, accept consent, perform OAuth click with `loginTestUser` hook, and expect landing on dashboard.
   - Capture intermediate expectations: form visibility toggles, countdown presence after OTP request, consent policy fetch, login banner state when not embedded.
-- [ ] Consider adding a `completePreAuthJourney` helper (in `journey-actions.ts`) that wraps the sequential actions and accepts hooks for assertions between steps to keep the test concise and reusable.
+- [ ] Add a `completePreAuthJourney` helper in `journey-actions.ts` that wraps the sequential actions and accepts hooks for assertions between steps to keep the test concise and reusable.
 
 ## Phase 2 – Critical Error Scenario Coverage
 
@@ -43,9 +41,9 @@ Implement focused tests in the same spec (order by flow step) using shared mocks
 
 ## Phase 3 – Helper & Fixture Enhancements
 
-- [ ] Extend `journey-actions.ts` with `completePreAuthFlow` (or update existing `completeOnboardingFlow`) to return step handles so tests can assert between actions; ensure default OTP code uses fixture constant.
+- [ ] Implement `completePreAuthFlow` helper in `journey-actions.ts` to return step handles so tests can assert between actions; ensure default OTP code uses fixture constant.
 - [ ] Update `loginTestUser` or add inline handler so the journey test can intercept `e2e:oauth-click` before expecting dashboard.
-- [ ] If timer assertions need deterministic values, expose helper in mocks to control `expires_in_seconds`; adjust `mockOTPSuccess` or add wrapper method on `MockedApisController` that accepts overrides.
+- [ ] Expose helper in mocks to control `expires_in_seconds` for deterministic timer assertions; adjust `mockOTPSuccess` or add wrapper method on `MockedApisController` that accepts overrides.
 - [ ] Document any new helper in code comments sparingly, explaining non-obvious sequencing per repo rules.
 
 ## Phase 4 – Cleanup & Migration
@@ -63,6 +61,6 @@ Implement focused tests in the same spec (order by flow step) using shared mocks
 
 ## Risks & Mitigations
 
-- Countdown-based assertions may flake; mitigate by mocking `expires_in_seconds` to a small deterministic value and waiting for specific UI states instead of raw time.
-- Embedded-browser simulation relies on UA mutation; ensure tests reset UA between cases (use `context.newPage` or `page.addInitScript`).
-- Removing legacy tests without full parity could create gaps; cross-check coverage matrix before deletion.
+- **Countdown-based assertions may flake**: Mitigate by mocking `expires_in_seconds` to a small deterministic value and waiting for specific UI states instead of raw time.
+- **Embedded-browser simulation relies on UA mutation**: Ensure tests reset UA between cases (use `context.newPage` or `page.addInitScript`).
+- **Removing legacy tests without full parity could create gaps**: Cross-check coverage matrix before deletion to ensure all scenarios are covered in new tests.
