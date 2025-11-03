@@ -18,9 +18,9 @@ Write or edit markdown files according to the following process:
 
 When writing or editing documents, ALWAYS FIRST RUN web searches to refer to the best practices (as of today) of "big techs" (Google, Microsoft, Amazon, Apple, Meta, etc.) for the topics under considerations.
 
-### 2. Direct Changes Only
+### 2. No New Sections Only for Changes
 
-If you are modifying the existing documents, make direct changes without indicating modifications. For example, do not use wordings like these: "(Added part)", "New sections", "변경사항", etc.. JUST CHANGE the document if there needs to be change.
+If you are modifying documents, just write your changes directly on the body of the documents. Do not create new sections for indicating modifications.
 
 ### 3. Consistent to Existing Style
 
