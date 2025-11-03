@@ -1,6 +1,17 @@
 /**
  * Test data fixtures for E2E tests
+ *
+ * Note: Prefer using shared fixture factories from test/shared/fixtures.ts
+ * for API response structures to maintain consistency with Vitest unit tests.
  */
+
+import {
+  createSimulationData,
+  createSimulationResults,
+  createSimulationRoundResult,
+  createAPIErrorResponse,
+  createAPISuccessResponse,
+} from "../../test/shared/fixtures";
 
 export const TEST_USERS = {
   WHITELISTED: {
@@ -22,7 +33,8 @@ export const TEST_USERS = {
 } as const;
 
 export const TEST_SIMULATIONS = {
-  PLAN_A: {
+  PLAN_A: createSimulationData({
+    id: "test-plan-a",
     plan_id: "A",
     starting_company_round: 1,
     current_company_round: 1,
@@ -34,13 +46,9 @@ export const TEST_SIMULATIONS = {
       4: 4000000,
       5: 5000000,
     },
-    sales_achievement_rates: {
-      4: 1.0,
-      5: 1.0,
-      6: 1.0,
-    },
-  },
-  PLAN_B: {
+  }),
+  PLAN_B: createSimulationData({
+    id: "test-plan-b",
     plan_id: "B",
     starting_company_round: 1,
     current_company_round: 1,
@@ -50,13 +58,9 @@ export const TEST_SIMULATIONS = {
       2: 1000000,
       3: 1500000,
     },
-    sales_achievement_rates: {
-      4: 0.8,
-      5: 0.9,
-      6: 1.1,
-    },
-  },
-  PLAN_D: {
+  }),
+  PLAN_D: createSimulationData({
+    id: "test-plan-d",
     plan_id: "D",
     starting_company_round: 1,
     current_company_round: 3,
@@ -67,36 +71,28 @@ export const TEST_SIMULATIONS = {
       3: 440000,
       4: 880000,
     },
-    sales_achievement_rates: {
-      4: 1.2,
-      5: 1.0,
-      6: 0.9,
-      7: 1.1,
-    },
-  },
+  }),
 } as const;
 
 export const MOCK_RESULTS = {
-  SIMPLE: {
+  SIMPLE: createSimulationResults(2, {
     history: [
-      {
-        company_round: 1,
+      createSimulationRoundResult(1, {
         investor_count: 1,
         total_payment: 1000000,
         total_revenue_after_tax: 970000,
         cumulative_net_profit: -30000,
         round_bonus: 0,
         settlement_bonus: 100000,
-      },
-      {
-        company_round: 2,
+      }),
+      createSimulationRoundResult(2, {
         investor_count: 2,
         total_payment: 2000000,
         total_revenue_after_tax: 1940000,
         cumulative_net_profit: -60000,
         round_bonus: 0,
         settlement_bonus: 100000,
-      },
+      }),
     ],
     summary: {
       total_rounds: 2,
@@ -105,39 +101,34 @@ export const MOCK_RESULTS = {
       total_revenue: 2910000,
       roi: -0.02, // -2%
     },
-  },
-  COMPLEX: {
+  }),
+  COMPLEX: createSimulationResults(5, {
     history: [
-      {
-        company_round: 1,
+      createSimulationRoundResult(1, {
         investor_count: 1,
         total_payment: 1000000,
         cumulative_net_profit: -30000,
-      },
-      {
-        company_round: 2,
+      }),
+      createSimulationRoundResult(2, {
         investor_count: 2,
         total_payment: 2000000,
         cumulative_net_profit: -60000,
-      },
-      {
-        company_round: 3,
+      }),
+      createSimulationRoundResult(3, {
         investor_count: 4,
         total_payment: 4000000,
         cumulative_net_profit: -120000,
-      },
-      {
-        company_round: 4,
+      }),
+      createSimulationRoundResult(4, {
         investor_count: 8,
         total_payment: 8000000,
         cumulative_net_profit: 200000,
-      },
-      {
-        company_round: 5,
+      }),
+      createSimulationRoundResult(5, {
         investor_count: 16,
         total_payment: 16000000,
         cumulative_net_profit: 1200000,
-      },
+      }),
     ],
     summary: {
       total_rounds: 5,
@@ -146,7 +137,7 @@ export const MOCK_RESULTS = {
       total_revenue: 32200000,
       roi: 0.039, // 3.9%
     },
-  },
+  }),
 } as const;
 
 export const TEST_OTP_CODES = {
@@ -198,48 +189,24 @@ export const TEST_TIMEOUTS = {
 
 /**
  * Generate test simulation data with realistic values
+ * Wraps createSimulationData() from shared fixtures
  */
 export function generateTestSimulation(
   planId: keyof typeof TEST_SIMULATIONS,
   overrides: Partial<Record<string, unknown>> = {}
 ) {
   const baseData = TEST_SIMULATIONS[planId];
-  return {
+  return createSimulationData({
     ...baseData,
     ...overrides,
     id: `test-sim-${Date.now()}`,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-  };
+  });
 }
 
 /**
- * Generate mock API error response
+ * Re-export API response helpers from shared fixtures for backward compatibility
  */
-export function createErrorResponse(
-  code: number,
-  message: string,
-  details?: unknown
-) {
-  return {
-    success: false,
-    error: {
-      code,
-      message,
-      details: details || null,
-    },
-    timestamp: new Date().toISOString(),
-  };
-}
-
-/**
- * Generate mock API success response
- */
-export function createSuccessResponse(data: unknown, message?: string) {
-  return {
-    success: true,
-    data,
-    message: message || "Operation successful",
-    timestamp: new Date().toISOString(),
-  };
-}
+export { createAPISuccessResponse as createSuccessResponse };
+export { createAPIErrorResponse as createErrorResponse };

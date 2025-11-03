@@ -26,6 +26,7 @@ import type {
   PrivacyPolicyListResponse,
   AdminVerifyResponse,
   APIErrorResponse,
+  APISuccessResponse,
 } from "./types";
 
 /**
@@ -447,6 +448,20 @@ export function createAPIErrorResponse(
   return {
     success: false,
     message,
+    ...overrides,
+  };
+}
+
+/**
+ * Create a generic success response
+ */
+export function createAPISuccessResponse<T>(
+  data?: T,
+  overrides?: Partial<Omit<APISuccessResponse<T>, "success" | "data">>
+): APISuccessResponse<T> {
+  return {
+    success: true,
+    data,
     ...overrides,
   };
 }
