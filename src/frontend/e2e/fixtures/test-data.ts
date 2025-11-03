@@ -9,8 +9,6 @@ import {
   createSimulationData,
   createSimulationResults,
   createSimulationRoundResult,
-  createAPIErrorResponse,
-  createAPISuccessResponse,
 } from "../../test/shared/fixtures";
 
 export const TEST_USERS = {
@@ -46,6 +44,11 @@ export const TEST_SIMULATIONS = {
       4: 4000000,
       5: 5000000,
     },
+    sales_achievement_rates: {
+      4: 1.0,
+      5: 1.0,
+      6: 1.0,
+    },
   }),
   PLAN_B: createSimulationData({
     id: "test-plan-b",
@@ -57,6 +60,11 @@ export const TEST_SIMULATIONS = {
       1: 500000,
       2: 1000000,
       3: 1500000,
+    },
+    sales_achievement_rates: {
+      4: 0.8,
+      5: 0.9,
+      6: 1.1,
     },
   }),
   PLAN_D: createSimulationData({
@@ -70,6 +78,12 @@ export const TEST_SIMULATIONS = {
       2: 220000,
       3: 440000,
       4: 880000,
+    },
+    sales_achievement_rates: {
+      4: 1.2,
+      5: 1.0,
+      6: 0.9,
+      7: 1.1,
     },
   }),
 } as const;
@@ -204,9 +218,3 @@ export function generateTestSimulation(
     updated_at: new Date().toISOString(),
   });
 }
-
-/**
- * Re-export API response helpers from shared fixtures for backward compatibility
- */
-export { createAPISuccessResponse as createSuccessResponse };
-export { createAPIErrorResponse as createErrorResponse };

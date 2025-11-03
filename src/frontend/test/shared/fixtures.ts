@@ -268,6 +268,7 @@ export function createSimulationData(
     current_company_round: 1,
     simulation_rounds: 12,
     investments: { 1: 110000, 2: 220000 },
+    sales_achievement_rates: {},
     simulation_results: null,
     ...overrides,
   };

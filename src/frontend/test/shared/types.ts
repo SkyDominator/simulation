@@ -90,6 +90,7 @@ export interface SimulationData {
   current_company_round: number;
   simulation_rounds: number;
   investments?: Record<number, number>;
+  sales_achievement_rates?: Record<number, number>;
   simulation_results?: SimulationResults | null;
 }
 
