@@ -42,18 +42,13 @@ class Settings:
         # object is frozen; use object.__setattr__
         if self.cors_origins is None:
             object.__setattr__(self, "cors_origins", [
-                # Public domain from Cloudflare Tunnel
-                "https://simulation.lightoflifeclub.com",  
-                # Local development
+                # Production domain (Cloudflare Tunnel)
+                "https://simulation.lightoflifeclub.com",
+                # Staging domain (Cloudflare Tunnel)
+                "https://staging-simulation.lightoflifeclub.com",
+                # Local development (Vite dev server on port 5173)
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
-                "http://10.10.113.129:5173",
-                "http://172.30.1.39:5173",
-                # Vite preview defaults to 4173
-                "http://localhost:4173",
-                "http://127.0.0.1:4173",
-                "http://10.10.113.129:4173",
-                "http://172.30.1.39:4173",
             ])
 
 settings = Settings()
