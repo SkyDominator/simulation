@@ -10,10 +10,9 @@ Create code implementation plan at $PLAN_00$ by reading $ANALYSIS_REPORT$.
 
 ## Mappings
 
-$INSTRUCTIONS$: `.github/instructions/3-plan.instructions.md`
-$ANALYSIS_REPORT$: `docs/analysis/IS-62/IS-92/analysis-00.md` 
+$INSTRUCTIONS$: `.github/instructions/3-plan.front-instructions.md`
+$ANALYSIS_REPORT$: `docs/analysis/IS-62/analysis-03.md`
 $PLAN_01$: `docs/plan/IS-62/plan-01.md`
-$TARGET_00$: `**Test Infrastructure**` in $ANALYSIS_REPORT$.
 
 (If the file already exists, overwrite it. If the directory and the file do not exist, create them.)
 
@@ -21,7 +20,7 @@ $TARGET_00$: `**Test Infrastructure**` in $ANALYSIS_REPORT$.
 
 1. Read $INSTRUCTIONS$.
 2. Read $ANALYSIS_REPORT$.
-3. Create $PLAN_00$ for $TARGET_00$ following $INSTRUCTIONS$.
+3. Create $PLAN_01$ following $INSTRUCTIONS$.
     - Take a holistic view of the codebase. Do not stray from the coding guideine.
     - Consider side effects and edge cases.
     - Consider not introducing new issues or regressions by code changes.
@@ -30,5 +29,5 @@ $TARGET_00$: `**Test Infrastructure**` in $ANALYSIS_REPORT$.
 
 ## Notes
 
-- The current Test Infrastructure (fixtures, Mocks, Stubs, Fakes, etc.) implementations should be not trusted. The plan include the revisions or the improvements if required.
-- MUST NOT cover other areas except $TARGET_00$.
+- By the divide and conquer rule, create the implementation plan for `1. Pre-Authentication Flow` only. Try to bundle the 6 steps of it inside a single test function if possible.
+- Verifying user-facing error scenarios that are critical to the application's flow should be included in the plan.
