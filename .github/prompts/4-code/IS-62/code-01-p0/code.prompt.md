@@ -11,7 +11,7 @@ Implement codes by following the $PLAN$.
 ## Mappings
 
 $PLAN$: `docs/plan/IS-62/plan-01.md`
-$INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
+$INSTRUCTIONS$: `.github/instructions/4-code.front.instructions.md`
 $PHASE$: `Phase 0`
 
 ## Tasks
