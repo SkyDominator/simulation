@@ -2,7 +2,7 @@
 
 ## Problems
 
-Using shared resources and fixtures, re-implement all E2E-JOURNEY tests from scratch. They must tests all the UX flows in docs/spec/ux-flow.md.
+Using shared resources and fixtures, re-implement all E2E-JOURNEY tests from scratch. They must tests all the UX flows in docs/spec/ux-flow.md. Re-use the existing cases or test codes if possible ONLY if they fit the instructions below.
 
 ## Notes
 
@@ -96,6 +96,10 @@ test("E2E-RESULTS-003: Summary section shows final metrics", async ({
 
 // ...existing code...
 ```
+
+## Remove the legacy test codes
+
+Remove all existing E2E-JOURNEY test codes that are being replaced by the new implementations.
 
 ## Divide & Conquer
 
