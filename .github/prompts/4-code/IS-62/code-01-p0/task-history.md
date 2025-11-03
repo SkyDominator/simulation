@@ -4,10 +4,10 @@ This is the task history for the current task.
 
 ## Mappings
 
-* $INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
-* $CODE$: `../code-00-p4/code.prompt.md`
-* $VERIFY$: `../code-00-p4/verify.prompt.md`
-* $RECTIFY$: `../code-00-p4/rectify.prompt.md`
+* $INSTRUCTIONS$: `.github/instructions/4-code.front.instructions.md`
+* $CODE$: `../code-01-p0/code.prompt.md`
+* $VERIFY$: `../code-01-p0/verify.prompt.md`
+* $RECTIFY$: `../code-01-p0/rectify.prompt.md`
 
 ## History
 
