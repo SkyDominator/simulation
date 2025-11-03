@@ -75,10 +75,7 @@ If any contradictions or ambiguities found in whatever the provided contexts (in
 
 ## Notes for Future Steps (FOR LATER REFERENCE ONLY)
 
-Should the current E2E journey tests be expanded to:
-* run simulation
-* see simulation results
-* see offline simulation results
+None
 
 ## Response
 
