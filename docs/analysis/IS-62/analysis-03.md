@@ -2,49 +2,44 @@
 
 ## Problems
 
-### Frontend code issues
+Using shared resources and fixtures, re-implement all E2E-JOURNEY tests from scratch. They must tests all the UX flows in docs/spec/ux-flow.md.
 
-The current frontend codes does:
+## Notes
 
-- not support accessibility well
-  - role
-  - aria-label, aria-describedby
-- miss some test ids in many components, causing test codes cant get elements.
+### Plans for test simulations
 
-### Frontend test code issue 1
+Use these 2 test plans for simulations (so all tests should be done against the 2 cases below)
 
-The current frontend test codes does:
-
-- not correctly matches the test id with the frontend code
-- not consider accessibility when selecting elements for testing
-
-### Frontend test code issue 2
-
-Re-implement all E2E-JOURNEY tests from scracth. They must tests all the UX flows in docs/spec/ux-flow.md with the following test configs.
-
-Use these 2 test configs for simulations (so all tests should be done against the 2 cases below)
-
+```
 A플랜, 
 가입한 회차 선택: 28
 현재 회차 선택: 29
 시뮬레이션 총 회차 선택: 30
 4회차부터 매출 달성율: 모두 65%
 개인 회차 매출액: 110, 242, 이후 모두 최소 매출액
+```
 
+```
 P플랜, 
 가입한 회차 선택: 13
 현재 회차 선택: 18
 시뮬레이션 총 회차 선택: 21
 4회차부터 매출 달성율: 개인 회차 4, 5회차는 64%, 6회차부터 모두 65%
 개인 회차 매출액: 550, 33, 33, 55, 110, 77, 이후 모두 최소 매출액
+```
 
-### Tasks
+### Test id consistency
 
-Solve all the issues.
+The test ids in the frontend code and its current test codes have the following issues:
 
-## Note
+- There are missing test ids in many components, causing test codes to not get elements.
+- There are test ids that are not consistent with the test codes. Unify into a single naming.
 
-The frontend test codes should follow this 2-way approach:
+Should be fixed in this task.
+
+### How to select elements in frontend tests
+
+The frontend test codes should follow this 2-way approach. See the following examples.
 
 1. base line: 3 tier strategy for selecting elements
 
@@ -65,7 +60,7 @@ const element = page
   .first();
 ```
 
-1. When there is numeric data:
+2. When there is numeric data:
 
 ```ts
 // ...existing code...
@@ -101,3 +96,8 @@ test("E2E-RESULTS-003: Summary section shows final metrics", async ({
 
 // ...existing code...
 ```
+
+## Divide & Conquer
+
+- Create multiple implementation planning tasks to solve the issues above.
+- Each plan file should be an independently solvable problem unit.
