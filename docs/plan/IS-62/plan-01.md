@@ -34,8 +34,8 @@
 
 ## Phase 2 – Surface Audit & Test Id Harmonization
 
-- [ ] Inventory existing `data-testid` hooks on the four pre-auth pages; add missing ids (e.g., whitelist validation alert, OTP resend button disabled states) while keeping naming consistent with `journey-actions` helpers.
-- [ ] Ensure alert elements expose either role `alert` with deterministic text or a dedicated `data-testid` for assertion stability.
+- [ ] Inventory existing `data-testid` hooks on the four pre-auth pages; add missing ids (e.g., whitelist validation alert, OTP resend button disabled states) while keeping naming consistent with `journey-actions` helpers. Check the existing `data-testid`s against the planned test ids in the pre-auth flow tests in `journey-actions`; harmonize names to avoid duplication or confusion.
+- [ ] Ensure alert elements expose both role `alert` with deterministic text.
 - [ ] Update `journey-actions.ts` selectors if new ids replace role-based fallbacks (keep accessibility-first strategy per guidelines).
 
 ## Phase 3 – Positive Journey (Single Flow Test)
