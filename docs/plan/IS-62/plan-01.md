@@ -41,6 +41,7 @@
 ## Phase 3 – Positive Journey (Single Flow Test)
 
 - [ ] Create new spec `src/frontend/e2e/specs/pre-auth-flow.spec.ts` using `test` from `../fixtures/base`. Replace the `onboarding.spec.ts` with it.
+- [ ] Remove `onboarding.spec.ts` after `pre-auth-flow.spec.ts` implementation. If there are shared shared utilities still needed from other test files, move them to appropriate shared helper files.
 - [ ] Inside `test.describe("Pre-Authentication Journey")`, implement one test (`E2E-JOURNEY-PREAUTH-001`) that drives all six steps sequentially:
   - Initialize mocked APIs: `mockedApis(page).mockOTPSuccess()`, `.mockConsentSuccess()`, `.mockNoticesAPI()`, `.mockSimulationAPI()`.
   - Use helper actions from `journey-actions.ts` to submit whitelist, enter OTP, accept consent, perform OAuth click with `loginTestUser` hook, and expect landing on dashboard.
@@ -66,7 +67,6 @@ Implement focused tests in the same spec (order by flow step) using shared mocks
 
 ## Phase 6 – Cleanup & Migration
 
-- [ ] Remove legacy `base.describe` block from `src/frontend/e2e/specs/onboarding.spec.ts` once new spec covers the cases; keep only shared utilities if still needed.
 - [ ] Delete redundant helper usage that is no longer referenced after migration and run TypeScript build to catch unused exports.
 - [ ] Update `docs/plan/IS-62/next-step-summary.md` later if follow-up phases require it (not part of this change set).
 - [ ] Remove any legacy pre-auth test data constants from `test-data.ts` that are no longer referenced.
