@@ -244,3 +244,85 @@ export async function completeOnboardingFlow(
   // Wait for main page
   await page.waitForSelector('[data-testid="main-page"]', { timeout: 10000 });
 }
+
+/**
+ * Complete pre-authentication journey with assertion hooks
+ *
+ * Wraps the six-step pre-authentication flow (whitelist → OTP → consent → login → dashboard)
+ * with optional hooks for assertions between steps.
+ *
+ * @param page - Playwright page instance
+ * @param userData - User data for whitelist verification
+ * @param otpCode - OTP code to use (defaults to "123456")
+ * @param hooks - Optional hooks for assertions between steps
+ * @param hooks.afterWhitelist - Hook to run after whitelist form submission
+ * @param hooks.afterOTP - Hook to run after OTP verification
+ * @param hooks.afterConsent - Hook to run after consent acceptance
+ * @param hooks.beforeOAuth - Hook to run before OAuth button click (e.g., for token injection)
+ * @param hooks.afterOAuth - Hook to run after OAuth login completes
+ *
+ * @see docs/plan/IS-62/plan-01.md - Phase 3: Positive Journey
+ */
+export async function completePreAuthJourney(
+  page: Page,
+  userData: { name: string; phone: string } = {
+    name: "홍길동",
+    phone: "010-1234-5678",
+  },
+  otpCode: string = "123456",
+  hooks?: {
+    afterWhitelist?: (page: Page) => Promise<void>;
+    afterOTP?: (page: Page) => Promise<void>;
+    afterConsent?: (page: Page) => Promise<void>;
+    beforeOAuth?: (page: Page) => Promise<void>;
+    afterOAuth?: (page: Page) => Promise<void>;
+  }
+): Promise<void> {
+  // Navigate to app start
+  await page.goto("/");
+
+  // Step 1: Whitelist check
+  await fillWhitelistForm(page, userData.name, userData.phone);
+
+  if (hooks?.afterWhitelist) {
+    await hooks.afterWhitelist(page);
+  }
+
+  // Step 2: OTP verification
+  await page.waitForSelector('[data-testid="otp-form"]', { timeout: 5000 });
+  await fillOTPForm(page, otpCode);
+
+  if (hooks?.afterOTP) {
+    await hooks.afterOTP(page);
+  }
+
+  // Step 3 & 4: Consent flow orchestration and privacy policy consent
+  const consentPageVisible = await page
+    .getByTestId("consent-page")
+    .isVisible()
+    .catch(() => false);
+
+  if (consentPageVisible) {
+    await acceptPrivacyConsent(page);
+
+    if (hooks?.afterConsent) {
+      await hooks.afterConsent(page);
+    }
+  }
+
+  // Step 5: OAuth login
+  await page.waitForSelector('[data-testid="login-form"]', { timeout: 5000 });
+
+  if (hooks?.beforeOAuth) {
+    await hooks.beforeOAuth(page);
+  }
+
+  await clickGoogleLogin(page);
+
+  // Step 6: Post-login navigation
+  await page.waitForSelector('[data-testid="main-page"]', { timeout: 10000 });
+
+  if (hooks?.afterOAuth) {
+    await hooks.afterOAuth(page);
+  }
+}
