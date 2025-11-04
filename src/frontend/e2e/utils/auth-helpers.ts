@@ -12,7 +12,7 @@ import {
   createAdminAuthToken,
   createExpiredAuthToken,
 } from "../../test/shared/fixtures";
-import { completeOnboardingFlow as actionsCompleteOnboardingFlow } from "./journey-actions";
+import { completePreAuthJourney as actionsCompletePreAuthJourney } from "./journey-actions";
 
 /**
  * Legacy authentication helpers delegating to the modular state/fixture utilities.
@@ -45,17 +45,18 @@ export async function mockSessionExpiry(page: Page): Promise<void> {
   await setAuthToken(page, createExpiredAuthToken());
 }
 
-export async function completeOnboardingFlow(
+export async function completePreAuthJourney(
   page: Page,
   userData: { name: string; phone: string } = {
     name: "홍길동",
     phone: "010-1234-5678",
-  }
+  },
+  otpCode: string = "123456"
 ): Promise<void> {
-  await actionsCompleteOnboardingFlow(page, userData, {
-    onBeforeOAuth: async (page) => {
-      await initE2EMode(page);
-      await setAuthToken(page, createMemberAuthToken());
+  await actionsCompletePreAuthJourney(page, userData, otpCode, {
+    beforeOAuth: async (currentPage) => {
+      await initE2EMode(currentPage);
+      await setAuthToken(currentPage, createMemberAuthToken());
     },
   });
 }
