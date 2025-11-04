@@ -203,49 +203,6 @@ export async function viewComprehensiveResults(page: Page): Promise<void> {
 }
 
 /**
- * Complete full onboarding flow (whitelist → OTP → consent → OAuth)
- *
- * @param page - Playwright page instance
- * @param userData - User data for whitelist verification
- * @param options - Optional configuration
- * @param options.onBeforeOAuth - Hook to run before clicking OAuth button (e.g., to inject auth tokens)
- */
-export async function completeOnboardingFlow(
-  page: Page,
-  userData: { name: string; phone: string } = {
-    name: "홍길동",
-    phone: "010-1234-5678",
-  },
-  options?: { onBeforeOAuth?: (page: Page) => Promise<void> }
-): Promise<void> {
-  // Navigate to app start
-  await page.goto("/");
-
-  // Step 1: Whitelist check
-  await fillWhitelistForm(page, userData.name, userData.phone);
-
-  // Step 2: OTP verification (assuming mocked success)
-  await page.waitForSelector('[data-testid="otp-input"]', { timeout: 5000 });
-  await fillOTPForm(page, "123456");
-
-  // Step 3: Privacy consent (if required)
-  await acceptPrivacyConsent(page);
-
-  // Step 4: OAuth login (mocked)
-  await page.waitForSelector('[data-testid="google-login"]', { timeout: 5000 });
-
-  // Run pre-OAuth hook if provided (e.g., for token injection in E2E mode)
-  if (options?.onBeforeOAuth) {
-    await options.onBeforeOAuth(page);
-  }
-
-  await clickGoogleLogin(page);
-
-  // Wait for main page
-  await page.waitForSelector('[data-testid="main-page"]', { timeout: 10000 });
-}
-
-/**
  * Complete pre-authentication journey with assertion hooks
  *
  * Wraps the six-step pre-authentication flow (whitelist → OTP → consent → login → dashboard)
