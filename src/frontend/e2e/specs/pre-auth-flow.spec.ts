@@ -89,7 +89,7 @@ test.describe("Pre-Authentication Journey", () => {
         },
         afterOAuth: async (currentPage) => {
           await expect(
-            currentPage.locator("h5").filter({
+            currentPage.locator("h1").filter({
               hasText: "생명빛 클럽 시뮬레이션",
             })
           ).toBeVisible();
