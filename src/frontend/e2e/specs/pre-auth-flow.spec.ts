@@ -268,6 +268,7 @@ test.describe("Pre-Authentication Journey", () => {
 
     // Mock privacy policy GET to allow consent page to load
     await apis.mockPrivacyPolicyGet();
+    await apis.mockConsentGet();
 
     // Navigate to app
     await page.goto("/");
