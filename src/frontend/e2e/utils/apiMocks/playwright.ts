@@ -25,6 +25,10 @@ import {
   createPrivacyPolicyListResponse,
   createAdminVerifyResponse,
 } from "../../../test/shared/fixtures";
+import type {
+  OTPSendResponse,
+  OTPVerifyResponse,
+} from "../../../test/shared/types";
 
 import type { ConsentRecord } from "../../../test/shared/types";
 
@@ -42,31 +46,34 @@ export type ConsentMockSnapshot = {
 
 const consentMockStates = new WeakMap<Page, ConsentMockInternalState>();
 
+export type OTPSendFailureScenario = "whitelist";
+export type OTPVerifyFailureScenario = "invalid_code" | "expired";
+
+export interface OTPSuccessOptions {
+  sendOverrides?: Partial<OTPSendResponse>;
+  verifyOverrides?: Partial<OTPVerifyResponse>;
+}
+
+export interface OTPFailureOptions {
+  sendOverrides?: Partial<OTPSendResponse>;
+  verifyOverrides?: Partial<OTPVerifyResponse>;
+}
+
 /**
- * Mock successful OTP flow
+ * Mock successful OTP send request
  */
-export async function mockOTPSuccess(page: Page): Promise<void> {
+export async function mockOTPSendSuccess(
+  page: Page,
+  overrides?: Partial<OTPSendResponse>
+): Promise<void> {
   try {
     await page.unroute("**/api/otp/send");
   } catch {
     // ignore if no existing route
   }
-  await page.route("**/api/otp/send", async (route) => {
-    const response = createOTPSendSuccessResponse();
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify(response),
-    });
-  });
 
-  try {
-    await page.unroute("**/api/otp/verify");
-  } catch {
-    // ignore if no existing route
-  }
-  await page.route("**/api/otp/verify", async (route) => {
-    const response = createOTPVerifySuccessResponse();
+  await page.route("**/api/otp/send", async (route) => {
+    const response = createOTPSendSuccessResponse(overrides);
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -76,48 +83,22 @@ export async function mockOTPSuccess(page: Page): Promise<void> {
 }
 
 /**
- * Mock OTP failure scenarios
+ * Mock failed OTP send request
  */
-export async function mockOTPFailure(
+export async function mockOTPSendFailure(
   page: Page,
-  scenario: "whitelist" | "invalid_code" | "expired"
+  scenario: OTPSendFailureScenario = "whitelist",
+  overrides?: Partial<OTPSendResponse>
 ): Promise<void> {
+  try {
+    await page.unroute("**/api/otp/send");
+  } catch {
+    // ignore
+  }
+
   if (scenario === "whitelist") {
-    try {
-      await page.unroute("**/api/otp/send");
-    } catch {
-      // ignore
-    }
     await page.route("**/api/otp/send", async (route) => {
-      const response = createOTPSendWhitelistFailureResponse();
-      await route.fulfill({
-        status: 400,
-        contentType: "application/json",
-        body: JSON.stringify(response),
-      });
-    });
-  } else if (scenario === "invalid_code") {
-    try {
-      await page.unroute("**/api/otp/verify");
-    } catch {
-      // ignore
-    }
-    await page.route("**/api/otp/verify", async (route) => {
-      const response = createOTPVerifyInvalidCodeResponse();
-      await route.fulfill({
-        status: 400,
-        contentType: "application/json",
-        body: JSON.stringify(response),
-      });
-    });
-  } else if (scenario === "expired") {
-    try {
-      await page.unroute("**/api/otp/verify");
-    } catch {
-      // ignore
-    }
-    await page.route("**/api/otp/verify", async (route) => {
-      const response = createOTPVerifyExpiredResponse();
+      const response = createOTPSendWhitelistFailureResponse(overrides);
       await route.fulfill({
         status: 400,
         contentType: "application/json",
@@ -125,6 +106,86 @@ export async function mockOTPFailure(
       });
     });
   }
+}
+
+/**
+ * Mock successful OTP verify request
+ */
+export async function mockOTPVerifySuccess(
+  page: Page,
+  overrides?: Partial<OTPVerifyResponse>
+): Promise<void> {
+  try {
+    await page.unroute("**/api/otp/verify");
+  } catch {
+    // ignore
+  }
+
+  await page.route("**/api/otp/verify", async (route) => {
+    const response = createOTPVerifySuccessResponse(overrides);
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(response),
+    });
+  });
+}
+
+/**
+ * Mock failed OTP verify request
+ */
+export async function mockOTPVerifyFailure(
+  page: Page,
+  scenario: OTPVerifyFailureScenario,
+  overrides?: Partial<OTPVerifyResponse>
+): Promise<void> {
+  try {
+    await page.unroute("**/api/otp/verify");
+  } catch {
+    // ignore
+  }
+
+  await page.route("**/api/otp/verify", async (route) => {
+    const response =
+      scenario === "invalid_code"
+        ? createOTPVerifyInvalidCodeResponse(overrides)
+        : createOTPVerifyExpiredResponse(overrides);
+
+    await route.fulfill({
+      status: 400,
+      contentType: "application/json",
+      body: JSON.stringify(response),
+    });
+  });
+}
+
+/**
+ * Mock successful OTP flow (send + verify)
+ */
+export async function mockOTPSuccess(
+  page: Page,
+  options?: OTPSuccessOptions
+): Promise<void> {
+  await mockOTPSendSuccess(page, options?.sendOverrides);
+  await mockOTPVerifySuccess(page, options?.verifyOverrides);
+}
+
+/**
+ * Mock OTP failure scenarios (backwards compatibility helper)
+ */
+export async function mockOTPFailure(
+  page: Page,
+  scenario: "whitelist" | "invalid_code" | "expired",
+  options?: OTPFailureOptions
+): Promise<void> {
+  if (scenario === "whitelist") {
+    await mockOTPSendFailure(page, "whitelist", options?.sendOverrides);
+    await mockOTPVerifySuccess(page, options?.verifyOverrides);
+    return;
+  }
+
+  await mockOTPSendSuccess(page, options?.sendOverrides);
+  await mockOTPVerifyFailure(page, scenario, options?.verifyOverrides);
 }
 
 /**

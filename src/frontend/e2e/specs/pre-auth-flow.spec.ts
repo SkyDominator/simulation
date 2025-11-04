@@ -4,7 +4,6 @@ import {
   TEST_OTP_CODES,
   TEST_MESSAGES,
 } from "../fixtures/test-data";
-import { createOTPSendSuccessResponse } from "../../test/shared/fixtures";
 import {
   completePreAuthJourney,
   fillWhitelistForm,
@@ -97,7 +96,8 @@ test.describe("Pre-Authentication Journey", () => {
     const apis = mockedApis(page);
 
     // Mock whitelist failure
-    await apis.mockOTPFailure("whitelist");
+    await apis.mockOTPSendFailure("whitelist");
+    await apis.mockOTPVerifySuccess();
 
     // Navigate to app
     await page.goto("/");
@@ -133,7 +133,8 @@ test.describe("Pre-Authentication Journey", () => {
     const apis = mockedApis(page);
 
     // Mock OTP send success but verify failure
-    await apis.mockOTPFailure("invalid_code");
+    await apis.mockOTPSendSuccess();
+    await apis.mockOTPVerifyFailure("invalid_code");
 
     // Navigate to app
     await page.goto("/");
@@ -178,19 +179,8 @@ test.describe("Pre-Authentication Journey", () => {
     const apis = mockedApis(page);
 
     // Mock OTP send success but verify with expired code
-    await apis.mockOTPFailure("expired");
-
-    // Override OTP send response for deterministic countdown duration
-    await page.route("**/api/otp/send", async (route) => {
-      const response = createOTPSendSuccessResponse({
-        expires_in_seconds: 3,
-      });
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(response),
-      });
-    });
+    await apis.mockOTPSendSuccess({ expires_in_seconds: 3 });
+    await apis.mockOTPVerifyFailure("expired");
 
     // Navigate to app
     await page.goto("/");

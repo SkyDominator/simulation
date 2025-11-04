@@ -16,6 +16,10 @@
 
 import { test as base, Page } from "@playwright/test";
 import {
+  mockOTPSendSuccess,
+  mockOTPSendFailure,
+  mockOTPVerifySuccess,
+  mockOTPVerifyFailure,
   mockOTPSuccess,
   mockOTPFailure,
   mockSimulationAPI,
@@ -24,6 +28,14 @@ import {
   mockAdminAPI,
   mockNetworkError,
 } from "../utils/apiMocks/playwright";
+import type {
+  OTPSuccessOptions,
+  OTPFailureOptions,
+} from "../utils/apiMocks/playwright";
+import type {
+  OTPSendResponse,
+  OTPVerifyResponse,
+} from "../../test/shared/types";
 
 const pageLabels = new WeakMap<Page, string>();
 let pageLabelCounter = 0;
@@ -104,15 +116,42 @@ const instrument = <Args extends unknown[], Result>(
  */
 export interface MockedApisController {
   /**
+   * Mock successful OTP send request
+   */
+  mockOTPSendSuccess(overrides?: Partial<OTPSendResponse>): Promise<void>;
+
+  /**
+   * Mock failed OTP send request
+   */
+  mockOTPSendFailure(
+    scenario?: "whitelist",
+    overrides?: Partial<OTPSendResponse>
+  ): Promise<void>;
+
+  /**
+   * Mock successful OTP verify request
+   */
+  mockOTPVerifySuccess(overrides?: Partial<OTPVerifyResponse>): Promise<void>;
+
+  /**
+   * Mock failed OTP verify request
+   */
+  mockOTPVerifyFailure(
+    scenario: "invalid_code" | "expired",
+    overrides?: Partial<OTPVerifyResponse>
+  ): Promise<void>;
+
+  /**
    * Mock successful OTP flow (send + verify)
    */
-  mockOTPSuccess(): Promise<void>;
+  mockOTPSuccess(options?: OTPSuccessOptions): Promise<void>;
 
   /**
    * Mock OTP failure scenarios
    */
   mockOTPFailure(
-    scenario: "whitelist" | "invalid_code" | "expired"
+    scenario: "whitelist" | "invalid_code" | "expired",
+    options?: OTPFailureOptions
   ): Promise<void>;
 
   /**
@@ -171,6 +210,26 @@ export const mockedApisFixtures = {
   ) => {
     // Return a factory function that creates a controller for a given page
     const factory = (page: Page): MockedApisController => ({
+      mockOTPSendSuccess: instrument(
+        page,
+        "mockOTPSendSuccess",
+        mockOTPSendSuccess
+      ),
+      mockOTPSendFailure: instrument(
+        page,
+        "mockOTPSendFailure",
+        mockOTPSendFailure
+      ),
+      mockOTPVerifySuccess: instrument(
+        page,
+        "mockOTPVerifySuccess",
+        mockOTPVerifySuccess
+      ),
+      mockOTPVerifyFailure: instrument(
+        page,
+        "mockOTPVerifyFailure",
+        mockOTPVerifyFailure
+      ),
       mockOTPSuccess: instrument(page, "mockOTPSuccess", mockOTPSuccess),
       mockOTPFailure: instrument(page, "mockOTPFailure", mockOTPFailure),
       mockSimulationAPI: instrument(
