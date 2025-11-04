@@ -8,7 +8,7 @@ model: Claude Sonnet 4.5
 
 ## Mappings
 
-* $INSTRUCTIONS$: `.github/instructions/4-code.instructions.md`
+* $INSTRUCTIONS$: `.github/instructions/4-code.front.instructions.md`
 
 ## Task History
 
