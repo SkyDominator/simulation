@@ -238,6 +238,9 @@ test.describe("Pre-Authentication Journey", () => {
     // Mock successful OTP flow
     await apis.mockOTPSuccess();
 
+    // Mock privacy policy GET to allow consent page to load
+    await apis.mockPrivacyPolicyGet();
+
     // Navigate to app
     await page.goto("/");
     await page.waitForSelector('[data-testid="whitelist-form"]', {

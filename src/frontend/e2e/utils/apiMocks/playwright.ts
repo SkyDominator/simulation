@@ -288,7 +288,149 @@ export async function mockSimulationAPI(page: Page): Promise<void> {
 }
 
 /**
+ * Mock GET /api/privacy-policy endpoint
+ * Used to load privacy policy content on consent page
+ */
+export async function mockPrivacyPolicyGet(page: Page): Promise<void> {
+  // Mock GET /api/privacy-policy (with optional query params)
+  try {
+    await page.unroute("**/api/privacy-policy**");
+  } catch {
+    // ignore
+  }
+  await page.route("**/api/privacy-policy**", async (route) => {
+    const response = createPrivacyPolicyResponse();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(response),
+    });
+  });
+}
+
+/**
+ * Mock POST /api/consents endpoint
+ * Used to record user consent acceptance
+ */
+export async function mockConsentPost(page: Page): Promise<void> {
+  // Initialize state if not exists
+  if (!consentMockStates.has(page)) {
+    const state: ConsentMockInternalState = {
+      consentMap: new Map(),
+      postCount: 0,
+      getCount: 0,
+    };
+    consentMockStates.set(page, state);
+    page.once("close", () => consentMockStates.delete(page));
+  }
+
+  const state = consentMockStates.get(page)!;
+
+  // Mock POST /api/consents - Record consent
+  try {
+    await page.unroute("**/api/consents");
+  } catch {
+    // ignore
+  }
+  await page.route("**/api/consents", async (route) => {
+    if (route.request().method() === "POST") {
+      let requestBody: Record<string, unknown> = {};
+      try {
+        requestBody = route.request().postDataJSON?.() ?? {};
+      } catch {
+        requestBody = {};
+      }
+
+      const userHash =
+        typeof requestBody.user_hash === "string"
+          ? requestBody.user_hash
+          : "test-hash-123";
+      const consentType =
+        typeof requestBody.consent_type === "string"
+          ? requestBody.consent_type
+          : "privacy_policy";
+      const consentVersion =
+        typeof requestBody.consent_version === "string"
+          ? requestBody.consent_version
+          : "v1";
+
+      const consentRecord = createConsentRecord({
+        user_hash: userHash,
+        consent_type: consentType,
+        consent_version: consentVersion,
+        ip_address:
+          typeof requestBody.ip_address === "string"
+            ? requestBody.ip_address
+            : "127.0.0.1",
+        user_agent:
+          typeof requestBody.user_agent === "string"
+            ? requestBody.user_agent
+            : "Mozilla/5.0 (E2E)",
+      });
+
+      const existingConsents = state.consentMap.get(userHash) ?? [];
+      state.consentMap.set(userHash, [...existingConsents, consentRecord]);
+      state.postCount += 1;
+
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(consentRecord),
+      });
+    } else {
+      // Unexpected method on /api/consents
+      await route.continue();
+    }
+  });
+}
+
+/**
+ * Mock GET /api/consents/{user_hash} endpoint
+ * Used to retrieve user's consent history
+ */
+export async function mockConsentGet(page: Page): Promise<void> {
+  // Initialize state if not exists
+  if (!consentMockStates.has(page)) {
+    const state: ConsentMockInternalState = {
+      consentMap: new Map(),
+      postCount: 0,
+      getCount: 0,
+    };
+    consentMockStates.set(page, state);
+    page.once("close", () => consentMockStates.delete(page));
+  }
+
+  const state = consentMockStates.get(page)!;
+
+  // Mock GET /api/consents/{user_hash} - Get user consents
+  try {
+    await page.unroute("**/api/consents/*");
+  } catch {
+    // ignore
+  }
+  await page.route("**/api/consents/*", async (route) => {
+    if (route.request().method() === "GET") {
+      const url = route.request().url();
+      const hashMatch = url.match(/\/api\/consents\/([^/?#]+)/);
+      const userHash = hashMatch?.[1] ?? "test-hash-123";
+      const consents = state.consentMap.get(userHash) ?? [];
+      state.getCount += 1;
+
+      const response = createConsentResponse({ consents });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(response),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+}
+
+/**
  * Mock privacy policy retrieval and consent recording
+ * Convenience method that combines all consent-related mocks
  */
 export async function mockConsentSuccess(page: Page): Promise<void> {
   const state: ConsentMockInternalState = {

@@ -24,6 +24,9 @@ import {
   mockOTPFailure,
   mockSimulationAPI,
   mockConsentSuccess,
+  mockPrivacyPolicyGet,
+  mockConsentPost,
+  mockConsentGet,
   mockNoticesAPI,
   mockAdminAPI,
   mockNetworkError,
@@ -160,9 +163,24 @@ export interface MockedApisController {
   mockSimulationAPI(): Promise<void>;
 
   /**
-   * Mock privacy policy and consent endpoints
+   * Mock privacy policy and consent endpoints (convenience method)
    */
   mockConsentSuccess(): Promise<void>;
+
+  /**
+   * Mock GET /api/privacy-policy endpoint
+   */
+  mockPrivacyPolicyGet(): Promise<void>;
+
+  /**
+   * Mock POST /api/consents endpoint
+   */
+  mockConsentPost(): Promise<void>;
+
+  /**
+   * Mock GET /api/consents/{user_hash} endpoint
+   */
+  mockConsentGet(): Promise<void>;
 
   /**
    * Mock public notices endpoints
@@ -242,6 +260,13 @@ export const mockedApisFixtures = {
         "mockConsentSuccess",
         mockConsentSuccess
       ),
+      mockPrivacyPolicyGet: instrument(
+        page,
+        "mockPrivacyPolicyGet",
+        mockPrivacyPolicyGet
+      ),
+      mockConsentPost: instrument(page, "mockConsentPost", mockConsentPost),
+      mockConsentGet: instrument(page, "mockConsentGet", mockConsentGet),
       mockNoticesAPI: instrument(page, "mockNoticesAPI", mockNoticesAPI),
       mockAdminAPI: instrument(page, "mockAdminAPI", mockAdminAPI),
       mockNetworkError: instrument(page, "mockNetworkError", mockNetworkError),
