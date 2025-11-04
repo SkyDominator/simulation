@@ -48,13 +48,15 @@
 
 ## Phase 4 – Critical Error Scenario Coverage
 
-Implement focused tests in the same spec (order by flow step) using shared mocks:
+Implement focused tests in the same spec (`src/frontend/e2e/specs/pre-auth-flow.spec.ts`) (order by flow step) using shared mocks:
 
 - [ ] **Whitelist rejection** (`E2E-PREAUTH-ERR-001`): mock `mockOTPFailure("whitelist")`, submit invalid user, assert alert text and that flow does not advance to OTP form.
 - [ ] **OTP invalid code** (`E2E-PREAUTH-ERR-002`): allow send success but `mockOTPFailure("invalid_code")`, confirm error message stays on OTP screen and timer remains.
 - [ ] **OTP expired** (`E2E-PREAUTH-ERR-003`): reuse expired scenario, ensure UI shows expiry message and re-exposes resend button once countdown completes (use Playwright `page.waitForTimeout` with Mock countdown override or adjust component to expose timer state via prop for tests if needed).
 - [ ] **Consent submission failure** (`E2E-PREAUTH-ERR-004`): start from successful OTP, then apply `mockNetworkError("/api/consents")`, verify toast/alert messaging and that user remains on consent page with retry path.
 - [ ] **Embedded browser login block** (`E2E-PREAUTH-ERR-005`): set user agent before navigation to simulate Kakao in-app browser; confirm banner text, disabled OAuth buttons, and modal triggered on manual click (if logic still allows) without progressing.
+
+After implementation, look through `onboarding.spec.ts` for any remaining error cases not covered above; either migrate them into this `pre-auth-flow.spec.ts` or confirm they are out of scope for pre-auth flow.
 
 ## Phase 5 – Helper & Fixture Enhancements
 
