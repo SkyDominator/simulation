@@ -40,17 +40,17 @@ test.describe("Pre-Authentication Journey", () => {
       },
       TEST_OTP_CODES.VALID,
       {
-        afterWhitelist: async (currentPage) => {
+        onWhitelist: async (currentPage) => {
           await expect(
             currentPage.locator("h5").filter({ hasText: "환영합니다!" })
           ).toBeVisible();
           await expect(currentPage.getByTestId("whitelist-form")).toBeVisible();
+        },
+        afterWhitelist: async (currentPage) => {
           await expect(currentPage.getByTestId("otp-form")).toBeVisible();
-          await expect(currentPage.locator("text=/\\d{2}:\\d{2}/")).toBeVisible(
-            {
-              timeout: 5000,
-            }
-          );
+          await expect(currentPage.getByTestId("otp-timer")).toBeVisible({
+            timeout: 5000,
+          });
         },
         afterOTP: async (currentPage) => {
           await expect(currentPage.getByTestId("consent-page")).toBeVisible();

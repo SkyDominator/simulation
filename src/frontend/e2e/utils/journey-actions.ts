@@ -212,6 +212,7 @@ export async function viewComprehensiveResults(page: Page): Promise<void> {
  * @param userData - User data for whitelist verification
  * @param otpCode - OTP code to use (defaults to "123456")
  * @param hooks - Optional hooks for assertions between steps
+ * @param hooks.onWhitelist - Hook to run on initial whitelist page load (before form submission)
  * @param hooks.afterWhitelist - Hook to run after whitelist form submission
  * @param hooks.afterOTP - Hook to run after OTP verification
  * @param hooks.afterConsent - Hook to run after consent acceptance
@@ -228,6 +229,7 @@ export async function completePreAuthJourney(
   },
   otpCode: string = "123456",
   hooks?: {
+    onWhitelist?: (page: Page) => Promise<void>;
     afterWhitelist?: (page: Page) => Promise<void>;
     afterOTP?: (page: Page) => Promise<void>;
     afterConsent?: (page: Page) => Promise<void>;
@@ -237,6 +239,15 @@ export async function completePreAuthJourney(
 ): Promise<void> {
   // Navigate to app start
   await page.goto("/");
+
+  // Step 0: Wait for whitelist page to load
+  await page.waitForSelector('[data-testid="whitelist-form"]', {
+    timeout: 5000,
+  });
+
+  if (hooks?.onWhitelist) {
+    await hooks.onWhitelist(page);
+  }
 
   // Step 1: Whitelist check
   await fillWhitelistForm(page, userData.name, userData.phone);
