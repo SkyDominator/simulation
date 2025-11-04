@@ -133,11 +133,7 @@ test.describe("Pre-Authentication Journey", () => {
     const apis = mockedApis(page);
 
     // Mock OTP send success but verify failure
-    await apis.mockOTPSuccess();
     await apis.mockOTPFailure("invalid_code");
-    await apis.mockConsentSuccess();
-    await apis.mockNoticesAPI();
-    await apis.mockSimulationAPI();
 
     // Navigate to app
     await page.goto("/");
@@ -182,11 +178,7 @@ test.describe("Pre-Authentication Journey", () => {
     const apis = mockedApis(page);
 
     // Mock OTP send success but verify with expired code
-    await apis.mockOTPSuccess();
     await apis.mockOTPFailure("expired");
-    await apis.mockConsentSuccess();
-    await apis.mockNoticesAPI();
-    await apis.mockSimulationAPI();
 
     // Override OTP send response for deterministic countdown duration
     await page.route("**/api/otp/send", async (route) => {
@@ -255,8 +247,6 @@ test.describe("Pre-Authentication Journey", () => {
 
     // Mock successful OTP flow
     await apis.mockOTPSuccess();
-    await apis.mockNoticesAPI();
-    await apis.mockSimulationAPI();
 
     // Navigate to app
     await page.goto("/");
