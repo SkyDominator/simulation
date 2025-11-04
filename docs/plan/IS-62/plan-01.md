@@ -40,12 +40,10 @@
 
 ## Phase 3 – Positive Journey (Single Flow Test)
 
-- [ ] Create new spec `src/frontend/e2e/specs/pre-auth-flow.spec.ts` using `test` from `../fixtures/base`. Replace the `onboarding.spec.ts` with it.
-- [ ] Remove `onboarding.spec.ts` after `pre-auth-flow.spec.ts` implementation. If there are shared shared utilities still needed from other test files, move them to appropriate shared helper files.
-- [ ] Inside `test.describe("Pre-Authentication Journey")`, implement one test (`E2E-JOURNEY-PREAUTH-001`) that drives all six steps sequentially:
-  - Initialize mocked APIs: `mockedApis(page).mockOTPSuccess()`, `.mockConsentSuccess()`, `.mockNoticesAPI()`, `.mockSimulationAPI()`.
-  - Use helper actions from `journey-actions.ts` to submit whitelist, enter OTP, accept consent, perform OAuth click with `loginTestUser` hook, and expect landing on dashboard.
-  - Capture intermediate expectations: form visibility toggles, countdown presence after OTP request, consent policy fetch, login banner state when not embedded.
+- [ ] Create new spec `src/frontend/e2e/specs/pre-auth-flow.spec.ts` using `test` from `../fixtures/base`. 
+    - [ ] Inside `test.describe("Pre-Authentication Journey")`, implement one test (`E2E-JOURNEY-PREAUTH-001`) that drives all six steps sequentially: Use helper actions from `journey-actions.ts` to submit whitelist, enter OTP, accept consent, perform OAuth click with `loginTestUser` hook, and expect landing on dashboard.
+    - [ ] Initialize mocked APIs: `mockedApis(page).mockOTPSuccess()`, `.mockConsentSuccess()`, `.mockNoticesAPI()`, `.mockSimulationAPI()`.
+    - [ ] Capture intermediate expectations: form visibility toggles, countdown presence after OTP request, consent policy fetch, login banner state when not embedded.
 - [ ] Add a `completePreAuthJourney` helper in `journey-actions.ts` that wraps the sequential actions and accepts hooks for assertions between steps to keep the test concise and reusable.
 
 ## Phase 4 – Critical Error Scenario Coverage
