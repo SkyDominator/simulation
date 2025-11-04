@@ -199,6 +199,8 @@ export const TEST_MESSAGES = {
   ERROR: {
     NOT_WHITELISTED: "가입 허용 명단에 없는 사용자입니다.",
     INVALID_OTP: "인증번호가 올바르지 않습니다.",
+    CONSENT_SUBMISSION_FAILED:
+      "동의 처리 중 오류가 발생했습니다. 다시 시도해 주세요.",
     NETWORK_ERROR: "네트워크 오류가 발생했습니다.",
     SESSION_EXPIRED: "세션이 만료되었습니다.",
   },

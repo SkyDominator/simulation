@@ -276,6 +276,9 @@ test.describe("Pre-Authentication Journey", () => {
       .getByTestId("consent-error")
       .or(page.getByRole("alert"));
     await expect(errorAlert).toBeVisible({ timeout: 5000 });
+    await expect(errorAlert).toContainText(
+      TEST_MESSAGES.ERROR.CONSENT_SUBMISSION_FAILED
+    );
 
     // Verify still on consent page
     await expect(page.getByTestId("consent-page")).toBeVisible();

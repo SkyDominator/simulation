@@ -61,7 +61,7 @@ After implementation, look through `onboarding.spec.ts` for any remaining error 
 ## Phase 5 – Helper & Fixture Enhancements
 
 - [ ] Implement `completePreAuthFlow` helper in `journey-actions.ts` to return step handles so tests can assert between actions; ensure default OTP code uses fixture constant.
-- [ ] Update `loginTestUser` or add inline handler so the journey test can intercept `e2e:oauth-click` before expecting dashboard.
+- [ ] Update `loginTestUser` so the journey test can intercept `e2e:oauth-click` before expecting dashboard.
 - [ ] Expose helper in mocks to control `expires_in_seconds` for deterministic timer assertions; adjust `mockOTPSuccess` or add wrapper method on `MockedApisController` that accepts overrides.
 - [ ] Document any new helper in code comments sparingly, explaining non-obvious sequencing per repo rules.
 
