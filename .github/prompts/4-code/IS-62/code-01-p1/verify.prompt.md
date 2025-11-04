@@ -8,7 +8,7 @@ model: GPT-5-Codex (Preview)
 
 ## Mappings
 
-* $CODE$: `../code-01-p0/code.prompt.md`
+* $CODE$: `../code-01-p1/code.prompt.md`
 * $INSTRUCTIONS$: `.github/instructions/4-code.front.instructions.md`
 
 ## Task History
