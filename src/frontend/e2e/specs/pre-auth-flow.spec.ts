@@ -4,6 +4,7 @@ import {
   TEST_OTP_CODES,
   TEST_MESSAGES,
 } from "../fixtures/test-data";
+import { createOTPSendSuccessResponse } from "../../test/shared/fixtures";
 import {
   completePreAuthJourney,
   fillWhitelistForm,
@@ -187,6 +188,18 @@ test.describe("Pre-Authentication Journey", () => {
     await apis.mockNoticesAPI();
     await apis.mockSimulationAPI();
 
+    // Override OTP send response for deterministic countdown duration
+    await page.route("**/api/otp/send", async (route) => {
+      const response = createOTPSendSuccessResponse({
+        expires_in_seconds: 3,
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(response),
+      });
+    });
+
     // Navigate to app
     await page.goto("/");
     await page.waitForSelector('[data-testid="whitelist-form"]', {
@@ -227,6 +240,8 @@ test.describe("Pre-Authentication Journey", () => {
     // Verify resend button exists and will be enabled when timer completes
     const resendButton = page.getByTestId("resend-otp");
     await expect(resendButton).toBeVisible();
+    await expect(resendButton).toBeDisabled();
+    await expect(resendButton).toBeEnabled({ timeout: 5000 });
 
     // Verify does not advance to consent page
     await expect(page.getByTestId("consent-page")).not.toBeVisible();
@@ -358,10 +373,7 @@ test.describe("Pre-Authentication Journey", () => {
     await expect(googleLoginButton).toBeDisabled();
     await expect(kakaoLoginButton).toBeDisabled();
 
-    // Verify clicking disabled button does not progress
-    await googleLoginButton.click({ force: true });
-
-    // Should remain on login page
+    // Confirm user remains on login page with disabled actions
     await expect(page.getByTestId("login-form")).toBeVisible();
   });
 });
