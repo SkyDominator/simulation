@@ -58,19 +58,11 @@ Implement focused tests in the same spec (`src/frontend/e2e/specs/pre-auth-flow.
 
 After implementation, look through `onboarding.spec.ts` for any remaining error cases not covered above; either migrate them into this `pre-auth-flow.spec.ts` or confirm they are out of scope for pre-auth flow.
 
-## Phase 5 – Helper & Fixture Enhancements
-
-- [ ] Implement `completePreAuthFlow` helper in `journey-actions.ts` to return step handles so tests can assert between actions; ensure default OTP code uses fixture constant.
-- [ ] Update `loginTestUser` so the journey test can intercept `e2e:oauth-click` before expecting dashboard.
-- [ ] Expose helper in mocks to control `expires_in_seconds` for deterministic timer assertions; adjust `mockOTPSuccess` or add wrapper method on `MockedApisController` that accepts overrides.
-- [ ] Document any new helper in code comments sparingly, explaining non-obvious sequencing per repo rules.
-
-## Phase 6 – Cleanup & Migration
+## Phase 5 – Cleanup & Migration
 
 - [ ] Delete redundant helper usage that is no longer referenced after migration and run TypeScript build to catch unused exports.
-- [ ] Update `docs/plan/IS-62/next-step-summary.md` later if follow-up phases require it (not part of this change set).
 - [ ] Remove any legacy pre-auth test data constants from `test-data.ts` that are no longer referenced.
-- [ ] Remove any legacy pre-auth test codes that overlaps with the tests implemented in the past Phases so far. 
+- [ ] Remove any legacy pre-auth test codes that overlaps with the tests implemented in the past Phases so far.
 
 ## Validation
 
