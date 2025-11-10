@@ -1,49 +1,49 @@
-{
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "frontend:dev",
-      "type": "shell",
-      "command": "docker compose exec frontend sh -c 'if [ ! -d node_modules ]; then echo \"[frontend] installing deps\"; npm ci --silent; fi; npm run dev -- --host 0.0.0.0 --port 5173'",
-      "isBackground": true,
-      "presentation": { "reveal": "always", "panel": "dedicated" },
-      "problemMatcher": {
-        "owner": "vite",
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": "vite v",
-          "endsPattern": "ready in .*"
-        },
-        "pattern": [
-          {
-            "regexp": ".",
-            "file": 1,
-            "location": 2,
-            "message": 3
-          }
-        ]
-      }
-    },
+// {
+//   "version": "2.0.0",
+//   "tasks": [
+//     {
+//       "label": "frontend:dev",
+//       "type": "shell",
+//       "command": "docker compose exec frontend sh -c 'if [ ! -d node_modules ]; then echo \"[frontend] installing deps\"; npm ci --silent; fi; npm run dev -- --host 0.0.0.0 --port 5173'",
+//       "isBackground": true,
+//       "presentation": { "reveal": "always", "panel": "dedicated" },
+//       "problemMatcher": {
+//         "owner": "vite",
+//         "background": {
+//           "activeOnStart": true,
+//           "beginsPattern": "vite v",
+//           "endsPattern": "ready in .*"
+//         },
+//         "pattern": [
+//           {
+//             "regexp": ".",
+//             "file": 1,
+//             "location": 2,
+//             "message": 3
+//           }
+//         ]
+//       }
+//     },
 
-    {
-      "label": "run-context7-mcp",
-      "type": "shell",
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"],
-      "isBackground": true,
-      "runOptions": {
-        "runOn": "folderOpen"
-      }
-    },
-    {
-      "label": "run-playwright-mcp",
-      "type": "shell",
-      "command": "npx",
-      "args": ["@playwright/mcp@latest"],
-      "isBackground": true,
-      "runOptions": {
-        "runOn": "folderOpen"
-      }
-    }
-  ]
-}
+//     {
+//       "label": "run-context7-mcp",
+//       "type": "shell",
+//       "command": "npx",
+//       "args": ["-y", "@upstash/context7-mcp@latest"],
+//       "isBackground": true,
+//       "runOptions": {
+//         "runOn": "folderOpen"
+//       }
+//     },
+//     {
+//       "label": "run-playwright-mcp",
+//       "type": "shell",
+//       "command": "npx",
+//       "args": ["@playwright/mcp@latest"],
+//       "isBackground": true,
+//       "runOptions": {
+//         "runOn": "folderOpen"
+//       }
+//     }
+//   ]
+// }
