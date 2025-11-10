@@ -692,7 +692,7 @@ class TestSimulationServiceCustomParameters:
     
     def test_custom_sales_achievement_rates(self, simulation_service_factory):
         """Test simulation with custom sales achievement rates."""
-        custom_rates = {4: 0.8, 5: 0.9, 6: 0.7}  # Valid range 0.5-1.0
+        custom_rates = {4: 0.8, 5: 0.9, 6: 0.7}  # Valid range 0.01-1.0
         svc = simulation_service_factory('A', {'sales_achievement_rates': custom_rates})
         
         result = svc.run_simulation(10)
@@ -704,7 +704,7 @@ class TestSimulationServiceCustomParameters:
     def test_invalid_sales_achievement_rates_filtered(self, simulation_service_factory):
         """Test that invalid sales achievement rates are filtered out."""
         # Mix of valid and invalid rates
-        custom_rates = {4: 0.8, 5: 1.5, 6: 0.3, 7: 0.9}  # 5 and 6 are invalid
+        custom_rates = {4: 0.8, 5: 1.5, 6: 0.001, 7: 0.9}  # 5 and 6 are invalid
         svc = simulation_service_factory('A', {'sales_achievement_rates': custom_rates})
         
         # Should not raise error - invalid rates should be filtered
@@ -925,8 +925,8 @@ class TestSimulationServiceAchievementRates:
         assert len(result.history) == 5
     
     def test_achievement_rates_out_of_range_ignored(self, simulation_service_factory):
-        """Test that achievement rates outside 0.5-1.0 range are ignored."""
-        invalid_rates = {4: 1.5, 5: 0.3, 6: 0.8}  # Only 6 is valid
+        """Test that achievement rates outside 0.01-1.0 range are ignored."""
+        invalid_rates = {4: 1.5, 5: 0.001, 6: 0.8}  # Only 6 is valid
         svc = simulation_service_factory('A', {'sales_achievement_rates': invalid_rates})
         
         # Should not raise error and should run simulation

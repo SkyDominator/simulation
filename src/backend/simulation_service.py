@@ -130,12 +130,12 @@ class FinancialSimulationService:
             # check the keys (rounds) in scheduled_payment are positive integers: raise ValueError if not.
             self._check_keys(scheduled_payment, "scheduled_payment")
             self.params['scheduled_payment'] = self._sanitize_scheduled_payment(scheduled_payment, plan_id)
-        # Override sales achievement rates (already expected as fractions 0.5-1.0)
+        # Override sales achievement rates
         if sales_achievement_rates is not None:
             # Validate and coerce ranges
             cleaned: Dict[int, float] = {}
             for k, v in sales_achievement_rates.items():
-                if not (0.5 <= v <= 1.0):
+                if not (0.01 <= v <= 1.0):
                     continue
                 cleaned[int(k)] = float(v)
             if cleaned:
