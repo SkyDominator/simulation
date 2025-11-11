@@ -62,7 +62,7 @@ function SalesRateInput({
   onTabNext?: () => boolean;
   inputRef?: (el: HTMLInputElement | null) => void;
 }) {
-  const MIN = 50;
+  const MIN = 1;
   const MAX = 100;
   const ref = React.useRef<HTMLInputElement>(null);
   const [rawDigits, setRawDigits] = React.useState<string>(value.toString());

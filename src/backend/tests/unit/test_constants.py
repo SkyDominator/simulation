@@ -66,7 +66,7 @@ class TestPlanParameterIntegrity:
             assert amount > 0, f"Amount {amount} for round {round_num} must be positive"
     
     def test_PLAN_005_sales_achievement_rates_range(self, plan_parameters):
-        """PLAN-005: sales_achievement_rates values in valid range [0.1, 1.0]."""
+        """PLAN-005: sales_achievement_rates values in valid range [0.01, 1.0]."""
         plan = PLAN_PARAMETERS[plan_parameters]
         rates = plan['sales_achievement_rates']
         
@@ -76,7 +76,7 @@ class TestPlanParameterIntegrity:
             assert isinstance(round_num, int), f"Round key {round_num} must be int"
             assert round_num > 0, f"Round number {round_num} must be positive"
             assert isinstance(rate, (int, float)), f"Rate {rate} for round {round_num} must be numeric"
-            assert 0.1 <= rate <= 1.0, f"Rate {rate} for round {round_num} must be in range [0.1, 1.0]"
+            assert 0.01 <= rate <= 1.0, f"Rate {rate} for round {round_num} must be in range [0.01, 1.0]"
     
     def test_PLAN_006_round_bonus_rates_structure(self, plan_parameters):
         """PLAN-006: round_bonus_rates keys subset of range(4, 100) and values >=1."""
