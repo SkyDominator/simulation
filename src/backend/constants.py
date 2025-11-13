@@ -60,7 +60,7 @@ PLAN_PARAMETERS = {
         "P": {
             'max_investor_count': 18,
             'min_payment_new': {1: 330000, 2: 330000, 3:440000, 4: 550000, 5: 660000, 6: 770000, 7: 880000, 8: 990000, 9: 1100000, 10: 1100000, 11: 2200000, 12: 2200000, 13:3300000, 14:5500000, 15: 11000000, 16: 11000000, 17: 11000000, 18: 11000000, 19: 11000000,},
-            'min_payment_re': 33000000,
+            'min_payment_re': 11000000,
             'revenue_base_divisor': 1.1,
             'sales_commission': 0.32,
             'settlement_bonus': 100000,
@@ -104,7 +104,7 @@ PLAN_PARAMETERS = {
         "G": {
             'max_investor_count': 12,
             'min_payment_new': {1: 110000, 2: 110000, 3:110000, 4: 110000, 5: 110000, 6: 110000, 7: 110000, 8: 110000, 9: 110000, 10: 110000, 11: 110000, 12: 110000,},
-            'min_payment_re': 220000,
+            'min_payment_re': 110000,
             'revenue_base_divisor': 1.1,
             'sales_commission': 0.32,
             'settlement_bonus': 100000,
