@@ -36,6 +36,10 @@ gh auth login
 gh issue view 109 --repo SkyDominator/simulation
 ```
 
+## Additional context
+
+The issue seems to lie in the backend codes (Calculating the simulation result for each round.)
+
 ## The research report
 
 - Create $RESEARCH_RESULT$ file to report results following $INSTRUCTIONS$.
