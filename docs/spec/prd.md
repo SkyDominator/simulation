@@ -279,11 +279,11 @@ View public notices and announcements on dashboard
     - Cumulative Net income (post-tax)
     - Sales achievement rate
   - Back to dashboard button
-  - Navigation to offline results view
+  - Navigation to allowance table view
 
-- **Offline Results Page**:
-  - Alternative view for offline scenarios
-  - Full simulation data display
+- **Allowance Table Page**:
+  - Dedicated allowance table view accessible from results
+  - Displays per-round allowance payouts and financial totals
 
 - **Comprehensive Results Page**:
   - Combined results from multiple selected simulations

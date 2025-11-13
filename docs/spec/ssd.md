@@ -339,3 +339,7 @@ Frontend:
 - Concurrent: 30-60 peak, 5-15 average
 - API: ~1000 requests/hour peak
 - DB: 5-10 concurrent connections
+
+## 15. Detailed UX Flow
+
+Read [User Flow Document (UXD)](ux-flow.md) for detailed user journeys and interaction patterns.

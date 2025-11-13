@@ -6,15 +6,11 @@ model: Claude Sonnet 4.5
 
 # Research
 
-Investigates and analyzes the codebase to create research artifacts to help solve issues.
-
-The artifacts provide the implementation snapshot of matters preventing going through the entire codebase every time you want to understand the current source codes.
-
-The artifacts must provide the implementation details, context, code map, data flow, and related UX flows.
+Do research and create a research artifact.
 
 ## Mappings
 
-$RESEARCH_RESULT$: `docs/research/IS-89/research-00.md`:$INIT_RESEARCH_RESULT$
+$RESEARCH_RESULT$: `docs/research/IS-62/IS-93/research-00.md`
 
 (If the file already exists, overwrite it. If the directory and the file do not exist, create them.)
 
@@ -33,30 +29,21 @@ Log in to GitHub CLI if not logged in.:
 gh auth login
 ```
 
-## The issue statements
+## The research task
 
 ```shell
-gh issue view 89 --repo SkyDominator/simulation
+gh issue view 93 --repo SkyDominator/simulation
 ```
 
-## The goal of research
-
-The basic goal of this research is to identify source codes:
-
-1. Root cause codes
-    1. Code map
-        * `file path:line number` format
-    2. Data flow
-    3. Code execution flow
-2. Related codes (will or may impact or be impacted by the root cause codes)
-    1. Code map
-        * `file path:line number` format
-    2. Data flow
-    3. Code execution flow
-
-## The research outcome 
+## The research report
 
 - Create $RESEARCH_RESULT$ file to report results.
 - Refer to the following examples for the structure, format, style of the report:
-    - `/docs/examples/example1-research.md`
-    - `/docs/examples/example2-research.md`
+    - `../../../../docs/research/IS-89/research-01.md`
+    - If the given example format is inapplicable for some contents, create a suitable format for them.
+- Must include:
+    1. Related codes
+        1. Code map
+            * `file path:line number` format
+        2. Data flow
+        3. Code execution flow
