@@ -1,6 +1,6 @@
 ---
 mode: agent
-tools: ['edit/createFile', 'edit/createDirectory', 'edit/editFiles', 'search', 'runCommands/runInTerminal', 'runCommands/getTerminalOutput', 'pylance mcp server/pylanceDocuments', 'pylance mcp server/pylanceFileSyntaxErrors', 'pylance mcp server/pylancePythonEnvironments', 'pylance mcp server/pylanceSettings', 'pylance mcp server/pylanceSyntaxErrors', 'pylance mcp server/pylanceWorkspaceRoots', 'pylance mcp server/pylanceWorkspaceUserFiles', 'context7/*', 'usages', 'think', 'changes', 'fetch', 'ms-python.python/getPythonEnvironmentInfo', 'todos']
+tools: ['runCommands/runInTerminal', 'runCommands/getTerminalOutput', 'context7/*', 'edit/createFile', 'edit/createDirectory', 'edit/editFiles', 'search', 'pylance mcp server/pylanceDocuments', 'pylance mcp server/pylanceFileSyntaxErrors', 'pylance mcp server/pylancePythonEnvironments', 'pylance mcp server/pylanceSettings', 'pylance mcp server/pylanceSyntaxErrors', 'pylance mcp server/pylanceWorkspaceRoots', 'pylance mcp server/pylanceWorkspaceUserFiles', 'todos', 'usages', 'think', 'changes', 'ms-python.python/getPythonEnvironmentInfo']
 model: Claude Sonnet 4.5
 ---
 
