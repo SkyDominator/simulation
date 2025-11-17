@@ -6,7 +6,7 @@ Python backend application guidelines.
 
 **DO:**
 
-- Use Test Driven Development (TDD). Always write tests before implementation.
+- Use Test Driven Development (TDD). Always "write test codes first, and then implement the codes that pass the tests".
     - Write unit tests (`tests/unit/`) for individual functions/classes.
     - Write integration tests (`tests/integration/`) for module interactions.
     - Write security tests (`tests/integration/api/test_security_e2e.py, tests/unit/security/test_cryptography.py`) for authentication, authorization, and cryptography.

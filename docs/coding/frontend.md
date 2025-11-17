@@ -5,7 +5,7 @@ PWA React/TypeScript application guidelines.
 ### React Principles
 
 **DO:**
-- Use Test Driven Development (TDD). Always write tests before implementation.
+- Use Test Driven Development (TDD). Always "write test codes first, and then implement the codes that pass the tests".
   - Write unit tests (`src/test/pages/`) for page-level components
   - Write smoke tests (`src/test/smoke.test.tsx`) for basic setup validation
   - Write component tests (`src/test/components/`) for reusable UI components

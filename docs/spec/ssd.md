@@ -201,7 +201,9 @@ All JSON. Auth: `Authorization: Bearer {token}` where noted.
 
 - `max_investor_count`: Controls growth/stable phase
 - Tax: 3.3% on revenue
-- Settlement bonus: Rounds 1–15 only (auto-deactivated ≥16)
+- Settlement bonus: Configurable per plan
+  - Plans A, B, C, D, E, F, K, P, R: Rounds 1–15 only (auto-deactivated ≥16)
+  - Plan G: Active for all rounds (never deactivated)
 - Service class: `FinancialSimulationService(plan_id, scheduled_payment?, sales_achievement_rates?)`
 
 **Common Parameters** (All Plans):
@@ -216,6 +218,9 @@ All JSON. Auth: `Authorization: Bearer {token}` where noted.
 - **Plans C, D, E, R**: max_investor_count 15 (C) / 18 (others), max_bonus 50M-100M
 - **Plans F, K, P**: max_investor_count 18, max_bonus 300M, higher initial payment
 - **Plan G**: max_investor_count 12, simplified structure
+  - **Unique settlement_bonus behavior**: Active for all rounds (never deactivated)
+    - Unlike other plans, Plan G maintains settlement_bonus beyond company round 15
+    - Ensures consistent revenue calculations throughout the plan lifecycle
 
 For complete plan specifications, see `src/backend/constants.py` (PLAN_PARAMETERS).
 
