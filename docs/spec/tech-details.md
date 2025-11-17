@@ -374,6 +374,35 @@ export const useSimulationActions = () => {
 - **Re-run Required**: After parameter updates, must explicitly call `/api/simulation/run` to regenerate results
 - **Plan Parameters**: Verify plan_id exists in `constants.py` PLAN_PARAMETERS before processing
 
+### 6.2.1 Settlement Bonus Configuration
+
+Plans can configure when settlement bonus should be deactivated using the `settlement_bonus_deactivation_round` parameter:
+
+- **Type**: `int | None`
+- **Purpose**: Controls at which company round the settlement bonus should be deactivated
+- **Values**:
+  - `15`: Deactivate after round 15 (default for Plans A, B, C, D, E, F, K, P, R)
+  - `None`: Never deactivate (used by Plan G)
+  - Custom integer: Deactivate after specified round
+
+**Example**:
+
+```python
+"G": {
+    'settlement_bonus': 100000,
+    'settlement_bonus_deactivation_round': None,  # Never deactivate
+    # ... other parameters
+}
+
+"A": {
+    'settlement_bonus': 100000,
+    'settlement_bonus_deactivation_round': 15,  # Deactivate after round 15
+    # ... other parameters
+}
+```
+
+**Backward Compatibility**: If parameter is missing, defaults to 15 (current behavior).
+
 ### 6.3 Admin/Privacy Policy Constraints
 
 - **Create vs Publish**: Cannot set `published=true` directly when creating - must use separate publish endpoint

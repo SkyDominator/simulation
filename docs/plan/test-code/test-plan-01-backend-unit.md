@@ -59,7 +59,7 @@ Each category lists: ID, What, Why, Target Lines, How (approach), Cases.
     - RND-002: Round <= max_investor_count scenario growth: run rounds = max_investor_count and assert len(last_round.investor_details)==max_investor_count.
     - RND-003: Transition to stable phase (round max_investor_count+1) adds a 재입학 investor; verify investor_type field in investor_details contains '재입학'.
     - RND-004: Graduations: after round max_investor_count ensure internal_round progression and no investor with internal_round > max_investor_count persists (graduated removed). Graduation path lines ~230–239.
-    - RND-005: settlement bonus deactivation after current_company_round >15 lines ~134–142 via _check_settlement_bonus_condition: assert params['settlement_bonus']==0 at round 16 and remains 0 future.
+    - RND-005: Settlement bonus deactivation after current_company_round >15 for all plans except Plan G. Plans A, B, C, D, E, F, K, P, R deactivate at round 16 (assert params['settlement_bonus']==0 and remains 0 future). Plan G remains active for all rounds (exception).
     - RND-006: Revenue branch coverage: internal_round 1,2 path; 3 path storing base_calc_value_r3; >=4 path using bonus + achievement rate. Force by running >=7 rounds small plan.
     - RND-007: Rounding of revenue: revenue values are int after `round()` lines ~205–210.
     - RND-008: Tax computation: after round t compute expected total_revenue_after_tax = gross - gross*0.033 lines ~246–249; tolerance 1e-9.
@@ -211,6 +211,9 @@ def jwks_single_key(monkeypatch):
 --------------------------------------------------------------------------------
 
 4.1 RND-005 Settlement Bonus Deactivation
+
+**RND-005**: Settlement bonus deactivation for non-G plans (Plans A, B, C, D, E, F, K, P, R deactivate at round 16; Plan G remains active)
+
 ```python
 def test_settlement_bonus_deactivates_round_16(simulation_factory):
         svc = simulation_factory('A')
@@ -218,6 +221,16 @@ def test_settlement_bonus_deactivates_round_16(simulation_factory):
         assert svc.params['settlement_bonus'] == 100000  # active through round 15
         svc.run_single_round()  # round 16
         assert svc.params['settlement_bonus'] == 0  # deactivated
+```
+
+**RND-005-G1**: Plan G settlement bonus persistence (remains active beyond round 15)
+
+```python
+def test_plan_g_settlement_bonus_never_deactivates(simulation_factory):
+        svc = simulation_factory('G')
+        svc.run_simulation(20)  # Run through round 20
+        assert svc.params['settlement_bonus'] == 100000  # still active
+        assert svc.settlement_bonus_active == True  # never deactivated
 ```
 
 4.2 SAN-004 Scheduled Payment Replacement
