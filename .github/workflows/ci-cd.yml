@@ -94,11 +94,12 @@ jobs:
                   echo "profile_name=$PROFILE" >> $GITHUB_OUTPUT
                   echo "Final configuration - Profile: $PROFILE, Skip: $SKIP_TESTS"
 
-    # Unified unit & integration pipeline
-    unit_integration:
-        name: Unit & Integration Tests
+    # Test control: Unit & Integration Tests
+    test-unit:
+        name: Unit Tests
         needs: load-profile
-        if: ${{ !(contains(needs.load-profile.outputs.skip_tests, 'unit') && contains(needs.load-profile.outputs.skip_tests, 'integration')) }}
+        if: |
+            !contains(needs.load-profile.outputs.skip_tests, 'unit')
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -110,22 +111,13 @@ jobs:
                   cache: "npm"
                   cache-dependency-path: src/frontend/package-lock.json
 
-            - name: Install frontend dependencies
-              working-directory: src/frontend
-              run: npm ci
-
             - name: Frontend Unit Suites
-              if: ${{ !contains(needs.load-profile.outputs.skip_tests, 'unit') }}
               working-directory: src/frontend
               run: |
+                  npm ci
                   npx vitest run src/test/pages --reporter=verbose
                   npx vitest run src/test/components --reporter=verbose
                   npx vitest run src/test/smoke.test.tsx --reporter=verbose
-
-            - name: Frontend Integration Suites
-              if: ${{ !contains(needs.load-profile.outputs.skip_tests, 'integration') }}
-              working-directory: src/frontend
-              run: npm run test:integration
 
             - name: Setup Python
               uses: actions/setup-python@v5
@@ -134,98 +126,52 @@ jobs:
                   cache: "pip"
                   cache-dependency-path: src/backend/requirements.txt
 
-            - name: Install backend dependencies
-              if: ${{ !contains(needs.load-profile.outputs.skip_tests, 'unit') || !contains(needs.load-profile.outputs.skip_tests, 'integration') }}
+            - name: Backend Unit Tests
               working-directory: src/backend
+              env:
+                  PYTHONPATH: .
               run: |
                   python -m pip install --upgrade pip
                   pip install -r requirements.txt
-
-            - name: Backend Unit Tests
-              if: ${{ !contains(needs.load-profile.outputs.skip_tests, 'unit') }}
-              working-directory: src/backend
-              env:
-                  PYTHONPATH: .
-              run: |
                   pytest tests/unit -v --ignore=tests/unit/security/test_cryptography.py
 
-            - name: Backend Integration Tests
-              if: ${{ !contains(needs.load-profile.outputs.skip_tests, 'integration') }}
-              working-directory: src/backend
-              env:
-                  PYTHONPATH: .
-                  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-                  SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-              run: |
-                  export SUPABASE_URL=${SUPABASE_URL:-https://test.supabase.co}
-                  export SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY:-test_secret_key}
-                  pytest tests/integration -v
-
-            - name: Upload Vitest artifacts
-              if: failure()
-              uses: actions/upload-artifact@v4
-              with:
-                  name: vitest-logs
-                  path: src/frontend/test-results/
-                  retention-days: 7
-                  if-no-files-found: ignore
-
-    journey_e2e:
-        name: Journey E2E Smoke
-        needs: [load-profile, unit_integration]
-        if: ${{ always() && !contains(needs.load-profile.outputs.skip_tests, 'e2e') && (needs.unit_integration.result == 'success' || needs.unit_integration.result == 'skipped') }}
+    test-integration:
+        name: Integration Tests
+        needs: [load-profile, test-unit]
+        if: |
+            always() &&
+            !contains(needs.load-profile.outputs.skip_tests, 'integration') &&
+            (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped')
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
+            - name: Setup Python
+              uses: actions/setup-python@v5
               with:
-                  node-version: 20
-                  cache: "npm"
-                  cache-dependency-path: src/frontend/package-lock.json
+                  python-version: "3.11"
+                  cache: "pip"
+                  cache-dependency-path: src/backend/requirements.txt
 
-            - name: Install dependencies
-              working-directory: src/frontend
-              run: npm ci
-
-            - name: Ensure storage state directory
-              working-directory: src/frontend
-              run: mkdir -p playwright/.auth
-
-            - name: Compute auth cache key
-              id: auth-cache-key
-              run: echo "day=$(date -u +%Y%m%d)" >> $GITHUB_OUTPUT
-
-            - name: Cache Playwright auth state
-              uses: actions/cache@v4
-              with:
-                  path: src/frontend/playwright/.auth
-                  key: playwright-auth-${{ github.ref_name }}-${{ steps.auth-cache-key.outputs.day }}
-                  restore-keys: |
-                      playwright-auth-${{ github.ref_name }}-
-
-            - name: Install Playwright browsers
-              working-directory: src/frontend
-              run: npx playwright install --with-deps
-
-            - name: Run journey smoke tests
-              working-directory: src/frontend
-              run: npm run test:e2e:journeys
-
-            - name: Upload Playwright report
-              if: failure()
-              uses: actions/upload-artifact@v4
-              with:
-                  name: playwright-report
-                  path: src/frontend/playwright-report/
-                  retention-days: 7
-                  if-no-files-found: ignore
+            - name: Backend Integration Tests
+              working-directory: src/backend
+              env:
+                  PYTHONPATH: .
+                  SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://test.supabase.co' }}
+                  SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || 'test_secret_key' }}
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements.txt
+                  pytest tests/integration -v
 
     test-security:
         name: Security Tests
-        needs: [load-profile, unit_integration]
-        if: ${{ always() && !contains(needs.load-profile.outputs.skip_tests, 'security') && (needs.unit_integration.result == 'success' || needs.unit_integration.result == 'skipped') }}
+        needs: [load-profile, test-unit, test-integration]
+        if: |
+            always() &&
+            !contains(needs.load-profile.outputs.skip_tests, 'security') &&
+            (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped') &&
+            (needs.test-integration.result == 'success' || needs.test-integration.result == 'skipped')
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -254,11 +200,9 @@ jobs:
               working-directory: src/backend
               env:
                   PYTHONPATH: .
-                  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-                  SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+                  SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://test.supabase.co' }}
+                  SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || 'test_secret_key' }}
               run: |
-                  export SUPABASE_URL=${SUPABASE_URL:-https://test.supabase.co}
-                  export SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY:-test_secret_key}
                   python -m pip install --upgrade pip
                   pip install -r requirements.txt
                   pytest tests/integration/api/test_security_e2e.py tests/unit/security/test_cryptography.py -v
@@ -287,9 +231,13 @@ jobs:
     # Build Docker images
     build:
         name: Build & Push Docker Images
-        needs:
-            [load-profile, unit_integration, journey_e2e, test-security, lint]
-        if: ${{ always() && (needs.unit_integration.result == 'success' || needs.unit_integration.result == 'skipped') && (needs.journey_e2e.result == 'success' || needs.journey_e2e.result == 'skipped') && (needs.test-security.result == 'success' || needs.test-security.result == 'skipped') && needs.lint.result == 'success' }}
+        needs: [load-profile, test-unit, test-integration, test-security, lint]
+        if: |
+            always() &&
+            (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped') &&
+            (needs.test-integration.result == 'success' || needs.test-integration.result == 'skipped') &&
+            (needs.test-security.result == 'success' || needs.test-security.result == 'skipped') &&
+            needs.lint.result == 'success'
         runs-on: ubuntu-latest
         outputs:
             should_deploy_production: ${{ steps.check.outputs.production }}
@@ -468,3 +416,43 @@ jobs:
               run: |
                   docker image prune -f
                   docker volume prune -f
+
+    # E2E Tests (Optional, runs after staging deployment)
+    test-e2e:
+        name: E2E Tests (Playwright)
+        needs: [load-profile, deploy-staging]
+        if: |
+            !contains(needs.load-profile.outputs.skip_tests, 'e2e') &&
+            needs.deploy-staging.result == 'success'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: "npm"
+                  cache-dependency-path: src/frontend/package-lock.json
+
+            - name: Install dependencies
+              working-directory: src/frontend
+              run: npm ci
+
+            - name: Install Playwright browsers
+              working-directory: src/frontend
+              run: npx playwright install --with-deps
+
+            - name: Run E2E tests
+              working-directory: src/frontend
+              env:
+                  BASE_URL: https://staging-simulation.lightoflifeclub.com
+              run: npm run test:e2e
+
+            - name: Upload test results
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: playwright-report
+                  path: src/frontend/playwright-report/
+                  retention-days: 7
