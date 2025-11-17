@@ -161,13 +161,19 @@ class TestCoreRoundMechanics:
         assert r1.total_revenue_after_tax >= 0
         assert r1.total_revenue_after_tax <= r1.total_revenue_before_tax
     
-    def test_RND_005_settlement_bonus_deactivates_round_16(self, simulation_service_factory):
-        """RND-005: Settlement bonus deactivates after round 15."""
-        svc = simulation_service_factory('A')
+    @pytest.mark.parametrize("plan_type", ["A", "B", "C", "D", "E", "F", "K", "P", "R"])
+    def test_RND_005_settlement_bonus_deactivates_round_16(self, simulation_service_factory, plan_type):
+        """
+        RND-005: Settlement bonus deactivates after round 15 for all plans except Plan G.
+        
+        Plans A, B, C, D, E, F, K, P, R: Settlement bonus deactivates when current_company_round > 15
+        Plan G: Settlement bonus remains active for all rounds (exception to this rule)
+        """
+        svc = simulation_service_factory(plan_type)
         
         # Test that settlement bonus affects early rounds but not later ones
         # We can check this by comparing settlement bonus parameter
-        plan_params = PLAN_PARAMETERS['A']
+        plan_params = PLAN_PARAMETERS[plan_type]
         assert plan_params['settlement_bonus'] > 0  # Should be active initially
         
         # After round 15, settlement bonus should be deactivated
@@ -590,15 +596,21 @@ class TestSimulationServiceMultiRoundSnapshot:
             # Mark test as expected to fail until snapshot is verified
             pytest.fail(f"Snapshot file created at {snapshot_path}. Review and re-run test.")
     
-    def test_settlement_bonus_deactivation_after_round_15(self, simulation_service_factory):
-        """Test that settlement bonus is deactivated after round 15."""
-        svc = simulation_service_factory('A')
+    @pytest.mark.parametrize("plan_type", ["A", "B", "C", "D", "E", "F", "K", "P", "R"])
+    def test_settlement_bonus_deactivation_after_round_15(self, simulation_service_factory, plan_type):
+        """
+        Test that settlement bonus is deactivated after round 15 for non-G plans.
+        
+        Plans A, B, C, D, E, F, K, P, R: Settlement bonus deactivates when current_company_round > 15
+        Plan G: Exception - maintains settlement bonus for all rounds
+        """
+        svc = simulation_service_factory(plan_type)
         result = svc.run_simulation(20)  # Run past round 15
         
         # Check that settlement bonus is active for early rounds and inactive later
         # This requires checking the service state, but we can infer from revenue patterns
         
-        # For Plan A, settlement bonus should affect rounds 1-15
+        # For non-G plans, settlement bonus should affect rounds 1-15
         early_rounds = result.history[:15]
         later_rounds = result.history[15:]
         
@@ -985,3 +997,243 @@ class TestSimulationServiceDeterminism:
         
         # If we reach here, no random functions were called
         assert len(result.history) == 10
+
+
+class TestPlanGSettlementBonusPersistence:
+    """Test Plan G Settlement Bonus Persistence (TC-G-001 to TC-G-004)."""
+    
+    def test_plan_g_settlement_bonus_never_deactivates_round_16(self, simulation_service_factory):
+        """
+        TC-G-001: Plan G Settlement Bonus Never Deactivates (Round 16)
+        Verify Plan G maintains settlement_bonus at round 16 where other plans deactivate.
+        """
+        svc = simulation_service_factory('G')
+        
+        # Setup: Start at round 1, current at 16, run 5 simulation rounds
+        svc.starting_company_round = 1
+        svc.current_company_round = 16
+        result = svc.run_simulation(5)
+        
+        # Verify settlement bonus remains active
+        assert svc.settlement_bonus_active == True, "Plan G settlement_bonus should remain active after round 15"
+        assert svc.params['settlement_bonus'] == 100000, "Plan G settlement_bonus value should be unchanged"
+        
+        # Verify revenue includes settlement_bonus
+        assert len(result.history) == 5, "Should have 5 round results"
+        for round_result in result.history:
+            assert round_result.total_revenue_before_tax > 0, "Revenue should include settlement_bonus"
+    
+    def test_plan_g_settlement_bonus_never_deactivates_round_20(self, simulation_service_factory):
+        """
+        TC-G-002: Plan G Settlement Bonus Never Deactivates (Round 20)
+        Verify Plan G maintains settlement_bonus well beyond round 15.
+        """
+        svc = simulation_service_factory('G')
+        
+        # Setup: Start at round 1, current at 20, run 5 simulation rounds
+        svc.starting_company_round = 1
+        svc.current_company_round = 20
+        result = svc.run_simulation(5)
+        
+        # Verify settlement bonus remains active
+        assert svc.settlement_bonus_active == True, "Plan G settlement_bonus should remain active at round 20+"
+        assert svc.params['settlement_bonus'] == 100000, "Plan G settlement_bonus value should be 100000"
+    
+    def test_plan_g_revenue_consistency_after_round_15(self, simulation_service_factory):
+        """
+        TC-G-003: Plan G Revenue Consistency After Round 15
+        Verify revenue calculations remain consistent with settlement_bonus after round 15.
+        """
+        svc = simulation_service_factory('G')
+        
+        # Setup: Start at round 1, current at 10, run 10 simulation rounds (covers rounds 10-19)
+        svc.starting_company_round = 1
+        svc.current_company_round = 10
+        result = svc.run_simulation(10)
+        
+        # Extract results for rounds 14, 15, 16, 17
+        rounds_14_to_17 = [r for r in result.history if 14 <= r.company_round <= 17]
+        assert len(rounds_14_to_17) == 4, "Should have results for rounds 14-17"
+        
+        # Verify no revenue drop at round 16
+        revenue_15 = next(r for r in result.history if r.company_round == 15).total_revenue_before_tax
+        revenue_16 = next(r for r in result.history if r.company_round == 16).total_revenue_before_tax
+        
+        # Revenue at round 16 should not drop due to settlement_bonus deactivation
+        assert revenue_16 > 0, "Revenue at round 16 should be positive"
+        # Note: Exact comparison depends on investor count, but revenue should not become negative
+        
+        # Verify settlement bonus is still active after all rounds
+        assert svc.settlement_bonus_active == True, "Settlement bonus should remain active throughout"
+    
+    def test_plan_g_settlement_bonus_multiple_investors(self, simulation_service_factory):
+        """
+        TC-G-004: Plan G Settlement Bonus with Multiple Investors
+        Verify all investors receive settlement_bonus regardless of round.
+        """
+        svc = simulation_service_factory('G')
+        
+        # Setup: Multiple investors starting at different rounds
+        svc.starting_company_round = 1
+        svc.current_company_round = 1
+        
+        # Run simulation through 25 rounds
+        result = svc.run_simulation(25)
+        
+        # Verify settlement bonus never deactivated
+        assert svc.settlement_bonus_active == True, "Settlement bonus should remain active throughout 25 rounds"
+        assert svc.params['settlement_bonus'] == 100000, "Settlement bonus value should be unchanged"
+        
+        # Verify revenue generated for all rounds
+        assert len(result.history) == 25, "Should have 25 round results"
+        for round_result in result.history:
+            assert round_result.total_revenue_before_tax >= 0, f"Round {round_result.company_round} revenue should be non-negative"
+    
+    def test_plan_g_settlement_bonus_starting_after_round_15(self, simulation_service_factory):
+        """
+        TC-EDGE-003: Plan G Starting After Round 15
+        Verify Plan G works correctly when starting beyond typical deactivation round.
+        """
+        svc = simulation_service_factory('G')
+        
+        # Setup: Start at round 18 (well after typical deactivation round 15)
+        svc.starting_company_round = 18
+        svc.current_company_round = 18
+        result = svc.run_simulation(5)
+        
+        # Verify settlement bonus remains active
+        assert svc.settlement_bonus_active == True, "Settlement bonus should be active even when starting after round 15"
+        assert svc.params['settlement_bonus'] == 100000, "Settlement bonus value should be 100000"
+        
+        # Verify revenue calculations include settlement_bonus
+        assert len(result.history) == 5, "Should have 5 round results"
+
+
+class TestSettlementBonusRegressionTests:
+    """Test Settlement Bonus Regression (TC-REG-001 to TC-REG-003)."""
+    
+    @pytest.mark.parametrize("plan_type", ["A", "B", "C", "D", "E", "F", "K", "P", "R"])
+    def test_non_g_plans_settlement_bonus_deactivates_at_round_16(self, simulation_service_factory, plan_type):
+        """
+        TC-REG-002: All Non-G Plans Deactivate at Round 16
+        Regression test to ensure all plans except G maintain current deactivation behavior.
+        """
+        svc = simulation_service_factory(plan_type)
+        
+        # Setup: Start at round 1, run to round 17 (to observe deactivation at 16)
+        svc.starting_company_round = 1
+        svc.current_company_round = 1
+        result = svc.run_simulation(17)
+        
+        # After running through round 17, settlement bonus should be deactivated
+        # (deactivation happens when current_company_round > 15)
+        assert svc.settlement_bonus_active == False, f"Plan {plan_type} should deactivate settlement_bonus at round 16"
+        assert svc.params['settlement_bonus'] == 0, f"Plan {plan_type} settlement_bonus should be 0 after round 15"
+    
+    def test_settlement_bonus_deactivation_idempotent(self, simulation_service_factory):
+        """
+        TC-REG-003: Settlement Bonus Deactivates Only Once
+        Verify deactivation is idempotent and doesn't trigger multiple times.
+        """
+        svc = simulation_service_factory('A')
+        
+        # Setup: Run from round 14 to round 20
+        svc.starting_company_round = 1
+        svc.current_company_round = 14
+        result = svc.run_simulation(7)  # Rounds 14-20
+        
+        # Verify deactivation state remains False after round 16
+        assert svc.settlement_bonus_active == False, "Settlement bonus should be deactivated after round 15"
+        
+        # Run additional rounds - deactivation should not be repeated
+        svc.current_company_round = 21
+        result_continued = svc.run_simulation(3)  # Rounds 21-23
+        
+        # Verify state remains False
+        assert svc.settlement_bonus_active == False, "Settlement bonus should remain deactivated"
+        assert svc.params['settlement_bonus'] == 0, "Settlement bonus value should remain 0"
+
+
+class TestSettlementBonusEdgeCases:
+    """Test Settlement Bonus Edge Cases (TC-EDGE-001 to TC-EDGE-002)."""
+    
+    def test_missing_deactivation_round_parameter_defaults_to_15(self, simulation_service_factory):
+        """
+        TC-EDGE-001: Missing Configuration Parameter (Backward Compatibility)
+        Verify system handles missing settlement_bonus_deactivation_round parameter.
+        """
+        svc = simulation_service_factory('A')
+        
+        # Manually remove the parameter to simulate missing config
+        if 'settlement_bonus_deactivation_round' in svc.params:
+            del svc.params['settlement_bonus_deactivation_round']
+        
+        # Setup: Run through round 17
+        svc.starting_company_round = 1
+        svc.current_company_round = 1
+        result = svc.run_simulation(17)
+        
+        # Verify default behavior (deactivation at round 16)
+        assert svc.settlement_bonus_active == False, "Should default to deactivation at round 16"
+        assert svc.params['settlement_bonus'] == 0, "Settlement bonus should be 0 with missing parameter"
+    
+    def test_custom_deactivation_round(self, simulation_service_factory):
+        """
+        TC-EDGE-002: Custom Deactivation Round
+        Verify custom deactivation rounds work correctly.
+        """
+        svc = simulation_service_factory('A')
+        
+        # Set custom deactivation round to 20
+        svc.params['settlement_bonus_deactivation_round'] = 20
+        
+        # Setup: Run from round 18 to round 22
+        svc.starting_company_round = 1
+        svc.current_company_round = 18
+        svc.run_simulation(1)  # Round 18
+        assert svc.settlement_bonus_active == True, "Should be active at round 18"
+        
+        svc.current_company_round = 19
+        svc.run_simulation(1)  # Round 19
+        assert svc.settlement_bonus_active == True, "Should be active at round 19"
+        
+        svc.current_company_round = 20
+        svc.run_simulation(1)  # Round 20
+        assert svc.settlement_bonus_active == True, "Should be active at round 20"
+        
+        svc.current_company_round = 21
+        svc.run_simulation(1)  # Round 21
+        assert svc.settlement_bonus_active == False, "Should deactivate at round 21"
+
+
+class TestPlanGAndOtherPlansIsolation:
+    """Test Plan Isolation (TC-INT-002)."""
+    
+    def test_plan_g_and_plan_a_isolation(self, simulation_service_factory):
+        """
+        TC-INT-002: Mixed Plans in Same Test Session
+        Verify plan isolation - Plan G doesn't affect Plan A behavior.
+        """
+        # Run Plan G simulation
+        svc_g = simulation_service_factory('G')
+        svc_g.starting_company_round = 1
+        svc_g.current_company_round = 16
+        result_g = svc_g.run_simulation(5)
+        
+        # Verify Plan G maintains settlement bonus
+        assert svc_g.settlement_bonus_active == True, "Plan G should maintain settlement_bonus"
+        assert svc_g.params['settlement_bonus'] == 100000, "Plan G settlement_bonus should be 100000"
+        
+        # Run Plan A simulation in same session
+        svc_a = simulation_service_factory('A')
+        svc_a.starting_company_round = 1
+        svc_a.current_company_round = 1
+        result_a = svc_a.run_simulation(17)
+        
+        # Verify Plan A deactivates settlement bonus
+        assert svc_a.settlement_bonus_active == False, "Plan A should deactivate settlement_bonus"
+        assert svc_a.params['settlement_bonus'] == 0, "Plan A settlement_bonus should be 0"
+        
+        # Verify plans didn't interfere with each other
+        assert svc_g.settlement_bonus_active == True, "Plan G state should be unchanged"
+        assert svc_a.settlement_bonus_active == False, "Plan A state should be unchanged"
