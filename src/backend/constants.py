@@ -9,6 +9,7 @@ PLAN_PARAMETERS = {
             'revenue_base_divisor': 1.1,
             'sales_commission': 0.32,
             'settlement_bonus': 100000,
+            'settlement_bonus_deactivation_round': 15,  # Maintain current behavior
             'max_bonus': 30000000,
             'round_bonus_rates': {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12:10, 13:20, 14:50, 15:100},
             'sales_achievement_rates': {4: 1, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1, 11:1, 12:1, 13:1, 14:1, 15:1, 16:1, 17:1, 18:1, 19:1, 20:1, 21:1, 22:1, 23:1, 24:1, 25:1, 26:1, 27:1, 28:1, 29:1, 30:1}
@@ -20,6 +21,7 @@ PLAN_PARAMETERS = {
             'revenue_base_divisor': 1.1,
             'sales_commission': 0.32,
             'settlement_bonus': 100000,
+            'settlement_bonus_deactivation_round': 15,  # Maintain current behavior
             'max_bonus': 30000000,
             'round_bonus_rates': {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12:10, 13:20, 14:50, 15:100},
             'sales_achievement_rates': {4: 1, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1, 11:1, 12:1, 13:1, 14:1, 15:1, 16:1, 17:1, 18:1, 19:1, 20:1, 21:1, 22:1, 23:1, 24:1, 25:1, 26:1, 27:1, 28:1, 29:1, 30:1}
@@ -31,6 +33,7 @@ PLAN_PARAMETERS = {
             'revenue_base_divisor': 1.1,
             'sales_commission': 0.32,
             'settlement_bonus': 100000,
+            'settlement_bonus_deactivation_round': 15,  # Maintain current behavior
             'max_bonus': 50000000,
             'round_bonus_rates': {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12:10, 13:20, 14:50, 15:100},
             'sales_achievement_rates': {4: 1, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1, 11:1, 12:1, 13:1, 14:1, 15:1, 16:1, 17:1, 18:1, 19:1, 20:1, 21:1, 22:1, 23:1, 24:1, 25:1, 26:1, 27:1, 28:1, 29:1, 30:1}
@@ -42,6 +45,7 @@ PLAN_PARAMETERS = {
             'revenue_base_divisor': 1.1,
             'sales_commission': 0.32,
             'settlement_bonus': 100000,
+            'settlement_bonus_deactivation_round': 15,  # Maintain current behavior
             'max_bonus': 100000000,
             'round_bonus_rates': {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12:10, 13:20, 14:50, 15:100, 16:300, 17:1000, 18:1000},
             'sales_achievement_rates': {4: 1, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1, 11:1, 12:1, 13:1, 14:1, 15:1, 16:1, 17:1, 18:1, 19:1, 20:1, 21:1, 22:1, 23:1, 24:1, 25:1, 26:1, 27:1, 28:1, 29:1, 30:1, 31:1, 32:1, 33:1, 34:1, 35:1, 36:1}
@@ -53,6 +57,7 @@ PLAN_PARAMETERS = {
             'revenue_base_divisor': 1.1,
             'sales_commission': 0.32,
             'settlement_bonus': 100000,
+            'settlement_bonus_deactivation_round': 15,  # Maintain current behavior
             'max_bonus': 300000000,
             'round_bonus_rates': {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12:10, 13:20, 14:50, 15:100, 16:300, 17:1000, 18:1000},
             'sales_achievement_rates': {4: 1, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1, 11:1, 12:1, 13:1, 14:1, 15:1, 16:1, 17:1, 18:1, 19:1, 20:1, 21:1, 22:1, 23:1, 24:1, 25:1, 26:1, 27:1, 28:1, 29:1, 30:1}
@@ -64,6 +69,7 @@ PLAN_PARAMETERS = {
             'revenue_base_divisor': 1.1,
             'sales_commission': 0.32,
             'settlement_bonus': 100000,
+            'settlement_bonus_deactivation_round': 15,  # Maintain current behavior
             'max_bonus': 30000000,
             'round_bonus_rates': {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12:10, 13:20, 14:50, 15:100, 16:300, 17:1000, 18:1000},
             'sales_achievement_rates': {4: 1, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1, 11:1, 12:1, 13:1, 14:1, 15:1, 16:1, 17:1, 18:1, 19:1, 20:1, 21:1, 22:1, 23:1, 24:1, 25:1, 26:1, 27:1, 28:1, 29:1, 30:1, 31:1, 32:1, 33:1, 34:1, 35:1, 36:1}
@@ -75,6 +81,7 @@ PLAN_PARAMETERS = {
             'revenue_base_divisor': 1.1,
             'sales_commission': 0.32,
             'settlement_bonus': 100000,
+            'settlement_bonus_deactivation_round': 15,  # Maintain current behavior
             'max_bonus': 100000000,
             'round_bonus_rates': {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12:10, 13:20, 14:50, 15:100, 16:300, 17:1000, 18:1000},
             'sales_achievement_rates': {4: 1, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1, 11:1, 12:1, 13:1, 14:1, 15:1, 16:1, 17:1, 18:1, 19:1, 20:1, 21:1, 22:1, 23:1, 24:1, 25:1, 26:1, 27:1, 28:1, 29:1, 30:1, 31:1, 32:1, 33:1, 34:1, 35:1, 36:1}
@@ -86,6 +93,7 @@ PLAN_PARAMETERS = {
             'revenue_base_divisor': 1.1,
             'sales_commission': 0.32,
             'settlement_bonus': 100000,
+            'settlement_bonus_deactivation_round': 15,  # Maintain current behavior
             'max_bonus': 300000000,
             'round_bonus_rates': {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12:10, 13:20, 14:50, 15:100, 16:300, 17:1000, 18:1000},
             'sales_achievement_rates': {4: 1, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1, 11:1, 12:1, 13:1, 14:1, 15:1, 16:1, 17:1, 18:1, 19:1, 20:1, 21:1, 22:1, 23:1, 24:1, 25:1, 26:1, 27:1, 28:1, 29:1, 30:1, 31:1, 32:1, 33:1, 34:1, 35:1, 36:1}
@@ -97,6 +105,7 @@ PLAN_PARAMETERS = {
             'revenue_base_divisor': 1.1,
             'sales_commission': 0.32,
             'settlement_bonus': 100000,
+            'settlement_bonus_deactivation_round': 15,  # Maintain current behavior
             'max_bonus': 100000000,
             'round_bonus_rates': {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12:10, 13:20, 14:50, 15:100, 16:300, 17:1000, 18:1000},
             'sales_achievement_rates': {4: 1, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1, 11:1, 12:1, 13:1, 14:1, 15:1, 16:1, 17:1, 18:1, 19:1, 20:1, 21:1, 22:1, 23:1, 24:1, 25:1, 26:1, 27:1, 28:1, 29:1, 30:1, 31:1, 32:1, 33:1, 34:1, 35:1, 36:1}
@@ -108,6 +117,7 @@ PLAN_PARAMETERS = {
             'revenue_base_divisor': 1.1,
             'sales_commission': 0.32,
             'settlement_bonus': 100000,
+            'settlement_bonus_deactivation_round': None,  # Never deactivate for Plan G
             'max_bonus': 30000000,
             'round_bonus_rates': {4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 5, 11: 5, 12:10},
             'sales_achievement_rates': {4: 1, 5:1, 6:1, 7:1, 8:1, 9:1, 10:1, 11:1, 12:1}
