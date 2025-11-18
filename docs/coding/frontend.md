@@ -5,7 +5,7 @@ PWA React/TypeScript application guidelines.
 ### React Principles
 
 **DO:**
-- Use Test Driven Development (TDD). Always write tests before implementation.
+- Use Test Driven Development (TDD). Always "write test codes first, and then implement the codes that pass the tests".
   - Write unit tests (`src/test/pages/`) for page-level components
   - Write smoke tests (`src/test/smoke.test.tsx`) for basic setup validation
   - Write component tests (`src/test/components/`) for reusable UI components
@@ -20,14 +20,13 @@ PWA React/TypeScript application guidelines.
 - Call hooks at top level only (no loops/conditionals)
 - Apply SOLID principles (SRP, OCP, LSP, ISP, DIP)
 - Break UI into small, focused components (container vs presentational)
-- Organize by features/domains: `pages/`, `components/`, `hooks/`, `services/`
+- Organize by features/domains (see Architecture Patterns section for structure)
 - Use composition over inheritance
 - Use PascalCase for components, camelCase for variables/functions
 - Use unique keys in lists
 - Apply memoization only when needed (`React.memo`, `useMemo`, `useCallback`)
 - Use `React.lazy` + `Suspense` for code splitting
-- Use TypeScript for all props/state/API responses
-- Use `import type` for type-only imports
+- Use TypeScript with strict type safety for all props/state/API responses (see TypeScript section)
 - Treat props as immutable
 - Follow the existing code style and conventions when modifying code
 - Clean-up codes after modification (remove unused imports, variables, functions, comments, and unnecessary changes that were prooved to be not needed anymore)
@@ -40,9 +39,135 @@ PWA React/TypeScript application guidelines.
 - Modify props inside components
 - Over-optimize with unnecessary memoization
 
+### TDD Guidelines
+
+#### E2E Test Philosophy
+
+- **Minimize E2E Tests**: E2E Tests are required but should be kept to a minimum due to their high cost (maintenance, flakiness, runtime)
+- **Focus on Critical Journeys**: Only test core user value paths
+- **Test User-Visible Behavior**: Focus on what users see/interact with, not implementation details
+- **Isolation**: Each test runs independently with own storage/cookies/data
+- **Avoid Third-Party Dependencies**: Mock external services, don't test what you don't control
+- **Avoid Test Duplication**: If lower-level test covers it, don't repeat at E2E
+- **Subcutaneous Testing**: Test below UI when possible (REST API tests)
+- **Functional Core, Imperative Shell**
+    - Separate pure business logic (functional core) from side effects (imperative shell)
+    - Makes testing easier: core is pure functions, shell handles I/O
+
+#### E2E Test Technical Practices
+
+- **Use Locators**: Prioritize user-facing attributes (role, text, test-id) over CSS/XPath
+- **Web-First Assertions**: Use `await expect(locator).toBeVisible()` instead of `isVisible()`
+- **Parallelism**: Run tests in parallel by default (Playwright does this automatically)
+- **Debugging**: Use trace viewer for CI failures (PWA-based tool)
+
+#### E2E Test Structure 
+
+**Use AAA Pattern**
+1. **Arrange**: Set up test data
+2. **Act**: Call method/action under test
+3. **Assert**: Verify expected results
+
+**Use Pyramid Structure**
+
+```
+       /\
+      /  \  E2E (few tests)
+     /____\
+    /      \  Integration (some tests)
+   /________\
+  /          \  Unit (many tests)
+ /____________\
+```
+
+**Test Distribution Ratios** (rough guidance for test count, not coverage %):
+
+- Unit tests: 70% of test count
+- Integration tests: 20% of test count
+- E2E tests: 10% of test count
+
+> Note: These ratios refer to the number of tests, not code coverage percentage. Aim for >90% overall code coverage through your test suite.
+
+#### E2E Test Sizes (Google's approach)
+
+- **Small tests**: Single process, < 1 minute
+- **Medium tests**: Single machine, < 5 minutes
+- **Large tests**: Multiple machines, < 15 minutes
+- **Enormous tests**: Multiple machines, > 15 minutes
+
+#### How to Select Elements in E2E Tests
+
+The frontend test codes should follow this 2-way approach. See the following examples.
+
+**Important**: The test ids in all the components frontend production code and its test codes must be match.
+
+**1. Base line: 3 tier strategy for selecting elements**
+
+```ts
+// 1순위: Role + Accessible Name (접근성 보장)
+page.getByRole("button", { name: "로그인" })
+
+// 2순위: Label (폼 요소용)
+page.getByLabel("이메일 주소")
+
+// 3순위: TestId (복잡한 구조/동적 콘텐츠)
+page.getByTestId("dashboard-simulation-create")
+
+// 실전: OR 체이닝
+const element = page
+  .getByRole("button", { name: /로그인/i })
+  .or(page.getByTestId("login-button"))
+  .first();
+```
+
+**2. When there is numeric data**
+
+```ts
+// ...existing code...
+
+test("E2E-RESULTS-003: Summary section shows final metrics", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("main-page")).toBeVisible({ timeout: 5000 });
+
+  const runButton = page
+    .getByRole("button", { name: /run|실행/i })      // 1순위: 접근성
+    .or(page.getByTestId("run-button"))               // 2순위: 구조 변경 대비
+    .first();
+
+  if (await runButton.isVisible()) {
+    await runButton.click();
+    await helpers.waitForSimulationResults();
+
+    // Summary section - 접근성 우선, testid는 보험
+    const summary = page
+      .getByRole("region", { name: /요약|summary/i }) // 1순위: landmark role
+      .or(page.getByTestId("results-summary"))        // 2순위: 안정성
+      .first();
+    await expect(summary).toBeVisible({ timeout: 5000 });
+
+    // 숫자 데이터는 정확한 텍스트 매칭
+    await expect(
+      page.locator("text=/최종.*이익|final.*profit/i").first()
+    ).toBeVisible();
+  }
+});
+
+// ...existing code...
+```
+
+**3. `data-test-id` pattern**
+
+All UI elements that need to be selected in the E2E tests must have `data-testid` attributes with the following patterns:
+
+* `{page}-error` for error alerts (e.g., whitelist-error, otp-error, login-error)
+* `{page}-back-button` for back navigation buttons
+
 ### Architecture Patterns
 
-**Structure:**
+**Project Structure:**
+
 ```
 src/
 ├── pages/           ## Route-level components
@@ -55,8 +180,10 @@ src/
 ```
 
 **State Management:**
+
 - Use backend API calls over local state
-- Use localStorage/sessionStorage only for UI state
+- Use localStorage/sessionStorage only for non-sensitive UI preferences (theme, language, layout settings)
+- Never store tokens, passwords, or PII in localStorage/sessionStorage
 - Use Context API for auth/global state
 - Calculate derived values in components (don't store)
 
@@ -77,9 +204,11 @@ export const MyComponent: React.FC<{ plan: Plan }> = ({ plan }) => {
 ```
 
 **TypeScript:**
+
 - Strict type safety for all props/state/API
 - Types centralized in `src/types/types.ts`
 - Use generics for reusable components
+- Use `import type` for type-only imports
 
 **Material-UI + Tailwind:**
 ```tsx
@@ -113,7 +242,11 @@ const handleApiCall = async () => {
     setLoading(true);
     const result = await api.createSimulation(data, token);
   } catch (error) {
-    console.error('API Error:', error);
+    // Use proper error logging service in production (e.g., Sentry, Datadog)
+    // Never log sensitive data (tokens, passwords, PII)
+    if (import.meta.env.DEV) {
+      console.error('API Error:', error);
+    }
   } finally {
     setLoading(false);
   }
@@ -149,10 +282,12 @@ export const MainPage = () => (
 
 ### PWA & Performance
 
-**Service Worker:**
-- PWA via `vite-plugin-pwa`
-- NetworkFirst for APIs, StaleWhileRevalidate for assets
-- Graceful offline degradation
+**Progressive Web App:**
+
+- Use `vite-plugin-pwa` with workbox-precaching
+- NetworkFirst strategy for APIs, StaleWhileRevalidate for assets
+- Graceful offline degradation with clear UI states
+- Custom "Add to Home Screen" prompt after user engagement
 
 **Code Splitting:**
 ```tsx
@@ -180,7 +315,8 @@ const updatePage = (newPage: Page) => {
 ### Error Handling & UX
 
 **DO:**
-- Implement error boundaries
+
+- Implement React Error Boundaries for graceful error recovery
 - Provide actionable error messages
 - Show loading indicators for async operations
 - Use skeleton loaders
@@ -190,13 +326,15 @@ const updatePage = (newPage: Page) => {
 - Use MUI responsive breakpoints
 
 **DON'T:**
+
 - Expose technical error details to users
 - Leave async operations without feedback
 
 ### Security
 
 **DO:**
-- Let Supabase handle JWT management
+
+- Let Supabase handle JWT management (see Authentication pattern for implementation)
 - Use session objects from auth context
 - Validate all user inputs before API calls
 - Sanitize dynamic content
@@ -207,30 +345,35 @@ const updatePage = (newPage: Page) => {
 - Enforce auth server-side
 - Use short-lived JWTs + refresh tokens
 - Set strict CSP headers
-- Use React Error Boundaries
+- Use React Error Boundaries (see Error Handling & UX section)
 - Monitor with Sentry/Datadog
 
 **DON'T:**
-- Store tokens in localStorage manually
+
+- Store tokens in localStorage manually (Supabase handles this)
 - Store sensitive data in React state/props/localStorage
 - Put secrets in `.env` (frontend exposes them)
 - Use `dangerouslySetInnerHTML` without DOMPurify
-- Log sensitive info to console
+- Log sensitive info to console (tokens, passwords, PII, etc.)
+- Use console logging in production (use proper logging service like Sentry/Datadog instead)
 - Use `eval`, `Function()`, or dynamic script execution
 - Embed API keys/secrets in frontend code
 
 **XSS Prevention:**
+
 - React escapes JSX by default
 - Validate/escape all external input (APIs, query params, localStorage)
 - Sanitize with DOMPurify if using `dangerouslySetInnerHTML`
 
 **API Security:**
+
 - Always HTTPS
 - Protect against CSRF (tokens or SameSite cookies)
 - Validate backend responses before rendering
 
-**Headers:**
-```
+**Security Headers:**
+
+```http
 X-Frame-Options: DENY
 Content-Security-Policy: frame-ancestors 'none';
 ```
@@ -238,18 +381,19 @@ Content-Security-Policy: frame-ancestors 'none';
 ### UI/UX Design
 
 **Visual Principles:**
+
 - Material Design 3 (MD3) with MUI for React
 - Mobile-first design
 - CSS Grid + Container Queries for adaptive layouts
 
 **Interaction:**
+
 - Mobile: Bottom Tab Bar navigation
 - Desktop/Tablet: Side Navigation Rail or header
 - Use `transform` and `opacity` for GPU-accelerated animations
-- Clear offline UI states with banners/toasts
-- Custom "Add to Home Screen" prompt after engagement
 
-**Implementation:**
+**Example Implementation:**
+
 ```jsx
 import { Box } from '@mui/material';
 import MobileNavigation from './MobileNavigation';
@@ -271,7 +415,8 @@ function AppShell({ children }) {
 }
 ```
 
-**Libraries:**
+**Key Libraries:**
+
 - UI: @mui/material
 - State: React Context + custom hooks
-- PWA: workbox-precaching
+- PWA: vite-plugin-pwa with workbox-precaching

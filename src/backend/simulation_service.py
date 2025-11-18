@@ -221,13 +221,27 @@ class FinancialSimulationService:
 
     def _check_settlement_bonus_condition(self, investor: Investor) -> None:
         """
-        Check if settlement bonus should be deactivated based on investor status.
+        Check if settlement bonus should be deactivated based on plan configuration.
+        
+        The deactivation round is controlled by the 'settlement_bonus_deactivation_round' 
+        parameter in the plan configuration. If set to None, settlement bonus never deactivates.
         """
+        # Get deactivation round from plan config (default to 15 for backward compatibility)
+        deactivation_round = self.params.get('settlement_bonus_deactivation_round', 15)
+        
+        # If deactivation_round is None, never deactivate settlement bonus
+        if deactivation_round is None:
+            return
+        
+        # Check if current round exceeds deactivation threshold
         if (self.settlement_bonus_active and 
-                self.current_company_round > 15):
+                self.current_company_round > deactivation_round):
             self.settlement_bonus_active = False
             self.params['settlement_bonus'] = 0
-            logger.info("Settlement bonus deactivated: First investor reached 16th or higher current_company_round")
+            logger.info(
+                f"Settlement bonus deactivated: company_round {self.current_company_round} > "
+                f"deactivation_round {deactivation_round} (plan: {self.params.get('plan_type', 'unknown')})"
+            )
     
     def _calculate_revenue(self, investor: Investor, actual_payment: float) -> float:
         """
