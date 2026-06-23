@@ -62,7 +62,7 @@ Call log:
 - generic [ref=e2]:
   - generic [ref=e3]:
     - banner [ref=e4]:
-      - heading "생명빛 클럽 시뮬레이션" [level=1] [ref=e6]
+      - heading "LOL CLUB 시뮬레이션" [level=1] [ref=e6]
     - main [ref=e7]:
       - generic [ref=e11]:
         - generic [ref=e12]:

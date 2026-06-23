@@ -248,7 +248,7 @@ View public notices and announcements on dashboard
 **Main Application**:
 
 - **Dashboard (MainPage)**:
-  - Header with app title "생명빛 클럽 시뮬레이션"
+  - Header with app title "LOL CLUB 시뮬레이션"
   - Action buttons: "공지사항", "문의하기", "로그아웃", "개인 정보 보호 정책", "새 시뮬레이션", "종합 결과"
   - Simulation table with:
     - Multi-column sortable headers (number, plan type, starting round, simulation rounds, creation date)
