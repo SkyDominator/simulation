@@ -4,7 +4,7 @@ I tested the results with: `npx playwright test --grep "E2E-JOURNEY"`
 And got this:
 
 ```
-[IS-62] C:\Users\raykim\Documents\workspace\partnerclub\simulation\src\frontend> npx playwright test --grep "E2E-JOURNEY"
+[IS-62] C:\Users\raykim\Documents\workspace\MY_APP\simulation\src\frontend> npx playwright test --grep "E2E-JOURNEY"
 
 Running 6 tests using 6 workers
 
@@ -34,8 +34,8 @@ Running 6 tests using 6 workers
       41 |   await page.click(`text="${planId}"`);
       42 | }
       43 |
-        at selectPlan (C:\Users\raykim\Documents\workspace\partnerclub\simulation\src\frontend\e2e\utils\journey-actions.ts:40:14)     
-        at C:\Users\raykim\Documents\workspace\partnerclub\simulation\src\frontend\e2e\specs\simulation-flow.spec.ts:44:11
+        at selectPlan (C:\Users\raykim\Documents\workspace\MY_APP\simulation\src\frontend\e2e\utils\journey-actions.ts:40:14)     
+        at C:\Users\raykim\Documents\workspace\MY_APP\simulation\src\frontend\e2e\specs\simulation-flow.spec.ts:44:11
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\specs-simulation-flow-Simu-73b07-vigating-to-the-plan-editor-mobile-chromium\test-failed-1.png
@@ -69,8 +69,8 @@ Running 6 tests using 6 workers
       41 |   await page.click(`text="${planId}"`);
       42 | }
       43 |
-        at selectPlan (C:\Users\raykim\Documents\workspace\partnerclub\simulation\src\frontend\e2e\utils\journey-actions.ts:40:14)     
-        at C:\Users\raykim\Documents\workspace\partnerclub\simulation\src\frontend\e2e\specs\simulation-flow.spec.ts:44:11
+        at selectPlan (C:\Users\raykim\Documents\workspace\MY_APP\simulation\src\frontend\e2e\utils\journey-actions.ts:40:14)     
+        at C:\Users\raykim\Documents\workspace\MY_APP\simulation\src\frontend\e2e\specs\simulation-flow.spec.ts:44:11
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\specs-simulation-flow-Simu-73b07-vigating-to-the-plan-editor-desktop-chromium\test-failed-1.png

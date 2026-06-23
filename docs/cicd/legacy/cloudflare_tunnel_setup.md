@@ -41,9 +41,9 @@ This guide walks through setting up a Cloudflare Tunnel to give your PWA app a s
 
 1. Create a DNS record that points your subdomain to the tunnel:
    ```powershell
-   cloudflared tunnel route dns simulation-pwa partnersclub.yourdomain.com
+   cloudflared tunnel route dns simulation-pwa MY_APP.yourdomain.com
    ```
-   Replace `partnersclub.yourdomain.com` with your actual subdomain.
+   Replace `MY_APP.yourdomain.com` with your actual subdomain.
 
 ## Step 5: Configure Your Tunnel
 
@@ -53,19 +53,18 @@ This guide walks through setting up a Cloudflare Tunnel to give your PWA app a s
    tunnel: your-tunnel-id-here
    credentials-file: C:\Users\YOUR_USERNAME\.cloudflared\your-tunnel-id-here.json
    ingress:
-     - hostname: partnersclub.yourdomain.com
+     - hostname: MY_APP.yourdomain.com
        path: /api/
        service: http://localhost:8000
-     - hostname: partnersclub.yourdomain.com
+     - hostname: MY_APP.yourdomain.com
        service: http://localhost:4173
      - service: http_status:404
    ```
 
    Replace:
-
    - `your-tunnel-id-here` with the Tunnel ID from Step 3
    - `YOUR_USERNAME` with your Windows username
-   - `partnersclub.yourdomain.com` with your actual subdomain
+   - `MY_APP.yourdomain.com` with your actual subdomain
 
 2. Save this file in your project root directory
 
@@ -83,21 +82,21 @@ This guide walks through setting up a Cloudflare Tunnel to give your PWA app a s
 
 1. Ensure your backend API is running on port 8000
 2. Ensure your frontend is running on port 4173 (Vite preview)
-3. Open a browser and navigate to `https://partnersclub.yourdomain.com`
-4. Test the API endpoint at `https://partnersclub.yourdomain.com/api/`
+3. Open a browser and navigate to `https://MY_APP.yourdomain.com`
+4. Test the API endpoint at `https://MY_APP.yourdomain.com/api/`
 
 ## Step 8: Set Environment Variables
 
 1. Update your frontend build with the correct API URL:
 
    ```
-   VITE_API_BASE_URL=https://partnersclub.yourdomain.com/api
+   VITE_API_BASE_URL=https://MY_APP.yourdomain.com/api
    ```
 
 2. Make sure your backend CORS settings include your domain:
    ```python
    # In src/backend/config/settings.py
-   cors_origins = ["https://partnersclub.yourdomain.com", ...]
+   cors_origins = ["https://MY_APP.yourdomain.com", ...]
    ```
 
 ## Running as a Service

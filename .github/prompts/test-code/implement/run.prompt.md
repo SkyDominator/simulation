@@ -1,4 +1,4 @@
-$TEST_REPORT_DIR = "c:\Users\raykim\Documents\workspace\partnerclub\simulation\.memo\CE\implement\test-code\01-backend-unit\run-report"
+$TEST_REPORT_DIR = "c:\Users\raykim\Documents\workspace\MY_APP\simulation\.memo\CE\implement\test-code\01-backend-unit\run-report"
 $TEST_REPORT_FILE = "test-01-backend-unit"
 
 # Running Tests and Generating Reports
@@ -8,7 +8,7 @@ Follow the instructions below to run the unit tests, generate coverage reports, 
 ## 0. Activate virtual environment
 
 ```powershell
-cd c:\Users\raykim\Documents\workspace\partnerclub\simulation\src\backend
+cd c:\Users\raykim\Documents\workspace\MY_APP\simulation\src\backend
 .\venv\Scripts\activate.ps1
 ```
 

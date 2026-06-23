@@ -53,8 +53,8 @@ Call log:
   54 |   }
   55 |
   56 |   /**
-    at TestHelpers.fillWhitelistForm (C:\Users\USER\Documents\workspace\partnersclub\simulation\src\frontend\e2e\utils\test-helpers.ts:53:62)
-    at C:\Users\USER\Documents\workspace\partnersclub\simulation\src\frontend\e2e\specs\auth-session.spec.ts:63:5
+    at TestHelpers.fillWhitelistForm (C:\Users\USER\Documents\workspace\MY_APP\simulation\src\frontend\e2e\utils\test-helpers.ts:53:62)
+    at C:\Users\USER\Documents\workspace\MY_APP\simulation\src\frontend\e2e\specs\auth-session.spec.ts:63:5
 ```
 ### Page snapshot
 

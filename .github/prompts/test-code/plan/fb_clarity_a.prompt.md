@@ -68,4 +68,4 @@ Apply my decisions about the Critical Clarifications in clarity review to the te
 8. test-plan-06-e2e-smoke.md
 
 * Unstable text selector risk: Adopt `data-testid` attributes in the HTML and use them in selectors.
-    * Example: `<h1 data-testid="app-header">Welcome to PartnerClub</h1>` and use `page.getByTestId('app-header')` in Playwright.
+    * Example: `<h1 data-testid="app-header">Welcome to MY_APP</h1>` and use `page.getByTestId('app-header')` in Playwright.

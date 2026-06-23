@@ -16,12 +16,14 @@ The application fails Google OAuth authentication when accessed through embedded
 4. **Single OAuth Flow**: Only supports standard browser redirect flow without fallback
 
 **Working Platforms**:
+
 - iPhone 11 Pro (iOS 18.1.1) with Chrome - WORKS
 - Desktop browsers (Windows 11 Chrome) - Works
 - Samsung Galaxy A32 (Android 13) in standard Chrome - Expected to work
 - Samsung Galaxy A32 (Android 13) in KakaoTalk webview - FAILS
 
 **Key Code Locations**:
+
 - OAuth Handler: `src/frontend/src/pages/LoginPage.tsx:28-50`
 - Supabase Client: `src/frontend/src/supabaseClient.ts:16-22`
 - Auth Context: `src/frontend/src/context/AuthContext.tsx:56-92`
@@ -50,11 +52,13 @@ This maintains security (uses Google's standard OAuth), provides good UX (clear 
 ## Phase 1: Browser Detection Utility
 
 ### Overview
+
 Create utility functions to detect embedded/in-app browsers and provide browser type information.
 
 ### Changes Required
 
 #### 1. Create Browser Detection Utility
+
 **File**: `src/frontend/src/utils/browserDetection.ts` (NEW)
 **Changes**: Create new utility file with detection logic
 
@@ -69,35 +73,35 @@ Create utility functions to detect embedded/in-app browsers and provide browser 
  * @returns true if running in an embedded browser, false otherwise
  */
 export function isEmbeddedBrowser(): boolean {
-  if (typeof window === 'undefined') return false;
-  
-  const ua = navigator.userAgent || navigator.vendor || '';
-  
+  if (typeof window === "undefined") return false;
+
+  const ua = navigator.userAgent || navigator.vendor || "";
+
   // Common in-app browser markers
   const embeddedMarkers = [
-    'KAKAOTALK',      // KakaoTalk in-app browser
-    'wv',             // Android WebView
-    'WebView',        // Generic WebView
-    'FBAN',           // Facebook App
-    'FBAV',           // Facebook App (alternative)
-    'Instagram',      // Instagram in-app browser
-    'Twitter',        // Twitter in-app browser
-    'Line',           // Line messenger
-    'Naver',          // Naver app
+    "KAKAOTALK", // KakaoTalk in-app browser
+    "wv", // Android WebView
+    "WebView", // Generic WebView
+    "FBAN", // Facebook App
+    "FBAV", // Facebook App (alternative)
+    "Instagram", // Instagram in-app browser
+    "Twitter", // Twitter in-app browser
+    "Line", // Line messenger
+    "Naver", // Naver app
   ];
-  
-  return embeddedMarkers.some(marker => ua.includes(marker));
+
+  return embeddedMarkers.some((marker) => ua.includes(marker));
 }
 
 /**
  * Gets the browser type classification
  * @returns Browser type: 'standard', 'embedded', or 'unknown'
  */
-export function getBrowserType(): 'standard' | 'embedded' | 'unknown' {
-  if (typeof window === 'undefined') return 'unknown';
-  
-  if (isEmbeddedBrowser()) return 'embedded';
-  return 'standard';
+export function getBrowserType(): "standard" | "embedded" | "unknown" {
+  if (typeof window === "undefined") return "unknown";
+
+  if (isEmbeddedBrowser()) return "embedded";
+  return "standard";
 }
 
 /**
@@ -105,26 +109,26 @@ export function getBrowserType(): 'standard' | 'embedded' | 'unknown' {
  * @returns Browser name or 'Unknown'
  */
 export function getBrowserName(): string {
-  if (typeof window === 'undefined') return 'Unknown';
-  
-  const ua = navigator.userAgent || navigator.vendor || '';
-  
+  if (typeof window === "undefined") return "Unknown";
+
+  const ua = navigator.userAgent || navigator.vendor || "";
+
   // Detect specific in-app browsers
-  if (ua.includes('KAKAOTALK')) return 'KakaoTalk';
-  if (ua.includes('FBAN') || ua.includes('FBAV')) return 'Facebook';
-  if (ua.includes('Instagram')) return 'Instagram';
-  if (ua.includes('Twitter')) return 'Twitter';
-  if (ua.includes('Line')) return 'Line';
-  if (ua.includes('Naver')) return 'Naver';
-  
+  if (ua.includes("KAKAOTALK")) return "KakaoTalk";
+  if (ua.includes("FBAN") || ua.includes("FBAV")) return "Facebook";
+  if (ua.includes("Instagram")) return "Instagram";
+  if (ua.includes("Twitter")) return "Twitter";
+  if (ua.includes("Line")) return "Line";
+  if (ua.includes("Naver")) return "Naver";
+
   // Detect standard browsers
-  if (ua.includes('Chrome') && !ua.includes('Edg')) return 'Chrome';
-  if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Safari';
-  if (ua.includes('Firefox')) return 'Firefox';
-  if (ua.includes('Edg')) return 'Edge';
-  if (ua.includes('SamsungBrowser')) return 'Samsung Internet';
-  
-  return 'Unknown';
+  if (ua.includes("Chrome") && !ua.includes("Edg")) return "Chrome";
+  if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
+  if (ua.includes("Firefox")) return "Firefox";
+  if (ua.includes("Edg")) return "Edge";
+  if (ua.includes("SamsungBrowser")) return "Samsung Internet";
+
+  return "Unknown";
 }
 
 /**
@@ -133,18 +137,18 @@ export function getBrowserName(): string {
  */
 export function getExternalBrowserUrl(): string {
   const currentUrl = window.location.href;
-  
+
   // Detect platform
   const isAndroid = /Android/i.test(navigator.userAgent);
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  
+
   if (isAndroid) {
     // Android intent URL to open in external browser
     // Format: intent://<host><path>#Intent;scheme=https;end
     const url = new URL(currentUrl);
     return `intent://${url.host}${url.pathname}${url.search}${url.hash}#Intent;scheme=https;end`;
   }
-  
+
   // For iOS and other platforms, return the direct URL
   // iOS will prompt user to choose browser when clicked
   return currentUrl;
@@ -160,13 +164,14 @@ export async function openInExternalBrowser(): Promise<boolean> {
     window.location.href = externalUrl;
     return true;
   } catch (error) {
-    console.error('Failed to open external browser:', error);
+    console.error("Failed to open external browser:", error);
     return false;
   }
 }
 ```
 
-**Rationale**: 
+**Rationale**:
+
 - Centralized detection logic for maintainability
 - Comprehensive marker list covers major in-app browsers
 - Platform-specific URL generation for best UX
@@ -175,12 +180,14 @@ export async function openInExternalBrowser(): Promise<boolean> {
 ### Success Criteria
 
 #### Automated Verification:
+
 - [ ] TypeScript compilation passes: `npm run build`
 - [ ] No ESLint errors in new file
 - [ ] Export statements are valid
 - [ ] All functions return expected types
 
 #### Manual Verification:
+
 - [ ] `isEmbeddedBrowser()` returns true in KakaoTalk webview
 - [ ] `isEmbeddedBrowser()` returns false in Chrome browser
 - [ ] `getBrowserName()` correctly identifies KakaoTalk
@@ -193,11 +200,13 @@ export async function openInExternalBrowser(): Promise<boolean> {
 ## Phase 2: Embedded Browser Warning Modal
 
 ### Overview
+
 Create a modal component that displays when users attempt OAuth login from an embedded browser, providing clear guidance and action buttons.
 
 ### Changes Required
 
 #### 1. Create Warning Modal Component
+
 **File**: `src/frontend/src/components/EmbeddedBrowserWarningModal.tsx` (NEW)
 **Changes**: Create new modal component
 
@@ -331,6 +340,7 @@ export default EmbeddedBrowserWarningModal;
 ```
 
 **Rationale**:
+
 - Material-UI Dialog for consistent design
 - Clear, actionable Korean language instructions
 - Visual hierarchy with icons and alerts
@@ -341,12 +351,14 @@ export default EmbeddedBrowserWarningModal;
 ### Success Criteria
 
 #### Automated Verification:
+
 - [ ] TypeScript compilation passes
 - [ ] No ESLint errors
 - [ ] Component exports correctly
 - [ ] All MUI imports resolve
 
 #### Manual Verification:
+
 - [ ] Modal displays with correct Korean text
 - [ ] "브라우저에서 열기" button triggers external browser open
 - [ ] "취소" button closes modal
@@ -361,11 +373,13 @@ export default EmbeddedBrowserWarningModal;
 ## Phase 3: Integrate Detection into Login Flow
 
 ### Overview
+
 Integrate webview detection into the LoginPage to prevent OAuth attempts in embedded browsers and show the warning modal instead.
 
 ### Changes Required
 
 #### 1. Update LoginPage OAuth Handler
+
 **File**: `src/frontend/src/pages/LoginPage.tsx`
 **Lines**: 28-50 (OAuth handler), 105-112 (Google button)
 **Changes**: Add webview detection before OAuth attempt
@@ -381,14 +395,14 @@ const [showEmbeddedBrowserWarning, setShowEmbeddedBrowserWarning] = useState(fal
 // Modify handleSocialLogin function (lines 28-50)
 const handleSocialLogin = async (provider: OAuthProvider) => {
   if (loadingProvider) return; // prevent double clicks
-  
+
   // Check if running in embedded browser before attempting OAuth
   if (isEmbeddedBrowser()) {
     console.warn(`OAuth blocked: Running in embedded browser. Provider: ${provider}`);
     setShowEmbeddedBrowserWarning(true);
     return;
   }
-  
+
   setError(null);
   setLoadingProvider(provider);
   try {
@@ -417,28 +431,34 @@ const handleSocialLogin = async (provider: OAuthProvider) => {
 **Detailed Changes**:
 
 **Import Section** (add after existing imports):
+
 ```typescript
-import { isEmbeddedBrowser } from '../utils/browserDetection';
-import EmbeddedBrowserWarningModal from '../components/EmbeddedBrowserWarningModal';
+import { isEmbeddedBrowser } from "../utils/browserDetection";
+import EmbeddedBrowserWarningModal from "../components/EmbeddedBrowserWarningModal";
 ```
 
 **State Section** (add after line ~20):
+
 ```typescript
-const [showEmbeddedBrowserWarning, setShowEmbeddedBrowserWarning] = useState(false);
+const [showEmbeddedBrowserWarning, setShowEmbeddedBrowserWarning] =
+  useState(false);
 ```
 
 **Handler Function** (replace lines 28-50):
+
 ```typescript
 const handleSocialLogin = async (provider: OAuthProvider) => {
   if (loadingProvider) return; // prevent double clicks
-  
+
   // Check if running in embedded browser before attempting OAuth
   if (isEmbeddedBrowser()) {
-    console.warn(`OAuth blocked: Running in embedded browser. Provider: ${provider}`);
+    console.warn(
+      `OAuth blocked: Running in embedded browser. Provider: ${provider}`,
+    );
     setShowEmbeddedBrowserWarning(true);
     return;
   }
-  
+
   setError(null);
   setLoadingProvider(provider);
   try {
@@ -446,7 +466,7 @@ const handleSocialLogin = async (provider: OAuthProvider) => {
       // E2E testing mode handling
       const { error } = await supabase.auth.signInWithPassword({
         email: `${provider}@test.com`,
-        password: 'testpassword',
+        password: "testpassword",
       });
       if (error) throw error;
       return;
@@ -464,6 +484,7 @@ const handleSocialLogin = async (provider: OAuthProvider) => {
 ```
 
 **Render Section** (add before closing Container tag around line 120):
+
 ```typescript
       {/* Embedded Browser Warning Modal */}
       <EmbeddedBrowserWarningModal
@@ -473,6 +494,7 @@ const handleSocialLogin = async (provider: OAuthProvider) => {
 ```
 
 **Rationale**:
+
 - Early detection prevents unnecessary OAuth attempts
 - Console warning for debugging
 - Modal provides clear user guidance
@@ -480,6 +502,7 @@ const handleSocialLogin = async (provider: OAuthProvider) => {
 - Maintains existing error handling
 
 #### 2. Add Detection Warning on Page Load (Optional Enhancement)
+
 **File**: `src/frontend/src/pages/LoginPage.tsx`
 **Lines**: Add new useEffect after existing hooks
 **Changes**: Show persistent warning banner for embedded browsers
@@ -497,13 +520,13 @@ useEffect(() => {
 
 // Add Alert banner in render section (after error Alert, before buttons)
 {showEmbeddedBanner && (
-  <Alert 
-    severity="warning" 
+  <Alert
+    severity="warning"
     onClose={() => setShowEmbeddedBanner(false)}
     sx={{ mb: 2 }}
   >
     <Typography variant="body2">
-      앱 내부 브라우저에서는 Google 로그인이 제한됩니다. 
+      앱 내부 브라우저에서는 Google 로그인이 제한됩니다.
       일반 브라우저(Chrome, Safari)에서 열어주세요.
     </Typography>
   </Alert>
@@ -511,6 +534,7 @@ useEffect(() => {
 ```
 
 **Rationale**:
+
 - Proactive user education
 - Visible before user attempts login
 - Dismissible for users who understand
@@ -519,12 +543,14 @@ useEffect(() => {
 ### Success Criteria
 
 #### Automated Verification:
+
 - [ ] TypeScript compilation passes: `npm run build`
 - [ ] No ESLint errors
 - [ ] Imports resolve correctly
 - [ ] Type checking passes
 
 #### Manual Verification (Android KakaoTalk):
+
 - [ ] Open app in KakaoTalk in-app browser
 - [ ] Warning banner appears on LoginPage (if optional enhancement added)
 - [ ] Click "Google로 로그인" button
@@ -535,6 +561,7 @@ useEffect(() => {
 - [ ] Google login works in Chrome
 
 #### Manual Verification (Standard Browser):
+
 - [ ] Open app in Chrome browser directly
 - [ ] No warning banner appears
 - [ ] Click "Google로 로그인" button
@@ -547,11 +574,13 @@ useEffect(() => {
 ## Phase 4: Error Handling Enhancement
 
 ### Overview
+
 Improve error handling to detect Google's 403 OAuth errors and provide specific guidance for embedded browser issues.
 
 ### Changes Required
 
 #### 1. Add OAuth Error Detection
+
 **File**: `src/frontend/src/pages/LoginPage.tsx`
 **Lines**: 47-50 (error handler in handleSocialLogin)
 **Changes**: Enhanced error detection and messaging
@@ -560,13 +589,13 @@ Improve error handling to detect Google's 403 OAuth errors and provide specific 
 // Replace catch block in handleSocialLogin (lines 47-50)
   } catch (err: any) {
     console.error(`${provider} login error:`, err);
-    
+
     // Check if error is related to embedded browser
     const errorMessage = err?.message || '';
-    const isOAuthError = errorMessage.includes('403') || 
+    const isOAuthError = errorMessage.includes('403') ||
                          errorMessage.includes('disallowed_useragent') ||
                          errorMessage.includes('secure browser');
-    
+
     if (isOAuthError && isEmbeddedBrowser()) {
       // OAuth failed due to embedded browser
       setShowEmbeddedBrowserWarning(true);
@@ -575,18 +604,20 @@ Improve error handling to detect Google's 403 OAuth errors and provide specific 
       // Other errors
       setError("로그인 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
-    
+
     setLoadingProvider(null);
   }
 ```
 
 **Rationale**:
+
 - Catches OAuth failures that slip through detection
 - Provides specific guidance for OAuth errors
 - Maintains generic error for other failures
 - Defensive programming for edge cases
 
 #### 2. Add Network Error Detection
+
 **File**: `src/frontend/src/pages/LoginPage.tsx`
 **Lines**: Same catch block
 **Changes**: Add network timeout detection
@@ -595,18 +626,18 @@ Improve error handling to detect Google's 403 OAuth errors and provide specific 
 // Enhanced catch block with network detection
   } catch (err: any) {
     console.error(`${provider} login error:`, err);
-    
+
     // Check for network errors
     const errorMessage = err?.message || '';
-    const isNetworkError = errorMessage.includes('fetch') || 
+    const isNetworkError = errorMessage.includes('fetch') ||
                            errorMessage.includes('network') ||
                            errorMessage.includes('timeout');
-    
+
     // Check for OAuth policy errors
-    const isOAuthPolicyError = errorMessage.includes('403') || 
+    const isOAuthPolicyError = errorMessage.includes('403') ||
                                errorMessage.includes('disallowed_useragent') ||
                                errorMessage.includes('secure browser');
-    
+
     if (isOAuthPolicyError && isEmbeddedBrowser()) {
       // OAuth blocked by Google in embedded browser
       setShowEmbeddedBrowserWarning(true);
@@ -617,12 +648,13 @@ Improve error handling to detect Google's 403 OAuth errors and provide specific 
       // Generic error
       setError("로그인 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
-    
+
     setLoadingProvider(null);
   }
 ```
 
 **Rationale**:
+
 - Distinguishes between error types
 - Provides actionable messages
 - Helps with debugging
@@ -631,11 +663,13 @@ Improve error handling to detect Google's 403 OAuth errors and provide specific 
 ### Success Criteria
 
 #### Automated Verification:
+
 - [ ] TypeScript compilation passes
 - [ ] Error handling logic doesn't break existing flow
 - [ ] All code paths set loadingProvider to null
 
 #### Manual Verification:
+
 - [ ] Simulated 403 error shows warning modal
 - [ ] Network error shows network message
 - [ ] Other errors show generic message
@@ -652,6 +686,7 @@ Define comprehensive testing approach covering all test types from the project's
 ### Test Infrastructure
 
 Based on project configuration:
+
 - **Test Runner**: Vitest for unit/component/integration tests
 - **E2E Framework**: Playwright with Mobile Chrome project
 - **Test Locations**:
@@ -664,9 +699,11 @@ Based on project configuration:
 ### Test Types Overview
 
 #### 1. Unit Tests (Utility Functions)
+
 **Location**: `src/frontend/src/test/utils/browserDetection.test.ts`
 **Purpose**: Test browser detection utility functions in isolation
 **Coverage**:
+
 - `isEmbeddedBrowser()` - All embedded browser markers
 - `getBrowserType()` - Type classification logic
 - `getBrowserName()` - Browser name identification
@@ -676,9 +713,11 @@ Based on project configuration:
 **Run Command**: `npx vitest run src/test/utils --reporter=verbose`
 
 #### 2. Component Tests
+
 **Location**: `src/frontend/src/test/components/EmbeddedBrowserWarningModal.test.tsx`
 **Purpose**: Test modal component rendering and interactions
 **Coverage**:
+
 - Modal visibility based on props
 - Button click handlers
 - Custom browser name display
@@ -688,9 +727,11 @@ Based on project configuration:
 **Run Command**: `npx vitest run src/test/components --reporter=verbose`
 
 #### 3. Page Unit Tests
+
 **Location**: `src/frontend/src/test/pages/LoginPage.test.tsx` (update existing)
 **Purpose**: Test LoginPage with embedded browser detection logic
 **Coverage**:
+
 - Detection check before OAuth attempt
 - Modal state management
 - Error handling with detection
@@ -699,9 +740,11 @@ Based on project configuration:
 **Run Command**: `npx vitest run src/test/pages --reporter=verbose`
 
 #### 4. Integration Tests
+
 **Location**: `src/frontend/src/test/integration/auth/embeddedBrowser.test.ts`
 **Purpose**: Test full flow from detection to modal display to redirect
 **Coverage**:
+
 - LoginPage + Modal integration
 - Detection → Modal → External browser flow
 - Error recovery paths
@@ -710,9 +753,11 @@ Based on project configuration:
 **Run Command**: `npx vitest run src/test/integration --reporter=verbose`
 
 #### 5. E2E Tests (Playwright)
+
 **Location**: `src/frontend/e2e/auth/embedded-browser.spec.ts`
 **Purpose**: Test real browser behavior with user agents
 **Coverage**:
+
 - Simulated embedded browser detection
 - Full OAuth flow in standard browser
 - Mobile Chrome viewport
@@ -870,145 +915,145 @@ Implement all test code following the project's test structure: utility tests, c
 **Changes**: Create test suite
 
 ```typescript
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   isEmbeddedBrowser,
   getBrowserType,
   getBrowserName,
   getExternalBrowserUrl,
-} from '../browserDetection';
+} from "../browserDetection";
 
-describe('browserDetection', () => {
+describe("browserDetection", () => {
   beforeEach(() => {
     // Reset window.navigator mock
     vi.resetAllMocks();
   });
 
-  describe('isEmbeddedBrowser', () => {
-    it('returns true for KakaoTalk browser', () => {
-      Object.defineProperty(window.navigator, 'userAgent', {
-        value: 'Mozilla/5.0 (Linux; Android 13) KAKAOTALK 10.0.0',
+  describe("isEmbeddedBrowser", () => {
+    it("returns true for KakaoTalk browser", () => {
+      Object.defineProperty(window.navigator, "userAgent", {
+        value: "Mozilla/5.0 (Linux; Android 13) KAKAOTALK 10.0.0",
         writable: true,
       });
       expect(isEmbeddedBrowser()).toBe(true);
     });
 
-    it('returns true for Android WebView', () => {
-      Object.defineProperty(window.navigator, 'userAgent', {
-        value: 'Mozilla/5.0 (Linux; Android 13; wv) AppleWebKit/537.36',
+    it("returns true for Android WebView", () => {
+      Object.defineProperty(window.navigator, "userAgent", {
+        value: "Mozilla/5.0 (Linux; Android 13; wv) AppleWebKit/537.36",
         writable: true,
       });
       expect(isEmbeddedBrowser()).toBe(true);
     });
 
-    it('returns true for Facebook in-app browser', () => {
-      Object.defineProperty(window.navigator, 'userAgent', {
-        value: 'Mozilla/5.0 (Linux; Android 13) FBAN/FB4A',
+    it("returns true for Facebook in-app browser", () => {
+      Object.defineProperty(window.navigator, "userAgent", {
+        value: "Mozilla/5.0 (Linux; Android 13) FBAN/FB4A",
         writable: true,
       });
       expect(isEmbeddedBrowser()).toBe(true);
     });
 
-    it('returns false for Chrome browser', () => {
-      Object.defineProperty(window.navigator, 'userAgent', {
-        value: 'Mozilla/5.0 (Linux; Android 13) Chrome/120.0.0.0',
+    it("returns false for Chrome browser", () => {
+      Object.defineProperty(window.navigator, "userAgent", {
+        value: "Mozilla/5.0 (Linux; Android 13) Chrome/120.0.0.0",
         writable: true,
       });
       expect(isEmbeddedBrowser()).toBe(false);
     });
 
-    it('returns false for Safari browser', () => {
-      Object.defineProperty(window.navigator, 'userAgent', {
-        value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Safari/605.1.15',
+    it("returns false for Safari browser", () => {
+      Object.defineProperty(window.navigator, "userAgent", {
+        value: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Safari/605.1.15",
         writable: true,
       });
       expect(isEmbeddedBrowser()).toBe(false);
     });
   });
 
-  describe('getBrowserType', () => {
+  describe("getBrowserType", () => {
     it('returns "embedded" for KakaoTalk', () => {
-      Object.defineProperty(window.navigator, 'userAgent', {
-        value: 'KAKAOTALK',
+      Object.defineProperty(window.navigator, "userAgent", {
+        value: "KAKAOTALK",
         writable: true,
       });
-      expect(getBrowserType()).toBe('embedded');
+      expect(getBrowserType()).toBe("embedded");
     });
 
     it('returns "standard" for Chrome', () => {
-      Object.defineProperty(window.navigator, 'userAgent', {
-        value: 'Chrome/120.0.0.0',
+      Object.defineProperty(window.navigator, "userAgent", {
+        value: "Chrome/120.0.0.0",
         writable: true,
       });
-      expect(getBrowserType()).toBe('standard');
+      expect(getBrowserType()).toBe("standard");
     });
   });
 
-  describe('getBrowserName', () => {
-    it('identifies KakaoTalk', () => {
-      Object.defineProperty(window.navigator, 'userAgent', {
-        value: 'KAKAOTALK',
+  describe("getBrowserName", () => {
+    it("identifies KakaoTalk", () => {
+      Object.defineProperty(window.navigator, "userAgent", {
+        value: "KAKAOTALK",
         writable: true,
       });
-      expect(getBrowserName()).toBe('KakaoTalk');
+      expect(getBrowserName()).toBe("KakaoTalk");
     });
 
-    it('identifies Chrome', () => {
-      Object.defineProperty(window.navigator, 'userAgent', {
-        value: 'Chrome/120.0.0.0 Safari/537.36',
+    it("identifies Chrome", () => {
+      Object.defineProperty(window.navigator, "userAgent", {
+        value: "Chrome/120.0.0.0 Safari/537.36",
         writable: true,
       });
-      expect(getBrowserName()).toBe('Chrome');
+      expect(getBrowserName()).toBe("Chrome");
     });
 
-    it('identifies Samsung Internet', () => {
-      Object.defineProperty(window.navigator, 'userAgent', {
-        value: 'SamsungBrowser/23.0',
+    it("identifies Samsung Internet", () => {
+      Object.defineProperty(window.navigator, "userAgent", {
+        value: "SamsungBrowser/23.0",
         writable: true,
       });
-      expect(getBrowserName()).toBe('Samsung Internet');
+      expect(getBrowserName()).toBe("Samsung Internet");
     });
   });
 
-  describe('getExternalBrowserUrl', () => {
-    it('generates Android intent URL', () => {
-      Object.defineProperty(window.navigator, 'userAgent', {
-        value: 'Android',
+  describe("getExternalBrowserUrl", () => {
+    it("generates Android intent URL", () => {
+      Object.defineProperty(window.navigator, "userAgent", {
+        value: "Android",
         writable: true,
       });
-      
-      Object.defineProperty(window, 'location', {
+
+      Object.defineProperty(window, "location", {
         value: {
-          href: 'https://simulation.lightoflifeclub.com/login',
-          host: 'simulation.lightoflifeclub.com',
-          pathname: '/login',
-          search: '',
-          hash: '',
+          href: "https://simulation.LOLCLUB.com/login",
+          host: "simulation.LOLCLUB.com",
+          pathname: "/login",
+          search: "",
+          hash: "",
         },
         writable: true,
       });
 
       const result = getExternalBrowserUrl();
-      expect(result).toContain('intent://');
-      expect(result).toContain('simulation.lightoflifeclub.com/login');
-      expect(result).toContain('#Intent;scheme=https;end');
+      expect(result).toContain("intent://");
+      expect(result).toContain("simulation.LOLCLUB.com/login");
+      expect(result).toContain("#Intent;scheme=https;end");
     });
 
-    it('returns direct URL for iOS', () => {
-      Object.defineProperty(window.navigator, 'userAgent', {
-        value: 'iPhone',
+    it("returns direct URL for iOS", () => {
+      Object.defineProperty(window.navigator, "userAgent", {
+        value: "iPhone",
         writable: true,
       });
-      
-      Object.defineProperty(window, 'location', {
+
+      Object.defineProperty(window, "location", {
         value: {
-          href: 'https://simulation.lightoflifeclub.com/login',
+          href: "https://simulation.LOLCLUB.com/login",
         },
         writable: true,
       });
 
       const result = getExternalBrowserUrl();
-      expect(result).toBe('https://simulation.lightoflifeclub.com/login');
+      expect(result).toBe("https://simulation.LOLCLUB.com/login");
     });
   });
 });
@@ -1356,24 +1401,29 @@ describe('Embedded Browser Detection - Integration', () => {
 **Changes**: Create Playwright E2E test
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test.describe('Embedded Browser Detection - E2E', () => {
+test.describe("Embedded Browser Detection - E2E", () => {
   test.use({
     // Simulate KakaoTalk in-app browser
-    userAgent: 'Mozilla/5.0 (Linux; Android 13) KAKAOTALK 10.0.0 Mobile Safari/537.36',
+    userAgent:
+      "Mozilla/5.0 (Linux; Android 13) KAKAOTALK 10.0.0 Mobile Safari/537.36",
     viewport: { width: 375, height: 667 },
   });
 
-  test('detects KakaoTalk browser and shows warning modal', async ({ page }) => {
+  test("detects KakaoTalk browser and shows warning modal", async ({
+    page,
+  }) => {
     // Navigate to login page
-    await page.goto('/login');
+    await page.goto("/login");
 
     // Wait for page load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState("networkidle");
 
     // Optional: Check if warning banner appears
-    const banner = page.locator('text=/앱 내부 브라우저에서는 Google 로그인이 제한됩니다/');
+    const banner = page.locator(
+      "text=/앱 내부 브라우저에서는 Google 로그인이 제한됩니다/",
+    );
     if (await banner.isVisible()) {
       await expect(banner).toBeVisible();
     }
@@ -1382,62 +1432,75 @@ test.describe('Embedded Browser Detection - E2E', () => {
     await page.click('button:has-text("Google로 로그인")');
 
     // Modal should appear
-    await expect(page.locator('text=브라우저에서 열어주세요')).toBeVisible();
-    await expect(page.locator('text=/KakaoTalk 앱 내부 브라우저/')).toBeVisible();
+    await expect(page.locator("text=브라우저에서 열어주세요")).toBeVisible();
+    await expect(
+      page.locator("text=/KakaoTalk 앱 내부 브라우저/"),
+    ).toBeVisible();
 
     // Verify modal content
-    await expect(page.locator('text=브라우저에서 열기')).toBeVisible();
-    await expect(page.locator('text=취소')).toBeVisible();
-    await expect(page.locator('text=/수동으로 여는 방법/')).toBeVisible();
+    await expect(page.locator("text=브라우저에서 열기")).toBeVisible();
+    await expect(page.locator("text=취소")).toBeVisible();
+    await expect(page.locator("text=/수동으로 여는 방법/")).toBeVisible();
   });
 
-  test('allows user to dismiss modal', async ({ page }) => {
-    await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+  test("allows user to dismiss modal", async ({ page }) => {
+    await page.goto("/login");
+    await page.waitForLoadState("networkidle");
 
     // Trigger modal
     await page.click('button:has-text("Google로 로그인")');
-    await expect(page.locator('text=브라우저에서 열어주세요')).toBeVisible();
+    await expect(page.locator("text=브라우저에서 열어주세요")).toBeVisible();
 
     // Dismiss modal
     await page.click('button:has-text("취소")');
 
     // Modal should disappear
-    await expect(page.locator('text=브라우저에서 열어주세요')).not.toBeVisible();
+    await expect(
+      page.locator("text=브라우저에서 열어주세요"),
+    ).not.toBeVisible();
   });
 
-  test('shows manual instructions for external browser opening', async ({ page }) => {
-    await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+  test("shows manual instructions for external browser opening", async ({
+    page,
+  }) => {
+    await page.goto("/login");
+    await page.waitForLoadState("networkidle");
 
     // Trigger modal
     await page.click('button:has-text("Google로 로그인")');
 
     // Check manual instructions
-    await expect(page.locator('text=/메뉴\\(⋮\\) 버튼을 누르세요/')).toBeVisible();
-    await expect(page.locator('text=/다른 브라우저로 열기/')).toBeVisible();
+    await expect(
+      page.locator("text=/메뉴\\(⋮\\) 버튼을 누르세요/"),
+    ).toBeVisible();
+    await expect(page.locator("text=/다른 브라우저로 열기/")).toBeVisible();
   });
 });
 
-test.describe('Standard Browser - E2E Control', () => {
+test.describe("Standard Browser - E2E Control", () => {
   test.use({
     // Simulate standard Chrome browser
-    userAgent: 'Mozilla/5.0 (Linux; Android 13) Chrome/120.0.0.0 Mobile Safari/537.36',
+    userAgent:
+      "Mozilla/5.0 (Linux; Android 13) Chrome/120.0.0.0 Mobile Safari/537.36",
     viewport: { width: 375, height: 667 },
   });
 
-  test('allows OAuth in standard browser without warning', async ({ page }) => {
-    await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+  test("allows OAuth in standard browser without warning", async ({ page }) => {
+    await page.goto("/login");
+    await page.waitForLoadState("networkidle");
 
     // No warning banner should appear
-    await expect(page.locator('text=/앱 내부 브라우저에서는 Google 로그인이 제한됩니다/')).not.toBeVisible();
+    await expect(
+      page.locator("text=/앱 내부 브라우저에서는 Google 로그인이 제한됩니다/"),
+    ).not.toBeVisible();
 
     // Click Google login button
     await page.click('button:has-text("Google로 로그인")');
 
     // Modal should NOT appear
-    await expect(page.locator('text=브라우저에서 열어주세요')).not.toBeVisible({ timeout: 2000 });
+    await expect(page.locator("text=브라우저에서 열어주세요")).not.toBeVisible({
+      timeout: 2000,
+    });
 
     // Should redirect to OAuth (or show OAuth-related page)
     // Note: Actual OAuth redirect will happen, just verify no modal interference
@@ -1512,11 +1575,13 @@ Tests will run automatically in this order:
 ## Phase 7: Analytics and Monitoring
 
 ### Overview
+
 Add logging and analytics to track embedded browser detection and OAuth flow issues.
 
 ### Changes Required
 
 #### 1. Add Console Logging
+
 **File**: `src/frontend/src/utils/browserDetection.ts`
 **Lines**: Add logging to detection functions
 **Changes**: Add debug logging
@@ -1524,25 +1589,32 @@ Add logging and analytics to track embedded browser detection and OAuth flow iss
 ```typescript
 // Add to isEmbeddedBrowser function
 export function isEmbeddedBrowser(): boolean {
-  if (typeof window === 'undefined') return false;
-  
-  const ua = navigator.userAgent || navigator.vendor || '';
+  if (typeof window === "undefined") return false;
+
+  const ua = navigator.userAgent || navigator.vendor || "";
   const embeddedMarkers = [
-    'KAKAOTALK', 'wv', 'WebView', 'FBAN', 'FBAV',
-    'Instagram', 'Twitter', 'Line', 'Naver',
+    "KAKAOTALK",
+    "wv",
+    "WebView",
+    "FBAN",
+    "FBAV",
+    "Instagram",
+    "Twitter",
+    "Line",
+    "Naver",
   ];
-  
-  const isEmbedded = embeddedMarkers.some(marker => ua.includes(marker));
-  
+
+  const isEmbedded = embeddedMarkers.some((marker) => ua.includes(marker));
+
   // Log detection result
   if (isEmbedded) {
-    console.info('[BrowserDetection] Embedded browser detected:', {
+    console.info("[BrowserDetection] Embedded browser detected:", {
       userAgent: ua,
       browserName: getBrowserName(),
-      browserType: 'embedded',
+      browserType: "embedded",
     });
   }
-  
+
   return isEmbedded;
 }
 
@@ -1550,29 +1622,34 @@ export function isEmbeddedBrowser(): boolean {
 export async function openInExternalBrowser(): Promise<boolean> {
   try {
     const externalUrl = getExternalBrowserUrl();
-    console.info('[BrowserDetection] Opening external browser:', {
+    console.info("[BrowserDetection] Opening external browser:", {
       currentUrl: window.location.href,
       externalUrl,
-      platform: /Android/i.test(navigator.userAgent) ? 'Android' : 
-                /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'iOS' : 'Other',
+      platform: /Android/i.test(navigator.userAgent)
+        ? "Android"
+        : /iPhone|iPad|iPod/i.test(navigator.userAgent)
+          ? "iOS"
+          : "Other",
     });
-    
+
     window.location.href = externalUrl;
     return true;
   } catch (error) {
-    console.error('[BrowserDetection] Failed to open external browser:', error);
+    console.error("[BrowserDetection] Failed to open external browser:", error);
     return false;
   }
 }
 ```
 
 **Rationale**:
+
 - Debugging in production
 - Track detection accuracy
 - Monitor redirect success
 - Identify edge cases
 
 #### 2. Add OAuth Error Logging
+
 **File**: `src/frontend/src/pages/LoginPage.tsx`
 **Lines**: Enhanced error logging in catch block
 **Changes**: Structured error logging
@@ -1589,18 +1666,20 @@ export async function openInExternalBrowser(): Promise<boolean> {
       userAgent: navigator.userAgent,
       timestamp: new Date().toISOString(),
     });
-    
+
     // ... existing error handling logic
   }
 ```
 
 **Rationale**:
+
 - Comprehensive error context
 - Easier debugging
 - Pattern identification
 - Production monitoring
 
 #### 3. Add Modal Interaction Logging
+
 **File**: `src/frontend/src/components/EmbeddedBrowserWarningModal.tsx`
 **Lines**: Add logging to button handlers
 **Changes**: Track user interactions
@@ -1608,8 +1687,8 @@ export async function openInExternalBrowser(): Promise<boolean> {
 ```typescript
 // Add to onClose handler
 const handleClose = () => {
-  console.info('[EmbeddedBrowserWarning] Modal closed:', {
-    action: 'cancel',
+  console.info("[EmbeddedBrowserWarning] Modal closed:", {
+    action: "cancel",
     browserName: detectedBrowser,
     timestamp: new Date().toISOString(),
   });
@@ -1618,19 +1697,19 @@ const handleClose = () => {
 
 // Add to handleOpenInBrowser
 const handleOpenInBrowser = async () => {
-  console.info('[EmbeddedBrowserWarning] Opening external browser:', {
-    action: 'open_browser',
+  console.info("[EmbeddedBrowserWarning] Opening external browser:", {
+    action: "open_browser",
     browserName: detectedBrowser,
     timestamp: new Date().toISOString(),
   });
-  
+
   const success = await openInExternalBrowser();
-  
-  console.info('[EmbeddedBrowserWarning] External browser result:', {
+
+  console.info("[EmbeddedBrowserWarning] External browser result:", {
     success,
     browserName: detectedBrowser,
   });
-  
+
   if (success) {
     onClose();
   }
@@ -1640,6 +1719,7 @@ const handleOpenInBrowser = async () => {
 ```
 
 **Rationale**:
+
 - Track modal effectiveness
 - Monitor user choices
 - Measure redirect success
@@ -1648,11 +1728,13 @@ const handleOpenInBrowser = async () => {
 ### Success Criteria
 
 #### Automated Verification:
+
 - [ ] Logging doesn't break functionality
 - [ ] Console methods are called correctly
 - [ ] No sensitive data in logs
 
 #### Manual Verification:
+
 - [ ] Console shows detection events
 - [ ] Error logs include full context
 - [ ] Modal interactions logged

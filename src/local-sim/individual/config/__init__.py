@@ -174,10 +174,10 @@ def get_api_key() -> str:
     Raises:
         ValueError: If API key is not set in environment variables
     """
-    api_key = os.environ.get('PARTNER_CLUB_API_KEY')
+    api_key = os.environ.get('MY_APP_API_KEY')
     if not api_key:
         logger.error("API key not found in environment variables")
-        raise ValueError("API key 'PARTNER_CLUB_API_KEY' not found in environment variables")
+        raise ValueError("API key 'MY_APP_API_KEY' not found in environment variables")
     return api_key
 
 def validate_plan_parameters(parameters: Dict[str, Any]) -> bool:

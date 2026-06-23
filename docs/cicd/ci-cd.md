@@ -7,8 +7,9 @@ Complete guide for deploying the simulation application from Windows development
 **Migration Path**: Windows 11 laptop → DigitalOcean Droplet (1 CPU, 1GB RAM)
 
 **Environments**:
-- **Production**: `simulation.lightoflifeclub.com` (release branch)
-- **Staging**: `staging-simulation.lightoflifeclub.com` (main branch)
+
+- **Production**: `simulation.LOLCLUB.com` (release branch)
+- **Staging**: `staging-simulation.LOLCLUB.com` (main branch)
 
 **Stack**: GitHub Actions + Docker + Nginx + Cloudflare Tunnel
 
@@ -34,31 +35,31 @@ Complete guide for deploying the simulation application from Windows development
 ### System Overview
 
 ```
-GitHub (main/release) 
+GitHub (main/release)
     → GitHub Actions (tests on GitHub-hosted, build/deploy on self-hosted)
         → Droplet (Docker Compose: Production + Staging)
             → Nginx (host-based routing)
-                → Cloudflare Tunnel 
+                → Cloudflare Tunnel
                     → Users
 ```
 
 ### Key Components
 
-| Component | Purpose | Details |
-|-----------|---------|---------|
-| GitHub Actions | CI/CD automation | Hybrid runner strategy |
-| Self-hosted Runner | Build & deploy | Runs on Droplet |
-| Docker Compose | Container orchestration | Separate prod/staging |
-| Nginx | Reverse proxy | Host-based routing on port 8080 |
-| Cloudflare Tunnel | Secure ingress | Single tunnel for both environments |
+| Component          | Purpose                 | Details                             |
+| ------------------ | ----------------------- | ----------------------------------- |
+| GitHub Actions     | CI/CD automation        | Hybrid runner strategy              |
+| Self-hosted Runner | Build & deploy          | Runs on Droplet                     |
+| Docker Compose     | Container orchestration | Separate prod/staging               |
+| Nginx              | Reverse proxy           | Host-based routing on port 8080     |
+| Cloudflare Tunnel  | Secure ingress          | Single tunnel for both environments |
 
 ### Port Mapping
 
-| Environment | Frontend | Backend | Domain |
-|-------------|----------|---------|--------|
-| Production | 3000 | 8000 | `simulation.lightoflifeclub.com` |
-| Staging | 4173 | 8001 | `staging-simulation.lightoflifeclub.com` |
-| Nginx | 8080 | - | Both domains |
+| Environment | Frontend | Backend | Domain                           |
+| ----------- | -------- | ------- | -------------------------------- |
+| Production  | 3000     | 8000    | `simulation.LOLCLUB.com`         |
+| Staging     | 4173     | 8001    | `staging-simulation.LOLCLUB.com` |
+| Nginx       | 8080     | -       | Both domains                     |
 
 **Why `staging-simulation` not `staging.simulation`?**  
 Cloudflare Universal SSL doesn't support multi-level subdomains (3+ levels). Using `staging-simulation` (2 levels) ensures automatic SSL coverage.
@@ -66,12 +67,14 @@ Cloudflare Universal SSL doesn't support multi-level subdomains (3+ levels). Usi
 ### Hybrid Runner Strategy
 
 **GitHub-hosted runners** (tests only):
+
 - ✅ Free GitHub Actions minutes
 - ✅ Clean environment per run
 - ✅ Parallel execution
 - ✅ Pre-installed tools (Node.js, Python, Playwright)
 
 **Self-hosted runner** (build/deploy only):
+
 - ✅ Direct deployment on same machine
 - ✅ No image registry needed
 - ✅ Direct file system access
@@ -136,6 +139,7 @@ Get-Content ".\src\frontend\.env.local" > frontend-env-backup.txt
 ### 3.1 Create Droplet
 
 **DigitalOcean Settings**:
+
 - Image: Ubuntu 22.04 LTS (x64)
 - Plan: Basic - 1 vCPU, 1GB RAM, 25GB SSD (~$6/month)
 - Datacenter: Singapore or nearest region
@@ -251,9 +255,9 @@ upstream staging_frontend {
 # Production
 server {
     listen 8080;
-    server_name simulation.lightoflifeclub.com;
+    server_name simulation.LOLCLUB.com;
     client_max_body_size 10M;
-    
+
     location / {
         proxy_pass http://production_frontend;
         proxy_http_version 1.1;
@@ -264,7 +268,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
-        
+
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
@@ -279,9 +283,9 @@ server {
 # Staging
 server {
     listen 8080;
-    server_name staging-simulation.lightoflifeclub.com;
+    server_name staging-simulation.LOLCLUB.com;
     client_max_body_size 10M;
-    
+
     location / {
         proxy_pass http://staging_frontend;
         proxy_http_version 1.1;
@@ -292,7 +296,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
-        
+
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
@@ -328,7 +332,7 @@ cloudflared tunnel create simulation-tunnel
 # Note the TUNNEL_ID from output
 
 # Create DNS record for STAGING ONLY (Production stays on Windows for now)
-cloudflared tunnel route dns simulation-tunnel staging-simulation.lightoflifeclub.com
+cloudflared tunnel route dns simulation-tunnel staging-simulation.LOLCLUB.com
 
 # Configure tunnel
 cat > /etc/cloudflared/config.yml << 'EOF'
@@ -336,9 +340,9 @@ tunnel: <TUNNEL_ID>
 credentials-file: /root/.cloudflared/<TUNNEL_ID>.json
 
 ingress:
-  - hostname: simulation.lightoflifeclub.com
+  - hostname: simulation.LOLCLUB.com
     service: http://localhost:8080
-  - hostname: staging-simulation.lightoflifeclub.com
+  - hostname: staging-simulation.LOLCLUB.com
     service: http://localhost:8080
   - service: http_status:404
 EOF
@@ -356,8 +360,9 @@ journalctl -u cloudflared -f
 ```
 
 **DNS Strategy**:
-- ✅ Create `staging-simulation.lightoflifeclub.com` → Droplet tunnel (NOW)
-- ❌ Keep `simulation.lightoflifeclub.com` → Windows tunnel (until validation complete)
+
+- ✅ Create `staging-simulation.LOLCLUB.com` → Droplet tunnel (NOW)
+- ❌ Keep `simulation.LOLCLUB.com` → Windows tunnel (until validation complete)
 
 ---
 
@@ -397,23 +402,23 @@ cd /home/deploy/actions-runner
 
 **Secrets** (encrypted, sensitive data):
 
-| Name | Value | Notes |
-|------|-------|-------|
-| `SUPABASE_SECRET_KEY` | `eyJ...` | Service role (server-side only) |
-| `SOLAPI_API_SECRET` | `...` | SMS provider secret |
-| `SOLAPI_SENDER_NUMBER` | `01012345678` | Verified sender |
-| `OTP_SECRET_KEY` | `...` | 32-char random string |
+| Name                   | Value         | Notes                           |
+| ---------------------- | ------------- | ------------------------------- |
+| `SUPABASE_SECRET_KEY`  | `eyJ...`      | Service role (server-side only) |
+| `SOLAPI_API_SECRET`    | `...`         | SMS provider secret             |
+| `SOLAPI_SENDER_NUMBER` | `01012345678` | Verified sender                 |
+| `OTP_SECRET_KEY`       | `...`         | 32-char random string           |
 
 **Variables** (plain text, non-sensitive configuration):
 
-| Name | Value | Notes |
-|------|-------|-------|
-| `VITE_API_BASE_URL` | `https://simulation.lightoflifeclub.com/api` | Frontend API endpoint (⚠️ same for both prod/staging in current workflow) |
-| `VITE_SUPABASE_URL` | `https://xxx.supabase.co` | Public Supabase URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | `eyJ...` | Anon/public key |
-| `SUPABASE_URL` | `https://xxx.supabase.co` | Backend Supabase URL |
-| `SUPABASE_PUBLISHABLE_KEY` | `eyJ...` | Backend public key |
-| `SOLAPI_API_KEY` | `...` | SMS provider API key |
+| Name                            | Value                                | Notes                                                                     |
+| ------------------------------- | ------------------------------------ | ------------------------------------------------------------------------- |
+| `VITE_API_BASE_URL`             | `https://simulation.LOLCLUB.com/api` | Frontend API endpoint (⚠️ same for both prod/staging in current workflow) |
+| `VITE_SUPABASE_URL`             | `https://xxx.supabase.co`            | Public Supabase URL                                                       |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | `eyJ...`                             | Anon/public key                                                           |
+| `SUPABASE_URL`                  | `https://xxx.supabase.co`            | Backend Supabase URL                                                      |
+| `SUPABASE_PUBLISHABLE_KEY`      | `eyJ...`                             | Backend public key                                                        |
+| `SOLAPI_API_KEY`                | `...`                                | SMS provider API key                                                      |
 
 **Note**: The current workflow uses the same `VITE_API_BASE_URL` for both environments. For proper separation, you would need separate variables (`VITE_API_BASE_URL_PROD` and `VITE_API_BASE_URL_STAGING`) and conditional logic in the workflow.
 
@@ -564,6 +569,7 @@ networks:
 The actual workflow file is `.github/workflows/ci-cd.yml` (not `deploy.yml`).
 
 **Key features**:
+
 - **Hybrid runner strategy**: Tests run on GitHub-hosted runners, deployment on self-hosted
 - **Deployment profiles**: Control which test suites run via `.github/deployment-profiles.yml`
 - **Environment-based deployment**: `main` branch → staging, `release` branch → production
@@ -578,8 +584,8 @@ name: CI/CD Pipeline (Production & Staging)
 on:
   push:
     branches:
-      - release   # Production trigger
-      - main      # Staging trigger
+      - release # Production trigger
+      - main # Staging trigger
   workflow_dispatch:
     inputs:
       environment:
@@ -592,22 +598,22 @@ on:
 jobs:
   load-profile:
     # Loads test configuration from deployment-profiles.yml
-    
+
   test-unit:
     # Runs frontend & backend unit tests on GitHub-hosted runners
-    
+
   test-integration:
     # Runs backend integration tests on GitHub-hosted runners
-    
+
   test-security:
     # Runs security tests on GitHub-hosted runners
-    
+
   lint:
     # Runs linting and type checking
-    
+
   build:
     # Determines deployment target (production/staging)
-    
+
   deploy-production:
     # Deploys to production on self-hosted runner
     runs-on: [self-hosted, linux, droplet]
@@ -618,7 +624,7 @@ jobs:
         # Builds and starts containers with docker compose
       - name: Health Check
         # Validates deployment on port 3000
-        
+
   deploy-staging:
     # Deploys to staging on self-hosted runner
     runs-on: [self-hosted, linux, droplet]
@@ -629,12 +635,13 @@ jobs:
         # Builds and starts containers with docker compose
       - name: Health Check
         # Validates deployment on port 4173
-        
+
   test-e2e:
     # Optional E2E tests after staging deployment
 ```
 
 **Important notes**:
+
 - The workflow creates `.env` files dynamically in deployment directories
 - Uses `vars.*` for public configuration and `secrets.*` for sensitive data
 - Health checks validate services on correct ports (3000 for prod, 4173 for staging)
@@ -649,11 +656,11 @@ The file `.github/deployment-profiles.yml` already exists and controls which tes
 ```yaml
 # Production Environment (release branch)
 production:
-  profile: unit-integration  # Skips E2E tests
-  
+  profile: unit-integration # Skips E2E tests
+
 # Staging Environment (main branch)
 staging:
-  profile: unit-integration  # Skips E2E tests
+  profile: unit-integration # Skips E2E tests
 
 # Available Profiles:
 profiles:
@@ -661,22 +668,22 @@ profiles:
     description: "Run all tests (Unit + Integration + E2E)"
     skip_tests: ""
     estimated_time: "20-30 minutes"
-  
+
   unit-integration:
     description: "Run Unit and Integration tests only (skip E2E)"
     skip_tests: "e2e"
     estimated_time: "10-15 minutes"
-  
+
   unit-only:
     description: "Run Unit tests only"
     skip_tests: "integration,e2e"
     estimated_time: "5-7 minutes"
-  
+
   e2e-only:
     description: "Run E2E tests only (skip Unit and Integration)"
     skip_tests: "unit,integration"
     estimated_time: "10-20 minutes"
-  
+
   no-test:
     description: "Skip all tests (build and deploy only)"
     skip_tests: "unit,integration,e2e"
@@ -690,6 +697,7 @@ profiles:
 3. Push changes to trigger new configuration
 
 **Manual Workflow Dispatch**:
+
 - Go to Actions → CI/CD Pipeline → Run workflow
 - Select environment and optionally specify custom `skip_tests` (e.g., "e2e")
 
@@ -732,13 +740,13 @@ curl -f http://localhost:4173/health
 # Should return 200 OK
 
 # 5. Test public domain
-curl -I https://staging-simulation.lightoflifeclub.com
+curl -I https://staging-simulation.LOLCLUB.com
 # Should return 200 OK with proper headers
 ```
 
 **Step 4: Full Browser Testing**
 
-Open `https://staging-simulation.lightoflifeclub.com` and test:
+Open `https://staging-simulation.LOLCLUB.com` and test:
 
 - [ ] Login (Google, Kakao OAuth)
 - [ ] Create new simulation
@@ -754,6 +762,7 @@ Open `https://staging-simulation.lightoflifeclub.com` and test:
 ### 6.2 Deploy to Production (After Staging Success)
 
 **Prerequisites**:
+
 - ✅ Staging deployed successfully
 - ✅ All browser tests passed
 - ✅ No critical issues found
@@ -797,7 +806,7 @@ curl -f http://localhost:3000/health
 **ONLY proceed if production containers are healthy!**
 
 1. Login to Cloudflare Dashboard
-2. Select domain `lightoflifeclub.com`
+2. Select domain `LOLCLUB.com`
 3. Go to DNS → Records
 4. Find `simulation` CNAME record (currently pointing to Windows tunnel)
 5. Edit: Change target from `<OLD_TUNNEL_ID>.cfargotunnel.com` to `<DROPLET_TUNNEL_ID>.cfargotunnel.com`
@@ -821,15 +830,15 @@ Stop-Process -Id <PID>
 # Wait 5 minutes for DNS propagation
 
 # Check DNS resolution
-nslookup simulation.lightoflifeclub.com
+nslookup simulation.LOLCLUB.com
 # Should show Cloudflare CNAME
 
 # Test public endpoint
-curl -I https://simulation.lightoflifeclub.com
+curl -I https://simulation.LOLCLUB.com
 # Should return 200 OK
 
 # Browser test
-# Open https://simulation.lightoflifeclub.com
+# Open https://simulation.LOLCLUB.com
 # Perform full user flow testing
 ```
 
@@ -849,7 +858,7 @@ curl -I https://simulation.lightoflifeclub.com
 cloudflared tunnel run <OLD_TUNNEL_NAME>
 
 # 3. Verify Windows service restoration
-curl https://simulation.lightoflifeclub.com/health
+curl https://simulation.LOLCLUB.com/health
 
 # Total rollback time: ~5-10 minutes
 ```
@@ -924,10 +933,12 @@ The workflow uses `docker compose down` → `up --build`, which causes brief dow
 ### 7.3 Monitoring
 
 **Health endpoints**:
-- Production: `https://simulation.lightoflifeclub.com/health`
-- Staging: `https://staging-simulation.lightoflifeclub.com/health`
+
+- Production: `https://simulation.LOLCLUB.com/health`
+- Staging: `https://staging-simulation.LOLCLUB.com/health`
 
 **Cloudflare Tunnel**:
+
 - Dashboard: Zero Trust → Access → Tunnels
 - Check status: HEALTHY (green)
 
@@ -937,7 +948,7 @@ The workflow uses `docker compose down` → `up --build`, which causes brief dow
 
 ### Issue: SSL Certificate Error on Staging
 
-**Symptom**: `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` on `staging-simulation.lightoflifeclub.com`
+**Symptom**: `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` on `staging-simulation.LOLCLUB.com`
 
 **Cause**: Cloudflare Universal SSL doesn't support 3+ level subdomains
 
@@ -984,8 +995,8 @@ systemctl restart nginx
 
 ```bash
 # Check DNS propagation
-nslookup simulation.lightoflifeclub.com
-dig simulation.lightoflifeclub.com
+nslookup simulation.LOLCLUB.com
+dig simulation.LOLCLUB.com
 
 # Check Cloudflare DNS records
 # Dashboard → DNS → Records
@@ -1042,23 +1053,23 @@ docker compose -f docker-compose.staging.yml down
 
 ### GitHub Secrets (Encrypted, Sensitive)
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `SUPABASE_SECRET_KEY` | Service role key (server-side only) | `eyJ...` |
-| `SOLAPI_API_SECRET` | SMS provider secret | `...` |
-| `SOLAPI_SENDER_NUMBER` | Verified sender phone | `01012345678` |
-| `OTP_SECRET_KEY` | OTP encryption key | `random-32-char-string` |
+| Variable               | Description                         | Example                 |
+| ---------------------- | ----------------------------------- | ----------------------- |
+| `SUPABASE_SECRET_KEY`  | Service role key (server-side only) | `eyJ...`                |
+| `SOLAPI_API_SECRET`    | SMS provider secret                 | `...`                   |
+| `SOLAPI_SENDER_NUMBER` | Verified sender phone               | `01012345678`           |
+| `OTP_SECRET_KEY`       | OTP encryption key                  | `random-32-char-string` |
 
 ### GitHub Variables (Plain Text, Non-Sensitive)
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `VITE_API_BASE_URL` | Frontend API endpoint (⚠️ shared by both environments) | `https://simulation.lightoflifeclub.com/api` |
-| `VITE_SUPABASE_URL` | Public Supabase URL | `https://xxx.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Anon/public key | `eyJ...` |
-| `SUPABASE_URL` | Backend Supabase URL | `https://xxx.supabase.co` |
-| `SUPABASE_PUBLISHABLE_KEY` | Backend public key | `eyJ...` |
-| `SOLAPI_API_KEY` | SMS provider API key | `...` |
+| Variable                        | Description                                            | Example                              |
+| ------------------------------- | ------------------------------------------------------ | ------------------------------------ |
+| `VITE_API_BASE_URL`             | Frontend API endpoint (⚠️ shared by both environments) | `https://simulation.LOLCLUB.com/api` |
+| `VITE_SUPABASE_URL`             | Public Supabase URL                                    | `https://xxx.supabase.co`            |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Anon/public key                                        | `eyJ...`                             |
+| `SUPABASE_URL`                  | Backend Supabase URL                                   | `https://xxx.supabase.co`            |
+| `SUPABASE_PUBLISHABLE_KEY`      | Backend public key                                     | `eyJ...`                             |
+| `SOLAPI_API_KEY`                | SMS provider API key                                   | `...`                                |
 
 ### Docker Compose Environment Variables
 
@@ -1086,7 +1097,7 @@ docker compose -f docker-compose.staging.yml down
 3. Frontend Dockerfile reads `.env` as build arguments during `docker compose build`
 4. Frontend build-time variables are embedded in the built static files
 
-**Current Limitation**: Both environments use the same `VITE_API_BASE_URL` variable. For true separation, staging should use `https://staging-simulation.lightoflifeclub.com/api`, but the workflow would need to be modified to set this conditionally.
+**Current Limitation**: Both environments use the same `VITE_API_BASE_URL` variable. For true separation, staging should use `https://staging-simulation.LOLCLUB.com/api`, but the workflow would need to be modified to set this conditionally.
 
 ---
 
@@ -1114,8 +1125,8 @@ docker compose -f docker-compose.<env>.yml down
 docker compose -f docker-compose.<env>.yml up -d --build
 
 # Test endpoints
-curl -I https://simulation.lightoflifeclub.com/health
-curl -I https://staging-simulation.lightoflifeclub.com/health
+curl -I https://simulation.LOLCLUB.com/health
+curl -I https://staging-simulation.LOLCLUB.com/health
 
 # Check memory/CPU
 free -h

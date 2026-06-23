@@ -20,7 +20,8 @@ last_updated_by: GitHub Copilot
 
 ## Research Question
 
-What are the most appropriate E2E test architectures and best practices for the Light of Life Club Simulation PWA, considering:
+What are the most appropriate E2E test architectures and best practices for the LOL Club Simulation PWA, considering:
+
 - App scale: 60-100 total users, 30-60 peak concurrent
 - Development context: Solo full-stack developer (1 person)
 - Technology: React 19 PWA + FastAPI backend
@@ -35,6 +36,7 @@ Based on 2025 industry best practices from Google, Microsoft (Playwright team), 
 3. **Journey-Based Testing with Fixtures**
 
 All three approaches emphasize:
+
 - Minimizing E2E tests to critical user journeys only
 - Maximizing lower-level test coverage (unit/integration)
 - Using test helpers and abstractions for maintainability
@@ -47,6 +49,7 @@ All three approaches emphasize:
 **Total Users**: 60-100 (small scale)
 **Peak Concurrent**: 30-60 users
 **User Profile**:
+
 - Age: 40+
 - Tech proficiency: Non-technical, not machine-friendly
 - Primary devices: Android mobile (some iOS), Windows desktop
@@ -58,13 +61,15 @@ All three approaches emphasize:
 
 **Team Size**: 1 solo full-stack developer
 **Tech Stack**:
+
 - Frontend: React 19.1.0 + TypeScript 5.8.4 + Vite 5.4.10
 - Backend: FastAPI 0.116.1 + Python 3.11.6
 - Database: Supabase (managed PostgreSQL)
 - E2E Tool: Playwright 1.x with TypeScript
 - CI/CD: GitHub Actions (hybrid runners)
 
-**Implication for E2E**: 
+**Implication for E2E**:
+
 - Must maintain test suite solo (no dedicated QA team)
 - Tests must be simple to write and debug
 - Fast feedback loops critical
@@ -116,17 +121,20 @@ e2e/
 ```
 
 **Current Patterns**:
+
 - Custom `TestHelpers` class for common interactions
 - API mocking via `APIHelpers.mockSimulationAPI()`
 - Pre-authentication utility (`loginTestUser()`)
 - Initialization script for E2E mode (`initE2EMode()`)
 
 **Strengths**:
+
 - Good separation of concerns (auth, utils, specs)
 - Helper abstractions for common operations
 - E2E mode flag for test-specific behavior
 
 **Areas for Improvement** (identified in this research):
+
 - Some test duplication across layers
 - Could benefit from more structured Page Object Model
 - Journey-based organization could improve clarity
@@ -140,17 +148,20 @@ e2e/
 **Key Principles**:
 
 #### Test Philosophy
+
 - **Test User-Visible Behavior**: Focus on what users see/interact with, not implementation details
 - **Isolation**: Each test runs independently with own storage/cookies/data
 - **Avoid Third-Party Dependencies**: Mock external services, don't test what you don't control
 
 #### Technical Practices
+
 - **Use Locators**: Prioritize user-facing attributes (role, text, test-id) over CSS/XPath
 - **Web-First Assertions**: Use `await expect(locator).toBeVisible()` instead of `isVisible()`
 - **Parallelism**: Run tests in parallel by default (Playwright does this automatically)
 - **Debugging**: Use trace viewer for CI failures (PWA-based tool)
 
 #### CI/CD Optimization
+
 - **Optimize Browser Downloads**: Only install browsers you test against
 - **Use Linux on CI**: Cheaper compute, consistent environment
 - **Sharding**: Split test suite across machines for faster feedback
@@ -164,6 +175,7 @@ e2e/
 **Core Concepts**:
 
 #### Pyramid Structure
+
 ```
        /\
       /  \  E2E (few tests)
@@ -175,20 +187,24 @@ e2e/
 ```
 
 **Ratios** (rough guidance):
+
 - Unit tests: 70%
 - Integration tests: 20%
 - E2E tests: 10%
 
 #### E2E Test Principles
+
 - **Minimize E2E Tests**: Highest cost (maintenance, flakiness, runtime)
 - **Focus on Critical Journeys**: Only test core user value paths
 - **Avoid Test Duplication**: If lower-level test covers it, don't repeat at E2E
 - **Subcutaneous Testing**: Test below UI when possible (REST API tests)
 
 **Key Quote**:
+
 > "End-to-end tests come with their own kind of problems. They are notoriously flaky and often fail for unexpected and unforeseeable reasons."
 
 #### Test Structure (AAA Pattern)
+
 1. **Arrange**: Set up test data
 2. **Act**: Call method/action under test
 3. **Assert**: Verify expected results
@@ -204,17 +220,20 @@ Alternative: **Given-When-Then** (BDD style)
 **Relevant Principles**:
 
 #### Functional Core, Imperative Shell
+
 - Separate pure business logic (functional core) from side effects (imperative shell)
 - Makes testing easier: core is pure functions, shell handles I/O
 - **Application**: Our simulation calculation engine is a good example
 
 #### Code Organization
+
 - Arrange code to communicate data flow
 - Group related operations together
 - Declare variables close to first use
 - **Application**: E2E test helpers should follow data flow of user journeys
 
 #### Test Sizes (Google's approach)
+
 - **Small tests**: Single process, < 1 minute
 - **Medium tests**: Single machine, < 5 minutes
 - **Large tests**: Multiple machines, < 15 minutes
@@ -236,14 +255,14 @@ Based on the research, here are three architecture patterns suitable for our sma
 
 ```
 Testing Strategy Distribution:
-- Unit Tests (70%): 
+- Unit Tests (70%):
   - Frontend: Component tests, hook tests, utility tests
   - Backend: Service tests, API route tests, simulation engine tests
-  
+
 - Integration Tests (20%):
   - Frontend: API client tests with MSW
   - Backend: Database tests, external API tests (with mocks)
-  
+
 - E2E Tests (10%):
   - Only critical user journeys
   - Maximum 5-8 test files
@@ -253,49 +272,58 @@ Testing Strategy Distribution:
 **E2E Test Scope** (Recommended):
 
 1. **Onboarding Flow** (`e2e/journeys/onboarding.spec.ts`):
+
    ```typescript
-   test('complete onboarding: whitelist → OTP → consent → login', async ({ page }) => {
+   test("complete onboarding: whitelist → OTP → consent → login", async ({
+     page,
+   }) => {
      // Full flow including OAuth (mocked)
    });
-   
-   test('onboarding fails with invalid whitelist', async ({ page }) => {
+
+   test("onboarding fails with invalid whitelist", async ({ page }) => {
      // Error handling critical path
    });
    ```
 
 2. **Core Simulation Journey** (`e2e/journeys/simulation-lifecycle.spec.ts`):
+
    ```typescript
-   test('create → configure → run → view results → view offline results → back to view results → back to dashboard', async ({ page }) => {
+   test("create → configure → run → view results → view offline results → back to view results → back to dashboard", async ({
+     page,
+   }) => {
      // End-to-end simulation workflow
    });
-   
-   test('update simulation parameters and re-run', async ({ page }) => {
+
+   test("update simulation parameters and re-run", async ({ page }) => {
      // Common user scenario
    });
    ```
 
 3. **Dashboard Critical Actions** (`e2e/journeys/dashboard-ops.spec.ts`):
+
    ```typescript
-   test('multi-select → comprehensive results', async ({ page }) => {
+   test("multi-select → comprehensive results", async ({ page }) => {
      // Core value: comparing multiple simulations
    });
    ```
 
 4. **PWA Installation** (`e2e/pwa/install.spec.ts`):
+
    ```typescript
-   test('app installable with valid manifest', async ({ page }) => {
+   test("app installable with valid manifest", async ({ page }) => {
      // PWA-specific requirement
    });
    ```
 
 5. **Mobile Landscape Enforcer** (`e2e/mobile/landscape.spec.ts`):
    ```typescript
-   test('portrait mode shows enforcer overlay', async ({ page }) => {
+   test("portrait mode shows enforcer overlay", async ({ page }) => {
      // Critical UX requirement for mobile
    });
    ```
 
 **Move to Integration/Unit Tests**:
+
 - ❌ `admin-features.spec.ts` → Integration tests (admin usage is rare)
 - ❌ `auth-session.spec.ts` → Unit tests (token refresh logic)
 - ❌ `error-handling.spec.ts` → Unit/Integration tests
@@ -303,12 +331,14 @@ Testing Strategy Distribution:
 - ❌ `plan-editor.spec.ts` → Component tests (detailed step validation)
 
 **Benefits**:
+
 - Fast test suite (< 5 min total)
 - Easy to maintain solo
 - Clear test boundaries
 - Follows industry standard pyramid
 
 **Trade-offs**:
+
 - Requires strong lower-level test coverage
 - Some scenarios only covered at unit level
 - Must be disciplined about scope
@@ -356,34 +386,35 @@ e2e/
 // pages/PlanEditorPage.ts
 export class PlanEditorPage {
   constructor(private page: Page) {}
-  
+
   async selectPlanType(planId: string) {
     await this.page.click('[role="button"][aria-haspopup="listbox"]');
     await this.page.click(`text="${planId}"`);
     await this.nextStep();
   }
-  
+
   async selectStartingRound(round: number) {
     await this.page.click(`text="${round}회차"`);
     await this.nextStep();
   }
-  
+
   async fillSalesData(rounds: Array<{ round: number; amount: string }>) {
     for (const { round, amount } of rounds) {
-      await this.page.locator(`text=${round}회차`)
-        .locator('..')
+      await this.page
+        .locator(`text=${round}회차`)
+        .locator("..")
         .locator('input[type="text"]')
         .fill(amount);
     }
     await this.save();
   }
-  
+
   private async nextStep() {
-    await this.page.getByRole('button', { name: '다음' }).click();
+    await this.page.getByRole("button", { name: "다음" }).click();
   }
-  
+
   private async save() {
-    await this.page.getByRole('button', { name: '저장' }).click();
+    await this.page.getByRole("button", { name: "저장" }).click();
   }
 }
 ```
@@ -392,66 +423,69 @@ export class PlanEditorPage {
 
 ```typescript
 // journeys/simulation-lifecycle.spec.ts
-import { test, expect } from '@playwright/test';
-import { LoginPage } from '../pages/LoginPage';
-import { DashboardPage } from '../pages/DashboardPage';
-import { PlanEditorPage } from '../pages/PlanEditorPage';
-import { SimulationResultsPage } from '../pages/SimulationResultsPage';
+import { test, expect } from "@playwright/test";
+import { LoginPage } from "../pages/LoginPage";
+import { DashboardPage } from "../pages/DashboardPage";
+import { PlanEditorPage } from "../pages/PlanEditorPage";
+import { SimulationResultsPage } from "../pages/SimulationResultsPage";
 
-test.describe('Simulation Lifecycle Journey', () => {
-  test('create, run, and view simulation results', async ({ page }) => {
+test.describe("Simulation Lifecycle Journey", () => {
+  test("create, run, and view simulation results", async ({ page }) => {
     // Arrange: Login
     const loginPage = new LoginPage(page);
     await loginPage.goto();
     await loginPage.loginWithGoogle(); // Mocked OAuth
-    
+
     // Act: Create simulation
     const dashboard = new DashboardPage(page);
     await dashboard.clickCreateSimulation();
-    
+
     const editor = new PlanEditorPage(page);
-    await editor.selectPlanType('A');
+    await editor.selectPlanType("A");
     await editor.selectStartingRound(1);
     await editor.selectCurrentRound(5);
     await editor.setSimulationRounds(10);
     await editor.fillSalesData([
-      { round: 1, amount: '1000000' },
-      { round: 2, amount: '1200000' },
+      { round: 1, amount: "1000000" },
+      { round: 2, amount: "1200000" },
       // ...
     ]);
-    
+
     // Assert: Results displayed
     const results = new SimulationResultsPage(page);
     await expect(results.resultsTable).toBeVisible();
-    await expect(results.getCumulativeRevenue()).toContain('원');
-    
+    await expect(results.getCumulativeRevenue()).toContain("원");
+
     // Navigate to offline results view
-    await page.getByRole('button', { name: '수당표 보기' }).click();
+    await page.getByRole("button", { name: "수당표 보기" }).click();
     await expect(page.locator('[data-testid="offline-results"]')).toBeVisible();
 
     // Return to view results
-    await page.getByRole('button', { name: '돌아가기' }).click();
+    await page.getByRole("button", { name: "돌아가기" }).click();
     await expect(results.resultsTable).toBeVisible();
 
     // Return to dashboard
-    await page.getByRole('button', { name: '돌아가기' }).click();
+    await page.getByRole("button", { name: "돌아가기" }).click();
     await expect(dashboard.simulationTable).toBeVisible();
   });
 });
 ```
 
 **Benefits**:
+
 - High code reuse across tests
 - Changes to UI only require updating page objects
 - Clear abstraction layers
 - Easy for new developers to understand
 
 **Trade-offs**:
+
 - More upfront code to write
 - Can become over-engineered for small apps
 - Maintenance burden if pages change frequently
 
 **When to Choose**:
+
 - App has stable, well-defined pages
 - Multiple tests interact with same pages
 - Team values strong abstractions
@@ -491,8 +525,8 @@ e2e/
 
 ```typescript
 // fixtures/auth.ts
-import { test as base } from '@playwright/test';
-import { AuthPage } from '../utils/auth-helpers';
+import { test as base } from "@playwright/test";
+import { AuthPage } from "../utils/auth-helpers";
 
 type AuthFixtures = {
   authenticatedPage: Page;
@@ -502,15 +536,15 @@ type AuthFixtures = {
 export const test = base.extend<AuthFixtures>({
   authenticatedPage: async ({ page }, use) => {
     // Setup: Login as normal user
-    await page.goto('/');
+    await page.goto("/");
     await loginTestUser(page); // Helper function
     await use(page);
     // Teardown: handled by Playwright context cleanup
   },
-  
+
   adminPage: async ({ page }, use) => {
     // Setup: Login as admin
-    await page.goto('/');
+    await page.goto("/");
     await loginAdminUser(page);
     await use(page);
     // Teardown: automatic
@@ -522,53 +556,64 @@ export const test = base.extend<AuthFixtures>({
 
 ```typescript
 // journeys/returning-user-simulation.spec.ts
-import { test } from '../fixtures/auth';
-import { expect } from '@playwright/test';
+import { test } from "../fixtures/auth";
+import { expect } from "@playwright/test";
 
-test.describe('Returning User: Simulation Management', () => {
-  test('view existing simulations and create new one', async ({ authenticatedPage: page }) => {
+test.describe("Returning User: Simulation Management", () => {
+  test("view existing simulations and create new one", async ({
+    authenticatedPage: page,
+  }) => {
     // User already logged in via fixture
-    
+
     // Given: User has existing simulations
-    await expect(page.getByTestId('simulation-table')).toBeVisible();
-    const rowCount = await page.locator('[data-testid="simulation-row"]').count();
-    
+    await expect(page.getByTestId("simulation-table")).toBeVisible();
+    const rowCount = await page
+      .locator('[data-testid="simulation-row"]')
+      .count();
+
     // When: User creates new simulation
-    await page.getByTestId('create-simulation').click();
+    await page.getByTestId("create-simulation").click();
     // ... complete creation flow ...
-    
+
     // Then: New simulation appears in list
-    await expect(page.locator('[data-testid="simulation-row"]')).toHaveCount(rowCount + 1);
+    await expect(page.locator('[data-testid="simulation-row"]')).toHaveCount(
+      rowCount + 1,
+    );
   });
-  
-  test('update and re-run existing simulation', async ({ authenticatedPage: page }) => {
+
+  test("update and re-run existing simulation", async ({
+    authenticatedPage: page,
+  }) => {
     // Given: User has at least one simulation
     await page.locator('[data-testid="simulation-row"]').first().click();
-    
+
     // When: User edits parameters
-    await page.getByTestId('edit-simulation').click();
-    await page.getByLabel('시뮬레이션 회차').fill('15');
-    await page.getByRole('button', { name: '저장' }).click();
-    
+    await page.getByTestId("edit-simulation").click();
+    await page.getByLabel("시뮬레이션 회차").fill("15");
+    await page.getByRole("button", { name: "저장" }).click();
+
     // Then: Simulation re-runs with new parameters
-    await page.getByTestId('run-simulation').click();
-    await expect(page.locator('text=/15회차/')).toBeVisible();
+    await page.getByTestId("run-simulation").click();
+    await expect(page.locator("text=/15회차/")).toBeVisible();
   });
 });
 ```
 
 **Benefits**:
+
 - Tests organized by user journeys (easy to understand business value)
 - Fixtures handle setup/teardown automatically
 - Reduced boilerplate code
 - Playwright-native approach (good documentation)
 
 **Trade-offs**:
+
 - Fixtures can become complex for nested dependencies
 - Less explicit than Page Object Model
 - Requires understanding Playwright fixtures API
 
 **When to Choose**:
+
 - Solo developer (you are Playwright expert)
 - Want minimal boilerplate
 - App has clear user journey segmentation
@@ -584,23 +629,24 @@ test.describe('Returning User: Simulation Management', () => {
 
 ## Comparison Matrix
 
-| Aspect | Pyramid + Selective E2E | Page Object Model | Journey + Fixtures |
-|--------|------------------------|-------------------|-------------------|
-| **Maintenance Effort** | Low | Medium | Low |
-| **Initial Setup** | Low | High | Medium |
-| **Code Reuse** | Medium | High | Medium |
-| **Clarity for Solo Dev** | High | Medium | High |
-| **Scalability** | Medium | High | Medium |
-| **Playwright-Native** | Medium | Low | High |
-| **Test Execution Speed** | Fast (< 5 min) | Medium (5-10 min) | Fast (< 5 min) |
-| **Learning Curve** | Low | Medium | Medium |
-| **Best for Small Team** | ✅ Yes | ⚠️ Maybe | ✅ Yes |
+| Aspect                   | Pyramid + Selective E2E | Page Object Model | Journey + Fixtures |
+| ------------------------ | ----------------------- | ----------------- | ------------------ |
+| **Maintenance Effort**   | Low                     | Medium            | Low                |
+| **Initial Setup**        | Low                     | High              | Medium             |
+| **Code Reuse**           | Medium                  | High              | Medium             |
+| **Clarity for Solo Dev** | High                    | Medium            | High               |
+| **Scalability**          | Medium                  | High              | Medium             |
+| **Playwright-Native**    | Medium                  | Low               | High               |
+| **Test Execution Speed** | Fast (< 5 min)          | Medium (5-10 min) | Fast (< 5 min)     |
+| **Learning Curve**       | Low                     | Medium            | Medium             |
+| **Best for Small Team**  | ✅ Yes                  | ⚠️ Maybe          | ✅ Yes             |
 
 ## Recommendations for Our App
 
 ### Primary Recommendation: Architecture 1 (Pyramid + Selective E2E)
 
 **Why**:
+
 1. **Solo developer context**: Minimizes maintenance burden
 2. **Small scale**: Don't need extensive E2E coverage
 3. **Fast feedback**: Critical for 1-person team
@@ -629,6 +675,7 @@ test.describe('Returning User: Simulation Management', () => {
    - Create decision log for future reference
 
 **Expected Outcome**:
+
 - E2E test count: ~20-30 tests (down from current unknown count)
 - E2E runtime: < 5 minutes
 - Maintenance time: Reduced by 40-50%
@@ -637,11 +684,13 @@ test.describe('Returning User: Simulation Management', () => {
 ### Secondary Recommendation: Architecture 3 (Journey + Fixtures)
 
 **Why**:
+
 - Good complement to Architecture 1
 - Playwright-native (you're already using Playwright)
 - Can adopt incrementally
 
 **Suggested Hybrid Approach**:
+
 - Use Architecture 1 for overall strategy (selective E2E)
 - Use Architecture 3 patterns for organizing those selective E2E tests (fixtures, journeys)
 - Skip Architecture 2 (POM) unless app grows significantly
@@ -669,72 +718,78 @@ e2e/
 ### 1. Test Writing Best Practices
 
 **Use Playwright's Auto-Waiting**:
+
 ```typescript
 // ✅ Good: Playwright waits automatically
-await expect(page.locator('#results')).toBeVisible();
+await expect(page.locator("#results")).toBeVisible();
 
 // ❌ Bad: Manual waiting
 await page.waitForTimeout(5000);
 ```
 
 **Prefer User-Facing Locators**:
+
 ```typescript
 // ✅ Best: Role-based (accessible)
-await page.getByRole('button', { name: '저장' }).click();
+await page.getByRole("button", { name: "저장" }).click();
 
 // ✅ Good: Text-based
-await page.getByText('시뮬레이션 결과').click();
+await page.getByText("시뮬레이션 결과").click();
 
 // ⚠️ OK: Test ID (for unique elements)
-await page.getByTestId('create-simulation').click();
+await page.getByTestId("create-simulation").click();
 
 // ❌ Avoid: CSS selectors
-await page.click('.MuiButton-root');
+await page.click(".MuiButton-root");
 ```
 
 **Organize by AAA Pattern**:
+
 ```typescript
-test('simulation creation flow', async ({ page }) => {
+test("simulation creation flow", async ({ page }) => {
   // Arrange
   await loginTestUser(page);
-  await page.goto('/dashboard');
-  
+  await page.goto("/dashboard");
+
   // Act
-  await page.getByTestId('create-simulation').click();
-  await page.getByLabel('플랜 타입').selectOption('A');
-  await page.getByRole('button', { name: '저장' }).click();
-  
+  await page.getByTestId("create-simulation").click();
+  await page.getByLabel("플랜 타입").selectOption("A");
+  await page.getByRole("button", { name: "저장" }).click();
+
   // Assert
-  await expect(page.locator('text=/시뮬레이션.*생성되었습니다/')).toBeVisible();
-  await expect(page.getByTestId('simulation-table')).toContainText('플랜 A');
+  await expect(page.locator("text=/시뮬레이션.*생성되었습니다/")).toBeVisible();
+  await expect(page.getByTestId("simulation-table")).toContainText("플랜 A");
 });
 ```
 
 ### 2. Isolation & Cleanup
 
 **Use Playwright's Built-in Isolation**:
+
 ```typescript
 // Each test gets fresh browser context automatically
-test('test 1', async ({ page }) => {
+test("test 1", async ({ page }) => {
   // Fresh context, no shared state
 });
 
-test('test 2', async ({ page }) => {
+test("test 2", async ({ page }) => {
   // Different context from test 1
 });
 ```
 
 **Clean Up Test Data**:
+
 ```typescript
 test.afterEach(async ({ page }) => {
   // Delete test simulations created during test
-  await page.request.delete('/api/simulations/test-*');
+  await page.request.delete("/api/simulations/test-*");
 });
 ```
 
 ### 3. Speed Optimization
 
 **Run Tests in Parallel**:
+
 ```typescript
 // playwright.config.ts
 export default defineConfig({
@@ -744,12 +799,13 @@ export default defineConfig({
 ```
 
 **Use API for Setup When Possible**:
+
 ```typescript
 // ✅ Fast: API-based setup
 test('view results', async ({ page, request }) => {
   // Create simulation via API (fast)
   const sim = await request.post('/api/simulation/create', { data: {...} });
-  
+
   // Test UI interaction only
   await page.goto(`/results/${sim.id}`);
   await expect(page.locator('#results-table')).toBeVisible();
@@ -765,11 +821,16 @@ test('view results', async ({ page }) => {
 ```
 
 **Mock External Services**:
+
 ```typescript
 // Mock Supabase auth in tests
 test.beforeEach(async ({ page }) => {
-  await page.route('**/auth/v1/**', (route) => {
-    route.fulfill({ json: { /* mocked response */ } });
+  await page.route("**/auth/v1/**", (route) => {
+    route.fulfill({
+      json: {
+        /* mocked response */
+      },
+    });
   });
 });
 ```
@@ -777,18 +838,20 @@ test.beforeEach(async ({ page }) => {
 ### 4. Debugging Support
 
 **Enable Trace on Failure**:
+
 ```typescript
 // playwright.config.ts
 export default defineConfig({
   use: {
-    trace: 'on-first-retry', // Capture trace on retry
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    trace: "on-first-retry", // Capture trace on retry
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
   },
 });
 ```
 
 **Add Debug Helpers**:
+
 ```typescript
 // utils/debug.ts
 export async function debugScreenshot(page: Page, name: string) {
@@ -798,12 +861,13 @@ export async function debugScreenshot(page: Page, name: string) {
 }
 
 // In test
-await debugScreenshot(page, 'before-submit');
+await debugScreenshot(page, "before-submit");
 ```
 
 ### 5. CI/CD Integration
 
 **Optimize for GitHub Actions**:
+
 ```yaml
 # .github/workflows/e2e.yml
 name: E2E Tests
@@ -817,15 +881,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      
+
       # Only install Chromium (fastest)
       - name: Install Playwright
         run: npx playwright install chromium --with-deps
-      
+
       # Run tests
       - name: Run E2E tests
         run: npm run test:e2e
-      
+
       # Upload trace on failure
       - uses: actions/upload-artifact@v4
         if: failure()
@@ -839,6 +903,7 @@ jobs:
 ### Current E2E Test Structure
 
 **Test Files** (12 total):
+
 - `src/frontend/e2e/auth/embedded-browser.spec.ts:3-212`
 - `src/frontend/e2e/specs/admin-features.spec.ts:10-199`
 - `src/frontend/e2e/specs/auth-session.spec.ts:1-end`
@@ -854,10 +919,12 @@ jobs:
 - `src/frontend/e2e/specs/simulation-flow.spec.ts:1-50`
 
 **Helper Utilities**:
+
 - `src/frontend/e2e/utils/test-helpers.ts:1-817` - TestHelpers class, API mocking
 - `src/frontend/e2e/utils/auth-helpers.ts:1-end` - Authentication utilities
 
 **Configuration**:
+
 - `src/frontend/playwright.config.ts:1-95` - Playwright config with Mobile Chrome/Safari projects
 
 ### Code Execution Flow (Example E2E Test)
@@ -873,7 +940,7 @@ beforeEach: APIHelpers.mockSimulationAPI(page) [test-helpers.ts]
   ↓ (intercepts /api/simulations)
 Test Body: Navigate → Interact → Assert
   ↓ (uses TestHelpers methods)
-page.goto('/') 
+page.goto('/')
   ↓
 page.getByTestId('create-simulation').click()
   ↓
@@ -906,7 +973,8 @@ Context Cleanup (automatic)
 
 ## Conclusion
 
-For the Light of Life Club Simulation PWA, the **Test Pyramid with Selective E2E approach** (Architecture 1) is the most appropriate choice, given:
+For the LOL Club Simulation PWA, the **Test Pyramid with Selective E2E approach** (Architecture 1) is the most appropriate choice, given:
+
 - Solo developer context (you)
 - Small user base (60-100 users)
 - Need for fast feedback

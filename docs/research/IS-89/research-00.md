@@ -5,7 +5,17 @@ git_commit: debug-deployment
 branch: debug-deployment
 repository: simulation
 topic: "Google OAuth Login Failure in KakaoTalk In-App WebView on Samsung Galaxy Android"
-tags: [research, bug, oauth, google-auth, embedded-browser, webview, android, supabase]
+tags:
+  [
+    research,
+    bug,
+    oauth,
+    google-auth,
+    embedded-browser,
+    webview,
+    android,
+    supabase,
+  ]
 status: complete
 last_updated: 2025-10-15
 last_updated_by: GitHub Copilot
@@ -46,6 +56,7 @@ The issue is caused by **Google's OAuth security policy that blocks authenticati
 **File**: `src/frontend/src/pages/LoginPage.tsx`
 
 **Current Implementation** (Lines 28-50):
+
 ```typescript
 const handleSocialLogin = async (provider: OAuthProvider) => {
   if (loadingProvider) return; // prevent double clicks
@@ -69,11 +80,13 @@ const handleSocialLogin = async (provider: OAuthProvider) => {
 ```
 
 **Issue**: The `signInWithOAuth()` call uses default browser redirect behavior, which:
+
 - Opens Google's OAuth page in the current browsing context
 - Expects to redirect back after authentication
 - **Fails in embedded webviews** because Google blocks authentication in non-standard browsers
 
 **Code Map**:
+
 - `src/frontend/src/pages/LoginPage.tsx:28-50` - OAuth handler
 - `src/frontend/src/pages/LoginPage.tsx:43-46` - Supabase OAuth call
 - `src/frontend/src/pages/LoginPage.tsx:105-112` - Google login button
@@ -83,6 +96,7 @@ const handleSocialLogin = async (provider: OAuthProvider) => {
 **File**: `src/frontend/src/supabaseClient.ts`
 
 **Current Configuration** (Lines 1-22):
+
 ```typescript
 import { createClient } from "@supabase/supabase-js";
 
@@ -100,12 +114,14 @@ export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
 });
 ```
 
-**Issue**: 
+**Issue**:
+
 - `detectSessionInUrl: true` is set, which works for standard browsers
 - No configuration for handling embedded browser scenarios
 - No `skipBrowserRedirect` option to prevent automatic browser redirects
 
 **Code Map**:
+
 - `src/frontend/src/supabaseClient.ts:16-22` - Auth configuration
 - `src/frontend/src/supabaseClient.ts:20` - `detectSessionInUrl` setting
 
@@ -114,20 +130,27 @@ export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
 **Current State**: No implementation exists to detect embedded browsers.
 
 **Required Detection Logic** (Not implemented):
+
 ```typescript
 // Example of what's needed but NOT currently in codebase
 function isInAppBrowser(): boolean {
   const ua = navigator.userAgent || navigator.vendor;
-  
+
   // KakaoTalk in-app browser
-  if (ua.includes('KAKAOTALK')) return true;
-  
+  if (ua.includes("KAKAOTALK")) return true;
+
   // Common Android in-app browsers
-  if (ua.includes('wv') || ua.includes('WebView')) return true;
-  
+  if (ua.includes("wv") || ua.includes("WebView")) return true;
+
   // Facebook, Instagram, Twitter in-app browsers
-  if (ua.includes('FBAN') || ua.includes('FBAV') || ua.includes('Instagram') || ua.includes('Twitter')) return true;
-  
+  if (
+    ua.includes("FBAN") ||
+    ua.includes("FBAV") ||
+    ua.includes("Instagram") ||
+    ua.includes("Twitter")
+  )
+    return true;
+
   return false;
 }
 ```
@@ -137,11 +160,13 @@ function isInAppBrowser(): boolean {
 ### Google OAuth Security Policy
 
 **From Research**: Google enforces the "secure browser usage" policy:
+
 - **Blocks**: Embedded webviews, in-app browsers
 - **Allows**: Standard browsers (Chrome, Safari, Samsung Internet, etc.)
 - **Reason**: Security concerns around embedded browsers being controlled by the embedding app
 
 **Error Message** (from issue):
+
 ```
 403 오류: disallowed_useragent
 investment-simulator의 요청이 Google의 '보안 브라우저 사용' 정책을 준수하지 않습니다
@@ -149,26 +174,29 @@ investment-simulator의 요청이 Google의 '보안 브라우저 사용' 정책�
 ```
 
 **Request Details**:
+
 ```
 오류 403: disallowed_useragent
-요청 세부정보: 
+요청 세부정보:
   access_type=online
   scope=https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid
   response_type=code
   redirect_uri=https://kihlqhomsychihwzwzuo.supabase.co/auth/v1/callback
   client_id=627805463260-10cvb7n57ggjepbkrvvhm2olvq1l9tkc.apps.googleusercontent.com
-  redirect_to=https://staging-simulation.lightoflifeclub.com
+  redirect_to=https://staging-simulation.LOLCLUB.com
 ```
 
 ### iOS vs Android Behavior Difference
 
 **Why iOS Works**:
+
 1. **Apple's WebKit Policy**: iOS webviews use WKWebView which has better OAuth support
 2. **Google's Policy**: Google may have less restrictive policies for iOS due to Apple's app store requirements
 3. **User-Agent Differences**: iOS webviews may present user-agents that Google doesn't block
 4. **Safari View Controller**: iOS apps often use SFSafariViewController which is treated as a standard browser
 
 **Why Android Fails**:
+
 1. **Android WebView**: More easily identifiable as embedded browser
 2. **User-Agent String**: Contains identifiable markers like "wv" or "WebView"
 3. **Google's Policy**: Stricter enforcement on Android platform
@@ -181,12 +209,14 @@ investment-simulator의 요청이 Google의 '보안 브라우저 사용' 정책�
 **File**: `src/frontend/src/context/AuthContext.tsx`
 
 **Lines 1-100**: AuthProvider implementation
+
 - Manages authentication state
 - Handles session detection
 - Listens for auth state changes
 - **Impact**: Will need to handle webview detection and alternative auth flows
 
 **Code Map**:
+
 - `src/frontend/src/context/AuthContext.tsx:56-92` - AuthProvider component
 - `src/frontend/src/context/AuthContext.tsx:63-75` - Initial session setup
 - `src/frontend/src/context/AuthContext.tsx:77-87` - Auth state change listener
@@ -196,9 +226,10 @@ investment-simulator의 요청이 Google의 '보안 브라우저 사용' 정책�
 **File**: `src/frontend/vite.config.ts`
 
 **Lines 60-85**: PWA Manifest
+
 ```typescript
 manifest: {
-  name: "Light of Life Club Simulation",
+  name: "LOL Club Simulation",
   short_name: "Simulation",
   start_url: "/",
   scope: "/",
@@ -210,12 +241,14 @@ manifest: {
 }
 ```
 
-**Impact**: 
+**Impact**:
+
 - PWA can be installed and run in standalone mode
 - In standalone mode, it runs in a standard browser context
 - Users need to be guided to install the PWA or open in browser
 
 **Code Map**:
+
 - `src/frontend/vite.config.ts:60-85` - PWA manifest
 
 #### 3. HTML Meta Tags
@@ -223,6 +256,7 @@ manifest: {
 **File**: `src/frontend/index.html`
 
 **Lines 1-19**: HTML head configuration
+
 ```html
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -230,10 +264,12 @@ manifest: {
 ```
 
 **Impact**:
+
 - PWA-ready configuration for iOS
 - Missing Android-specific meta tags for better app-like experience
 
 **Code Map**:
+
 - `src/frontend/index.html:6-13` - Mobile app meta tags
 
 ### Data Flow
@@ -259,6 +295,7 @@ sequenceDiagram
 ```
 
 **Current Flow Issues**:
+
 1. No detection of webview environment at step 3
 2. No alternative flow offered to user
 3. Generic error message doesn't explain the webview issue
@@ -267,16 +304,19 @@ sequenceDiagram
 ### Environment-Specific Details
 
 **Production Environment**:
-- URL: `https://simulation.lightoflifeclub.com`
+
+- URL: `https://simulation.LOLCLUB.com`
 - Supabase callback: `https://kihlqhomsychihwzwzuo.supabase.co/auth/v1/callback`
 - Google Client ID: `627805463260-10cvb7n57ggjepbkrvvhm2olvq1l9tkc.apps.googleusercontent.com`
 
 **Staging Environment**:
-- URL: `https://staging-simulation.lightoflifeclub.com`
+
+- URL: `https://staging-simulation.LOLCLUB.com`
 - Same Supabase project
 - Same Google OAuth app
 
 **Device Information** (from issue):
+
 - Device: Samsung Galaxy A32
 - OS: Android 13, One UI 5.1
 - Browser: Chrome (inside KakaoTalk webview)
@@ -345,34 +385,37 @@ sequenceDiagram
 ### Supabase Auth Patterns (from Context7 research)
 
 **Standard Browser Flow** (Current):
+
 ```typescript
 await supabase.auth.signInWithOAuth({
-  provider: 'google',
-  options: { redirectTo: window.location.origin }
+  provider: "google",
+  options: { redirectTo: window.location.origin },
 });
 ```
 
 **Native Google Sign-In Alternative** (Not implemented):
+
 ```typescript
 // Using Google's native SDK to get tokens
-const idToken = 'ID_TOKEN_FROM_GOOGLE_SDK';
-const accessToken = 'ACCESS_TOKEN_FROM_GOOGLE_SDK';
+const idToken = "ID_TOKEN_FROM_GOOGLE_SDK";
+const accessToken = "ACCESS_TOKEN_FROM_GOOGLE_SDK";
 
 await supabase.auth.signInWithIdToken({
-  provider: 'google',
+  provider: "google",
   token: idToken,
   access_token: accessToken,
 });
 ```
 
 **Skip Browser Redirect** (Possible solution):
+
 ```typescript
 await supabase.auth.signInWithOAuth({
-  provider: 'google',
+  provider: "google",
   options: {
     skipBrowserRedirect: true, // Returns auth URL instead of redirecting
-    redirectTo: window.location.origin
-  }
+    redirectTo: window.location.origin,
+  },
 });
 // Then manually guide user to open URL in external browser
 ```
@@ -380,6 +423,7 @@ await supabase.auth.signInWithOAuth({
 ### Google OAuth Security Requirements
 
 From Google's OAuth documentation and error message:
+
 - **Required**: Standard, secure browser environment
 - **Blocked**: WebView, embedded browsers, in-app browsers
 - **Reason**: Security policy to protect user credentials
@@ -388,6 +432,7 @@ From Google's OAuth documentation and error message:
 ### Mobile Browser Detection Patterns
 
 **Common User-Agent Markers**:
+
 - KakaoTalk: `KAKAOTALK` in user-agent
 - Android WebView: `wv` or `WebView` in user-agent
 - Facebook: `FBAN` or `FBAV` in user-agent
@@ -396,27 +441,34 @@ From Google's OAuth documentation and error message:
 - Line: `Line` in user-agent
 
 **Detection Implementation** (Needed):
+
 ```typescript
 export function isEmbeddedBrowser(): boolean {
-  if (typeof window === 'undefined') return false;
-  
+  if (typeof window === "undefined") return false;
+
   const ua = navigator.userAgent || navigator.vendor;
-  
+
   // Check for common in-app browser markers
   const inAppMarkers = [
-    'KAKAOTALK', 'wv', 'WebView',
-    'FBAN', 'FBAV', 'Instagram',
-    'Twitter', 'Line', 'Naver'
+    "KAKAOTALK",
+    "wv",
+    "WebView",
+    "FBAN",
+    "FBAV",
+    "Instagram",
+    "Twitter",
+    "Line",
+    "Naver",
   ];
-  
-  return inAppMarkers.some(marker => ua.includes(marker));
+
+  return inAppMarkers.some((marker) => ua.includes(marker));
 }
 
-export function getBrowserType(): 'standard' | 'embedded' | 'unknown' {
-  if (typeof window === 'undefined') return 'unknown';
-  
-  if (isEmbeddedBrowser()) return 'embedded';
-  return 'standard';
+export function getBrowserType(): "standard" | "embedded" | "unknown" {
+  if (typeof window === "undefined") return "unknown";
+
+  if (isEmbeddedBrowser()) return "embedded";
+  return "standard";
 }
 ```
 
@@ -425,23 +477,27 @@ export function getBrowserType(): 'standard' | 'embedded' | 'unknown' {
 ### Approach 1: Detect and Redirect to External Browser (Recommended)
 
 **Implementation Steps**:
+
 1. Add webview detection utility function
 2. Check browser type before OAuth attempt
 3. Show modal guiding users to open in standard browser
 4. Provide "Open in Browser" button that opens app URL in system browser
 
 **Pros**:
+
 - Quick implementation
 - No changes to OAuth flow
 - Works with existing Supabase setup
 - Best security (uses Google's standard OAuth)
 
 **Cons**:
+
 - Requires user action to switch browsers
 - Breaks flow continuity
 - User education needed
 
 **Code Changes**:
+
 - New file: `src/frontend/src/utils/browserDetection.ts`
 - Modify: `src/frontend/src/pages/LoginPage.tsx` (add detection + modal)
 - Add: Warning modal component
@@ -449,24 +505,28 @@ export function getBrowserType(): 'standard' | 'embedded' | 'unknown' {
 ### Approach 2: Implement Native Google Sign-In
 
 **Implementation Steps**:
+
 1. Add Google Sign-In SDK for Android
 2. Implement native auth flow that gets ID token
 3. Use Supabase's `signInWithIdToken()` method
 4. Handle both web and native flows
 
 **Pros**:
+
 - Seamless user experience
 - Works in webviews
 - No browser switching required
 - Production-ready pattern
 
 **Cons**:
+
 - More complex implementation
 - Requires Google SDK integration
 - Platform-specific code needed
 - Testing complexity increases
 
 **Code Changes**:
+
 - Add: Google Sign-In SDK configuration
 - New: Native auth handler for mobile
 - Modify: `LoginPage.tsx` to detect platform and choose flow
@@ -475,18 +535,21 @@ export function getBrowserType(): 'standard' | 'embedded' | 'unknown' {
 ### Approach 3: Hybrid Solution (Best Long-term)
 
 **Implementation**:
+
 1. Detect embedded browser
 2. If embedded: Show native Google Sign-In
 3. If standard browser: Use current OAuth flow
 4. Fallback: Guide to open in external browser
 
 **Pros**:
+
 - Best user experience
 - Works in all scenarios
 - Maintains security
 - Scalable solution
 
 **Cons**:
+
 - Most complex implementation
 - Requires both approaches
 - More testing required
@@ -518,6 +581,7 @@ export function getBrowserType(): 'standard' | 'embedded' | 'unknown' {
 ## Historical Context
 
 **From SSD (`docs/spec/ssd.md`)**:
+
 - OAuth login is a core authentication method
 - Both Google and Kakao OAuth are supported
 - Pre-auth onboarding flow: whitelist → OTP → consent → login
@@ -525,12 +589,14 @@ export function getBrowserType(): 'standard' | 'embedded' | 'unknown' {
 - Mobile-first design with PWA support
 
 **From Tech Details (`docs/spec/tech-details.md`)**:
+
 - Supabase OAuth with JWT backend auth
 - Auto-refresh enabled for sessions
 - detectSessionInUrl configured
 - Production hosting on DigitalOcean with Cloudflare Tunnel
 
 **Known Working Platforms**:
+
 - iPhone 11 Pro (iOS 18.1.1) with Chrome - **WORKS**
 - Desktop browsers (Windows 11 Chrome) - Expected to work
 - Samsung Galaxy A32 (Android 13) in standard Chrome - Expected to work
@@ -593,6 +659,7 @@ export function getBrowserType(): 'standard' | 'embedded' | 'unknown' {
 ---
 
 **Next Steps**:
+
 1. Review this research with development team
 2. Decide on approach (recommend Approach 1 for immediate fix)
 3. Create implementation plan document
