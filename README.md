@@ -97,20 +97,3 @@ Backend tests:
 cd src/backend
 pytest
 ```
-
-## Security and Anonymization Notes
-
-- Personal contact information was removed from runtime UI.
-- Product-specific branding and domain names were replaced with generic identifiers.
-- Example environment files use placeholders only.
-- Historical process artifacts are preserved under `.memo` and `docs` for portfolio traceability.
-
-## Portfolio Positioning
-
-This codebase demonstrates:
-
-- end-to-end docs-as-code and development workflow discipline,
-- practical backend/frontend integration,
-- test automation literacy,
-- CI/CD operational maturity,
-- and structured technical decision trails.
