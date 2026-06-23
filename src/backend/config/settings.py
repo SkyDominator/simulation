@@ -42,10 +42,10 @@ class Settings:
         # object is frozen; use object.__setattr__
         if self.cors_origins is None:
             object.__setattr__(self, "cors_origins", [
-                # Production domain (Cloudflare Tunnel)
-                "https://simulation.lightoflifeclub.com",
-                # Staging domain (Cloudflare Tunnel)
-                "https://staging-simulation.lightoflifeclub.com",
+                # Production domain
+                "https://app.example.com",
+                # Staging domain
+                "https://staging-app.example.com",
                 # Local development (Vite dev server on port 5173)
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",

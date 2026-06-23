@@ -20,12 +20,12 @@ import {
 export interface ApiServiceInterface {
   deleteSimulation(
     simulation_id: string,
-    token: string
+    token: string,
   ): Promise<{ simulation_id: string; message: string; success: boolean }>;
   runSimulation(
     simulation_id: string,
     token: string,
-    expectedUpdatedAt?: string
+    expectedUpdatedAt?: string,
   ): Promise<SimulationRunResponse>;
   getSimulations(token: string): Promise<Plan[]>;
   getSimulationDetails(simulationId: string, token: string): Promise<Plan>;
@@ -36,7 +36,7 @@ export interface ApiServiceInterface {
     current_company_round: number,
     simulation_rounds: number,
     scheduled_payment: Record<string, number>,
-    sales_achievement_rates?: Record<string, number>
+    sales_achievement_rates?: Record<string, number>,
   ): Promise<SimulationCreateResponse>;
   updateSimulation(
     token: string,
@@ -46,7 +46,7 @@ export interface ApiServiceInterface {
     current_company_round: number,
     simulation_rounds: number,
     scheduled_payment: Record<string, number>,
-    sales_achievement_rates?: Record<string, number>
+    sales_achievement_rates?: Record<string, number>,
   ): Promise<{
     simulation_id: string;
     plan_id: string;
@@ -56,7 +56,7 @@ export interface ApiServiceInterface {
   updateSimulationMemo(
     token: string,
     simulation_id: string,
-    memo: string | null
+    memo: string | null,
   ): Promise<SimulationMemoUpdateResponse>;
   adminMe(token: string): Promise<AdminMeResponse>;
   listNotices(): Promise<NoticeListResponse>;
@@ -68,7 +68,7 @@ export interface ApiServiceInterface {
       content: string;
       pinned?: boolean;
       published?: boolean;
-    }
+    },
   ): Promise<NoticeCreateResponse>;
   updateNotice(
     token: string,
@@ -78,7 +78,7 @@ export interface ApiServiceInterface {
       content?: string;
       pinned?: boolean;
       published?: boolean;
-    }
+    },
   ): Promise<NoticeUpdateResponse>;
   deleteNotice(token: string, notice_id: string): Promise<NoticeDeleteResponse>;
   getPrivacyPolicy(params?: {
@@ -93,7 +93,7 @@ export interface ApiServiceInterface {
       locale?: string;
       effective_date?: string;
       last_updated?: string;
-    }
+    },
   ): Promise<{ id: string; message: string; success: boolean }>;
   updatePrivacyPolicy(
     token: string,
@@ -104,34 +104,34 @@ export interface ApiServiceInterface {
       locale?: string;
       effective_date?: string;
       last_updated?: string;
-    }
+    },
   ): Promise<{ id: string; message: string; success: boolean }>;
   publishPrivacyPolicy(
     token: string,
-    policy_id: string
+    policy_id: string,
   ): Promise<{ id: string; message: string; success: boolean }>;
   listPrivacyPolicies(token: string): Promise<AdminPrivacyPolicyListResponse>;
   getPrivacyPolicyAdmin(
     token: string,
-    policy_id: string
+    policy_id: string,
   ): Promise<AdminPrivacyPolicyDetailResponse>;
   deletePrivacyPolicy(
     token: string,
-    policy_id: string
+    policy_id: string,
   ): Promise<{ id: string; message: string; success: boolean }>;
   recordConsent(
     user_hash: string,
     consent_type?: string,
-    consent_version?: string
+    consent_version?: string,
   ): Promise<ConsentRecordResponse>;
   getUserConsents(
-    user_hash: string
+    user_hash: string,
   ): Promise<{ consents: ConsentRecordResponse[]; success: boolean }>;
   sendOtp(name: string, phone_number: string): Promise<OTPSendResponse>;
   verifyOtp(
     phone_number: string,
     otp_code: string,
-    user_hash?: string
+    user_hash?: string,
   ): Promise<OTPVerifyResponse>;
 }
 
@@ -150,7 +150,7 @@ export class ApiService implements ApiServiceInterface {
 
   async deleteSimulation(
     simulation_id: string,
-    token: string
+    token: string,
   ): Promise<{ simulation_id: string; message: string; success: boolean }> {
     const response = await fetch(this.url(`/simulations/${simulation_id}`), {
       method: "DELETE",
@@ -178,7 +178,7 @@ export class ApiService implements ApiServiceInterface {
   async runSimulation(
     simulation_id: string,
     token: string,
-    expectedUpdatedAt?: string
+    expectedUpdatedAt?: string,
   ): Promise<SimulationRunResponse> {
     const response = await fetch(this.url("/simulation/run"), {
       method: "POST",
@@ -238,7 +238,7 @@ export class ApiService implements ApiServiceInterface {
 
   async getSimulationDetails(
     simulationId: string,
-    token: string
+    token: string,
   ): Promise<Plan> {
     try {
       const response = await fetch(this.url(`/simulations/${simulationId}`), {
@@ -269,7 +269,7 @@ export class ApiService implements ApiServiceInterface {
     current_company_round: number = 1,
     simulation_rounds: number,
     scheduled_payment: Record<string, number>,
-    sales_achievement_rates?: Record<string, number>
+    sales_achievement_rates?: Record<string, number>,
   ): Promise<SimulationCreateResponse> {
     const response = await fetch(this.url("/simulation/create"), {
       method: "POST",
@@ -310,7 +310,7 @@ export class ApiService implements ApiServiceInterface {
     current_company_round: number,
     simulation_rounds: number,
     scheduled_payment: Record<string, number>,
-    sales_achievement_rates?: Record<string, number>
+    sales_achievement_rates?: Record<string, number>,
   ): Promise<{
     simulation_id: string;
     plan_id: string;
@@ -352,7 +352,7 @@ export class ApiService implements ApiServiceInterface {
   async updateSimulationMemo(
     token: string,
     simulation_id: string,
-    memo: string | null
+    memo: string | null,
   ): Promise<SimulationMemoUpdateResponse> {
     const response = await fetch(
       this.url(`/simulations/${simulation_id}/memo`),
@@ -363,7 +363,7 @@ export class ApiService implements ApiServiceInterface {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ memo }),
-      }
+      },
     );
     if (!response.ok) {
       try {
@@ -409,7 +409,7 @@ export class ApiService implements ApiServiceInterface {
       content: string;
       pinned?: boolean;
       published?: boolean;
-    }
+    },
   ): Promise<NoticeCreateResponse> {
     const response = await fetch(this.url("/admin/notices"), {
       method: "POST",
@@ -445,7 +445,7 @@ export class ApiService implements ApiServiceInterface {
       content?: string;
       pinned?: boolean;
       published?: boolean;
-    }
+    },
   ): Promise<NoticeUpdateResponse> {
     const response = await fetch(this.url(`/admin/notices/${notice_id}`), {
       method: "PATCH",
@@ -470,7 +470,7 @@ export class ApiService implements ApiServiceInterface {
 
   async deleteNotice(
     token: string,
-    notice_id: string
+    notice_id: string,
   ): Promise<NoticeDeleteResponse> {
     const response = await fetch(this.url(`/admin/notices/${notice_id}`), {
       method: "DELETE",
@@ -521,7 +521,7 @@ export class ApiService implements ApiServiceInterface {
       locale?: string;
       effective_date?: string;
       last_updated?: string;
-    }
+    },
   ): Promise<{ id: string; message: string; success: boolean }> {
     const response = await fetch(this.url("/admin/privacy-policies"), {
       method: "POST",
@@ -553,7 +553,7 @@ export class ApiService implements ApiServiceInterface {
       locale?: string;
       effective_date?: string;
       last_updated?: string;
-    }
+    },
   ): Promise<{ id: string; message: string; success: boolean }> {
     const response = await fetch(
       this.url(`/admin/privacy-policies/${policy_id}`),
@@ -564,7 +564,7 @@ export class ApiService implements ApiServiceInterface {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
-      }
+      },
     );
     if (!response.ok) {
       let msg = `API error: ${response.status}`;
@@ -581,14 +581,14 @@ export class ApiService implements ApiServiceInterface {
 
   async publishPrivacyPolicy(
     token: string,
-    policy_id: string
+    policy_id: string,
   ): Promise<{ id: string; message: string; success: boolean }> {
     const response = await fetch(
       this.url(`/admin/privacy-policies/${policy_id}/publish`),
       {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
     if (!response.ok) {
       let msg = `API error: ${response.status}`;
@@ -604,7 +604,7 @@ export class ApiService implements ApiServiceInterface {
   }
 
   async listPrivacyPolicies(
-    token: string
+    token: string,
   ): Promise<AdminPrivacyPolicyListResponse> {
     const response = await fetch(this.url("/admin/privacy-policies"), {
       headers: { Authorization: `Bearer ${token}` },
@@ -624,13 +624,13 @@ export class ApiService implements ApiServiceInterface {
 
   async getPrivacyPolicyAdmin(
     token: string,
-    policy_id: string
+    policy_id: string,
   ): Promise<AdminPrivacyPolicyDetailResponse> {
     const response = await fetch(
       this.url(`/admin/privacy-policies/${policy_id}`),
       {
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
     if (!response.ok) {
       let msg = `API error: ${response.status}`;
@@ -647,14 +647,14 @@ export class ApiService implements ApiServiceInterface {
 
   async deletePrivacyPolicy(
     token: string,
-    policy_id: string
+    policy_id: string,
   ): Promise<{ id: string; message: string; success: boolean }> {
     const response = await fetch(
       this.url(`/admin/privacy-policies/${policy_id}`),
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
     if (!response.ok) {
       let msg = `API error: ${response.status}`;
@@ -672,7 +672,7 @@ export class ApiService implements ApiServiceInterface {
   async recordConsent(
     user_hash: string,
     consent_type: string = "privacy_policy",
-    consent_version: string = "1.0"
+    consent_version: string = "1.0",
   ): Promise<ConsentRecordResponse> {
     try {
       const data = {
@@ -702,7 +702,7 @@ export class ApiService implements ApiServiceInterface {
   }
 
   async getUserConsents(
-    user_hash: string
+    user_hash: string,
   ): Promise<{ consents: ConsentRecordResponse[]; success: boolean }> {
     try {
       const response = await fetch(this.url(`/consents/${user_hash}`), {
@@ -766,7 +766,7 @@ export class ApiService implements ApiServiceInterface {
   async verifyOtp(
     phone_number: string,
     otp_code: string,
-    user_hash?: string
+    user_hash?: string,
   ): Promise<OTPVerifyResponse> {
     try {
       const response = await fetch(this.url("/otp/verify"), {
@@ -825,7 +825,7 @@ export class ApiService implements ApiServiceInterface {
 // Default instance using environment URL
 export const API_BASE_URL: string =
   (import.meta as ImportMeta).env.VITE_API_BASE_URL ||
-  "https://simulation.lightoflifeclub.com/api";
+  "https://app.example.com/api";
 // "http://localhost:8001/api";
 
 export const defaultApiService = new ApiService(API_BASE_URL);

@@ -1,4 +1,3 @@
-
 # Technical Specification
 
 Implementation guide for the Investment Simulation PWA. This document covers practical architecture patterns, configuration, deployment workflows, and troubleshooting for a solo full-stack developer managing a 50-100 user application.
@@ -107,22 +106,22 @@ docker compose -f docker-compose.production.yml up -d
 **Infrastructure**:
 
 - **Platform**: DigitalOcean Droplet (Ubuntu 22.04, 1 CPU, 1GB RAM)
-- **Deployment**: Docker Compose via GitHub Actions CI/CD
+- **Deployment**: GitHub Actions CI/CD
 - **Database**: Supabase cloud (managed PostgreSQL with RLS)
-- **Ingress**: Cloudflare Tunnel for secure HTTPS
+- **Ingress**: Nginx reverse proxy for secure HTTPS
 
 **Port Configuration**:
 
-| Environment | Frontend | Backend | Nginx |
-|------------|----------|---------|-------|
-| Production | 3000 | 8000 | 8080 (host-based routing) |
-| Staging | 4173 | 8001 | 8080 (host-based routing) |
-| Local Dev | 5173 | 8001 | N/A |
+| Environment | Frontend | Backend | Nginx                     |
+| ----------- | -------- | ------- | ------------------------- |
+| Production  | 3000     | 8000    | 8080 (host-based routing) |
+| Staging     | 4173     | 8001    | 8080 (host-based routing) |
+| Local Dev   | 5173     | 8001    | N/A                       |
 
 **Domains**:
 
-- Production: `simulation.lightoflifeclub.com`
-- Staging: `staging-simulation.lightoflifeclub.com`
+- Production: `app.example.com`
+- Staging: `staging-app.example.com`
 
 **Docker Compose**:
 
@@ -155,8 +154,8 @@ docker compose -f docker-compose.production.yml up -d
 
 **CORS** (defined in `config/settings.py`):
 
-- `https://simulation.lightoflifeclub.com` (production)
-- `https://staging-simulation.lightoflifeclub.com` (staging)
+- `https://app.example.com` (production)
+- `https://staging-app.example.com` (staging)
 - `http://localhost:5173`, `http://127.0.0.1:5173` (local dev)
 
 ### 3.2 Frontend Environment Variables
@@ -251,7 +250,7 @@ class MyFeatureResponse(BaseModel):
 class MyFeatureService:
     def __init__(self, db_client: DatabaseClient):
         self.db_client = db_client
-    
+
     def execute(self, req: MyFeatureRequest, user_id: str) -> MyFeatureResponse:
         # Business logic here
         return MyFeatureResponse(result="success", status="ok")
@@ -262,7 +261,7 @@ class MyFeatureService:
 ```python
 @router.post('/api/my-feature', response_model=MyFeatureResponse)
 async def my_feature(
-    req: MyFeatureRequest, 
+    req: MyFeatureRequest,
     user_id: str = Depends(authenticate_jwt_token)
 ):
     service = MyFeatureService(db_client=_supabase_client())
@@ -288,8 +287,16 @@ async def my_feature(
 ```typescript
 export function isEmbeddedBrowser(): boolean {
   const ua = navigator.userAgent || "";
-  const embeddedMarkers = ["KAKAOTALK", "wv", "FBAN", "Instagram", "Twitter", "Line", "Naver"];
-  return embeddedMarkers.some(marker => ua.includes(marker));
+  const embeddedMarkers = [
+    "KAKAOTALK",
+    "wv",
+    "FBAN",
+    "Instagram",
+    "Twitter",
+    "Line",
+    "Naver",
+  ];
+  return embeddedMarkers.some((marker) => ua.includes(marker));
 }
 ```
 
@@ -298,17 +305,17 @@ export function isEmbeddedBrowser(): boolean {
 ### 5.2 State Persistence
 
 ```typescript
-import { getJSON, setJSON } from './utils/persist';
+import { getJSON, setJSON } from "./utils/persist";
 
 // Read from localStorage with default
-const [page, setPage] = useState<Page>(() => 
-  getJSON<Page>('ui.page', 'whitelist')
+const [page, setPage] = useState<Page>(() =>
+  getJSON<Page>("ui.page", "whitelist"),
 );
 
 // Write to localStorage
 const updatePage = (newPage: Page) => {
   setPage(newPage);
-  setJSON('ui.page', newPage);
+  setJSON("ui.page", newPage);
 };
 ```
 
@@ -318,18 +325,21 @@ const updatePage = (newPage: Page) => {
 
 ```typescript
 export const api = {
-  async createSimulation(data: SimulationCreate, token: string): Promise<SimulationResponse> {
+  async createSimulation(
+    data: SimulationCreate,
+    token: string,
+  ): Promise<SimulationResponse> {
     const response = await fetch(`${API_BASE_URL}/simulation/create`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error('API Error');
+    if (!response.ok) throw new Error("API Error");
     return response.json();
-  }
+  },
 };
 ```
 
@@ -338,12 +348,15 @@ export const api = {
 ```typescript
 export const useSimulationActions = () => {
   const { session } = useAuth();
-  
-  const deleteSimulation = useCallback(async (id: string) => {
-    if (!session?.access_token) throw new Error('No session');
-    return await api.deleteSimulation(id, session.access_token);
-  }, [session?.access_token]);
-  
+
+  const deleteSimulation = useCallback(
+    async (id: string) => {
+      if (!session?.access_token) throw new Error("No session");
+      return await api.deleteSimulation(id, session.access_token);
+    },
+    [session?.access_token],
+  );
+
   return { deleteSimulation };
 };
 ```
@@ -448,12 +461,12 @@ When embedded browser is detected:
 
 **Test Layers**:
 
-| Layer | Backend | Frontend | Purpose |
-|-------|---------|----------|---------|
-| **Unit** | `tests/unit/` (excludes security) | `src/test/pages/`, `src/test/components/`, `src/test/smoke.test.tsx` | Isolated component/function testing |
-| **Integration** | `tests/integration/` | `src/test/integration/` | Service/API integration testing |
-| **Security** | `tests/integration/api/test_security_e2e.py`, `tests/unit/security/test_cryptography.py` | `src/test/security/` | Security-specific tests (crypto, auth, XSS) |
-| **E2E** | N/A | Playwright (`e2e/`, Mobile Chrome project) | End-to-end user flows |
+| Layer           | Backend                                                                                  | Frontend                                                             | Purpose                                     |
+| --------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------- |
+| **Unit**        | `tests/unit/` (excludes security)                                                        | `src/test/pages/`, `src/test/components/`, `src/test/smoke.test.tsx` | Isolated component/function testing         |
+| **Integration** | `tests/integration/`                                                                     | `src/test/integration/`                                              | Service/API integration testing             |
+| **Security**    | `tests/integration/api/test_security_e2e.py`, `tests/unit/security/test_cryptography.py` | `src/test/security/`                                                 | Security-specific tests (crypto, auth, XSS) |
+| **E2E**         | N/A                                                                                      | Playwright (`e2e/`, Mobile Chrome project)                           | End-to-end user flows                       |
 
 **CI/CD Test Gates** (`.github/workflows/ci-cd.yml`):
 
@@ -482,10 +495,11 @@ Tests run on GitHub-hosted runners (Ubuntu) with configurable skip patterns via 
    - Always runs (not skippable)
 
 5. **E2E Tests** (job: `test-e2e`, optional):
-   - Playwright with `BASE_URL=https://staging-simulation.lightoflifeclub.com`
-   - Runs after staging deployment
-   - Skipped if profile contains `e2e`
-   - Uploads `playwright-report/` artifact on failure
+
+- Playwright with `BASE_URL=https://staging-app.example.com`
+- Runs after staging deployment
+- Skipped if profile contains `e2e`
+- Uploads `playwright-report/` artifact on failure
 
 **Test Environment Setup**:
 
@@ -514,4 +528,3 @@ npm run test:e2e
 ```
 
 **Deployment Profiles**: Tests can be skipped using `.github/deployment-profiles.yml` with comma-separated values (e.g., `unit,integration,e2e`).
-

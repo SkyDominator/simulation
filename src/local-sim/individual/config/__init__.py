@@ -1,7 +1,7 @@
 """
-Configuration module for Light of Life Club simulation.
+Configuration module for the standalone simulation package.
 
-This module provides access to plan parameters and configuration settings.
+This module provides access to plan parameters and runtime configuration.
 """
 
 import os

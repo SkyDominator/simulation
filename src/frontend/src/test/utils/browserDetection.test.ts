@@ -118,8 +118,8 @@ describe("browserDetection", () => {
 
       Object.defineProperty(window, "location", {
         value: {
-          href: "https://simulation.lightoflifeclub.com/login",
-          host: "simulation.lightoflifeclub.com",
+          href: "https://app.example.com/login",
+          host: "app.example.com",
           pathname: "/login",
           search: "",
           hash: "",
@@ -130,7 +130,7 @@ describe("browserDetection", () => {
 
       const result = getExternalBrowserUrl();
       expect(result).toContain("intent://");
-      expect(result).toContain("simulation.lightoflifeclub.com/login");
+      expect(result).toContain("app.example.com/login");
       expect(result).toContain("#Intent;scheme=https;end");
     });
 
@@ -143,14 +143,14 @@ describe("browserDetection", () => {
 
       Object.defineProperty(window, "location", {
         value: {
-          href: "https://simulation.lightoflifeclub.com/login",
+          href: "https://app.example.com/login",
         },
         writable: true,
         configurable: true,
       });
 
       const result = getExternalBrowserUrl();
-      expect(result).toBe("https://simulation.lightoflifeclub.com/login");
+      expect(result).toBe("https://app.example.com/login");
     });
   });
 });

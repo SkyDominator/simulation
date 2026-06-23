@@ -78,5 +78,5 @@ class SolapiSMSClient:
 
     def send_otp(self, recipient: str, otp_code: str) -> Dict[str, Any]:
         """Convenience method to send an OTP message."""
-        message_text = f"생명빛 클럽 OTP: {otp_code}. 타인에게 공유하지 마세요."
+        message_text = f"인증 OTP: {otp_code}. 타인에게 공유하지 마세요."
         return self.send_sms(recipient, message_text)

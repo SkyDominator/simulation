@@ -30,7 +30,7 @@ const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             component="h1"
             sx={{ m: 0, fontSize: 20, fontWeight: 600 }}
           >
-            생명빛 클럽 시뮬레이션
+            익명 시뮬레이션 앱
           </Typography>
         </Box>
       </Box>

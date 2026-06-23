@@ -1,5 +1,5 @@
 """
-Models module for Light of Life Club simulation.
+Models module for the standalone simulation package.
 
-This module contains data models used in the financial simulation.
+This module contains data models used in simulation calculations.
 """

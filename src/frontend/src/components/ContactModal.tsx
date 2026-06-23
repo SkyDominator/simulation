@@ -22,9 +22,8 @@ export const ContactModal: React.FC<ContactModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  // Developer's contact information
-  const developerEmail = "iloveulord86@gmail.com";
-  const developerPhone = "010-3127-4918";
+  const developerEmail = "contact@example.com";
+  const developerPhone = "000-0000-0000";
 
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="sm" fullWidth>
@@ -35,7 +34,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({
       </DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ mb: 2, color: "text.primary" }}>
-          문의사항이 있으시면 아래 연락처로 연락해 주세요.
+          문의사항은 아래 예시 연락처를 참고해 주세요.
         </DialogContentText>
 
         <Box sx={{ mb: 3 }}>

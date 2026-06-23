@@ -1,5 +1,5 @@
 """
-Utilities module for Light of Life Club simulation.
+Utilities module for the standalone simulation package.
 
-This module provides utility functions used across the simulation.
+This module provides helper functions used across simulation workflows.
 """

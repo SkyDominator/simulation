@@ -1,5 +1,5 @@
 """
-Services module for Light of Life Club simulation.
+Services module for the standalone simulation package.
 
-This module contains service classes that implement the business logic for the simulation.
+This module contains service classes that implement simulation business logic.
 """

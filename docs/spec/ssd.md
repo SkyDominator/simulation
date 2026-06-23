@@ -26,9 +26,9 @@ This Software Specification Document (SSD) provides the technical specifications
 - **Mobile iOS**: iPhone 11+ (iOS 18.1.1+) Chrome
 - **Mobile Android**: Galaxy S21+ (Android 12+) Chrome
 - **Hosting**: DigitalOcean Droplet (Ubuntu 22.04, 1 CPU, 1GB RAM) + Supabase (DB/Auth)
-- **Deployment**: Docker Compose + GitHub Actions CI/CD + Nginx reverse proxy + Cloudflare Tunnel
-- **Production**: `simulation.lightoflifeclub.com` (port 3000 frontend, 8000 backend)
-- **Staging**: `staging-simulation.lightoflifeclub.com` (port 4173 frontend, 8001 backend)
+- **Deployment**: DigitalOcean + GitHub Actions CI/CD + Nginx reverse proxy
+- **Production**: `app.example.com` (port 3000 frontend, 8000 backend)
+- **Staging**: `staging-app.example.com` (port 4173 frontend, 8001 backend)
 
 ### 1.4 Load
 
@@ -52,9 +52,9 @@ This Software Specification Document (SSD) provides the technical specifications
 
 **Infrastructure**:
 
-- DigitalOcean Droplet with Docker Compose
+- DigitalOcean Droplet
 - Nginx reverse proxy (host-based routing on port 8080)
-- Cloudflare Tunnel: `simulation.lightoflifeclub.com` (production), `staging-simulation.lightoflifeclub.com` (staging)
+- Public domains: `app.example.com` (production), `staging-app.example.com` (staging)
 - GitHub Actions CI/CD: Hybrid runners (GitHub-hosted for tests, self-hosted for deployment)
 - CORS: Production/staging domains + local dev (localhost:5173, 127.0.0.1)
 
@@ -85,21 +85,21 @@ This Software Specification Document (SSD) provides the technical specifications
 
 **Security Controls**:
 
-| Control | Implementation |
-|---------|--------------|
+| Control        | Implementation                                       |
+| -------------- | ---------------------------------------------------- |
 | JWT validation | Supabase JWKS, python-jose, 5s timeout, global cache |
-| Admin check | `admins.user_id` lookup via `_assert_admin()` |
-| OTP rate limit | 3/15min send, 10/day send, 6 verify attempts |
-| OTP hashing | HMAC with `OTP_SECRET_KEY` |
-| RLS | Supabase policies on user tables |
-| Exceptions | `BaseAPIException` with structured logging |
-| Bearer auth | FastAPI `HTTPBearer()`, 401/403 distinction |
+| Admin check    | `admins.user_id` lookup via `_assert_admin()`        |
+| OTP rate limit | 3/15min send, 10/day send, 6 verify attempts         |
+| OTP hashing    | HMAC with `OTP_SECRET_KEY`                           |
+| RLS            | Supabase policies on user tables                     |
+| Exceptions     | `BaseAPIException` with structured logging           |
+| Bearer auth    | FastAPI `HTTPBearer()`, 401/403 distinction          |
 
 **Implementation Details**:
 
 - Frontend: Supabase OAuth with autoRefresh
 - Backend: JWT validation, audience "authenticated", extract sub as user_id
-- CORS: Cloudflare + local dev hosts
+- CORS: public domains + local dev hosts
 - Secrets: `SUPABASE_SECRET_KEY` server-side only
 - Privacy: Static file fallback if DB unavailable
 
@@ -175,9 +175,9 @@ All JSON. Auth: `Authorization: Bearer {token}` where noted.
 
 // POST /api/consents (pre-auth)
 {
-  req: { user_hash: string, consent_type: string, consent_version: string, 
+  req: { user_hash: string, consent_type: string, consent_version: string,
          ip_address?: string, user_agent?: string },
-  res: { user_hash: string, consent_type: string, consent_version: string, 
+  res: { user_hash: string, consent_type: string, consent_version: string,
          consent_given_at: string, ip_address?: string, user_agent?: string }
 }
 
@@ -188,7 +188,7 @@ All JSON. Auth: `Authorization: Bearer {token}` where noted.
 
 // GET /api/privacy-policy?version&locale
 {
-  res: { version: string, last_updated: string, content: string, 
+  res: { version: string, last_updated: string, content: string,
          success: boolean, source: "db" | "static-file", locale?: string }
 }
 ```
@@ -236,7 +236,7 @@ For complete plan specifications, see `src/backend/constants.py` (PLAN_PARAMETER
 
 **Manifest**:
 
-- Name: "Light of Life Club Simulation"
+- Name: "Portfolio Simulation App"
 - Icons: 192x192, 384x384, 512x512 (standard + maskable)
 - Display: standalone, Orientation: landscape
 - Theme: #1976d2, Background: #ffffff
@@ -266,15 +266,15 @@ Backend:
 Frontend:
 
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
-- `VITE_API_BASE_URL=https://simulation.lightoflifeclub.com/api`
+- `VITE_API_BASE_URL=https://app.example.com/api`
 
-**CORS**: `simulation.lightoflifeclub.com`, `staging-simulation.lightoflifeclub.com`, localhost:5173, 127.0.0.1
+**CORS**: `app.example.com`, `staging-app.example.com`, localhost:5173, 127.0.0.1
 
 **Dependencies**:
 
 - Supabase RLS configured
 - Whitelist table pre-seeded
-- DigitalOcean Droplet with Docker + Cloudflare Tunnel
+- DigitalOcean Droplet with Nginx
 - GitHub self-hosted runner on Droplet
 
 ## 11. Error Handling
@@ -295,13 +295,13 @@ Frontend:
 
 ## 12. Testing Strategy
 
-| Layer | Tool | Target |
-|-------|------|--------|
-| Backend unit | pytest | ≥75% |
-| Frontend unit | Vitest + RTL | ≥60% |
-| Integration | pytest + test DB | Critical paths |
-| Contract | OpenAPI validation | API stability |
-| E2E | Smoke tests | Core flows |
+| Layer         | Tool               | Target         |
+| ------------- | ------------------ | -------------- |
+| Backend unit  | pytest             | ≥75%           |
+| Frontend unit | Vitest + RTL       | ≥60%           |
+| Integration   | pytest + test DB   | Critical paths |
+| Contract      | OpenAPI validation | API stability  |
+| E2E           | Smoke tests        | Core flows     |
 
 **CI Gates**:
 
@@ -320,14 +320,14 @@ Frontend:
 
 ### 14.1 API Performance Targets
 
-| Endpoint | Target (p95) | Acceptable (p99) | Timeout |
-|----------|--------------|------------------|---------|
-| POST /api/otp/send | < 2000ms | < 4000ms | 10s |
-| POST /api/otp/verify | < 300ms | < 500ms | 5s |
-| POST /api/simulation/create | < 400ms | < 600ms | 10s |
-| POST /api/simulation/run | < 1500ms | < 3000ms | 15s |
-| GET /api/simulations | < 200ms | < 400ms | 5s |
-| GET /api/health | < 100ms | < 200ms | 3s |
+| Endpoint                    | Target (p95) | Acceptable (p99) | Timeout |
+| --------------------------- | ------------ | ---------------- | ------- |
+| POST /api/otp/send          | < 2000ms     | < 4000ms         | 10s     |
+| POST /api/otp/verify        | < 300ms      | < 500ms          | 5s      |
+| POST /api/simulation/create | < 400ms      | < 600ms          | 10s     |
+| POST /api/simulation/run    | < 1500ms     | < 3000ms         | 15s     |
+| GET /api/simulations        | < 200ms      | < 400ms          | 5s      |
+| GET /api/health             | < 100ms      | < 200ms          | 3s      |
 
 ### 14.2 Frontend Performance
 

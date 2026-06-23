@@ -4,8 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 // Helper to read env at build time for API base url pattern
-const API_BASE =
-  process.env.VITE_API_BASE_URL || "https://simulation.lightoflifeclub.com/api";
+const API_BASE = process.env.VITE_API_BASE_URL || "https://app.example.com/api";
 // "http://10.10.113.129:8001/api"; // dev mode only 1
 // "http://172.30.1.39:8001/api"; // dev mode only 2
 
@@ -33,8 +32,8 @@ export default defineConfig({
             urlPattern: new RegExp(
               `^${API_BASE.replace(
                 /[.*+?^${}()|[\]\\]/g,
-                "\\$&"
-              )}/notices(/.*)?$`
+                "\\$&",
+              )}/notices(/.*)?$`,
             ),
             handler: "NetworkFirst",
             options: {
@@ -53,8 +52,8 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: "Light of Life Club Simulation",
-        short_name: "Simulation",
+        name: "Portfolio Simulation App",
+        short_name: "SimApp",
         start_url: "/",
         scope: "/",
         display: "standalone",
@@ -93,10 +92,6 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 4173,
     strictPort: true,
-    allowedHosts: [
-      "simulation.lightoflifeclub.com",
-      "staging-simulation.lightoflifeclub.com",
-      "localhost",
-    ],
+    allowedHosts: ["app.example.com", "staging-app.example.com", "localhost"],
   },
 });

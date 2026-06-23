@@ -1,9 +1,8 @@
 """
-Main entry point for Light of Life Club financial simulation.
+Main entry point for the standalone simulation runner.
 
-This module serves as the entry point for running the financial simulation.
-It demonstrates how to use the refactored modular codebase with support for
-single plan and multi-plan simulations.
+This module serves as the entry point for running a plan-based simulation with
+support for single-plan and multi-plan execution modes.
 """
 
 import logging

@@ -11,7 +11,7 @@ const mockServiceWorkerRegistration = {
   installing: null,
   waiting: null,
   active: null,
-  scope: "https://simulation.lightoflifeclub.com/",
+  scope: "https://app.example.com/",
   update: vi.fn(),
   unregister: vi.fn(),
 };
@@ -90,7 +90,7 @@ describe("PWA Security Tests", () => {
         value: {
           ...originalLocation,
           protocol: "https:",
-          hostname: "simulation.lightoflifeclub.com",
+          hostname: "app.example.com",
         },
         writable: true,
       });
@@ -162,7 +162,7 @@ describe("PWA Security Tests", () => {
         ...mockServiceWorkerRegistration,
         update: vi.fn().mockResolvedValue(undefined),
         installing: {
-          scriptURL: "https://simulation.lightoflifeclub.com/sw.js",
+          scriptURL: "https://app.example.com/sw.js",
           state: "installing",
         },
       };
@@ -178,7 +178,7 @@ describe("PWA Security Tests", () => {
             throw new Error("Service worker updates must use HTTPS");
           }
 
-          if (url.hostname !== "simulation.lightoflifeclub.com") {
+          if (url.hostname !== "app.example.com") {
             throw new Error("Service worker updates must be from same domain");
           }
         }
@@ -207,7 +207,7 @@ describe("PWA Security Tests", () => {
 
         if (isInServiceWorker && restrictedAPIs.includes(apiName)) {
           throw new Error(
-            `API ${apiName} not available in service worker context`
+            `API ${apiName} not available in service worker context`,
           );
         }
 
@@ -230,7 +230,7 @@ describe("PWA Security Tests", () => {
 
         // Allow same-origin, localhost for development, and allowed CDN resources
         const allowedOrigins = [
-          "https://simulation.lightoflifeclub.com",
+          "https://app.example.com",
           "https://fonts.googleapis.com",
           "https://fonts.gstatic.com",
           "http://localhost:3000", // Allow localhost for development
@@ -238,12 +238,12 @@ describe("PWA Security Tests", () => {
         ];
 
         const isAllowed = allowedOrigins.some(
-          (origin) => parsedUrl.origin === origin
+          (origin) => parsedUrl.origin === origin,
         );
 
         if (!isAllowed) {
           throw new Error(
-            `Resource from ${parsedUrl.origin} not allowed in cache`
+            `Resource from ${parsedUrl.origin} not allowed in cache`,
           );
         }
 
@@ -251,7 +251,7 @@ describe("PWA Security Tests", () => {
       };
 
       const validResources = [
-        "https://simulation.lightoflifeclub.com/assets/main.js",
+        "https://app.example.com/assets/main.js",
         "https://fonts.googleapis.com/css2?family=Roboto",
         "/api/notices",
       ];
@@ -362,7 +362,7 @@ describe("PWA Security Tests", () => {
             const urlObj = new URL(url, window.location.origin);
             if (urlObj.origin !== window.location.origin) {
               throw new Error(
-                "Cannot cache executable content from external origin"
+                "Cannot cache executable content from external origin",
               );
             }
           }
@@ -388,7 +388,7 @@ describe("PWA Security Tests", () => {
       });
 
       await expect(
-        secureCache.put("/safe-resource", validResponse)
+        secureCache.put("/safe-resource", validResponse),
       ).resolves.not.toThrow();
 
       // Test blocked caching
@@ -400,7 +400,7 @@ describe("PWA Security Tests", () => {
       });
 
       await expect(
-        secureCache.put("http://evil.com/malicious", maliciousResponse)
+        secureCache.put("http://evil.com/malicious", maliciousResponse),
       ).rejects.toThrow();
     });
   });
@@ -432,13 +432,13 @@ describe("PWA Security Tests", () => {
             if (icon.src) {
               const iconUrl = new URL(icon.src, window.location.origin);
               const allowedHosts = [
-                "simulation.lightoflifeclub.com",
+                "app.example.com",
                 "localhost", // Allow localhost for development
               ];
 
               if (!allowedHosts.includes(iconUrl.hostname)) {
                 throw new Error(
-                  `Icon from unauthorized host: ${iconUrl.hostname}`
+                  `Icon from unauthorized host: ${iconUrl.hostname}`,
                 );
               }
             }
@@ -450,8 +450,8 @@ describe("PWA Security Tests", () => {
 
       // Valid manifest
       const validManifest = {
-        name: "Light of Life Club Simulation",
-        short_name: "LOLC Sim",
+        name: "Portfolio Simulation App",
+        short_name: "SimApp",
         start_url: "/",
         display: "standalone",
         icons: [
@@ -526,13 +526,13 @@ describe("PWA Security Tests", () => {
       // Test valid offline storage
       const safeData = { notices: [{ id: 1, title: "Safe Notice" }] };
       expect(() =>
-        secureOfflineStorage.store("notices", safeData)
+        secureOfflineStorage.store("notices", safeData),
       ).not.toThrow();
 
       // Test blocked sensitive storage
       const sensitiveData = { password: "secret123" };
       expect(() =>
-        secureOfflineStorage.store("user_password", sensitiveData)
+        secureOfflineStorage.store("user_password", sensitiveData),
       ).toThrow();
 
       // Test oversized data

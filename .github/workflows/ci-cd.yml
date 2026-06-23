@@ -446,7 +446,7 @@ jobs:
             - name: Run E2E tests
               working-directory: src/frontend
               env:
-                  BASE_URL: https://staging-simulation.lightoflifeclub.com
+                  BASE_URL: https://staging-app.example.com
               run: npm run test:e2e
 
             - name: Upload test results

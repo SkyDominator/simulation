@@ -84,7 +84,7 @@ MALICIOUS_ORIGINS = [
     "http://phishing.site",
     "https://attacker.com",
     "http://localhost:8080",  # Different port
-    "https://simulation.lightoflifeclub.com.evil.com",  # Subdomain attack
+    "https://app.example.com.evil.com",  # Subdomain attack
     "http://127.0.0.1:3000",
     "null",
     "file://",

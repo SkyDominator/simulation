@@ -4,7 +4,7 @@
 
 ### What it is
 
-Light of Life Club Simulation (Simulation) is a Progressive Web Application (PWA) designed for whitelisted members to run financial simulations. This simulation does not follow any existing financial simulation concepts and studies.
+Portfolio Simulation App (Simulation) is a Progressive Web Application (PWA) designed for whitelisted members to run scenario simulations. This simulation does not follow any existing simulation concepts and studies.
 
 ### What users can do
 
@@ -144,26 +144,26 @@ View public notices and announcements on dashboard
 ### New User Onboarding
 
 1. User accesses application URL
-    1. mobile
-        1. Android
-            1. external browser (Chrome)
-            2. installed PWA
-            3. in-app browser (KakaoTalk, Naver)
-        2. iOS
-            1. external browser (Chrome, Safari)
-            2. installed PWA
-            3. in-app browser (KakaoTalk, Naver)
-    2. desktop
-        1. external browser (Chrome, Edge)
-        2. installed PWA
+   1. mobile
+      1. Android
+         1. external browser (Chrome)
+         2. installed PWA
+         3. in-app browser (KakaoTalk, Naver)
+      2. iOS
+         1. external browser (Chrome, Safari)
+         2. installed PWA
+         3. in-app browser (KakaoTalk, Naver)
+   2. desktop
+      1. external browser (Chrome, Edge)
+      2. installed PWA
 2. Enters name and phone number on whitelist check page
 3. System validates against whitelist
 4. System sends 6-digit OTP via SMS
 5. User enters OTP code within 5 minutes
 6. System displays privacy policy
 7. User reads policy and clicks "Accept"
-    1. One time consent required
-    2. Can click "Decline" to return to whitelist page
+   1. One time consent required
+   2. Can click "Decline" to return to whitelist page
 8. User directed to login page. Selects OAuth provider (Google or Kakao)
 9. Proceed login.
 10. User completes authentication
@@ -186,7 +186,6 @@ View public notices and announcements on dashboard
 ### Delete Simulations
 
 1. Users [Delete Simulation](#delete-simulation) through dashboard interface.
-
 
 ### Public Notices and Privacy Policies
 
@@ -249,7 +248,7 @@ View public notices and announcements on dashboard
 **Main Application**:
 
 - **Dashboard (MainPage)**:
-  - Header with app title "생명빛 클럽 시뮬레이션"
+  - Header with app title "익명 시뮬레이션 앱"
   - Action buttons: "공지사항", "문의하기", "로그아웃", "개인 정보 보호 정책", "새 시뮬레이션", "종합 결과"
   - Simulation table with:
     - Multi-column sortable headers (number, plan type, starting round, simulation rounds, creation date)
