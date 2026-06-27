@@ -28,6 +28,22 @@ The domain-specific business identity and sensitive operational details have bee
 - PWA support for installable/offline-friendly UX
 - Automated quality checks in CI
 
+## What The Simulation Does
+
+This simulation helps a user estimate how money moves over time in a selected plan.
+
+- A simulation is calculated one round at a time.
+- In each round, a new participant joins until the plan reaches its limit.
+- After the limit is reached, older participants finish and new re-entry participants take their place.
+- Each participant pays an amount based on the plan and the round when they joined.
+- The system then calculates expected earnings for that round.
+- Early rounds mainly use a basic commission.
+- Later rounds can include extra bonuses.
+- Those bonuses can change depending on the sales achievement rate for that round.
+- The result shows how much was paid in, how much was earned, tax-adjusted earnings, and cumulative profit over time.
+
+In short, the simulation is a round-by-round forecast tool that shows whether a plan becomes more or less profitable as time goes on.
+
 ## Local Setup
 
 ### 1) Backend
