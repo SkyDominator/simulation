@@ -28,21 +28,62 @@ The domain-specific business identity and sensitive operational details have bee
 - PWA support for installable/offline-friendly UX
 - Automated quality checks in CI
 
-## What The Simulation Does
+## What This Simulation Is
 
-This simulation helps a user estimate how money moves over time in a selected plan.
+This simulation is a forecasting tool. It helps a user test how money could come in, go out, and build up over time under one set of rules.
 
-- A simulation is calculated one round at a time.
-- In each round, a new participant joins until the plan reaches its limit.
-- After the limit is reached, older participants finish and new re-entry participants take their place.
-- Each participant pays an amount based on the plan and the round when they joined.
-- The system then calculates expected earnings for that round.
-- Early rounds mainly use a basic commission.
-- Later rounds can include extra bonuses.
-- Those bonuses can change depending on the sales achievement rate for that round.
-- The result shows how much was paid in, how much was earned, tax-adjusted earnings, and cumulative profit over time.
+## What A Plan Means
 
-In short, the simulation is a round-by-round forecast tool that shows whether a plan becomes more or less profitable as time goes on.
+In this project, a plan is not a user's personal goal or schedule. A plan is a rule set used by the simulator.
+
+Each plan decides things like:
+
+- how much a person pays when they join
+- how many active people can be in the simulation at once
+- when bonuses can be added
+- how large those bonuses can become
+
+So when a user chooses Plan A, Plan B, or another plan, they are really choosing a different calculation rule set.
+
+## Simple Example
+
+Imagine a user picks one plan and runs the simulation for 5 rounds.
+
+Round 1:
+
+- 1 person joins.
+- That person pays the amount set by the chosen plan.
+- The system calculates that person's expected earnings for round 1.
+
+Round 2:
+
+- A second person joins.
+- Now the first person moves to their next personal step, and the second person starts at step 1.
+- The simulation adds both people's payments and both people's earnings for this round.
+
+Round 3:
+
+- A third person joins.
+- The earliest person may now qualify for an extra settlement bonus, depending on the rule set.
+- The total result for round 3 includes all active people's payments and earnings together.
+
+Later rounds:
+
+- More people join until the plan reaches its maximum active count.
+- After that, older people finish their cycle and new people replace them.
+- Some later rounds may include larger bonuses.
+- Those bonus amounts can also change if the sales achievement rate for that round is higher or lower.
+
+## What The User Sees In The Result
+
+For each round, the user can see:
+
+- how much money was paid in
+- how much money was earned
+- earnings before and after tax
+- whether the overall profit is going up or down over time
+
+In short, the simulation answers a simple question: if this rule set continues round by round, does the outcome become more profitable or less profitable over time?
 
 ## Local Setup
 
